@@ -1,31 +1,11 @@
-import 'package:hive/hive.dart';
-
-part 'life_block.g.dart';
-
-@HiveType(typeId: 5)
 enum LifeBlock {
-  @HiveField(0)
   health,
-
-  @HiveField(1)
   career,
-
-  @HiveField(2)
   family,
-
-  @HiveField(3)
   finances,
-
-  @HiveField(4)
   education,
-
-  @HiveField(5)
   hobbies,
-
-  @HiveField(6)
   spirituality,
-
-  @HiveField(7)
   relationships,
 }
 

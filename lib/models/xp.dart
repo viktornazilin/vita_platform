@@ -1,30 +1,37 @@
-import 'package:hive/hive.dart';
+class XP {
+  final String userId;
+  final int currentXP;
+  final int level;
 
-part 'xp.g.dart';
+  XP({
+    required this.userId,
+    this.currentXP = 0,
+    this.level = 1,
+  });
 
-@HiveType(typeId: 2)
-class XP extends HiveObject {
-  @HiveField(0)
-  int currentXP;
+  factory XP.fromMap(Map<String, dynamic> map) => XP(
+        userId: map['user_id'] as String,
+        currentXP: (map['current_xp'] ?? 0) as int,
+        level: (map['level'] ?? 1) as int,
+      );
 
-  @HiveField(1)
-  int level;
+  Map<String, dynamic> toMap() => {
+        'user_id': userId,
+        'current_xp': currentXP,
+        'level': level,
+      };
 
-  XP({this.currentXP = 0, this.level = 1});
+  int xpToLevelUp() => 100 + (level - 1) * 25;
 
-  void addXP(int points) {
-    currentXP += points;
-    while (currentXP >= xpToLevelUp()) {
-      currentXP -= xpToLevelUp();
-      level++;
+  double progressPercent() => currentXP / xpToLevelUp();
+
+  XP addXP(int points) {
+    var newXP = currentXP + points;
+    var newLevel = level;
+    while (newXP >= (100 + (newLevel - 1) * 25)) {
+      newXP -= (100 + (newLevel - 1) * 25);
+      newLevel++;
     }
-  }
-
-  int xpToLevelUp() {
-    return 100 + (level - 1) * 25;
-  }
-
-  double progressPercent() {
-    return currentXP / xpToLevelUp();
+    return XP(userId: userId, currentXP: newXP, level: newLevel);
   }
 }

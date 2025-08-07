@@ -3,7 +3,7 @@ import 'life_block.dart'; // добавь, если используешь LifeB
 
 part 'app_user.g.dart';
 
-@HiveType(typeId: 0)
+@HiveType(typeId: 4)
 class AppUser extends HiveObject {
   @HiveField(0)
   String id;

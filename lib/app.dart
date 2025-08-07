@@ -5,7 +5,7 @@ import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/onboarding_questionnaire_screen.dart';
-
+import 'screens/settings_screen.dart' as screens;
 import 'services/user_service.dart';
 
 class VitaApp extends StatefulWidget {
@@ -27,7 +27,7 @@ class _VitaAppState extends State<VitaApp> {
 
   Future<void> _initialize() async {
     _userService = UserService();
-    await _userService.init(); // <- если у тебя есть init() или загрузка пользователя
+    await _userService.init();
     setState(() {
       _isReady = true;
     });
@@ -50,9 +50,35 @@ class _VitaAppState extends State<VitaApp> {
       title: 'Vita Platform',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.teal,
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF2ED0A2), // брендовый цвет
+        brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+          filled: true,
+          isDense: true,
+        ),
+        cardTheme: CardTheme(
+          elevation: 1,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        listTileTheme: const ListTileThemeData(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+        appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+        navigationBarTheme: const NavigationBarThemeData(
+          height: 70,
+          indicatorShape: StadiumBorder(),
+        ),
       ),
       routes: {
         '/home': (_) => const HomeScreen(),
@@ -60,6 +86,7 @@ class _VitaAppState extends State<VitaApp> {
         '/login': (_) => const LoginScreen(),
         '/welcome': (_) => const WelcomeScreen(),
         '/onboarding': (_) => const OnboardingQuestionnaireScreen(),
+        '/settings': (_) => const screens.SettingsScreen(),
       },
       home: isLoggedIn
           ? (hasCompleted

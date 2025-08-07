@@ -13,40 +13,84 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = const [
+  final _screens = const [
     GoalsScreen(),
     MoodScreen(),
     ProfileScreen(),
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  void _onDestinationSelected(int index) {
+    if (_selectedIndex == index) return;
+    setState(() => _selectedIndex = index);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.flag),
-            label: 'Goals',
+Widget build(BuildContext context) {
+  return Scaffold(
+    extendBody: true,
+    appBar: AppBar(
+      backgroundColor: Colors.white,
+      elevation: 1,
+      title: Row(
+        children: [
+          Hero(
+            tag: 'appLogo',
+            child: Image.asset('assets/images/logo.png', height: 28),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.mood),
-            label: 'Mood',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+          const SizedBox(width: 10),
+          const Text(
+            'Home',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
-    );
-  }
+    ),
+
+    body: SafeArea(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+        child: IndexedStack(
+          key: ValueKey(_selectedIndex),
+          index: _selectedIndex,
+          children: _screens,
+        ),
+      ),
+    ),
+
+    bottomNavigationBar: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: NavigationBar(
+          height: 65,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onDestinationSelected,
+          backgroundColor: Colors.white,
+          indicatorColor: Colors.teal.withOpacity(0.2),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.flag_outlined),
+              selectedIcon: Icon(Icons.flag),
+              label: 'Goals',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.mood_outlined),
+              selectedIcon: Icon(Icons.mood),
+              label: 'Mood',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

@@ -1,29 +1,26 @@
-import 'package:hive/hive.dart';
-import '../models/xp.dart';
+import '../main.dart';
 
 class XPService {
-  final Box<XP> _xpBox = Hive.box<XP>('xp');
+  int xp = 0;
 
-  XP get xp {
-    if (_xpBox.isEmpty) {
-      _xpBox.put('xp', XP());
+  Future<void> addXPForGoalCreated({required String lifeBlock}) async {
+    final weight = await dbRepo.getLifeBlockWeight(lifeBlock);
+    final points = 10 * weight; // за постановку задачи
+    await dbRepo.addXP(points.toInt());
+  }
+
+  Future<void> addXPForGoalCompleted({required String lifeBlock, required double hoursSpent}) async {
+    final weight = await dbRepo.getLifeBlockWeight(lifeBlock);
+    final points = (20 * weight + hoursSpent).toInt();
+    await dbRepo.addXP(points);
+  }
+
+  Future<void> checkDailyHoursAndBonus(DateTime date) async {
+    final targetHours = await dbRepo.getTargetHours();
+    final totalHours = await dbRepo.getTotalHoursSpentOnDate(date);
+
+    if (totalHours >= targetHours) {
+      await dbRepo.addXP(50); // бонус
     }
-    return _xpBox.get('xp')!;
-  }
-
-  void _save(XP updated) {
-    _xpBox.put('xp', updated);
-  }
-
-  void rewardForGoal() {
-    final current = xp;
-    current.addXP(30);
-    _save(current);
-  }
-
-  void rewardForMoodEntry() {
-    final current = xp;
-    current.addXP(10);
-    _save(current);
   }
 }

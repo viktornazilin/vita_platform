@@ -1,55 +1,90 @@
-import 'package:hive/hive.dart';
-import '../models/app_user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserService {
   static final UserService _instance = UserService._internal();
   factory UserService() => _instance;
-
   UserService._internal();
 
-  late Box<AppUser> _box;
-  AppUser? _currentUser;
+  final SupabaseClient _client = Supabase.instance.client;
+  Map<String, dynamic>? _currentUserData;
+
+  Map<String, dynamic>? get currentUser => _currentUserData;
 
   Future<void> init() async {
-    _box = await Hive.openBox<AppUser>('users');
-    _currentUser = _box.get('current');
+    final user = _client.auth.currentUser;
+    if (user != null) {
+      final res = await _client
+          .from('users')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+      _currentUserData = res;
+    }
   }
 
-  AppUser? get currentUser => _currentUser;
-
-  bool get hasCompletedQuestionnaire =>
-      _currentUser?.hasCompletedQuestionnaire == true;
-
   Future<void> register(String name, String email, String password) async {
-    final newUser = AppUser(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: name,
-      email: email,
-      password: password,
-    );
+    final authRes = await _client.auth.signUp(email: email, password: password);
 
-    _currentUser = newUser;
-    await _box.put('current', newUser);
+    if (authRes.user == null) {
+      throw Exception('Ошибка при регистрации');
+    }
+
+    await _client.from('users').insert({
+      'id': authRes.user!.id,
+      'email': email,
+      'name': name,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+
+    _currentUserData = {
+      'id': authRes.user!.id,
+      'email': email,
+      'name': name,
+    };
   }
 
   Future<bool> login(String email, String password) async {
-    final user = _box.get('current');
-    if (user != null && user.email == email && user.password == password) {
-      _currentUser = user;
+    final authRes = await _client.auth
+        .signInWithPassword(email: email, password: password);
+
+    if (authRes.user != null) {
+      final res = await _client
+          .from('users')
+          .select()
+          .eq('id', authRes.user!.id)
+          .maybeSingle();
+      _currentUserData = res;
       return true;
     }
+
     return false;
   }
 
-  Future<void> saveUser(AppUser user) async {
-    _currentUser = user;
-    await _box.put('current', user);
+  Future<void> logout() async {
+    await _client.auth.signOut();
+    _currentUserData = null;
   }
 
-  void markQuestionnaireComplete() {
-    if (_currentUser != null) {
-      _currentUser!.hasCompletedQuestionnaire = true;
-      _box.put('current', _currentUser!);
+  bool get hasCompletedQuestionnaire =>
+      _currentUserData?['has_completed_questionnaire'] == true;
+
+  Future<void> markQuestionnaireComplete() async {
+    final id = _currentUserData?['id'];
+    if (id != null) {
+      await _client.from('users').update({
+        'has_completed_questionnaire': true,
+      }).eq('id', id);
+
+      _currentUserData!['has_completed_questionnaire'] = true;
+    }
+  }
+
+  /// ✅ Добавь этот метод для обновления любых данных пользователя
+  Future<void> updateUserDetails(Map<String, dynamic> updates) async {
+    final id = _currentUserData?['id'];
+    if (id != null) {
+      await _client.from('users').update(updates).eq('id', id);
+      _currentUserData?.addAll(updates); // Обновляем локально
     }
   }
 }
