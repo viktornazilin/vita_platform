@@ -51,33 +51,66 @@ class _VitaAppState extends State<VitaApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF2ED0A2), // брендовый цвет
+        colorSchemeSeed: const Color(0xFF1565C0), // основной синий
         brightness: Brightness.light,
-        scaffoldBackgroundColor: Colors.white,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+
+        scaffoldBackgroundColor: const Color(0xFFF4F8FC), // светло-голубой фон
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1565C0),
+          foregroundColor: Colors.white,
+          centerTitle: true,
+          elevation: 0,
+        ),
+
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF1565C0),
+            foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           ),
         ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF1565C0),
+            side: const BorderSide(color: Color(0xFF1565C0)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+        ),
+
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF1565C0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF1565C0), width: 2),
+          ),
           filled: true,
+          fillColor: Colors.white,
           isDense: true,
         ),
-        cardTheme: CardTheme(
-          elevation: 1,
+
+        cardTheme: CardThemeData(
+          color: Colors.white,
+          elevation: 2,
           margin: const EdgeInsets.symmetric(vertical: 8),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
+
         listTileTheme: const ListTileThemeData(
+          iconColor: Color(0xFF1565C0),
+          textColor: Colors.black87,
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
-        appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+
         navigationBarTheme: const NavigationBarThemeData(
-          height: 70,
-          indicatorShape: StadiumBorder(),
+          backgroundColor: Colors.white,
+          indicatorColor: Color(0xFF1565C0),
+          labelTextStyle: MaterialStatePropertyAll(TextStyle(color: Colors.black87)),
         ),
       ),
       routes: {
@@ -89,9 +122,7 @@ class _VitaAppState extends State<VitaApp> {
         '/settings': (_) => const screens.SettingsScreen(),
       },
       home: isLoggedIn
-          ? (hasCompleted
-              ? const HomeScreen()
-              : const OnboardingQuestionnaireScreen())
+          ? (hasCompleted ? const HomeScreen() : const OnboardingQuestionnaireScreen())
           : const WelcomeScreen(),
     );
   }

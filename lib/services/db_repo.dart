@@ -283,4 +283,75 @@ class DbRepo {
     if (res == null) return null;
     return Map<String, dynamic>.from(res);
   }
+
+    // ===== EXPENSES =====
+// ===== EXPENSES =====
+Future<void> addExpense({
+  required DateTime date,
+  required double amount,
+  required String category,
+  String note = '',
+}) async {
+  await _client.from('expenses').insert({
+    'user_id': _uid,
+    'date': DateTime(date.year, date.month, date.day).toIso8601String(),
+    'amount': amount,
+    'category': category,
+    'note': note,
+  });
+}
+
+Future<void> deleteExpense(String id) async {
+  await _client
+      .from('expenses')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', _uid);
+}
+
+Future<List<Map<String, dynamic>>> fetchExpenses({
+  DateTime? from,
+  DateTime? to,
+}) async {
+  final conditions = {'user_id': _uid};
+
+  // Получаем все записи и фильтруем вручную, если нужно
+  final res = await _client
+      .from('expenses')
+      .select()
+      .match(conditions)
+      .order('date', ascending: false);
+
+  List<Map<String, dynamic>> data =
+      (res as List).map((m) => Map<String, dynamic>.from(m)).toList();
+
+  if (from != null) {
+    data = data.where((e) =>
+        DateTime.parse(e['date']).isAfter(from.subtract(const Duration(seconds: 1)))).toList();
+  }
+  if (to != null) {
+    data = data.where((e) =>
+        DateTime.parse(e['date']).isBefore(to)).toList();
+  }
+
+  return data;
+}
+
+Future<double> getTotalExpensesInRange(DateTime start, DateTime end) async {
+  final res = await _client
+      .from('expenses')
+      .select('amount')
+      .match({'user_id': _uid});
+
+  return (res as List)
+      .where((e) {
+        final d = DateTime.parse(e['date']);
+        return d.isAfter(start.subtract(const Duration(seconds: 1))) &&
+               d.isBefore(end);
+      })
+      .fold<double>(
+        0,
+        (sum, e) => sum + ((e['amount'] ?? 0) as num).toDouble(),
+      );
+}
 }

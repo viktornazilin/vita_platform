@@ -176,3 +176,4 @@ void dispose() {
   _noteController.dispose();
   super.dispose();
 }
+}

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/goal.dart';
-import '../models/life_block.dart';
 import '../services/goal_service.dart';
+import '../models/life_block.dart';
+import 'day_goals_screen.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -14,325 +14,215 @@ class _GoalsScreenState extends State<GoalsScreen> {
   final _goalService = GoalService();
 
   List<String> _lifeBlocks = [];
-  String? _selectedBlock;
-  List<Goal> _goals = [];
-  bool _loading = true;
-
-  // форма
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  int _importance = 1;
-  double _spentHours = 1.0;
-  String _emotion = '😊';
-  DateTime _selectedDate = DateTime.now();
-
-  final List<String> _emotions = ['😊','😐','😢','😎','😤','🤔','😴','😇'];
+  String _selectedBlock = 'all'; // 'all' = показать все
+  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
 
   @override
   void initState() {
     super.initState();
-    _loadBlocksAndGoals();
+    _loadBlocks();
   }
 
-  Future<void> _loadBlocksAndGoals() async {
-    setState(() => _loading = true);
-    try {
-      _lifeBlocks = await _goalService.getUserLifeBlocks();
-      if (_lifeBlocks.isNotEmpty) {
-        _selectedBlock = _lifeBlocks.first;
-        await _loadGoals();
-      }
-    } catch (e) {
-      _showError('Ошибка загрузки: $e');
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _loadGoals() async {
-    if (_selectedBlock == null) return;
-    _goals = await _goalService.fetchGoals(lifeBlock: _selectedBlock);
-    setState(() {});
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-    );
-    if (picked != null) setState(() => _selectedDate = picked);
-  }
-
-  Future<void> _addGoal() async {
-    if (_titleController.text.trim().isEmpty || _selectedBlock == null) return;
-
-    final created = await _goalService.createGoal(
-      title: _titleController.text.trim(),
-      description: _descController.text.trim(),
-      deadline: _selectedDate,
-      lifeBlock: _selectedBlock!,
-      importance: _importance,
-      emotion: _emotion,
-      spentHours: _spentHours,
-    );
-
+  Future<void> _loadBlocks() async {
+    final blocks = await _goalService.getUserLifeBlocks();
     setState(() {
-      _goals.insert(0, created);
-      _titleController.clear();
-      _descController.clear();
-      _importance = 1;
-      _spentHours = 1.0;
-      _emotion = _emotions.first;
-      _selectedDate = DateTime.now();
+      _lifeBlocks = blocks;
     });
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _prevMonth() {
+    setState(() {
+      _month = DateTime(_month.year, _month.month - 1);
+    });
   }
 
-  String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+  void _nextMonth() {
+    setState(() {
+      _month = DateTime(_month.year, _month.month + 1);
+    });
+  }
+
+  List<DateTime> _daysInMonth(DateTime month) {
+    final first = DateTime(month.year, month.month, 1);
+    final daysCount = DateTime(month.year, month.month + 1, 0).day;
+    final leadingEmpty = (first.weekday % 7); // делаем так, что воскресенье = 0
+    final total = leadingEmpty + daysCount;
+    final rows = (total / 7.0).ceil() * 7;
+
+    return List.generate(rows, (i) {
+      final dayOffset = i - leadingEmpty + 1;
+      return DateTime(month.year, month.month, dayOffset);
+    });
+  }
+
+  bool _isSameMonth(DateTime d) => d.month == _month.month && d.year == _month.year;
+
+  void _openDay(DateTime date) {
+    Navigator.of(context).push(
+       MaterialPageRoute(
+         builder: (_) => DayGoalsScreen(
+           date: date,
+           lifeBlock: _selectedBlock == 'all' ? null : _selectedBlock,
+           availableBlocks: _lifeBlocks, // << добавь это
+        ),
+      ),
+    );
+  }
+
+
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      backgroundColor: Colors.teal,
-      elevation: 0,
-      title: Row(
+  Widget build(BuildContext context) {
+    final days = _daysInMonth(_month);
+    final monthTitle = '${_month.year}, ${_month.month.toString().padLeft(2, '0')}';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset('assets/images/logo.png', height: 28),
+            const SizedBox(width: 10),
+            const Text('Goals'),
+          ],
+        ),
+      ),
+      body: Column(
         children: [
-          Image.asset('assets/images/logo.png', height: 32),
-          const SizedBox(width: 10),
-          const Text(
-            'Goals',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.white,
+          // Верхние чипы: блоки + "Все"
+          SizedBox(
+            height: 84,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              scrollDirection: Axis.horizontal,
+              children: [
+                _BlockChip(
+                  label: 'Все',
+                  selected: _selectedBlock == 'all',
+                  onTap: () => setState(() => _selectedBlock = 'all'),
+                ),
+                ..._lifeBlocks.map((b) => _BlockChip(
+                      label: getBlockLabel(
+                        LifeBlock.values.firstWhere(
+                          (e) => e.name == b,
+                          orElse: () => LifeBlock.health,
+                        ),
+                      ),
+                      selected: _selectedBlock == b,
+                      onTap: () => setState(() => _selectedBlock = b),
+                    )),
+              ],
+            ),
+          ),
+
+          // Хедер месяца
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                IconButton(onPressed: _prevMonth, icon: const Icon(Icons.chevron_left)),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      monthTitle,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                IconButton(onPressed: _nextMonth, icon: const Icon(Icons.chevron_right)),
+              ],
+            ),
+          ),
+
+          // Дни недели
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              children: const [
+                _Weekday('S'), _Weekday('M'), _Weekday('T'), _Weekday('W'),
+                _Weekday('T'), _Weekday('F'), _Weekday('S'),
+              ],
+            ),
+          ),
+
+          // Календарь
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+              ),
+              itemCount: days.length,
+              itemBuilder: (_, i) {
+                final d = days[i];
+                final inMonth = _isSameMonth(d);
+                final isToday = DateTime.now().year == d.year &&
+                    DateTime.now().month == d.month &&
+                    DateTime.now().day == d.day;
+
+                if (d.day < 1 || !inMonth) {
+                  return const SizedBox.shrink();
+                }
+                return GestureDetector(
+                  onTap: () => _openDay(d),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isToday ? Colors.teal.withOpacity(0.12) : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.black12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        d.day.toString(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: inMonth ? Colors.black : Colors.black38,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
       ),
-    ),
-    body: _loading
-        ? const Center(child: CircularProgressIndicator())
-        : Column(
-            children: [
-              // меню сфер жизни
-              Container(
-                height: 90,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _lifeBlocks.length,
-                  itemBuilder: (context, index) {
-                    final block = _lifeBlocks[index];
-                    final isSelected = block == _selectedBlock;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedBlock = block);
-                        _loadGoals();
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        width: 80,
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.teal : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.teal.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: Center(
-                          child: Text(
-                            getBlockLabel(
-                              LifeBlock.values.firstWhere(
-                                (e) => e.name == block,
-                                orElse: () => LifeBlock.health,
-                              ),
-                            ),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+    );
+  }
+}
 
-              // форма
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _titleController,
-                          decoration: const InputDecoration(
-                            labelText: 'Goal Title *',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _descController,
-                          decoration: const InputDecoration(
-                            labelText: 'Description (optional)',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+class _BlockChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _BlockChip({required this.label, required this.selected, required this.onTap, Key? key}) : super(key: key);
 
-                        // deadline
-                        Row(
-                          children: [
-                            const Text('Deadline:'),
-                            const SizedBox(width: 8),
-                            TextButton.icon(
-                              icon: const Icon(Icons.calendar_today),
-                              label: Text(_fmtDate(_selectedDate)),
-                              onPressed: _pickDate,
-                            ),
-                          ],
-                        ),
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onTap(),
+        selectedColor: Colors.teal,
+        labelStyle: TextStyle(color: selected ? Colors.white : null),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+}
 
-                        // hours
-                        Row(
-                          children: [
-                            const Text('Hours spent:'),
-                            Expanded(
-                              child: Slider(
-                                min: 0.5,
-                                max: 14.0,
-                                divisions: 27,
-                                value: _spentHours,
-                                label: _spentHours.toStringAsFixed(1),
-                                onChanged: (v) => setState(() => _spentHours = v),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 48,
-                              child: Text(
-                                _spentHours.toStringAsFixed(1),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // emotion
-                        Row(
-                          children: [
-                            const Text('Emotion:'),
-                            const SizedBox(width: 8),
-                            DropdownButton<String>(
-                              value: _emotion,
-                              items: _emotions
-                                  .map((e) => DropdownMenuItem(
-                                        value: e,
-                                        child: Text(e, style: const TextStyle(fontSize: 18)),
-                                      ))
-                                  .toList(),
-                              onChanged: (val) {
-                                if (val != null) setState(() => _emotion = val);
-                              },
-                            ),
-                          ],
-                        ),
-
-                        // importance
-                        Row(
-                          children: [
-                            const Text('Importance:'),
-                            const SizedBox(width: 8),
-                            DropdownButton<int>(
-                              value: _importance,
-                              items: List.generate(5, (i) => i + 1)
-                                  .map((e) => DropdownMenuItem(
-                                        value: e,
-                                        child: Text('$e'),
-                                      ))
-                                  .toList(),
-                              onChanged: (val) {
-                                if (val != null) setState(() => _importance = val);
-                              },
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _addGoal,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Goal'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const Divider(),
-              Expanded(
-                child: _goals.isEmpty
-                    ? const Center(child: Text('Нет целей'))
-                    : ListView.builder(
-                        itemCount: _goals.length,
-                        itemBuilder: (ctx, index) {
-                          final g = _goals[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            child: ListTile(
-                              title: Text(
-                                g.title,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: Text(
-                                '${g.description.isEmpty ? '—' : g.description}\n'
-                                'Deadline: ${_fmtDate(g.deadline)}  |  '
-                                'Hours: ${g.spentHours.toStringAsFixed(1)}  |  '
-                                'Imp: ${g.importance}  |  '
-                                'Emotion: ${g.emotion}',
-                              ),
-                              isThreeLine: true,
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-  );
+class _Weekday extends StatelessWidget {
+  final String s;
+  const _Weekday(this.s, {Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Center(
+        child: Text(s, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.black54)),
+      ),
+    );
+  }
 }

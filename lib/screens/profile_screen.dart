@@ -43,33 +43,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildField(String label, dynamic value) {
-    if (value == null) return const SizedBox.shrink();
-
-    // Пустая строка?
-    if (value is String && value.trim().isEmpty) {
+    if (value == null || (value is String && value.trim().isEmpty)) {
       return const SizedBox.shrink();
     }
 
-    // Список значений?
-    if (value is List) {
-      final list = value.cast<dynamic>();
-      if (list.isEmpty) return const SizedBox.shrink();
-      return Card(
-        child: ListTile(
-          title: Text(label),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: list.map((v) => Text('- $v')).toList(),
-          ),
-        ),
-      );
-    }
-
-    // Обычное значение
     return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         title: Text(label),
-        subtitle: Text(value.toString()),
+        subtitle: value is List
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: value.map((v) => Text('- $v')).toList(),
+              )
+            : Text(value.toString()),
       ),
     );
   }
@@ -78,7 +65,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Profile'),
+        title: Row(
+          children: [
+            Image.asset('assets/images/logo.png', height: 28),
+            const SizedBox(width: 10),
+            const Text('My Profile'),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Settings',
@@ -93,36 +86,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onRefresh: _loadData,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const CircleAvatar(
-                      radius: 40,
-                      child: Icon(Icons.person, size: 40),
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (_xp != null)
-                      XPProgressBar(xp: _xp!)
-                    else
-                      const Text(
-                        'XP data not available',
-                        style: TextStyle(color: Colors.grey),
+                    // Аватар + XP
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            const CircleAvatar(
+                              radius: 40,
+                              child: Icon(Icons.person, size: 40),
+                            ),
+                            const SizedBox(height: 16),
+                            _xp != null
+                                ? XPProgressBar(xp: _xp!)
+                                : const Text(
+                                    'XP data not available',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                          ],
+                        ),
                       ),
+                    ),
 
                     const SizedBox(height: 24),
-                    const Text(
+
+                    // Результаты опроса
+                    Text(
                       'Результаты опросника',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     const SizedBox(height: 8),
 
                     if (_questionnaire == null ||
                         _questionnaire!['has_completed_questionnaire'] != true)
-                      const Text(
-                        'Вы ещё не прошли опросник.',
-                        style: TextStyle(color: Colors.grey),
+                      Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'Вы ещё не прошли опросник.',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
                       )
                     else ...[
                       _buildField('Возраст', _questionnaire!['age']),
@@ -135,8 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildField('Сферы жизни', _questionnaire!['life_blocks']),
                     ],
 
-                    const SizedBox(height: 16),
-                    // Доп. кнопка до настроек (на всякий случай)
+                    const SizedBox(height: 20),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.settings),
                       label: const Text('Открыть настройки'),

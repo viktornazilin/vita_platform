@@ -4,13 +4,19 @@ import '../models/goal.dart';
 class GoalService {
   // ---- Life blocks
   Future<List<String>> getUserLifeBlocks() {
-  return dbRepo.getUserLifeBlocks();
-}
+    return dbRepo.getUserLifeBlocks();
+  }
 
-
-  // ---- Goals
+  // ---- Goals (общие)
   Future<List<Goal>> fetchGoals({String? lifeBlock}) {
     return dbRepo.fetchGoals(lifeBlock: lifeBlock);
+  }
+
+  // Цели на конкретную дату (lifeBlock необязателен: null => все блоки)
+  Future<List<Goal>> getGoalsByDate(DateTime date, {String? lifeBlock}) async {
+    final all = await dbRepo.getGoalsByDate(date);
+    if (lifeBlock == null) return all;
+    return all.where((g) => g.lifeBlock == lifeBlock).toList();
   }
 
   Future<Goal> createGoal({
@@ -49,12 +55,17 @@ class GoalService {
     return dbRepo.deleteGoal(id);
   }
 
-  // Отметить выполнение (вдруг понадобится из UI)
+  // Отметить выполнение (ставим true)
+  Future<void> completeGoal(String id) {
+    return dbRepo.toggleGoalCompleted(id, value: true);
+  }
+
+  // Тоггл (если нужен из UI)
   Future<void> toggleCompleted(String id, {bool? value}) {
     return dbRepo.toggleGoalCompleted(id, value: value);
   }
 
-  // ---- Aggregates / settings (пробрасываем к репозиторию)
+  // ---- Aggregates / settings
   Future<double> getTotalHoursSpentOnDate(DateTime date) {
     return dbRepo.getTotalHoursSpentOnDate(date);
   }

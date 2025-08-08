@@ -301,3 +301,4 @@ Widget _buildSectionCard({required String title, required Widget child}) {
     ),
   );
 }
+    }
