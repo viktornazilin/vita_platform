@@ -1,122 +1,93 @@
+// lib/screens/expenses_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/expenses_model.dart';
+import '../widgets/add_expense_dialog.dart';
+import '../main.dart'; // dbRepo
 
-class ExpensesScreen extends StatefulWidget {
+class ExpensesScreen extends StatelessWidget {
   const ExpensesScreen({super.key});
 
   @override
-  State<ExpensesScreen> createState() => _ExpensesScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ExpensesModel(repo: dbRepo)..loadFor(DateTime.now()),
+      child: const _ExpensesView(),
+    );
+  }
 }
 
-class _ExpensesScreenState extends State<ExpensesScreen> {
-  DateTime _selectedDate = DateTime.now();
-  final List<Map<String, dynamic>> _expenses = [];
+class _ExpensesView extends StatelessWidget {
+  const _ExpensesView();
 
-  void _addExpense() {
-    final amountController = TextEditingController();
-    final categoryController = TextEditingController();
-    final noteController = TextEditingController();
-
-    showDialog(
+  Future<void> _pickDate(BuildContext context) async {
+    final model = context.read<ExpensesModel>();
+    final picked = await showDatePicker(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Новый расход'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Сумма'),
-            ),
-            TextField(
-              controller: categoryController,
-              decoration: const InputDecoration(labelText: 'Категория'),
-            ),
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(labelText: 'Комментарий'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
-          ElevatedButton(
-            onPressed: () {
-              if (amountController.text.isNotEmpty) {
-                setState(() {
-                  _expenses.add({
-                    'date': _selectedDate,
-                    'amount': double.tryParse(amountController.text) ?? 0.0,
-                    'category': categoryController.text.isEmpty ? 'Прочее' : categoryController.text,
-                    'note': noteController.text,
-                  });
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Добавить'),
-          ),
-        ],
-      ),
+      initialDate: model.selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
     );
+    if (picked != null) await model.setDate(picked);
+  }
+
+  Future<void> _addExpense(BuildContext context) async {
+    final res = await showDialog<AddExpenseResult>(
+      context: context,
+      builder: (_) => const AddExpenseDialog(),
+    );
+    if (res != null) {
+      await context.read<ExpensesModel>().addExpense(
+            amount: res.amount,
+            category: res.category,
+            note: res.note,
+          );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final expensesToday = _expenses.where((e) =>
-      e['date'].day == _selectedDate.day &&
-      e['date'].month == _selectedDate.month &&
-      e['date'].year == _selectedDate.year
-    ).toList();
-
-    final total = expensesToday.fold<double>(0.0, (sum, e) => sum + e['amount']);
+    final model = context.watch<ExpensesModel>();
+    final expensesToday = model.expensesToday;
+    final total = model.totalToday;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Расходы'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now(),
-              );
-              if (picked != null) setState(() => _selectedDate = picked);
-            },
-          ),
+          IconButton(icon: const Icon(Icons.calendar_today), onPressed: () => _pickDate(context)),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text('Сумма за день: ${total.toStringAsFixed(2)} ₽',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Expanded(
-              child: expensesToday.isEmpty
-                  ? const Center(child: Text('Нет расходов за этот день'))
-                  : ListView.builder(
-                      itemCount: expensesToday.length,
-                      itemBuilder: (_, i) {
-                        final exp = expensesToday[i];
-                        return Card(
-                          child: ListTile(
-                            title: Text('${exp['category']} — ${exp['amount']} ₽'),
-                            subtitle: Text(exp['note'] ?? ''),
+      body: model.loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text('Сумма за день: ${total.toStringAsFixed(2)} ₽',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: expensesToday.isEmpty
+                        ? const Center(child: Text('Нет расходов за этот день'))
+                        : ListView.builder(
+                            itemCount: expensesToday.length,
+                            itemBuilder: (_, i) {
+                              final exp = expensesToday[i];
+                              return Card(
+                                child: ListTile(
+                                  title: Text('${exp['category']} — ${exp['amount']} ₽'),
+                                  subtitle: Text((exp['note'] ?? '') as String),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addExpense,
+        onPressed: () => _addExpense(context),
         child: const Icon(Icons.add),
       ),
     );

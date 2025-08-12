@@ -1,91 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../models/home_model.dart';
 import 'goals_screen.dart';
 import 'mood_screen.dart';
 import 'profile_screen.dart';
 import 'reports_screen.dart';
-import 'expenses_screen.dart'; // 👈 новый экран для ввода расходов
+import 'expenses_screen.dart';
+import '../widgets/app_navigation_bar.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  final _screens = const [
-    GoalsScreen(),
-    MoodScreen(),
-    ProfileScreen(),
-    ReportsScreen(),
-    ExpensesScreen(), // 👈 новый экран расходов
+  static final _screens = [
+    const GoalsScreen(),
+    const MoodScreen(),
+    const ProfileScreen(),
+    const ReportsScreen(),
+    const ExpensesScreen(),
   ];
-
-  void _onDestinationSelected(int index) {
-    if (_selectedIndex == index) return;
-    setState(() => _selectedIndex = index);
-  }
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => HomeModel(),
+      child: const _HomeView(),
+    );
+  }
+}
+
+class _HomeView extends StatelessWidget {
+  const _HomeView();
+
+  @override
+  Widget build(BuildContext context) {
+    final model = context.watch<HomeModel>();
+    final bucket = PageStorageBucket(); // сохраняет скролл‑позиции табов
+
     return Scaffold(
       extendBody: true,
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
-          child: IndexedStack(
-            key: ValueKey(_selectedIndex),
-            index: _selectedIndex,
-            children: _screens,
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: PageStorage(
+            bucket: bucket,
+            child: IndexedStack(
+              key: ValueKey(model.selectedIndex),
+              index: model.selectedIndex,
+              children: HomeScreen._screens,
+            ),
           ),
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: NavigationBar(
-            height: 65,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onDestinationSelected,
-            backgroundColor: Colors.white,
-            indicatorColor: Colors.teal.withOpacity(0.2),
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.flag_outlined),
-                selectedIcon: Icon(Icons.flag),
-                label: 'Goals',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.mood_outlined),
-                selectedIcon: Icon(Icons.mood),
-                label: 'Mood',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.insights_outlined),
-                selectedIcon: Icon(Icons.insights),
-                label: 'Reports',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.account_balance_wallet_outlined), // 💰
-                selectedIcon: Icon(Icons.account_balance_wallet),
-                label: 'Expenses',
-              ),
-            ],
-          ),
-        ),
+      bottomNavigationBar: AppNavigationBar(
+        selectedIndex: model.selectedIndex,
+        onSelect: model.select,
       ),
     );
   }

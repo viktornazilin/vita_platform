@@ -1,68 +1,39 @@
 import 'package:flutter/material.dart';
-import '../main.dart';
-import '../models/xp.dart';
-import '../widgets/xp_progress_bar.dart';
+import 'package:provider/provider.dart';
 
-class ProfileScreen extends StatefulWidget {
+import '../main.dart'; // dbRepo
+import '../models/xp.dart';
+import '../models/profile_model.dart';
+import '../widgets/xp_progress_bar.dart';
+import '../widgets/profile_field_card.dart';
+
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  XP? _xp;
-  Map<String, dynamic>? _questionnaire;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _loading = true);
-    try {
-      final xpData = await dbRepo.getXP();
-      final questionnaire = await dbRepo.getQuestionnaireResults();
-      if (!mounted) return;
-      setState(() {
-        _xp = xpData;
-        _questionnaire = questionnaire;
-      });
-    } catch (e) {
-      _showError('Ошибка загрузки: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Widget _buildField(String label, dynamic value) {
-    if (value == null || (value is String && value.trim().isEmpty)) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        title: Text(label),
-        subtitle: value is List
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: value.map((v) => Text('- $v')).toList(),
-              )
-            : Text(value.toString()),
-      ),
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ProfileModel(repo: dbRepo)..load(),
+      child: const _ProfileView(),
     );
   }
+}
+
+class _ProfileView extends StatelessWidget {
+  const _ProfileView();
 
   @override
   Widget build(BuildContext context) {
+    final model = context.watch<ProfileModel>();
+
+    // показать ошибку через Snackbar (однократно на ререндер)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final err = model.error;
+      if (err != null && ScaffoldMessenger.maybeOf(context) != null) {
+        ScaffoldMessenger.of(context)!.showSnackBar(SnackBar(content: Text(err)));
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -80,10 +51,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: _loading
+      body: model.loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadData,
+              onRefresh: () => context.read<ProfileModel>().load(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(20),
@@ -102,8 +73,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Icon(Icons.person, size: 40),
                             ),
                             const SizedBox(height: 16),
-                            _xp != null
-                                ? XPProgressBar(xp: _xp!)
+                            model.xp != null
+                                ? XPProgressBar(xp: model.xp!)
                                 : const Text(
                                     'XP data not available',
                                     style: TextStyle(color: Colors.grey),
@@ -124,8 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    if (_questionnaire == null ||
-                        _questionnaire!['has_completed_questionnaire'] != true)
+                    if (!model.questionnaireCompleted)
                       Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         child: const Padding(
@@ -137,14 +107,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       )
                     else ...[
-                      _buildField('Возраст', _questionnaire!['age']),
-                      _buildField('Здоровье', _questionnaire!['health']),
-                      _buildField('Цели', _questionnaire!['goals']),
-                      _buildField('Мечты', _questionnaire!['dreams']),
-                      _buildField('Сильные стороны', _questionnaire!['strengths']),
-                      _buildField('Слабые стороны', _questionnaire!['weaknesses']),
-                      _buildField('Приоритеты', _questionnaire!['priorities']),
-                      _buildField('Сферы жизни', _questionnaire!['life_blocks']),
+                      ProfileFieldCard(label: 'Возраст', value: model.questionnaire!['age']),
+                      ProfileFieldCard(label: 'Здоровье', value: model.questionnaire!['health']),
+                      ProfileFieldCard(label: 'Цели', value: model.questionnaire!['goals']),
+                      ProfileFieldCard(label: 'Мечты', value: model.questionnaire!['dreams']),
+                      ProfileFieldCard(label: 'Сильные стороны', value: model.questionnaire!['strengths']),
+                      ProfileFieldCard(label: 'Слабые стороны', value: model.questionnaire!['weaknesses']),
+                      ProfileFieldCard(label: 'Приоритеты', value: model.questionnaire!['priorities']),
+                      ProfileFieldCard(label: 'Сферы жизни', value: model.questionnaire!['life_blocks']),
                     ],
 
                     const SizedBox(height: 20),

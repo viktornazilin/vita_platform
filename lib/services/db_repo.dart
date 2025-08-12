@@ -3,7 +3,6 @@ import '../models/goal.dart';
 import '../models/mood.dart';
 import '../models/xp.dart';
 
-
 class DbRepo {
   final SupabaseClient _client;
 
@@ -284,74 +283,89 @@ class DbRepo {
     return Map<String, dynamic>.from(res);
   }
 
-    // ===== EXPENSES =====
-// ===== EXPENSES =====
-Future<void> addExpense({
-  required DateTime date,
-  required double amount,
-  required String category,
-  String note = '',
-}) async {
-  await _client.from('expenses').insert({
-    'user_id': _uid,
-    'date': DateTime(date.year, date.month, date.day).toIso8601String(),
-    'amount': amount,
-    'category': category,
-    'note': note,
-  });
-}
+  // ===== EXPENSES =====
+  Future<void> addExpense({
+    required DateTime date,
+    required double amount,
+    required String category,
+    String note = '',
+  }) async {
+    // Для колонки DATE передаём YYYY-MM-DD (без времени)
+    final d = DateTime(date.year, date.month, date.day);
+    final dayStr =
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-Future<void> deleteExpense(String id) async {
-  await _client
-      .from('expenses')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', _uid);
-}
+    await _client.from('expenses').insert({
+      'user_id': _uid,
+      'date': dayStr,
+      'amount': amount,
+      'category': category.isEmpty ? 'Прочее' : category,
+      'note': note,
+    });
+  }
 
-Future<List<Map<String, dynamic>>> fetchExpenses({
+  Future<void> deleteExpense(String id) async {
+    await _client.from('expenses').delete().eq('id', id).eq('user_id', _uid);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchExpenses({
   DateTime? from,
   DateTime? to,
 }) async {
-  final conditions = {'user_id': _uid};
-
-  // Получаем все записи и фильтруем вручную, если нужно
-  final res = await _client
+  // Сразу select(), чтобы получить билдер с фильтрами
+  var q = _client
       .from('expenses')
       .select()
-      .match(conditions)
-      .order('date', ascending: false);
+      .eq('user_id', _uid);
 
-  List<Map<String, dynamic>> data =
-      (res as List).map((m) => Map<String, dynamic>.from(m)).toList();
-
+  // Фильтры по дате (DATE => 'YYYY-MM-DD')
   if (from != null) {
-    data = data.where((e) =>
-        DateTime.parse(e['date']).isAfter(from.subtract(const Duration(seconds: 1)))).toList();
+    final s =
+        '${from.year.toString().padLeft(4, '0')}-${from.month.toString().padLeft(2, '0')}-${from.day.toString().padLeft(2, '0')}';
+    q = q.gte('date', s);
   }
   if (to != null) {
-    data = data.where((e) =>
-        DateTime.parse(e['date']).isBefore(to)).toList();
+    final e =
+        '${to.year.toString().padLeft(4, '0')}-${to.month.toString().padLeft(2, '0')}-${to.day.toString().padLeft(2, '0')}';
+    q = q.lte('date', e);
   }
 
-  return data;
-}
+  // Сортировка и лимит — в самом конце
+  final res = await q
+      .order('date', ascending: false)
+      .order('created_at', ascending: false)
+      .limit(120);
 
-Future<double> getTotalExpensesInRange(DateTime start, DateTime end) async {
-  final res = await _client
-      .from('expenses')
-      .select('amount')
-      .match({'user_id': _uid});
-
+  // Нормализуем типы
   return (res as List)
-      .where((e) {
-        final d = DateTime.parse(e['date']);
-        return d.isAfter(start.subtract(const Duration(seconds: 1))) &&
-               d.isBefore(end);
-      })
-      .fold<double>(
-        0,
-        (sum, e) => sum + ((e['amount'] ?? 0) as num).toDouble(),
-      );
+      .map<Map<String, dynamic>>((e) => {
+            ...Map<String, dynamic>.from(e as Map),
+            'date': DateTime.parse(e['date'] as String),
+            'amount': (e['amount'] as num).toDouble(),
+            'category': (e['category'] ?? 'Прочее') as String,
+            'note': (e['note'] ?? '') as String,
+          })
+      .toList();
 }
+
+
+
+  Future<double> getTotalExpensesInRange(DateTime start, DateTime end) async {
+    final s =
+        '${start.year.toString().padLeft(4, '0')}-${start.month.toString().padLeft(2, '0')}-${start.day.toString().padLeft(2, '0')}';
+    final e =
+        '${end.year.toString().padLeft(4, '0')}-${end.month.toString().padLeft(2, '0')}-${end.day.toString().padLeft(2, '0')}';
+
+    final res = await _client
+        .from('expenses')
+        .select('amount, date')
+        .eq('user_id', _uid)
+        .gte('date', s)
+        .lte('date', e);
+
+    return (res as List).fold<double>(
+      0.0,
+      (sum, row) => sum + ((row['amount'] ?? 0) as num).toDouble(),
+    );
+  }
 }

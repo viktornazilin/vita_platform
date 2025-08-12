@@ -39,6 +39,8 @@ dependencies:
   path_provider: ^2.0.14
   supabase_flutter: ^2.9.1 # проверь актуальную версию
   fl_chart: ^0.68.0
+  provider: ^6.0.5
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
