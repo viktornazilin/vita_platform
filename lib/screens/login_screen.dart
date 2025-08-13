@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/login_model.dart';
 
@@ -25,9 +27,24 @@ class _LoginView extends StatefulWidget {
 class _LoginViewState extends State<_LoginView> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  StreamSubscription<AuthState>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Навигация после успешного Google OAuth (и вообще любого входа)
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      final session = data.session;
+      if (event == AuthChangeEvent.signedIn && session != null && mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSub?.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
@@ -42,6 +59,11 @@ class _LoginViewState extends State<_LoginView> {
     if (success && mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    await context.read<LoginModel>().loginWithGoogle();
+    // переход произойдет в слушателе onAuthStateChange
   }
 
   @override
@@ -67,18 +89,12 @@ class _LoginViewState extends State<_LoginView> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset('assets/images/logo.png', height: 32),
-                        const SizedBox(width: 10),
-                      ],
-                    ),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Image.asset('assets/images/logo.png', height: 32),
+                      const SizedBox(width: 10),
+                    ]),
                     const SizedBox(height: 18),
-                    Text(
-                      'Войдите в аккаунт',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    Text('Войдите в аккаунт', style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 18),
 
                     TextField(
@@ -130,6 +146,7 @@ class _LoginViewState extends State<_LoginView> {
                     ),
                     const SizedBox(height: 6),
 
+                    // Кнопка входа по email/паролю
                     SizedBox(
                       width: double.infinity,
                       child: model.isLoading
@@ -150,6 +167,33 @@ class _LoginViewState extends State<_LoginView> {
                                 ),
                               ),
                             ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    Row(children: const [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('или'),
+                      ),
+                      Expanded(child: Divider()),
+                    ]),
+                    const SizedBox(height: 12),
+
+                    // Кнопка входа через Google
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: model.isLoading ? null : _loginWithGoogle,
+                        icon: const Icon(Icons.g_mobiledata), // можно заменить на SVG-иконку Google
+                        label: const Text('Продолжить с Google'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

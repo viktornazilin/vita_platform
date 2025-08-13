@@ -1,3 +1,4 @@
+// models/login_model.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/user_service.dart';
@@ -37,6 +38,25 @@ class LoginModel extends ChangeNotifier {
     } catch (e) {
       _errorText = 'Ошибка входа: ${e.toString()}';
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ➕ НОВОЕ: вход/регистрация через Google
+  Future<void> loginWithGoogle() async {
+    _isLoading = true;
+    _errorText = null;
+    notifyListeners();
+
+    try {
+      await _userService.signInWithGoogle();
+      // Дальнейшую смену экрана делаем по событию auth state в UI
+    } on AuthException catch (e) {
+      _errorText = e.message;
+    } catch (e) {
+      _errorText = 'Ошибка Google входа: ${e.toString()}';
     } finally {
       _isLoading = false;
       notifyListeners();

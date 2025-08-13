@@ -1,3 +1,4 @@
+// models/register_model.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/user_service.dart';
@@ -41,5 +42,22 @@ class RegisterModel extends ChangeNotifier {
       notifyListeners();
     }
     return false;
+  }
+
+  // ➕ НОВОЕ: регистрация через Google (на деле — тот же sign-in)
+  Future<void> registerWithGoogle() async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _userService.signInWithGoogle();
+    } on AuthException catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = 'Ошибка Google регистрации: $e';
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
 }
