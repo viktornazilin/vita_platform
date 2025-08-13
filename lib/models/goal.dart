@@ -1,9 +1,11 @@
+// models/goal.dart
 class Goal {
   final String id;
   final String userId;
   final String title;
   final String description;
   final DateTime deadline;
+  final DateTime startTime; // <-- новое поле
   final bool isCompleted;
   final String lifeBlock;
   final int importance;
@@ -16,6 +18,7 @@ class Goal {
     required this.title,
     required this.description,
     required this.deadline,
+    required this.startTime,
     required this.lifeBlock,
     this.isCompleted = false,
     this.importance = 1,
@@ -29,6 +32,7 @@ class Goal {
         title: map['title'] as String,
         description: (map['description'] ?? '') as String,
         deadline: DateTime.parse(map['deadline'] as String),
+        startTime: DateTime.parse(map['start_time'] as String), // <-- читаем
         isCompleted: (map['is_completed'] ?? false) as bool,
         lifeBlock: (map['life_block'] ?? '') as String,
         importance: (map['importance'] ?? 1) as int,
@@ -42,6 +46,7 @@ class Goal {
         'title': title,
         'description': description,
         'deadline': deadline.toIso8601String(),
+        'start_time': startTime.toIso8601String(), // <-- сохраняем
         'is_completed': isCompleted,
         'life_block': lifeBlock,
         'importance': importance,
@@ -55,6 +60,7 @@ class Goal {
     String? title,
     String? description,
     DateTime? deadline,
+    DateTime? startTime,
     bool? isCompleted,
     String? lifeBlock,
     int? importance,
@@ -67,6 +73,7 @@ class Goal {
       title: title ?? this.title,
       description: description ?? this.description,
       deadline: deadline ?? this.deadline,
+      startTime: startTime ?? this.startTime,
       isCompleted: isCompleted ?? this.isCompleted,
       lifeBlock: lifeBlock ?? this.lifeBlock,
       importance: importance ?? this.importance,

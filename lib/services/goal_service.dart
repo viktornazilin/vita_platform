@@ -19,6 +19,7 @@ class GoalService {
     return all.where((g) => g.lifeBlock == lifeBlock).toList();
   }
 
+  /// Создать новую цель (с учетом времени начала)
   Future<Goal> createGoal({
     required String title,
     String description = '',
@@ -27,6 +28,7 @@ class GoalService {
     int importance = 1,
     String emotion = '',
     double spentHours = 1.0,
+    required DateTime startTime, // <-- добавили
   }) async {
     final created = await dbRepo.createGoal(
       title: title,
@@ -36,6 +38,7 @@ class GoalService {
       importance: importance,
       emotion: emotion,
       spentHours: spentHours,
+      startTime: startTime, // <-- передаем в БД
     );
 
     // XP: постановка задачи
@@ -72,5 +75,9 @@ class GoalService {
 
   Future<double> getTargetHours() {
     return dbRepo.getTargetHours();
+  }
+
+  Future<void> updateGoal(Goal goal) async {
+    await dbRepo.updateGoal(goal);
   }
 }

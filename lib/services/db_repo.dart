@@ -38,44 +38,51 @@ class DbRepo {
   }
 
   Future<Goal> createGoal({
-    required String title,
-    required String description,
-    required DateTime deadline,
-    required String lifeBlock,
-    int importance = 1,
-    String emotion = '',
-    double spentHours = 0,
-  }) async {
-    final insert = {
-      'user_id': _uid,
-      'title': title,
-      'description': description,
-      'deadline': deadline.toIso8601String(),
-      'is_completed': false,
-      'life_block': lifeBlock,
-      'importance': importance,
-      'emotion': emotion,
-      'spent_hours': spentHours,
-    };
-    final res = await _client.from('goals').insert(insert).select().single();
-    return Goal.fromMap(res);
-  }
+  required String title,
+  required String description,
+  required DateTime deadline,
+  required String lifeBlock,
+  int importance = 1,
+  String emotion = '',
+  double spentHours = 0,
+  required DateTime startTime, // <-- новое поле
+}) async {
+  final insert = {
+    'user_id': _uid,
+    'title': title,
+    'description': description,
+    'deadline': deadline.toIso8601String(),
+    'is_completed': false,
+    'life_block': lifeBlock,
+    'importance': importance,
+    'emotion': emotion,
+    'spent_hours': spentHours,
+    'start_time': startTime.toIso8601String(), // <-- сохраняем в БД
+  };
+
+  final res = await _client.from('goals').insert(insert).select().single();
+  return Goal.fromMap(res);
+}
+
 
   Future<void> updateGoal(Goal goal) async {
-    await _client
-        .from('goals')
-        .update({
-          'title': goal.title,
-          'description': goal.description,
-          'deadline': goal.deadline.toIso8601String(),
-          'is_completed': goal.isCompleted,
-          'importance': goal.importance,
-          'emotion': goal.emotion,
-          'spent_hours': goal.spentHours,
-        })
-        .eq('id', goal.id)
-        .eq('user_id', _uid);
-  }
+  await _client
+      .from('goals')
+      .update({
+        'title': goal.title,
+        'description': goal.description,
+        'deadline': goal.deadline.toIso8601String(),
+        'is_completed': goal.isCompleted,
+        'life_block': goal.lifeBlock,                 // <-- если редактируешь блок
+        'importance': goal.importance,
+        'emotion': goal.emotion,
+        'spent_hours': goal.spentHours,
+        'start_time': goal.startTime.toIso8601String(), // <-- ВАЖНО: пишем время начала
+      })
+      .eq('id', goal.id)
+      .eq('user_id', _uid);
+}
+
 
   Future<void> deleteGoal(String id) async {
     await _client.from('goals').delete().eq('id', id).eq('user_id', _uid);

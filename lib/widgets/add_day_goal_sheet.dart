@@ -7,6 +7,7 @@ class AddGoalResult {
   final int importance;
   final String emotion;
   final double hours;
+  final TimeOfDay startTime; // новое поле
 
   AddGoalResult({
     required this.title,
@@ -15,6 +16,7 @@ class AddGoalResult {
     required this.importance,
     required this.emotion,
     required this.hours,
+    required this.startTime,
   });
 }
 
@@ -41,12 +43,25 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   int _importance = 1;
   double _hours = 1.0;
   late String _lifeBlock;
+  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0); // по умолчанию 9:00
 
   @override
   void initState() {
     super.initState();
     _lifeBlock = widget.fixedLifeBlock ??
         (widget.availableBlocks.isNotEmpty ? widget.availableBlocks.first : 'health');
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime,
+    );
+    if (picked != null) {
+      setState(() {
+        _startTime = picked;
+      });
+    }
   }
 
   @override
@@ -82,6 +97,20 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
               ),
             ),
             const SizedBox(height: 12),
+
+            // выбор времени начала
+            Row(
+              children: [
+                const Text('Время начала:'),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: _pickStartTime,
+                  child: Text(_startTime.format(context)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
             if (widget.fixedLifeBlock == null) ...[
               DropdownButtonFormField<String>(
                 value: _lifeBlock,
@@ -165,6 +194,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           importance: _importance,
                           emotion: _emotion,
                           hours: _hours,
+                          startTime: _startTime,
                         ),
                       );
                     },
