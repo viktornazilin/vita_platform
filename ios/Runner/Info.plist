@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+    <string>Нужно, чтобы фотографировать ежедневник.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Нужно, чтобы выбрать снимок ежедневника.</string>
+
 </dict>
 </plist>
