@@ -153,7 +153,7 @@ class _GoalsView extends StatelessWidget {
 
 class _Weekday extends StatelessWidget {
   final String s;
-  const _Weekday(this.s, {super.key});
+  const _Weekday(this.s);
   @override
   Widget build(BuildContext context) {
     return Expanded(

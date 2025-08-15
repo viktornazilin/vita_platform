@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import '../services/db_repo.dart' show FinanceRepo;
 import '../domain/category.dart' as dm;
 import '../domain/jar.dart';
 import '../domain/transaction_item.dart';
+import '../services/finance_repo_mixin.dart' show FinanceRepo;
 
 bool _sameMonth(DateTime a, DateTime b) => a.year == b.year && a.month == b.month;
 

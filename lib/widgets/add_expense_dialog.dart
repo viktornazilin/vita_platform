@@ -143,7 +143,9 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
         ElevatedButton(
           onPressed: () {
             if (!_formKey.currentState!.validate() ||
-                _selectedCategoryId == null) return;
+                _selectedCategoryId == null) {
+              return;
+            }
             final amount = double.parse(
                 _amountController.text.replaceAll(',', '.'));
             Navigator.pop(

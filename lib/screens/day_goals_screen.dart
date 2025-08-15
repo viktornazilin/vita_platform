@@ -158,7 +158,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   /// Простая заглушка OCR:
   /// - делаем вид, что нашли три пункта вида "08:30 Пробежка 5 км"
   /// - парсим время (HH:mm) и берем оставшееся как title
-  Future<List<AddGoalResult>> _mockVisionParse(Uint8List _bytes) async {
+  Future<List<AddGoalResult>> _mockVisionParse(Uint8List bytes) async {
     // В реальной интеграции сюда подставим Google Cloud Vision/Text Detection.
     final now = TimeOfDay.now();
     final lines = <String>[
@@ -167,7 +167,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       '19:15 Прочитать 20 страниц книги',
     ];
 
-    TimeOfDay _parseTimeOr(TimeOfDay fallback, String s) {
+    TimeOfDay parseTimeOr(TimeOfDay fallback, String s) {
       final m = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(s);
       if (m != null) {
         final h = int.tryParse(m.group(1)!) ?? fallback.hour;
@@ -177,13 +177,13 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       return fallback;
     }
 
-    String _stripTimePrefix(String s) {
+    String stripTimePrefix(String s) {
       return s.replaceFirst(RegExp(r'^\s*\d{1,2}:\d{2}\s*'), '').trim();
     }
 
     return lines.map((raw) {
-      final t = _parseTimeOr(now, raw);
-      final title = _stripTimePrefix(raw);
+      final t = parseTimeOr(now, raw);
+      final title = stripTimePrefix(raw);
       return AddGoalResult(
         title: title.isEmpty ? 'Без названия' : title,
         description: '',

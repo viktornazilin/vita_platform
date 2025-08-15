@@ -240,7 +240,7 @@ class _NewJarData {
 }
 
 class _AddJarDialog extends StatefulWidget {
-  const _AddJarDialog({super.key});
+  const _AddJarDialog();
 
   @override
   State<_AddJarDialog> createState() => _AddJarDialogState();

@@ -112,7 +112,7 @@ class _VitaAppState extends State<VitaApp> {
         navigationBarTheme: const NavigationBarThemeData(
           backgroundColor: Colors.white,
           indicatorColor: Color(0xFF1565C0),
-          labelTextStyle: MaterialStatePropertyAll(TextStyle(color: Colors.black87)),
+          labelTextStyle: WidgetStatePropertyAll(TextStyle(color: Colors.black87)),
         ),
       ),
       routes: {

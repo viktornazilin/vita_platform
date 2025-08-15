@@ -30,7 +30,7 @@ class _ProfileView extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final err = model.error;
       if (err != null && ScaffoldMessenger.maybeOf(context) != null) {
-        ScaffoldMessenger.of(context)!.showSnackBar(SnackBar(content: Text(err)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
       }
     });
 

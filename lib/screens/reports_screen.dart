@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../models/reports_model.dart';
@@ -26,12 +25,11 @@ class _ReportsView extends StatelessWidget {
     final model = context.watch<ReportsModel>();
 
     if (model.loading) {
-  return Scaffold(
-    appBar: AppBar(title: const Text('Отчёты')),
-    body: const Center(child: CircularProgressIndicator()),
-  );
-}
-
+      return Scaffold(
+        appBar: AppBar(title: const Text('Отчёты')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     // данные из модели
     final goals = model.goalsInRange.toList();
@@ -194,55 +192,28 @@ class _ReportsView extends StatelessWidget {
               ),
             ),
 
-            // -------------------- РАСХОДЫ --------------------
+            // -------------------- РАСХОДЫ (новая логика) --------------------
             _SectionCard(
               title: 'Расходы за период',
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: dbRepo.fetchExpenses(), // как в исходнике
+              child: FutureBuilder<_ExpenseAnalytics>(
+                future: _loadExpenseAnalytics(model.range.start, model.range.end),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()));
                   }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const _EmptyChart();
-                  }
+                  if (!snapshot.hasData) return const _EmptyChart();
 
-                  final r = model.range;
-                  final expenses = snapshot.data!;
-                  final inRange = expenses.where((e) {
-                    final d = e['date'] as DateTime;
-                    return d.isAfter(r.start.subtract(const Duration(microseconds: 1))) &&
-                        d.isBefore(r.end);
-                  }).toList();
+                  final data = snapshot.data!;
+                  if (data.total <= 0 && data.byDay.isEmpty) return const _EmptyChart();
 
-                  if (inRange.isEmpty) return const _EmptyChart();
-
-                  final totalExpense =
-                      inRange.fold<double>(0.0, (sum, e) => sum + (e['amount'] as num).toDouble());
-                  final days = (r.end.difference(r.start).inDays).clamp(1, 365);
-                  final avgExpense = totalExpense / days;
-
-                  // по категориям
-                  final byCategory = groupBy(inRange, (e) => e['category'] as String)
-                      .map((k, v) => MapEntry(
-                            k,
-                            v.fold<double>(0.0, (s, e) => s + (e['amount'] as num).toDouble()),
-                          ));
-
-                  // по дням
-                  final byDayExpense = groupBy(inRange, (e) {
-                    final d = e['date'] as DateTime;
-                    return DateTime(d.year, d.month, d.day);
-                  }).map((d, list) => MapEntry(
-                        d,
-                        list.fold<double>(0.0, (s, e) => s + (e['amount'] as num).toDouble()),
-                      ));
+                  final days = (model.range.end.difference(model.range.start).inDays).clamp(1, 366);
+                  final avgExpense = days == 0 ? 0.0 : data.total / days;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Всего: ${totalExpense.toStringAsFixed(2)} ₽',
+                        'Всего: ${data.total.toStringAsFixed(2)} ₽',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
@@ -256,7 +227,7 @@ class _ReportsView extends StatelessWidget {
                         height: 220,
                         child: PieChart(
                           PieChartData(
-                            sections: _buildExpensePieSections(byCategory),
+                            sections: _buildExpensePieSections(data.byCategory),
                             sectionsSpace: 2,
                             centerSpaceRadius: 36,
                           ),
@@ -278,7 +249,7 @@ class _ReportsView extends StatelessWidget {
                                 sideTitles: SideTitles(
                                   showTitles: true,
                                   getTitlesWidget: (v, meta) {
-                                    final keys = byDayExpense.keys.toList()..sort();
+                                    final keys = data.byDay.keys.toList()..sort();
                                     final idx = v.toInt();
                                     if (idx < 0 || idx >= keys.length) return const SizedBox();
                                     final d = keys[idx];
@@ -292,7 +263,7 @@ class _ReportsView extends StatelessWidget {
                               ),
                             ),
                             borderData: FlBorderData(show: false),
-                            barGroups: _buildExpenseBarGroups(byDayExpense),
+                            barGroups: _buildExpenseBarGroups(data.byDay),
                           ),
                         ),
                       ),
@@ -306,6 +277,34 @@ class _ReportsView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Грузим расходы за период из новой модели (transactions + categories).
+  Future<_ExpenseAnalytics> _loadExpenseAnalytics(DateTime from, DateTime to) async {
+    // 1) транзакции в периоде (эксклюзивная верхняя граница)
+    final txs = await dbRepo.listTransactionsBetween(from, to);
+    final expenses = txs.where((t) => t.kind == 'expense');
+
+    // 2) словарь категорий id->name (только расходные)
+    final expCats = await dbRepo.listCategories(kind: 'expense');
+    final catNameById = {for (final c in expCats) c.id: c.name};
+
+    // 3) агрегаты
+    double total = 0;
+    final Map<String, double> byCategory = {};
+    final Map<DateTime, double> byDay = {};
+
+    for (final t in expenses) {
+      total += t.amount;
+
+      final catName = catNameById[t.categoryId] ?? 'Прочее';
+      byCategory[catName] = (byCategory[catName] ?? 0) + t.amount;
+
+      final d = DateTime(t.ts.year, t.ts.month, t.ts.day);
+      byDay[d] = (byDay[d] ?? 0) + t.amount;
+    }
+
+    return _ExpenseAnalytics(total: total, byCategory: byCategory, byDay: byDay);
   }
 
   // ---------- UI helpers (перенесены из исходника, без изменений логики) ----------
@@ -485,4 +484,17 @@ class _EmptyChart extends StatelessWidget {
       child: Center(child: Text('Недостаточно данных')),
     );
   }
+}
+
+/// Внутренняя структура для секции «Расходы»
+class _ExpenseAnalytics {
+  final double total;
+  final Map<String, double> byCategory; // имя категории -> сумма
+  final Map<DateTime, double> byDay;    // день -> сумма
+
+  _ExpenseAnalytics({
+    required this.total,
+    required this.byCategory,
+    required this.byDay,
+  });
 }

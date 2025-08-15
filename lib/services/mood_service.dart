@@ -1,17 +1,14 @@
-import 'package:hive/hive.dart';
 import '../models/mood.dart';
+import '../main.dart';
 
 class MoodService {
-  final Box<Mood> _moodBox = Hive.box<Mood>('moods');
+  Future<Mood?> getByDate(DateTime date) => dbRepo.getMoodByDate(date);
 
-  List<Mood> get moods => _moodBox.values.toList();
+  Future<Mood> upsert({
+    required DateTime date,
+    required String emoji,
+    String note = '',
+  }) => dbRepo.upsertMood(date: date, emoji: emoji, note: note);
 
-  void addMood(String emoji, String note) {
-    final mood = Mood(
-      date: DateTime.now(),
-      emoji: emoji,
-      note: note,
-    );
-    _moodBox.add(mood); // сохраняем в Hive
-  }
+  Future<List<Mood>> fetch({int limit = 30}) => dbRepo.fetchMoods(limit: limit);
 }
