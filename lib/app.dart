@@ -7,6 +7,8 @@ import 'screens/welcome_screen.dart';
 import 'screens/onboarding_questionnaire_screen.dart';
 import 'screens/settings_screen.dart' as screens;
 import 'services/user_service.dart';
+import 'screens/expenses_screen.dart';
+import 'screens/budget_setup_screen.dart';
 
 class VitaApp extends StatefulWidget {
   const VitaApp({super.key});
@@ -120,6 +122,8 @@ class _VitaAppState extends State<VitaApp> {
         '/welcome': (_) => const WelcomeScreen(),
         '/onboarding': (_) => const OnboardingQuestionnaireScreen(),
         '/settings': (_) => const screens.SettingsScreen(),
+        '/expenses': (_) => const ExpensesScreen(),   
+        '/budget': (_) => const BudgetSetupScreen(), 
       },
       home: isLoggedIn
           ? (hasCompleted ? const HomeScreen() : const OnboardingQuestionnaireScreen())

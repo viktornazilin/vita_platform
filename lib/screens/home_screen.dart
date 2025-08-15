@@ -32,10 +32,11 @@ class HomeScreen extends StatelessWidget {
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
+  static final PageStorageBucket _bucket = PageStorageBucket(); // <- вынесли сюда
+
   @override
   Widget build(BuildContext context) {
     final model = context.watch<HomeModel>();
-    final bucket = PageStorageBucket(); // сохраняет скролл‑позиции табов
 
     return Scaffold(
       extendBody: true,
@@ -45,7 +46,7 @@ class _HomeView extends StatelessWidget {
           transitionBuilder: (child, animation) =>
               FadeTransition(opacity: animation, child: child),
           child: PageStorage(
-            bucket: bucket,
+            bucket: _bucket, // <- используем статический bucket
             child: IndexedStack(
               key: ValueKey(model.selectedIndex),
               index: model.selectedIndex,
