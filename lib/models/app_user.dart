@@ -1,8 +1,6 @@
 import 'package:hive/hive.dart';
 import 'life_block.dart'; // добавь, если используешь LifeBlock
 
-part 'app_user.g.dart';
-
 @HiveType(typeId: 4)
 class AppUser extends HiveObject {
   @HiveField(0)
