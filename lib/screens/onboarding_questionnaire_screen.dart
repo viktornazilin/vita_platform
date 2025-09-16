@@ -5,8 +5,17 @@ import '../models/onboarding_questionnaire_model.dart';
 import '../services/user_service.dart';
 
 class OnboardingQuestionnaireScreen extends StatelessWidget {
-  final VoidCallback? onCompleted; // можно не передавать: по умолчанию уйдёт на /login
-  const OnboardingQuestionnaireScreen({super.key, this.onCompleted});
+  /// Опциональный колбэк — если передан, он выполнится вместо дефолтной навигации.
+  final VoidCallback? onCompleted;
+
+  /// ВАЖНО: передаём сюда ТОТ ЖЕ инстанс, что создаётся в VitaApp.
+  final UserService userService;
+
+  const OnboardingQuestionnaireScreen({
+    super.key,
+    this.onCompleted,
+    required this.userService,
+  });
 
   static const prioritiesOptions = [
     'Здоровье', 'Карьера', 'Деньги', 'Семья',
@@ -16,7 +25,7 @@ class OnboardingQuestionnaireScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => OnboardingQuestionnaireModel(service: UserService()),
+      create: (_) => OnboardingQuestionnaireModel(service: userService),
       child: _QuestionnaireScaffold(onCompleted: onCompleted),
     );
   }
@@ -58,8 +67,12 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
 
   void _goNext(OnboardingQuestionnaireModel m, int stepsLen) {
     if (m.currentStep < stepsLen - 1) {
-      _pageController.nextPage(duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
-      m.nextStep();
+      // только листаем; индекс шага обновится в onPageChanged
+      _pageController.animateToPage(
+        m.currentStep + 1,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
     } else {
       _submit(m);
     }
@@ -67,12 +80,19 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
 
   void _goPrev(OnboardingQuestionnaireModel m) {
     if (m.currentStep > 0) {
-      _pageController.previousPage(duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
-      m.prevStep();
+      // только листаем; индекс шага обновится в onPageChanged
+      _pageController.animateToPage(
+        m.currentStep - 1,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
   Future<void> _submit(OnboardingQuestionnaireModel m) async {
+    // На всякий случай: блокируем двойные тапы
+    if (m.isLoading) return;
+
     final ok = await m.submit();
     if (!mounted) return;
 
@@ -80,9 +100,16 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
       if (widget.onCompleted != null) {
         widget.onCompleted!.call();
       } else {
-        // По требованию: после опросника уходим на экран логина
-        Navigator.pushReplacementNamed(context, '/login');
+        // Дефолт: после опроса уходим на /login и чистим стек
+        Navigator.of(context, rootNavigator: true)
+            .pushNamedAndRemoveUntil('/login', (route) => false);
       }
+    } else {
+      // Покажем ошибку, если она есть
+      final msg = m.errorText ?? 'Не удалось сохранить ответы';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg)),
+      );
     }
   }
 
@@ -91,7 +118,20 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
     final m = context.watch<OnboardingQuestionnaireModel>();
     final steps = _buildSteps(m);
     final stepsLen = steps.length;
-    final progress = (m.currentStep + 1) / stepsLen;
+
+    // Страховка на случай, если из-за динамики шагов текущий индекс стал вне диапазона
+    if (stepsLen > 0 && m.currentStep > stepsLen - 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final safe = stepsLen - 1;
+        _pageController.jumpToPage(safe);
+        // аккуратно синхронизируем индикатор
+        m.currentStep = safe;
+        m.notifyListeners();
+      });
+    }
+
+    final progress = stepsLen == 0 ? 0.0 : (m.currentStep + 1) / stepsLen;
 
     return Scaffold(
       appBar: AppBar(
@@ -104,14 +144,27 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
           Expanded(
             child: PageView(
               controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
+              // РАЗРЕШАЕМ свайпы по страницам
+              physics: const PageScrollPhysics(), // было NeverScrollableScrollPhysics
+              // СИНХРОНИЗИРУЕМ currentStep и автосейв с моделью
+              onPageChanged: (i) {
+                // дергаем логику модели, чтобы сохранить автосейвы/состояние
+                if (i > m.currentStep) {
+                  m.nextStep(maxIndex: stepsLen - 1);
+                } else if (i < m.currentStep) {
+                  m.prevStep();
+                }
+              },
               children: steps,
             ),
           ),
           if (m.errorText != null)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text(m.errorText!, style: const TextStyle(color: Colors.red)),
+              child: Text(
+                m.errorText!,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -173,15 +226,21 @@ class _StepScaffold extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(title,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               if (subtitle != null) ...[
                 const SizedBox(height: 6),
                 Text(
                   subtitle!,
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.black54,
+                  ),
                 ),
               ],
               const SizedBox(height: 16),
@@ -191,7 +250,9 @@ class _StepScaffold extends StatelessWidget {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 560),
                       child: Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 2,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -313,7 +374,9 @@ class _StepEnergy extends StatelessWidget {
         children: [
           Slider(
             value: m.energy.toDouble(),
-            min: 0, max: 10, divisions: 10,
+            min: 0,
+            max: 10,
+            divisions: 10,
             label: '${m.energy}',
             onChanged: (v) => m.setEnergy(v),
           ),
@@ -371,7 +434,9 @@ class _StepFinance extends StatelessWidget {
         children: [
           Slider(
             value: m.finance.toDouble(),
-            min: 1, max: 5, divisions: 4,
+            min: 1,
+            max: 5,
+            divisions: 4,
             label: '${m.finance}',
             onChanged: (v) => m.setFinance(v),
           ),
@@ -395,7 +460,8 @@ class _StepPriorities extends StatelessWidget {
       subtitle: 'Выбери до трёх',
       child: Wrap(
         alignment: WrapAlignment.center,
-        spacing: 8, runSpacing: 8,
+        spacing: 8,
+        runSpacing: 8,
         children: OnboardingQuestionnaireScreen.prioritiesOptions.map((p) {
           final selected = m.selectedPriorities.contains(p);
           return FilterChip(
@@ -426,8 +492,10 @@ class _StepBlockDreamsGoalsState extends State<_StepBlockDreamsGoals> {
   void initState() {
     super.initState();
     final m = context.read<OnboardingQuestionnaireModel>();
-    _dreamsCtrl = TextEditingController(text: m.dreamsByBlock[widget.block.name] ?? '');
-    _goalsCtrl  = TextEditingController(text: m.goalsByBlock[widget.block.name] ?? '');
+    _dreamsCtrl =
+        TextEditingController(text: m.dreamsByBlock[widget.block.name] ?? '');
+    _goalsCtrl =
+        TextEditingController(text: m.goalsByBlock[widget.block.name] ?? '');
   }
 
   @override

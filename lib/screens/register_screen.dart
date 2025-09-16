@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/register_model.dart';
+import '../services/user_service.dart'; // <-- добавили
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,12 +22,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // Если пользователь прошел Google OAuth, ведём на онбординг
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    // После Google OAuth/любой авторизации решаем маршрут по флагам профиля
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final event = data.event;
       final session = data.session;
       if (event == AuthChangeEvent.signedIn && session != null && mounted) {
-        Navigator.pushReplacementNamed(context, '/onboarding');
+        await _routeAfterAuth();
       }
     });
   }
@@ -41,6 +42,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  Future<void> _routeAfterAuth() async {
+    final userService = UserService();        // singleton
+    await userService.refreshCurrentUser();   // подтянет профиль и СИНКНЕТ гостевой драфт
+    if (!mounted) return;
+
+    // 1) Эпичный пролог
+    if (!userService.hasSeenEpicIntro) {
+      Navigator.pushNamedAndRemoveUntil(context, '/intro', (_) => false);
+      return;
+    }
+
+    // 2) Архетип
+    final hasArchetype =
+        (userService.selectedArchetype != null && userService.selectedArchetype!.isNotEmpty);
+    if (!hasArchetype) {
+      Navigator.pushNamedAndRemoveUntil(context, '/archetype', (_) => false);
+      return;
+    }
+
+    // 3) Опросник
+    if (userService.hasCompletedQuestionnaire) {
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+    } else {
+      Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
+    }
+  }
+
   Future<void> _onRegister() async {
     final model = context.read<RegisterModel>();
     final success = await model.register(
@@ -50,13 +78,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       confirmPassword: _confirmPasswordCtrl.text.trim(),
     );
     if (success && mounted) {
-      Navigator.pushReplacementNamed(context, '/onboarding');
+      await _routeAfterAuth(); // <-- вместо прямого '/onboarding'
     }
   }
 
   Future<void> _registerWithGoogle() async {
     await context.read<RegisterModel>().registerWithGoogle();
-    // переход произойдет в слушателе onAuthStateChange
+    // переход выполнит _routeAfterAuth() из onAuthStateChange
   }
 
   @override
@@ -136,7 +164,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ]),
                       const SizedBox(height: 12),
 
-                      // Кнопка регистрации через Google
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(

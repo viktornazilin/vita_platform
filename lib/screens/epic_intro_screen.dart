@@ -80,7 +80,7 @@ class EpicIntroScreen extends StatelessWidget {
                       await userService.markEpicIntroSeen(); // всё равно отмечаем
                       // Пропустить к архетипу
                       // ignore: use_build_context_synchronously
-                      Navigator.of(context).pushReplacementNamed('/archetype');
+                      Navigator.pushReplacementNamed(context, '/login');
                     },
                     child: const Text('Пропустить пролог'),
                   ),

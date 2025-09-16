@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_web_plugins/url_strategy.dart'; // ⬅️ добавили
 
 import 'secrets.dart';
 import 'app.dart';
@@ -10,6 +11,9 @@ late final DbRepo dbRepo;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ⬅️ важно вызвать до runApp (на mobile — просто no-op)
+  usePathUrlStrategy();
 
   await Supabase.initialize(
     url: supabaseUrl,
