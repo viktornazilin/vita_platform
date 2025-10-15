@@ -122,7 +122,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                       _FadeUp(
                         delayMs: 120,
                         child: Text(
-                          'Каждый день ты расходуешь свои ресурсы.\nПора управлять ими как герой.',
+                          'Каждый день ты расходуешь свои ресурсы.\nПора управлять ими',
                           textAlign: TextAlign.center,
                           style: subtitleStyle,
                         ),
@@ -180,7 +180,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                           ),
                                           onPressed: () => _skip(context),
-                                          child: Text(phone ? 'Позже' : 'Войти позже'),
+                                          child: Text(phone ? 'Позже' : 'Войти в аккаунт'),
                                         ),
                                       ),
                                     ],

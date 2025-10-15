@@ -1,3 +1,5 @@
+// lib/widgets/timeline_row.dart
+import 'dart:ui'; // для FontFeature
 import 'package:flutter/material.dart';
 import '../models/goal.dart';
 import 'goal_cell.dart';
@@ -21,8 +23,13 @@ class TimelineRow extends StatelessWidget {
     required this.onEdit,
   });
 
-  static const double _railWidth = 84; // шире, чтобы уместить бейдж времени слева
+  // ширина левой колонки (время + зазор + круг)
+  static const double _railWidth = 100; // было 84
   static const double _dotRadius = 14;
+
+  // фиксированная ширина под бейдж времени и зазор до кружка
+  static const double _timeBadgeWidth = 58; // под "HH:mm"
+  static const double _timeToDotGap = 8;
 
   @override
   Widget build(BuildContext context) {
@@ -60,73 +67,84 @@ class TimelineRow extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Колонка с пунктиром и кружком
-                    Column(
-                      children: [
-                        if (index != 0)
-                          Expanded(
-                            child: Center(child: DashedLine(color: railColor)),
-                          )
-                        else
-                          const SizedBox(height: 12),
+                    // Сдвигаем рейку (пунктир + круг) вправо, оставив место под время
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: _timeBadgeWidth + _timeToDotGap,
+                      ),
+                      child: Column(
+                        children: [
+                          if (index != 0)
+                            Expanded(
+                              child: Center(child: DashedLine(color: railColor)),
+                            )
+                          else
+                            const SizedBox(height: 12),
 
-                        // Кружок: пульс при выполнении + плавная смена стиля
-                        GestureDetector(
-                          onTap: onToggle,
-                          child: AnimatedScale(
-                            scale: goal.isCompleted ? 1.08 : 1.0,
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOutBack,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOut,
-                              width: _dotRadius * 2,
-                              height: _dotRadius * 2,
-                              decoration: BoxDecoration(
-                                color: goal.isCompleted
-                                    ? primary
-                                    : theme.colorScheme.surface,
-                                shape: BoxShape.circle,
-                                border: Border.all(
+                          // Кружок: пульс при выполнении + плавная смена стиля
+                          GestureDetector(
+                            onTap: onToggle,
+                            child: AnimatedScale(
+                              scale: goal.isCompleted ? 1.08 : 1.0,
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeOutBack,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOut,
+                                width: _dotRadius * 2,
+                                height: _dotRadius * 2,
+                                decoration: BoxDecoration(
                                   color: goal.isCompleted
                                       ? primary
-                                      : theme.colorScheme.outline,
-                                  width: goal.isCompleted ? 0 : 2,
+                                      : theme.colorScheme.surface,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: goal.isCompleted
+                                        ? primary
+                                        : theme.colorScheme.outline,
+                                    width: goal.isCompleted ? 0 : 2,
+                                  ),
+                                  boxShadow: goal.isCompleted
+                                      ? [
+                                          BoxShadow(
+                                            color: primary.withOpacity(0.25),
+                                            blurRadius: 10,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
-                                boxShadow: goal.isCompleted
-                                    ? [
-                                        BoxShadow(
-                                          color: primary.withOpacity(0.25),
-                                          blurRadius: 10,
-                                          spreadRadius: 1,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 160),
-                                child: goal.isCompleted
-                                    ? const Icon(Icons.check,
-                                        size: 16, color: Colors.white)
-                                    : const SizedBox(),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 160),
+                                  child: goal.isCompleted
+                                      ? const Icon(Icons.check,
+                                          size: 16, color: Colors.white)
+                                      : const SizedBox(),
+                                ),
                               ),
                             ),
                           ),
-                        ),
 
-                        if (index != total - 1)
-                          Expanded(
-                            child: Center(child: DashedLine(color: railColor)),
-                          )
-                        else
-                          const SizedBox(height: 12),
-                      ],
+                          if (index != total - 1)
+                            Expanded(
+                              child: Center(child: DashedLine(color: railColor)),
+                            )
+                          else
+                            const SizedBox(height: 12),
+                        ],
+                      ),
                     ),
 
-                    // Бейдж времени — слева от кружка, по центру по вертикали
+                    // Бейдж времени — фикс-ширина слева, по центру по вертикали
                     Positioned(
                       left: 0,
-                      child: _TimeBadge(text: _fmtHHmm(goal.startTime)),
+                      child: SizedBox(
+                        width: _timeBadgeWidth,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _TimeBadge(text: _fmtHHmm(goal.startTime)),
+                        ),
+                      ),
                     ),
                   ],
                 ),

@@ -5,6 +5,7 @@ import '../main.dart'; // dbRepo
 import '../models/profile_model.dart';
 import '../widgets/xp_progress_bar.dart';
 import '../widgets/profile_field_card.dart';
+import '../controllers/theme_controller.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -91,7 +92,6 @@ class _ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<ProfileModel>();
-    final scheme = Theme.of(context).colorScheme;
 
     // показать ошибку через Snackbar (однократно на ререндер)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -147,6 +147,19 @@ class _ProfileView extends StatelessWidget {
             label: 'Пролог пройден',
             value: model.hasSeenIntro ? 'Да' : 'Нет',
           ),
+
+          const SizedBox(height: 24),
+
+          // Оформление (цвет и режим темы)
+          Text(
+            'Оформление',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          const _ThemeSection(),
 
           const SizedBox(height: 16),
           OutlinedButton.icon(
@@ -370,5 +383,86 @@ class _ProfileView extends StatelessWidget {
         ),
       );
     }).toList();
+  }
+}
+
+class _ThemeSection extends StatelessWidget {
+  const _ThemeSection();
+
+  static const _swatches = <Color>[
+    Color(0xFF6750A4), // фиолетовый
+    Color(0xFF0061A4), // синий
+    Color(0xFF006E1C), // зелёный
+    Color(0xFF8B5000), // янтарный
+    Color(0xFF7D5260), // розово-коричневый
+    Color(0xFFB00020), // красный
+    Color(0xFF005457), // бирюзовый
+    Color(0xFF4E342E), // кофейный
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeController>();
+    final cs = Theme.of(context).colorScheme;
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Цвет приложения', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _swatches.map((c) {
+                final selected = theme.seedColor.value == c.value;
+                return InkWell(
+                  onTap: () => context.read<ThemeController>().setSeedColor(c),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: c,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: selected ? cs.primary : cs.outlineVariant,
+                        width: selected ? 2.5 : 1,
+                      ),
+                      boxShadow: [
+                        if (selected)
+                          BoxShadow(
+                            color: cs.primary.withOpacity(0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                      ],
+                    ),
+                    child: selected
+                        ? const Icon(Icons.check, color: Colors.white)
+                        : null,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            const Text('Режим', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(value: ThemeMode.light, label: Text('Светлая'), icon: Icon(Icons.light_mode)),
+                ButtonSegment(value: ThemeMode.dark, label: Text('Тёмная'), icon: Icon(Icons.dark_mode)),
+                ButtonSegment(value: ThemeMode.system, label: Text('Системная'), icon: Icon(Icons.phone_android)),
+              ],
+              selected: {theme.mode},
+              onSelectionChanged: (v) => context.read<ThemeController>().setMode(v.first),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
