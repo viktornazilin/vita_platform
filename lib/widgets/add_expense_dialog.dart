@@ -109,7 +109,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
+                    initialValue: _selectedCategoryId,
                     items: widget.categories
                         .map((c) => DropdownMenuItem(
                             value: c.id, child: Text(c.name)))

@@ -1,4 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/base_repo.dart';
 import 'finance_repo_mixin.dart';

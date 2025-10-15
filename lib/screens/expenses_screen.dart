@@ -35,13 +35,13 @@ class _ExpensesView extends StatelessWidget {
   }
 
   Future<void> _toggleCommit(BuildContext context) async {
-  final m = context.read<BudgetModel>();
-  final wasCommitted = m.monthCommitted;
-  await m.toggleJarAllocationForMonth();
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(wasCommitted ? 'Фиксация отменена' : 'Распределение зафиксировано')),
-  );
+    final m = context.read<BudgetModel>();
+    final wasCommitted = m.monthCommitted;
+    await m.toggleJarAllocationForMonth();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(wasCommitted ? 'Фиксация отменена' : 'Распределение зафиксировано')),
+    );
   }
 
   Future<void> _addExpense(BuildContext context) async {
@@ -80,27 +80,21 @@ class _ExpensesView extends StatelessWidget {
     }
   }
 
-  Future<void> _commit(BuildContext context) async {
-    final m = context.read<BudgetModel>();
-    await m.commitJarAllocationForMonth();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Распределение зафиксировано')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final m = context.watch<BudgetModel>();
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     final loading = m.loading;
     final income = m.incomeMonth;
     final expense = m.expenseMonth;
     final free = (income - expense).clamp(0, double.infinity).toDouble();
 
-    final committed = m.monthCommitted;
-    final hasJars = m.jars.isNotEmpty;
-    final canCommit = !committed && hasJars && m.freeCashFlowMonth > 0;
+    // адаптивные поля для центрирования контента на широких экранах
+    final w = MediaQuery.of(context).size.width;
+    const maxContentW = 900.0;
+    final sidePad = w > maxContentW ? (w - maxContentW) / 2 : 0.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -111,14 +105,12 @@ class _ExpensesView extends StatelessWidget {
             onPressed: () => _pickDate(context),
           ),
           IconButton(
-  icon: Icon(m.monthCommitted ? Icons.undo : Icons.savings_outlined),
-  tooltip: m.monthCommitted ? 'Отменить фиксацию' : 'Зафиксировать распределение по копилкам',
-  onPressed: m.monthCommitted
-      ? () => _toggleCommit(context)              // всегда можно отменить
-      : (m.jars.isNotEmpty && m.freeCashFlowMonth > 0
-          ? () => _toggleCommit(context)          // можно зафиксировать
-          : null),
-),
+            icon: Icon(m.monthCommitted ? Icons.undo : Icons.savings_outlined),
+            tooltip: m.monthCommitted ? 'Отменить фиксацию' : 'Зафиксировать распределение по копилкам',
+            onPressed: (m.jars.isNotEmpty && (m.monthCommitted || m.freeCashFlowMonth > 0))
+                ? () => _toggleCommit(context)
+                : null,
+          ),
           IconButton(
             icon: const Icon(Icons.tune),
             tooltip: 'Настройки копилок и категорий',
@@ -132,49 +124,51 @@ class _ExpensesView extends StatelessWidget {
               onRefresh: () => m.load(),
               child: CustomScrollView(
                 slivers: [
-                  // ===== Верхний график "Доходы / Расходы / Свободно" =====
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  // ===== Верхняя сводка доход/расход/свободно =====
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16 + sidePad, 16, 16 + sidePad, 8),
+                    sliver: SliverToBoxAdapter(
                       child: _BudgetTopCard(income: income, expense: expense, free: free),
                     ),
                   ),
 
                   // ===== Сумма за выбранный день =====
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 16 + sidePad, vertical: 8),
+                    sliver: SliverToBoxAdapter(
                       child: Text(
                         "Сумма за день: ${m.dayTx.where((t) => t.kind == 'expense').fold<double>(0.0, (s, t) => s + t.amount).toStringAsFixed(2)} ₽",
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: tt.titleMedium,
                       ),
                     ),
                   ),
 
                   // ===== Список операций за день (с удалением свайпом) =====
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, i) {
-                        if (m.dayTx.isEmpty) {
-                          return const Padding(
-                            padding: EdgeInsets.only(top: 40),
-                            child: Center(child: Text('Нет операций за этот день')),
+                  if (m.dayTx.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16 + sidePad),
+                        child: const Center(child: Text('Нет операций за этот день')),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 16 + sidePad),
+                      sliver: SliverList.separated(
+                        itemCount: m.dayTx.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, i) {
+                          final t = m.dayTx[i];
+                          final catList = t.kind == 'expense' ? m.expenseCategories : m.incomeCategories;
+                          final cat = catList.firstWhere(
+                            (c) => c.id == t.categoryId,
+                            orElse: () => dm.Category(id: '', name: '—', kind: t.kind),
                           );
-                        }
+                          final color = t.kind == 'expense' ? Colors.red : Colors.green;
 
-                        final t = m.dayTx[i];
-                        final catList =
-                            t.kind == 'expense' ? m.expenseCategories : m.incomeCategories;
-                        final cat = catList.firstWhere(
-                          (c) => c.id == t.categoryId,
-                          orElse: () => dm.Category(id: '', name: '—', kind: t.kind),
-                        );
-                        final color = t.kind == 'expense' ? Colors.red : Colors.green;
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          child: Dismissible(
+                          return Dismissible(
                             key: ValueKey(t.id),
                             direction: DismissDirection.endToStart,
                             background: Container(
@@ -194,7 +188,7 @@ class _ExpensesView extends StatelessWidget {
                                           onPressed: () => Navigator.pop(context, false),
                                           child: const Text('Отмена'),
                                         ),
-                                        ElevatedButton(
+                                        FilledButton.tonal(
                                           onPressed: () => Navigator.pop(context, true),
                                           child: const Text('Удалить'),
                                         ),
@@ -203,145 +197,146 @@ class _ExpensesView extends StatelessWidget {
                                   ) ??
                                   false;
                             },
-                            onDismissed: (_) =>
-                                context.read<BudgetModel>().deleteTransaction(t.id),
+                            onDismissed: (_) => context.read<BudgetModel>().deleteTransaction(t.id),
                             child: Card(
                               child: ListTile(
                                 leading: Icon(
-                                  t.kind == 'expense'
-                                      ? Icons.remove_circle
-                                      : Icons.add_circle,
+                                  t.kind == 'expense' ? Icons.remove_circle : Icons.add_circle,
                                   color: color,
                                 ),
                                 title: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} ₽"),
                                 subtitle: Text(t.note ?? ''),
                                 trailing: Text(
                                   "${t.ts.hour.toString().padLeft(2, '0')}:${t.ts.minute.toString().padLeft(2, '0')}",
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                  style: tt.bodySmall,
                                 ),
                                 onTap: () async {
-  final action = await showModalBottomSheet<String>(
-    context: context,
-    builder: (ctx) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(Icons.edit),
-          title: const Text('Редактировать'),
-          onTap: () => Navigator.pop(ctx, 'edit'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.delete),
-          title: const Text('Удалить'),
-          onTap: () => Navigator.pop(ctx, 'delete'),
-        ),
-      ],
-    ),
-  );
+                                  final action = await showModalBottomSheet<String>(
+                                    context: context,
+                                    builder: (ctx) => SafeArea(
+                                      top: false,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          ListTile(
+                                            leading: const Icon(Icons.edit),
+                                            title: const Text('Редактировать'),
+                                            onTap: () => Navigator.pop(ctx, 'edit'),
+                                          ),
+                                          ListTile(
+                                            leading: const Icon(Icons.delete),
+                                            title: const Text('Удалить'),
+                                            onTap: () => Navigator.pop(ctx, 'delete'),
+                                          ),
+                                          const SizedBox(height: 8),
+                                        ],
+                                      ),
+                                    ),
+                                  );
 
-  if (action == 'delete') {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Удалить операцию?'),
-        content: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} ₽"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      context.read<BudgetModel>().deleteTransaction(t.id);
-    }
-  } else if (action == 'edit') {
-    if (t.kind == 'expense') {
-      final res = await showDialog<AddExpenseResult>(
-        context: context,
-        builder: (_) => AddExpenseDialog(
-          categories: m.expenseCategories,
-          initialAmount: t.amount,
-          initialCategoryId: t.categoryId,
-          initialNote: t.note,
-          onCreateCategory: (name) => m.createCategory(name, 'expense'),
-        ),
-      );
-      if (res != null) {
-        await m.deleteTransaction(t.id);
-        await m.addExpense(amount: res.amount, categoryId: res.categoryId, note: res.note);
-      }
-    } else {
-      final res = await showDialog<AddIncomeResult>(
-        context: context,
-        builder: (_) => AddIncomeDialog(
-          categories: m.incomeCategories,
-          initialAmount: t.amount,
-          initialCategoryId: t.categoryId,
-          initialNote: t.note,
-          onCreateCategory: (name) => m.createCategory(name, 'income'),
-        ),
-      );
-      if (res != null) {
-        await m.deleteTransaction(t.id);
-        await m.addIncome(amount: res.amount, categoryId: res.categoryId, note: res.note);
-      }
-    }
-  }
-},
-
+                                  if (action == 'delete') {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        title: const Text('Удалить операцию?'),
+                                        content: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} ₽"),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+                                          FilledButton.tonal(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      // ignore: use_build_context_synchronously
+                                      context.read<BudgetModel>().deleteTransaction(t.id);
+                                    }
+                                  } else if (action == 'edit') {
+                                    if (t.kind == 'expense') {
+                                      final res = await showDialog<AddExpenseResult>(
+                                        context: context,
+                                        builder: (_) => AddExpenseDialog(
+                                          categories: m.expenseCategories,
+                                          initialAmount: t.amount,
+                                          initialCategoryId: t.categoryId,
+                                          initialNote: t.note,
+                                          onCreateCategory: (name) => m.createCategory(name, 'expense'),
+                                        ),
+                                      );
+                                      if (res != null) {
+                                        await m.deleteTransaction(t.id);
+                                        await m.addExpense(amount: res.amount, categoryId: res.categoryId, note: res.note);
+                                      }
+                                    } else {
+                                      final res = await showDialog<AddIncomeResult>(
+                                        context: context,
+                                        builder: (_) => AddIncomeDialog(
+                                          categories: m.incomeCategories,
+                                          initialAmount: t.amount,
+                                          initialCategoryId: t.categoryId,
+                                          initialNote: t.note,
+                                          onCreateCategory: (name) => m.createCategory(name, 'income'),
+                                        ),
+                                      );
+                                      if (res != null) {
+                                        await m.deleteTransaction(t.id);
+                                        await m.addIncome(amount: res.amount, categoryId: res.categoryId, note: res.note);
+                                      }
+                                    }
+                                  }
+                                },
                               ),
                             ),
-                          ),
-                        );
-                      },
-                      childCount: m.dayTx.isEmpty ? 1 : m.dayTx.length,
-                    ),
-                  ),
-
-                  // ===== «Банки» по категориям расходов за месяц =====
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text(
-                        'Категории расходов за месяц',
-                        style: Theme.of(context).textTheme.titleMedium,
+                          );
+                        },
                       ),
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _CategoryJarsGrid(data: m.expenseBreakdownMonth),
-                  ),
 
-                  // ===== Копилки =====
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Копилки', style: Theme.of(context).textTheme.titleMedium),
-                          if (m.monthCommitted)
-  TextButton.icon(
-    onPressed: () => _toggleCommit(context),
-    icon: const Icon(Icons.undo),
-    label: const Text('Отменить фиксацию'),
-  )
-else if (m.jars.isNotEmpty && m.freeCashFlowMonth > 0)
-  TextButton(
-    onPressed: () => _toggleCommit(context),
-    child: const Text('Зафиксировать'),
-  ),
-
-                        ],
+                    // ===== «Банки» по категориям расходов за месяц =====
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(16 + sidePad, 16, 16 + sidePad, 8),
+                      sliver: SliverToBoxAdapter(
+                        child: Text('Категории расходов за месяц', style: tt.titleMedium),
                       ),
                     ),
-                  ),
-                  SliverToBoxAdapter(child: _SavingsJarsGrid(jars: m.jars)),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
+                      sliver: SliverToBoxAdapter(
+                        child: _CategoryJarsGrid(data: m.expenseBreakdownMonth),
+                      ),
+                    ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                ],
+                    // ===== Копилки =====
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(16 + sidePad, 16, 16 + sidePad, 8),
+                      sliver: SliverToBoxAdapter(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Копилки', style: tt.titleMedium),
+                            if (m.monthCommitted)
+                              TextButton.icon(
+                                onPressed: () => _toggleCommit(context),
+                                icon: const Icon(Icons.undo),
+                                label: const Text('Отменить фиксацию'),
+                              )
+                            else if (m.jars.isNotEmpty && m.freeCashFlowMonth > 0)
+                              TextButton(
+                                onPressed: () => _toggleCommit(context),
+                                child: const Text('Зафиксировать'),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
+                      sliver: SliverToBoxAdapter(child: _SavingsJarsGrid(jars: m.jars)),
+                    ),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                  ],
+                ),
               ),
-            ),
 
       // ===== FAB: добавить доход / расход =====
       floatingActionButton: _FabMenu(
@@ -352,14 +347,10 @@ else if (m.jars.isNotEmpty && m.freeCashFlowMonth > 0)
   }
 }
 
-/// Верхняя карточка со «стековой» полосой
+/// Верхняя карточка со «стековой» полосой (адаптивная)
 class _BudgetTopCard extends StatelessWidget {
   final double income, expense, free;
-  const _BudgetTopCard({
-    required this.income,
-    required this.expense,
-    required this.free,
-  });
+  const _BudgetTopCard({required this.income, required this.expense, required this.free});
 
   @override
   Widget build(BuildContext context) {
@@ -367,69 +358,55 @@ class _BudgetTopCard extends StatelessWidget {
     final expenseW = (expense / totalIncome).clamp(0.0, 1.0);
     final freeW = (free / totalIncome).clamp(0.0, 1.0);
 
+    final w = MediaQuery.of(context).size.width;
+    final barH = w < 400 ? 14.0 : 18.0;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 12,
-              runSpacing: 6,
-              children: [
-                _legendDot(color: Colors.green, text: "Доходы ${income.toStringAsFixed(2)} ₽"),
-                _legendDot(color: Colors.red, text: "Расходы ${expense.toStringAsFixed(2)} ₽"),
-                _legendDot(color: Colors.blue, text: "Свободно ${free.toStringAsFixed(2)} ₽"),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
-                height: 18,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: (expenseW * 1000).round(),
-                      child: Container(color: Colors.red),
-                    ),
-                    Expanded(
-                      flex: (freeW * 1000).round(),
-                      child: Container(color: Colors.blue),
-                    ),
-                    Expanded(
-                      flex: (1000 - (expenseW * 1000).round() - (freeW * 1000).round())
-                          .clamp(0, 1000),
-                      child: Container(color: Colors.grey.shade300),
-                    ),
-                  ],
-                ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              _legendDot(color: Colors.green, text: "Доходы ${income.toStringAsFixed(2)} ₽"),
+              _legendDot(color: Colors.red, text: "Расходы ${expense.toStringAsFixed(2)} ₽"),
+              _legendDot(color: Colors.blue, text: "Свободно ${free.toStringAsFixed(2)} ₽"),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              height: barH,
+              child: Row(
+                children: [
+                  Expanded(flex: (expenseW * 1000).round(), child: Container(color: Colors.red)),
+                  Expanded(flex: (freeW * 1000).round(), child: Container(color: Colors.blue)),
+                  Expanded(
+                    flex: (1000 - (expenseW * 1000).round() - (freeW * 1000).round()).clamp(0, 1000),
+                    child: Container(color: Colors.grey.shade300),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
 
   Widget _legendDot({required Color color, required String text}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(text),
-      ],
-    );
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 6),
+      Text(text),
+    ]);
   }
 }
 
-/// «Банки» категорий расходов за месяц
+/// «Банки» категорий расходов за месяц — адаптивная сетка
 class _CategoryJarsGrid extends StatelessWidget {
   final Map<dm.Category, double> data;
   const _CategoryJarsGrid({required this.data});
@@ -445,21 +422,38 @@ class _CategoryJarsGrid extends StatelessWidget {
 
     final maxVal = data.values.fold<double>(0, (s, v) => v > s ? v : s);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: data.entries.map((e) {
-          final p = maxVal == 0 ? 0.0 : (e.value / maxVal).clamp(0.0, 1.0);
-          return _JarTile(
-            title: e.key.name,
-            subtitle: "${e.value.toStringAsFixed(0)} ₽",
-            fill: p,
-            color: Colors.orange,
-          );
-        }).toList(),
-      ),
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        final maxW = c.maxWidth;
+        // ширина плитки 150–220, считаем кол-во колонок
+        const minTile = 150.0;
+        const maxTile = 220.0;
+        int cols = (maxW / minTile).floor().clamp(1, 6);
+        double tileW = (maxW / cols).clamp(minTile, maxTile);
+
+        // если получилось больше maxTile — попробуем добавить колонку
+        while (tileW > maxTile && cols < 8) {
+          cols += 1;
+          tileW = (maxW / cols).clamp(minTile, maxTile);
+        }
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: data.entries.map((e) {
+            final p = maxVal == 0 ? 0.0 : (e.value / maxVal).clamp(0.0, 1.0);
+            return SizedBox(
+              width: tileW - 8, // учитывать spacing
+              child: _JarTile(
+                title: e.key.name,
+                subtitle: "${e.value.toStringAsFixed(0)} ₽",
+                fill: p,
+                color: Colors.orange,
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }
@@ -480,53 +474,48 @@ class _JarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 150,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    FractionallySizedBox(
-                      heightFactor: fill,
-                      widthFactor: 1,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.25 + 0.55 * fill),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ],
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: cs.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(
+            width: 64,
+            height: 64,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: cs.outlineVariant),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 4),
-                Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+                FractionallySizedBox(
+                  heightFactor: fill,
+                  widthFactor: 1,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.25 + 0.55 * fill),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
               ],
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(title, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ]),
       ),
     );
   }
@@ -544,26 +533,42 @@ class _SavingsJarsGrid extends StatelessWidget {
         child: Text('Копилок пока нет'),
       );
     }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: jars.map<Widget>((j) {
-          final target = j.targetAmount ?? (j.currentAmount == 0 ? 1 : j.currentAmount * 2);
-          final p = (j.currentAmount / target).clamp(0.0, 1.0);
-          final subtitle = [
-            if (j.targetAmount != null) "цель: ${j.targetAmount!.toStringAsFixed(0)} ₽",
-            "накоплено: ${j.currentAmount.toStringAsFixed(0)} ₽",
-            if (j.percentOfFree > 0) "${j.percentOfFree.toStringAsFixed(0)}% от свободных",
-          ].join(' • ');
-          return _JarTile(title: j.title, subtitle: subtitle, fill: p, color: Colors.blue);
-        }).toList(),
-      ),
+
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        final maxW = c.maxWidth;
+        const minTile = 150.0;
+        const maxTile = 220.0;
+        int cols = (maxW / minTile).floor().clamp(1, 6);
+        double tileW = (maxW / cols).clamp(minTile, maxTile);
+        while (tileW > maxTile && cols < 8) {
+          cols += 1;
+          tileW = (maxW / cols).clamp(minTile, maxTile);
+        }
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: jars.map<Widget>((j) {
+            final target = j.targetAmount ?? (j.currentAmount == 0 ? 1 : j.currentAmount * 2);
+            final p = (j.currentAmount / target).clamp(0.0, 1.0);
+            final subtitle = [
+              if (j.targetAmount != null) "цель: ${j.targetAmount!.toStringAsFixed(0)} ₽",
+              "накоплено: ${j.currentAmount.toStringAsFixed(0)} ₽",
+              if (j.percentOfFree > 0) "${j.percentOfFree.toStringAsFixed(0)}% от свободных",
+            ].join(' • ');
+            return SizedBox(
+              width: tileW - 8,
+              child: _JarTile(title: j.title, subtitle: subtitle, fill: p, color: Colors.blue),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }
 
+/// FAB с меню добавления дохода/расхода
 class _FabMenu extends StatefulWidget {
   final VoidCallback onAddIncome;
   final VoidCallback onAddExpense;
@@ -582,6 +587,8 @@ class _FabMenuState extends State<_FabMenu> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -616,6 +623,8 @@ class _FabMenuState extends State<_FabMenu> {
         ),
         FloatingActionButton(
           heroTag: 'mainFab',
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
           onPressed: () => setState(() => _open = !_open),
           child: Icon(_open ? Icons.close : Icons.add),
         ),

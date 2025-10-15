@@ -340,7 +340,7 @@ class UserService {
     }
 
     // ---- переносим поля анкеты из черновика ----
-    bool _isEmpty(dynamic v) =>
+    bool isEmpty(dynamic v) =>
         v == null ||
         (v is String && v.isEmpty) ||
         (v is List && v.isEmpty) ||
@@ -348,7 +348,7 @@ class UserService {
 
     void putIfEmpty(String col, dynamic value) {
       if (value == null) return;
-      if (_isEmpty(_currentUserData?[col])) updates[col] = value;
+      if (isEmpty(_currentUserData?[col])) updates[col] = value;
     }
 
     final d = _cachedOnboardingDraft;

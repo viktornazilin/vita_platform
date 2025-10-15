@@ -106,7 +106,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _catId,
+                    initialValue: _catId,
                     items: widget.categories
                         .map((c) =>
                             DropdownMenuItem(value: c.id, child: Text(c.name)))

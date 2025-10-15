@@ -113,7 +113,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
             if (widget.fixedLifeBlock == null) ...[
               DropdownButtonFormField<String>(
-                value: _lifeBlock,
+                initialValue: _lifeBlock,
                 decoration: const InputDecoration(labelText: 'Сфера жизни'),
                 items: (widget.availableBlocks.isEmpty ? <String>['health'] : widget.availableBlocks)
                     .map((b) => DropdownMenuItem(value: b, child: Text(b)))
