@@ -2,8 +2,11 @@ import 'core/base_repo.dart';
 import '../models/mood.dart';
 
 mixin MoodsRepoMixin on BaseRepo {
+  String _isoDateOnly(DateTime d) =>
+      DateTime(d.year, d.month, d.day).toIso8601String();
+
   Future<Mood?> getMoodByDate(DateTime date) async {
-    final isoDate = DateTime(date.year, date.month, date.day).toIso8601String();
+    final isoDate = _isoDateOnly(date);
     final res = await client
         .from('moods')
         .select()
@@ -21,7 +24,7 @@ mixin MoodsRepoMixin on BaseRepo {
   }) async {
     final data = {
       'user_id': uid,
-      'date': DateTime(date.year, date.month, date.day).toIso8601String(),
+      'date': _isoDateOnly(date),
       'emoji': emoji,
       'note': note,
     };
@@ -33,6 +36,15 @@ mixin MoodsRepoMixin on BaseRepo {
     return Mood.fromMap(res);
   }
 
+  Future<void> deleteMoodByDate(DateTime date) async {
+    final isoDate = _isoDateOnly(date);
+    await client
+        .from('moods')
+        .delete()
+        .eq('user_id', uid)
+        .eq('date', isoDate);
+  }
+
   Future<List<Mood>> fetchMoods({int limit = 30}) async {
     final res = await client
         .from('moods')
@@ -40,6 +52,25 @@ mixin MoodsRepoMixin on BaseRepo {
         .eq('user_id', uid)
         .order('date', ascending: false)
         .limit(limit);
-    return (res as List).map((m) => Mood.fromMap(m as Map<String, dynamic>)).toList();
+    return (res as List)
+        .map((m) => Mood.fromMap(m as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Для выборки по календарю: [from; to], включительно
+  Future<List<Mood>> fetchMoodsRange({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final res = await client
+        .from('moods')
+        .select()
+        .eq('user_id', uid)
+        .gte('date', _isoDateOnly(from))
+        .lte('date', _isoDateOnly(to))
+        .order('date', ascending: false);
+    return (res as List)
+        .map((m) => Mood.fromMap(m as Map<String, dynamic>))
+        .toList();
   }
 }
