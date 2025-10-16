@@ -24,44 +24,30 @@ class _ProfileView extends StatelessWidget {
 
   String _humanSleep(String? v) {
     switch (v) {
-      case '4-5':
-        return '4–5 часов';
-      case '6-7':
-        return '6–7 часов';
-      case '8+':
-        return '8+ часов';
-      default:
-        return '—';
+      case '4-5': return '4–5 часов';
+      case '6-7': return '6–7 часов';
+      case '8+':  return '8+ часов';
+      default:    return '—';
     }
   }
 
   String _humanActivity(String? v) {
     switch (v) {
-      case 'daily':
-        return 'Каждый день';
-      case '3-4w':
-        return '3–4 раза/нед.';
-      case 'rare':
-        return 'Иногда';
-      case 'none':
-        return 'Почти нет';
-      default:
-        return '—';
+      case 'daily': return 'Каждый день';
+      case '3-4w':  return '3–4 раза/нед.';
+      case 'rare':  return 'Иногда';
+      case 'none':  return 'Почти нет';
+      default:      return '—';
     }
   }
 
   String _humanStress(String? v) {
     switch (v) {
-      case 'daily':
-        return 'Почти каждый день';
-      case 'sometimes':
-        return 'Иногда';
-      case 'rare':
-        return 'Редко';
-      case 'never':
-        return 'Почти никогда';
-      default:
-        return '—';
+      case 'daily':     return 'Почти каждый день';
+      case 'sometimes': return 'Иногда';
+      case 'rare':      return 'Редко';
+      case 'never':     return 'Почти никогда';
+      default:          return '—';
     }
   }
 
@@ -93,7 +79,7 @@ class _ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final model = context.watch<ProfileModel>();
 
-    // показать ошибку через Snackbar (однократно на ререндер)
+    // показать ошибку через Snackbar (однократно)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final err = model.error;
       if (err != null && ScaffoldMessenger.maybeOf(context) != null) {
@@ -104,7 +90,7 @@ class _ProfileView extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, c) {
         final w = c.maxWidth;
-        final isWide = w >= 960; // брейкпоинт для 2 колонок
+        final isWide = w >= 960;
         final outerPad = EdgeInsets.symmetric(
           horizontal: isWide ? 24 : 16,
           vertical: isWide ? 16 : 12,
@@ -118,15 +104,11 @@ class _ProfileView extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 40,
-                    child: Icon(Icons.person, size: 40),
-                  ),
+                  const CircleAvatar(radius: 40, child: Icon(Icons.person, size: 40)),
                   const SizedBox(height: 16),
                   model.xp != null
                       ? XPProgressBar(xp: model.xp!)
-                      : const Text('XP data not available',
-                          style: TextStyle(color: Colors.grey)),
+                      : const Text('XP data not available', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             ),
@@ -134,30 +116,17 @@ class _ProfileView extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Аккаунт
-          Text(
-            'Аккаунт',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
+          Text('Аккаунт',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           ProfileFieldCard(label: 'Архетип', value: model.archetype ?? '—'),
-          ProfileFieldCard(
-            label: 'Пролог пройден',
-            value: model.hasSeenIntro ? 'Да' : 'Нет',
-          ),
+          ProfileFieldCard(label: 'Пролог пройден', value: model.hasSeenIntro ? 'Да' : 'Нет'),
 
           const SizedBox(height: 24),
 
-          // Оформление (цвет и режим темы)
-          Text(
-            'Оформление',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
+          // Оформление
+          Text('Оформление',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           const _ThemeSection(),
 
@@ -170,12 +139,22 @@ class _ProfileView extends StatelessWidget {
         ];
 
         final rightColumnChildren = <Widget>[
-          Text(
-            'Результаты опросника',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+          // Заголовок + кнопка "Изменить ответы"
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Результаты опросника',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (model.questionnaireCompleted)
+                TextButton.icon(
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Изменить ответы'),
+                  onPressed: () => Navigator.pushNamed(context, '/onboarding'),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
 
@@ -187,8 +166,7 @@ class _ProfileView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Вы ещё не прошли опросник.',
-                        style: TextStyle(color: Colors.grey)),
+                    const Text('Вы ещё не прошли опросник.', style: TextStyle(color: Colors.grey)),
                     const SizedBox(height: 8),
                     FilledButton(
                       onPressed: () => Navigator.pushNamed(context, '/onboarding'),
@@ -202,25 +180,16 @@ class _ProfileView extends StatelessWidget {
             // Метрики
             ProfileFieldCard(label: 'Сон', value: _humanSleep(model.sleep)),
             ProfileFieldCard(label: 'Активность', value: _humanActivity(model.activity)),
-            ProfileFieldCard(
-              label: 'Энергия',
-              value: model.energy != null ? '${model.energy}/10' : '—',
-            ),
-            ProfileFieldCard(
-              label: 'Стресс',
-              value: _humanStress(model.stress),
-            ),
+            ProfileFieldCard(label: 'Энергия', value: model.energy != null ? '${model.energy}/10' : '—'),
+            ProfileFieldCard(label: 'Стресс', value: _humanStress(model.stress)),
             ProfileFieldCard(
               label: 'Финансы',
-              value: model.financeSatisfaction != null
-                  ? '${model.financeSatisfaction}/5'
-                  : '—',
+              value: model.financeSatisfaction != null ? '${model.financeSatisfaction}/5' : '—',
             ),
             const SizedBox(height: 8),
             _chips('Сферы жизни', model.lifeBlocks),
             _chips('Приоритеты', model.priorities),
 
-            // Мечты/цели по сферам
             if (model.dreamsByBlock.isNotEmpty || model.goalsByBlock.isNotEmpty) ...[
               const SizedBox(height: 8),
               Card(
@@ -230,8 +199,7 @@ class _ProfileView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Мечты и цели по сферам',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text('Мечты и цели по сферам', style: TextStyle(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 6),
                       ..._buildDreamsGoals(model),
                     ],
@@ -242,7 +210,7 @@ class _ProfileView extends StatelessWidget {
           ],
         ];
 
-        // ======= МОБИЛЬНЫЙ / УЗКИЙ =======
+        // ======= МОБИЛЬНЫЙ =======
         if (!isWide) {
           return Scaffold(
             appBar: AppBar(
@@ -286,7 +254,7 @@ class _ProfileView extends StatelessWidget {
           );
         }
 
-        // ======= ШИРОКИЙ (планшет/десктоп) — 2 колонки =======
+        // ======= ШИРОКИЙ (скролл добавлен) =======
         return Scaffold(
           appBar: AppBar(
             title: Row(
@@ -308,36 +276,33 @@ class _ProfileView extends StatelessWidget {
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
                   onRefresh: () => context.read<ProfileModel>().load(),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1200),
-                      child: Padding(
-                        padding: outerPad,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // левая колонка
-                            Expanded(
-                              flex: 5,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  ...leftColumnChildren,
-                                ],
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        child: Padding(
+                          padding: outerPad,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [...leftColumnChildren],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            // правая колонка
-                            Expanded(
-                              flex: 7,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  ...rightColumnChildren,
-                                ],
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 7,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [...rightColumnChildren],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -349,15 +314,9 @@ class _ProfileView extends StatelessWidget {
   }
 
   List<Widget> _buildDreamsGoals(ProfileModel m) {
-    // собираем список всех сфер, где есть мечты/цели
-    final keys = <String>{
-      ...m.dreamsByBlock.keys,
-      ...m.goalsByBlock.keys,
-    }.toList()
-      ..sort();
-    if (keys.isEmpty) {
-      return [const Opacity(opacity: .7, child: Text('—'))];
-    }
+    final keys = <String>{...m.dreamsByBlock.keys, ...m.goalsByBlock.keys}.toList()..sort();
+    if (keys.isEmpty) return [const Opacity(opacity: .7, child: Text('—'))];
+
     return keys.map((k) {
       final dreams = m.dreamsByBlock[k];
       final goals = m.goalsByBlock[k];
@@ -368,15 +327,9 @@ class _ProfileView extends StatelessWidget {
           children: [
             Text(k, style: const TextStyle(fontWeight: FontWeight.w600)),
             if ((dreams ?? '').isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text('Мечты: $dreams'),
-              ),
+              Padding(padding: const EdgeInsets.only(top: 2), child: Text('Мечты: $dreams')),
             if ((goals ?? '').isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text('Цели: $goals'),
-              ),
+              Padding(padding: const EdgeInsets.only(top: 2), child: Text('Цели: $goals')),
             if ((dreams ?? '').isEmpty && (goals ?? '').isEmpty)
               const Opacity(opacity: .7, child: Text('—')),
           ],
@@ -428,22 +381,12 @@ class _ThemeSection extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: c,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: selected ? cs.primary : cs.outlineVariant,
-                        width: selected ? 2.5 : 1,
-                      ),
+                      border: Border.all(color: selected ? cs.primary : cs.outlineVariant, width: selected ? 2.5 : 1),
                       boxShadow: [
-                        if (selected)
-                          BoxShadow(
-                            color: cs.primary.withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
+                        if (selected) BoxShadow(color: cs.primary.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3)),
                       ],
                     ),
-                    child: selected
-                        ? const Icon(Icons.check, color: Colors.white)
-                        : null,
+                    child: selected ? const Icon(Icons.check, color: Colors.white) : null,
                   ),
                 );
               }).toList(),

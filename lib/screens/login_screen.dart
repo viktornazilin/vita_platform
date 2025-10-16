@@ -49,7 +49,6 @@ class _LoginViewState extends State<_LoginView> {
   void initState() {
     super.initState();
 
-    // Навигация после входа и обработка ссылки из письма "reset password"
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       if (!mounted) return;
 
@@ -190,6 +189,7 @@ class _LoginViewState extends State<_LoginView> {
   Widget build(BuildContext context) {
     final model = context.watch<LoginModel>();
     final isLoading = model.isLoading || _busy;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: _kOffWhite,
@@ -201,187 +201,202 @@ class _LoginViewState extends State<_LoginView> {
             colors: [_kOffWhite, _kCloud],
           ),
         ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.80),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: _kSky.withOpacity(0.18)),
-                boxShadow: [
-                  BoxShadow(
-                    color: _kSkyDeep.withOpacity(0.08),
-                    blurRadius: 26,
-                    offset: const Offset(0, 10),
-                  )
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ─── Логотип на «родной» плашке (больше) ───────────────
-                      _LogoPlate(
-                        assetPath: 'assets/images/logo.png',
-                        height: 160,                     // ↑ увеличено
-                        borderRadius: 26,
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-                      ),
-                      const SizedBox(height: 18),
-
-                      Text(
-                        'Войдите в аккаунт',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: _kInk,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Email
-                      TextFormField(
-                        controller: _emailCtrl,
-                        focusNode: _emailFocus,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        validator: _validateEmail,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: const Icon(Icons.alternate_email),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        onFieldSubmitted: (_) => _passFocus.requestFocus(),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Пароль
-                      TextFormField(
-                        controller: _passCtrl,
-                        focusNode: _passFocus,
-                        obscureText: _obscure,
-                        textInputAction: TextInputAction.done,
-                        validator: _validatePass,
-                        onFieldSubmitted: (_) => _login(),
-                        decoration: InputDecoration(
-                          labelText: 'Пароль',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            onPressed: () => setState(() => _obscure = !_obscure),
-                            icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                            tooltip: _obscure ? 'Показать пароль' : 'Скрыть пароль',
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                      ),
-
-                      if (model.errorText != null) ...[
-                        const SizedBox(height: 10),
-                        Text(model.errorText!, style: const TextStyle(color: Colors.red)),
-                      ],
-
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: isLoading ? null : _startPasswordReset,
-                            child: const Text('Забыли пароль?'),
-                          ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: isLoading ? null : () => Navigator.pushNamed(context, '/register'),
-                            child: const Text('Создать аккаунт'),
-                          ),
+        child: SafeArea(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => FocusScope.of(context).unfocus(), // скрыть клавиатуру по тапу
+            child: Center(
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 12 : 20),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.80),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: _kSky.withOpacity(0.18)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _kSkyDeep.withOpacity(0.08),
+                            blurRadius: 26,
+                            offset: const Offset(0, 10),
+                          )
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // ─── Лого на «родной» плашке (ещё больше) ───
+                              _LogoPlate(
+                                assetPath: 'assets/images/logo.png',
+                                height: 196,
+                                borderRadius: 26,
+                                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                            ),
+                              const SizedBox(height: 22),
 
-                      // Email/Password login
-                      SizedBox(
-                        width: double.infinity,
-                        child: isLoading
-                            ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 10),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : FilledButton.icon(
-                                onPressed: _login,
-                                icon: const Icon(Icons.login),
-                                label: const Text('Войти'),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: _kSky,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
+                              Text(
+                                'Войдите в аккаунт',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: _kInk,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 22),
+
+                              // Email
+                              TextFormField(
+                                controller: _emailCtrl,
+                                focusNode: _emailFocus,
+                                keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [AutofillHints.email],
+                                textInputAction: TextInputAction.next,
+                                validator: _validateEmail,
+                                decoration: InputDecoration(
+                                  labelText: 'Email',
+                                  prefixIcon: const Icon(Icons.alternate_email),
+                                  border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
-                                  shadowColor: _kSky.withOpacity(0.25),
-                                  elevation: 2,
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                onFieldSubmitted: (_) => _passFocus.requestFocus(),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Пароль
+                              TextFormField(
+                                controller: _passCtrl,
+                                focusNode: _passFocus,
+                                obscureText: _obscure,
+                                textInputAction: TextInputAction.done,
+                                validator: _validatePass,
+                                onFieldSubmitted: (_) => _login(),
+                                decoration: InputDecoration(
+                                  labelText: 'Пароль',
+                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  suffixIcon: IconButton(
+                                    onPressed: () => setState(() => _obscure = !_obscure),
+                                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                                    tooltip: _obscure ? 'Показать пароль' : 'Скрыть пароль',
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
                                 ),
                               ),
-                      ),
 
-                      const SizedBox(height: 12),
-                      Row(children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            'или',
-                            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: _kInkSoft),
+                              if (model.errorText != null) ...[
+                                const SizedBox(height: 10),
+                                Text(model.errorText!, style: const TextStyle(color: Colors.red)),
+                              ],
+
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  TextButton(
+                                    onPressed: isLoading ? null : _startPasswordReset,
+                                    child: const Text('Забыли пароль?'),
+                                  ),
+                                  const Spacer(),
+                                  TextButton(
+                                    onPressed: isLoading ? null : () => Navigator.pushNamed(context, '/register'),
+                                    child: const Text('Создать аккаунт'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+
+                              // Email/Password login
+                              SizedBox(
+                                width: double.infinity,
+                                child: isLoading
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 10),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : FilledButton.icon(
+                                        onPressed: _login,
+                                        icon: const Icon(Icons.login),
+                                        label: const Text('Войти'),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: _kSky,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                          shadowColor: _kSky.withOpacity(0.25),
+                                          elevation: 2,
+                                        ),
+                                      ),
+                              ),
+
+                              const SizedBox(height: 12),
+                              Row(children: [
+                                const Expanded(child: Divider()),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    'или',
+                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(color: _kInkSoft),
+                                  ),
+                                ),
+                                const Expanded(child: Divider()),
+                              ]),
+                              const SizedBox(height: 12),
+
+                              // Google login
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: isLoading ? null : _loginWithGoogle,
+                                  icon: const Icon(Icons.g_mobiledata),
+                                  label: const Text('Продолжить с Google'),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: _kSkyDeep.withOpacity(0.35)),
+                                    foregroundColor: _kSkyDeep,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const Expanded(child: Divider()),
-                      ]),
-                      const SizedBox(height: 12),
-
-                      // Google login
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: isLoading ? null : _loginWithGoogle,
-                          icon: const Icon(Icons.g_mobiledata),
-                          label: const Text('Продолжить с Google'),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: _kSkyDeep.withOpacity(0.35)),
-                            foregroundColor: _kSkyDeep,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
