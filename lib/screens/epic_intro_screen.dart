@@ -3,6 +3,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
 
+/// Палитра Nest
+const _kOffWhite = Color(0xFFFAF8F5); // мягкий фон
+const _kCloud    = Color(0xFFEFF6FB); // лёгкий облачный слой
+const _kSky      = Color(0xFF3FA7D6); // основной акцент (как в логотипе)
+const _kSkyDeep  = Color(0xFF2C7FB2); // тёмный акцент
+const _kInk      = Color(0xFF163043); // основной текст
+const _kInkSoft  = Color(0x99163043); // подписи/вторичный
+
 class EpicIntroScreen extends StatefulWidget {
   final UserService userService;
   const EpicIntroScreen({super.key, required this.userService});
@@ -13,16 +21,18 @@ class EpicIntroScreen extends StatefulWidget {
 
 class _EpicIntroScreenState extends State<EpicIntroScreen>
     with TickerProviderStateMixin {
-  late final AnimationController _bgCtrl;      // аурора
-  late final AnimationController _twinkleCtrl; // звезды
+  late final AnimationController _bgCtrl;      // облачные переливы
+  late final AnimationController _twinkleCtrl; // пылинки
   late final Animation<double> _bgAnim;
   late final Animation<double> _twinkleAnim;
 
   @override
   void initState() {
     super.initState();
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 18))..repeat(reverse: true);
-    _twinkleCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))..repeat();
+    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 18))
+      ..repeat(reverse: true);
+    _twinkleCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))
+      ..repeat();
     _bgAnim = CurvedAnimation(parent: _bgCtrl, curve: Curves.easeInOutSine);
     _twinkleAnim = CurvedAnimation(parent: _twinkleCtrl, curve: Curves.easeInOut);
   }
@@ -48,7 +58,6 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     return LayoutBuilder(
@@ -61,44 +70,47 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
         final hp = EdgeInsets.symmetric(horizontal: phone ? 20 : 32);
         final vp = EdgeInsets.symmetric(vertical: phone ? 16 : 24);
 
-        // адаптивные размеры шрифтов
+        // Адаптивная типографика под светлую тему
         final titleStyle = (wide ? tt.displayMedium : phone ? tt.headlineMedium : tt.headlineSmall)
-            ?.copyWith(color: Colors.white.withOpacity(0.96), fontWeight: FontWeight.w800, letterSpacing: 0.5);
+            ?.copyWith(color: _kInk, fontWeight: FontWeight.w800, letterSpacing: 0.2);
         final subtitleStyle = tt.titleMedium?.copyWith(
-          color: Colors.white.withOpacity(0.88),
+          color: _kInkSoft,
           height: 1.35,
           fontWeight: FontWeight.w500,
           fontSize: compact ? 14 : null,
         );
 
-        // звёзд столько, чтобы не перегружать слабые экраны
-        final starCount = max(80, ((w * h) / (phone ? 18000 : 12000)).round());
+        // «Пылинок» достаточно, но экономно
+        final starCount = max(60, ((w * h) / (phone ? 22000 : 16000)).round());
 
         return Scaffold(
+          backgroundColor: _kOffWhite,
           body: Stack(
             fit: StackFit.expand,
             children: [
-              // фон
+              // Фон — мягкие облачные переливы в фирменных тонах
               AnimatedBuilder(
                 animation: _bgAnim,
-                builder: (_, __) => CustomPaint(painter: _AuroraPainter(t: _bgAnim.value, cs: cs)),
+                builder: (_, __) => CustomPaint(
+                  painter: _CloudyPainter(t: _bgAnim.value),
+                ),
               ),
-              // звезды
+              // Едва заметные «пылинки»
               RepaintBoundary(
                 child: AnimatedBuilder(
                   animation: _twinkleAnim,
                   builder: (_, __) => IgnorePointer(
                     child: Opacity(
-                      opacity: 0.22,
+                      opacity: 0.12,
                       child: CustomPaint(
-                        painter: _StarsPainter(t: _twinkleAnim.value, starCount: starCount),
+                        painter: _DustPainter(t: _twinkleAnim.value, count: starCount),
                       ),
                     ),
                   ),
                 ),
               ),
 
-              // контент
+              // Контент
               SafeArea(
                 child: Padding(
                   padding: hp + vp,
@@ -107,22 +119,39 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                       Align(
                         alignment: Alignment.topRight,
                         child: TextButton(
-                          style: TextButton.styleFrom(foregroundColor: Colors.white.withOpacity(0.9)),
+                          style: TextButton.styleFrom(
+                            foregroundColor: _kInk.withOpacity(0.7),
+                          ),
                           onPressed: () => _skip(context),
                           child: const Text('Пропустить'),
                         ),
                       ),
                       const Spacer(flex: 2),
 
+                      // Логотип на «родном» фоне + заголовок
                       _FadeUp(
                         delayMs: 0,
-                        child: Text('VitaPlatform', textAlign: TextAlign.center, style: titleStyle),
+                        child: Column(
+                          children: [
+                            _LogoPlate(
+                              // ⇩ высота увеличена ~в 1.7× (подбирайте под свой ассет)
+                              height: phone ? 148 : 192,
+                              borderRadius: 28,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: phone ? 20 : 28,
+                                vertical: phone ? 16 : 22,
+                              ),
+                              // путь к вашему ассету
+                              assetPath: 'assets/images/logo.png',
+                            )
+                          ],
+                        ),
                       ),
                       SizedBox(height: phone ? 12 : 16),
                       _FadeUp(
                         delayMs: 120,
                         child: Text(
-                          'Каждый день ты расходуешь свои ресурсы.\nПора управлять ими',
+                          'Дом для мыслей. Место, где растут цели,\nмечты и планы — бережно и осознанно.',
                           textAlign: TextAlign.center,
                           style: subtitleStyle,
                         ),
@@ -130,7 +159,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
 
                       const Spacer(),
 
-                      // CTA-панель с max шириной на широких
+                      // CTA-панель
                       _FadeUp(
                         delayMs: 240,
                         child: Center(
@@ -139,14 +168,14 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                                 child: Container(
                                   width: double.infinity,
                                   padding: EdgeInsets.all(phone ? 14 : 18),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.10),
+                                    color: Colors.white.withOpacity(0.75),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white.withOpacity(0.24)),
+                                    border: Border.all(color: _kSky.withOpacity(0.22)),
                                   ),
                                   child: Column(
                                     children: [
@@ -154,10 +183,12 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                                         width: double.infinity,
                                         child: FilledButton(
                                           style: FilledButton.styleFrom(
-                                            backgroundColor: cs.primaryContainer.withOpacity(0.85),
-                                            foregroundColor: cs.onPrimaryContainer,
+                                            backgroundColor: _kSky,
+                                            foregroundColor: Colors.white,
                                             padding: EdgeInsets.symmetric(vertical: phone ? 14 : 16),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                            shadowColor: _kSky.withOpacity(0.35),
+                                            elevation: 2,
                                           ),
                                           onPressed: () => _continue(context),
                                           child: Text(
@@ -174,8 +205,8 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                                         width: double.infinity,
                                         child: OutlinedButton(
                                           style: OutlinedButton.styleFrom(
-                                            side: BorderSide(color: Colors.white.withOpacity(0.35)),
-                                            foregroundColor: Colors.white.withOpacity(0.9),
+                                            side: BorderSide(color: _kSkyDeep.withOpacity(0.35)),
+                                            foregroundColor: _kSkyDeep,
                                             padding: EdgeInsets.symmetric(vertical: phone ? 12 : 14),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                           ),
@@ -196,9 +227,9 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                       _FadeUp(
                         delayMs: 360,
                         child: Text(
-                          'Ты всегда сможешь вернуться к прологу в настройках.',
+                          'Всегда можно вернуться к прологу в настройках.',
                           textAlign: TextAlign.center,
-                          style: tt.bodySmall?.copyWith(color: Colors.white.withOpacity(0.7)),
+                          style: tt.bodySmall?.copyWith(color: _kInk.withOpacity(0.55)),
                         ),
                       ),
 
@@ -211,6 +242,55 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
           ),
         );
       },
+    );
+  }
+}
+
+/// Плашка для логотипа с тем же градиентом, что и фон экрана,
+/// чтобы логотип визуально «не выделялся» даже если у ассета есть белая подложка.
+class _LogoPlate extends StatelessWidget {
+  final String assetPath;
+  final double height;
+  final double borderRadius;
+  final EdgeInsetsGeometry padding;
+
+  const _LogoPlate({
+    required this.assetPath,
+    required this.height,
+    this.borderRadius = 24,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      // лёгкая тень для объёма, почти незаметная
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_kOffWhite, _kCloud],
+        ),
+        border: Border.all(color: _kSky.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: _kSkyDeep.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: padding,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius - 6),
+        child: Image.asset(
+          assetPath,
+          height: height,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
     );
   }
 }
@@ -252,20 +332,21 @@ class _FadeUpState extends State<_FadeUp> with SingleTickerProviderStateMixin {
   }
 }
 
-class _AuroraPainter extends CustomPainter {
+/// Мягкие «облака» в фирменной палитре
+class _CloudyPainter extends CustomPainter {
   final double t; // 0..1
-  final ColorScheme cs;
-  _AuroraPainter({required this.t, required this.cs});
+  _CloudyPainter({required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
     final r = Offset.zero & size;
 
+    // База — off-white -> облачный голубой
     final base = Paint()
       ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF0F172A), Color(0xFF111827)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [_kOffWhite, _kCloud],
       ).createShader(r);
     canvas.drawRect(r, base);
 
@@ -284,38 +365,40 @@ class _AuroraPainter extends CustomPainter {
     double sx(double phase, double amp) => (sin(2 * pi * (t + phase)) * amp);
     double cx(double phase, double amp) => (cos(2 * pi * (t + phase)) * amp);
 
-    blob(cs.primary.withBlue(255), Offset(w * (0.25 + 0.05 * sx(0.0, 1)), h * (0.35 + 0.04 * cx(0.3, 1))), w * 0.65, 0.55);
-    blob(cs.tertiary,             Offset(w * (0.75 + 0.05 * sx(0.2, 1)), h * (0.40 + 0.04 * cx(0.5, 1))), w * 0.60, 0.45);
-    blob(cs.secondary,            Offset(w * (0.50 + 0.07 * sx(0.4, 1)), h * (0.70 + 0.05 * cx(0.1, 1))), w * 0.70, 0.35);
+    // Мягкие голубые пятна – «облака»
+    blob(_kSky,     Offset(w * (0.25 + 0.05 * sx(0.0, 1)), h * (0.32 + 0.04 * cx(0.3, 1))), w * 0.70, 0.35);
+    blob(_kSkyDeep, Offset(w * (0.75 + 0.05 * sx(0.2, 1)), h * (0.45 + 0.04 * cx(0.5, 1))), w * 0.65, 0.25);
+    blob(_kSky,     Offset(w * (0.50 + 0.07 * sx(0.4, 1)), h * (0.78 + 0.05 * cx(0.1, 1))), w * 0.80, 0.20);
   }
 
   @override
-  bool shouldRepaint(covariant _AuroraPainter old) => old.t != t || old.cs != cs;
+  bool shouldRepaint(covariant _CloudyPainter old) => old.t != t;
 }
 
-class _StarsPainter extends CustomPainter {
-  final int starCount;
+/// Едва заметные «пылинки»
+class _DustPainter extends CustomPainter {
+  final int count;
   final double t; // 0..1
-  _StarsPainter({required this.starCount, required this.t});
+  _DustPainter({required this.count, required this.t});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rnd = Random(42);
-    for (int i = 0; i < starCount; i++) {
+    for (int i = 0; i < count; i++) {
       final bx = rnd.nextDouble() * size.width;
       final by = rnd.nextDouble() * size.height;
 
-      final dx = bx + sin((i * 0.37 + t * 6.28)) * 6;
-      final dy = by + cos((i * 0.53 + t * 6.28)) * 6;
+      final dx = bx + sin((i * 0.37 + t * 6.28)) * 4;
+      final dy = by + cos((i * 0.53 + t * 6.28)) * 4;
 
       final tw = (sin((i * 0.23) + t * 12.0) + 1) / 2;
-      final radius = (i % 7 == 0) ? 1.7 : 1.1;
-      final paint = Paint()..color = Colors.white.withOpacity(0.25 + 0.55 * tw);
+      final radius = (i % 7 == 0) ? 1.5 : 1.0;
+      final paint = Paint()..color = _kSkyDeep.withOpacity(0.10 + 0.20 * tw);
 
       canvas.drawCircle(Offset(dx, dy), radius, paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _StarsPainter old) => old.t != t || old.starCount != starCount;
+  bool shouldRepaint(covariant _DustPainter old) => old.t != t || old.count != count;
 }

@@ -6,6 +6,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../models/login_model.dart';
 
+/// ─── Палитра Nest ─────────────────────────────────────────────────────────────
+const _kOffWhite = Color(0xFFFAF8F5); // мягкий фон
+const _kCloud    = Color(0xFFEFF6FB); // лёгкий облачный слой
+const _kSky      = Color(0xFF3FA7D6); // основной акцент (как в логотипе)
+const _kSkyDeep  = Color(0xFF2C7FB2); // тёмный акцент
+const _kInk      = Color(0xFF163043); // основной текст
+const _kInkSoft  = Color(0x99163043); // подписи/вторичный
+// ──────────────────────────────────────────────────────────────────────────────
+
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
@@ -45,11 +54,9 @@ class _LoginViewState extends State<_LoginView> {
       if (!mounted) return;
 
       if (data.event == AuthChangeEvent.passwordRecovery) {
-        // Пользователь пришёл по письму "Reset password" → ведём на экран смены пароля
         Navigator.of(context).pushNamedAndRemoveUntil('/password-reset', (_) => false);
         return;
       }
-
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
       }
@@ -108,10 +115,8 @@ class _LoginViewState extends State<_LoginView> {
     await context.read<LoginModel>().loginWithGoogle();
     if (!mounted) return;
     setState(() => _busy = false);
-    // дальнейший переход произойдёт в onAuthStateChange
   }
 
-  /// Запуск восстановления: спрашиваем email, валидируем и шлём письмо через Supabase
   Future<void> _startPasswordReset() async {
     if (_busy) return;
 
@@ -159,9 +164,6 @@ class _LoginViewState extends State<_LoginView> {
     setState(() => _busy = true);
     final client = Supabase.instance.client;
 
-    // redirectTo:
-    //  - Web: открываем хеш-маршрут /#/password-reset, чтобы приложение поймало состояние recovery
-    //  - Mobile/desktop: deeplink (добавьте схему в Supabase → Authentication → URL Configuration)
     final String redirectTo = kIsWeb
         ? Uri.base.origin + '/#/password-reset'
         : 'vitaplatform://auth-callback';
@@ -190,20 +192,31 @@ class _LoginViewState extends State<_LoginView> {
     final isLoading = model.isLoading || _busy;
 
     return Scaffold(
+      backgroundColor: _kOffWhite,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFE9FFF8), Color(0xFFF7F9FF)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_kOffWhite, _kCloud],
           ),
         ),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.80),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: _kSky.withOpacity(0.18)),
+                boxShadow: [
+                  BoxShadow(
+                    color: _kSkyDeep.withOpacity(0.08),
+                    blurRadius: 26,
+                    offset: const Offset(0, 10),
+                  )
+                ],
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                 child: Form(
@@ -211,13 +224,22 @@ class _LoginViewState extends State<_LoginView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Image.asset('assets/images/logo.png', height: 32),
-                        const SizedBox(width: 10),
-                      ]),
+                      // ─── Логотип на «родной» плашке (больше) ───────────────
+                      _LogoPlate(
+                        assetPath: 'assets/images/logo.png',
+                        height: 160,                     // ↑ увеличено
+                        borderRadius: 26,
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                      ),
                       const SizedBox(height: 18),
-                      Text('Войдите в аккаунт',
-                          style: Theme.of(context).textTheme.titleMedium),
+
+                      Text(
+                        'Войдите в аккаунт',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: _kInk,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
                       const SizedBox(height: 18),
 
                       // Email
@@ -227,13 +249,22 @@ class _LoginViewState extends State<_LoginView> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         validator: _validateEmail,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Email',
-                          prefixIcon: Icon(Icons.alternate_email),
+                          prefixIcon: const Icon(Icons.alternate_email),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(14)),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
                           ),
                           filled: true,
+                          fillColor: Colors.white,
                         ),
                         onFieldSubmitted: (_) => _passFocus.requestFocus(),
                       ),
@@ -255,10 +286,19 @@ class _LoginViewState extends State<_LoginView> {
                             icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                             tooltip: _obscure ? 'Показать пароль' : 'Скрыть пароль',
                           ),
-                          border: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(14)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
                           ),
                           filled: true,
+                          fillColor: Colors.white,
                         ),
                       ),
 
@@ -298,10 +338,14 @@ class _LoginViewState extends State<_LoginView> {
                                 icon: const Icon(Icons.login),
                                 label: const Text('Войти'),
                                 style: FilledButton.styleFrom(
+                                  backgroundColor: _kSky,
+                                  foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
+                                  shadowColor: _kSky.withOpacity(0.25),
+                                  elevation: 2,
                                 ),
                               ),
                       ),
@@ -311,11 +355,10 @@ class _LoginViewState extends State<_LoginView> {
                         const Expanded(child: Divider()),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('или',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(color: Colors.black54)),
+                          child: Text(
+                            'или',
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: _kInkSoft),
+                          ),
                         ),
                         const Expanded(child: Divider()),
                       ]),
@@ -329,6 +372,8 @@ class _LoginViewState extends State<_LoginView> {
                           icon: const Icon(Icons.g_mobiledata),
                           label: const Text('Продолжить с Google'),
                           style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: _kSkyDeep.withOpacity(0.35)),
+                            foregroundColor: _kSkyDeep,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -342,6 +387,54 @@ class _LoginViewState extends State<_LoginView> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Плашка для логотипа с тем же градиентом, что и фон,
+/// чтобы ассет не выбивался даже с белой подложкой.
+class _LogoPlate extends StatelessWidget {
+  final String assetPath;
+  final double height;
+  final double borderRadius;
+  final EdgeInsetsGeometry padding;
+
+  const _LogoPlate({
+    required this.assetPath,
+    required this.height,
+    this.borderRadius = 24,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_kOffWhite, _kCloud],
+        ),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: _kSky.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: _kSkyDeep.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: padding,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius - 6),
+        child: Image.asset(
+          assetPath,
+          height: height,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
         ),
       ),
     );
