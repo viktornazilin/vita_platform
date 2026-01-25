@@ -137,7 +137,7 @@ class _ExpensesView extends StatelessWidget {
                     padding: EdgeInsets.symmetric(horizontal: 16 + sidePad, vertical: 8),
                     sliver: SliverToBoxAdapter(
                       child: Text(
-                        "Сумма за день: ${m.dayTx.where((t) => t.kind == 'expense').fold<double>(0.0, (s, t) => s + t.amount).toStringAsFixed(2)} ₽",
+                        "Сумма за день: ${m.dayTx.where((t) => t.kind == 'expense').fold<double>(0.0, (s, t) => s + t.amount).toStringAsFixed(2)} €",
                         textAlign: TextAlign.center,
                         style: tt.titleMedium,
                       ),
@@ -182,7 +182,7 @@ class _ExpensesView extends StatelessWidget {
                                     context: context,
                                     builder: (_) => AlertDialog(
                                       title: const Text('Удалить операцию?'),
-                                      content: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} ₽"),
+                                      content: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} €"),
                                       actions: [
                                         TextButton(
                                           onPressed: () => Navigator.pop(context, false),
@@ -204,7 +204,7 @@ class _ExpensesView extends StatelessWidget {
                                   t.kind == 'expense' ? Icons.remove_circle : Icons.add_circle,
                                   color: color,
                                 ),
-                                title: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} ₽"),
+                                title: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} €"),
                                 subtitle: Text(t.note ?? ''),
                                 trailing: Text(
                                   "${t.ts.hour.toString().padLeft(2, '0')}:${t.ts.minute.toString().padLeft(2, '0')}",
@@ -239,7 +239,7 @@ class _ExpensesView extends StatelessWidget {
                                       context: context,
                                       builder: (_) => AlertDialog(
                                         title: const Text('Удалить операцию?'),
-                                        content: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} ₽"),
+                                        content: Text("${cat.name} — ${t.amount.toStringAsFixed(2)} €"),
                                         actions: [
                                           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
                                           FilledButton.tonal(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
@@ -370,9 +370,9 @@ class _BudgetTopCard extends StatelessWidget {
             spacing: 12,
             runSpacing: 6,
             children: [
-              _legendDot(color: Colors.green, text: "Доходы ${income.toStringAsFixed(2)} ₽"),
-              _legendDot(color: Colors.red, text: "Расходы ${expense.toStringAsFixed(2)} ₽"),
-              _legendDot(color: Colors.blue, text: "Свободно ${free.toStringAsFixed(2)} ₽"),
+              _legendDot(color: Colors.green, text: "Доходы ${income.toStringAsFixed(2)} €"),
+              _legendDot(color: Colors.red, text: "Расходы ${expense.toStringAsFixed(2)} €"),
+              _legendDot(color: Colors.blue, text: "Свободно ${free.toStringAsFixed(2)} €"),
             ],
           ),
           const SizedBox(height: 12),
@@ -446,7 +446,7 @@ class _CategoryJarsGrid extends StatelessWidget {
               width: tileW - 8, // учитывать spacing
               child: _JarTile(
                 title: e.key.name,
-                subtitle: "${e.value.toStringAsFixed(0)} ₽",
+                subtitle: "${e.value.toStringAsFixed(0)} €",
                 fill: p,
                 color: Colors.orange,
               ),
@@ -553,8 +553,8 @@ class _SavingsJarsGrid extends StatelessWidget {
             final target = j.targetAmount ?? (j.currentAmount == 0 ? 1 : j.currentAmount * 2);
             final p = (j.currentAmount / target).clamp(0.0, 1.0);
             final subtitle = [
-              if (j.targetAmount != null) "цель: ${j.targetAmount!.toStringAsFixed(0)} ₽",
-              "накоплено: ${j.currentAmount.toStringAsFixed(0)} ₽",
+              if (j.targetAmount != null) "цель: ${j.targetAmount!.toStringAsFixed(0)} €",
+              "накоплено: ${j.currentAmount.toStringAsFixed(0)} €",
               if (j.percentOfFree > 0) "${j.percentOfFree.toStringAsFixed(0)}% от свободных",
             ].join(' • ');
             return SizedBox(

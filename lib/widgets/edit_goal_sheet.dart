@@ -24,26 +24,66 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   late final TextEditingController _emotionCtrl;
 
   late String _lifeBlock;
-  late int _importance;   // 1..3
-  late double _hours;     // 0.5..14
-  late TimeOfDay _start;  // TimeOfDay
+  late int _importance; // 1..3
+  late double _hours; // 0.5..14
+  late TimeOfDay _start; // TimeOfDay
+
+  /// ✅ нормализуем список блоков: без дублей + гарантируем наличие текущего значения
+  List<String> _normalizeBlocks({
+    required List<String> availableBlocks,
+    String? fixedLifeBlock,
+    String? currentValue,
+  }) {
+    final set = <String>{};
+
+    // фиксированный блок (если есть) — первым
+    if (fixedLifeBlock != null && fixedLifeBlock.trim().isNotEmpty) {
+      set.add(fixedLifeBlock.trim());
+    }
+
+    // доступные блоки
+    for (final b in availableBlocks) {
+      final v = b.trim();
+      if (v.isNotEmpty) set.add(v);
+    }
+
+    // текущий блок цели (например "general") — обязательно добавляем
+    if (currentValue != null && currentValue.trim().isNotEmpty) {
+      set.add(currentValue.trim());
+    }
+
+    // fallback
+    if (set.isEmpty) set.add('general');
+
+    return set.toList();
+  }
 
   @override
   void initState() {
     super.initState();
     final g = widget.goal;
 
-    _titleCtrl   = TextEditingController(text: g.title);
-    _descCtrl    = TextEditingController(text: g.description);
+    _titleCtrl = TextEditingController(text: g.title);
+    _descCtrl = TextEditingController(text: g.description);
     _emotionCtrl = TextEditingController(text: g.emotion);
 
-    _lifeBlock = widget.fixedLifeBlock
-        ?? g.lifeBlock
-        ?? (widget.availableBlocks.isNotEmpty ? widget.availableBlocks.first : 'general');
+    final initialValue =
+        widget.fixedLifeBlock ?? g.lifeBlock ?? (widget.availableBlocks.isNotEmpty ? widget.availableBlocks.first : 'general');
 
-    _importance = g.importance;
+    final blocks = _normalizeBlocks(
+      availableBlocks: widget.availableBlocks,
+      fixedLifeBlock: widget.fixedLifeBlock,
+      currentValue: initialValue,
+    );
 
-    _hours = g.spentHours.clamp(0.5, 14.0);
+    // ✅ гарантируем: _lifeBlock всегда есть в items
+    _lifeBlock = blocks.contains(initialValue) ? initialValue : blocks.first;
+
+    _importance = (g.importance).clamp(1, 3);
+
+    // ✅ важно: это "план часов" -> у тебя в Goal модель это spentHours, оставляем как есть
+    _hours = (g.spentHours).clamp(0.5, 14.0);
+
     _start = TimeOfDay.fromDateTime(g.startTime);
   }
 
@@ -81,6 +121,16 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final canEditBlock = widget.fixedLifeBlock == null;
 
+    // ✅ items для dropdown — уже нормализованы и без дублей
+    final blocks = _normalizeBlocks(
+      availableBlocks: widget.availableBlocks,
+      fixedLifeBlock: widget.fixedLifeBlock,
+      currentValue: _lifeBlock,
+    );
+
+    // ✅ value должен быть null или строго один раз встречаться в items
+    final dropdownValue = blocks.contains(_lifeBlock) ? _lifeBlock : null;
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: DraggableScrollableSheet(
@@ -96,7 +146,8 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
             children: [
               Center(
                 child: Container(
-                  width: 36, height: 4,
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(2)),
                 ),
               ),
@@ -129,12 +180,13 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                   decoration: const InputDecoration(labelText: 'Сфера/блок'),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
-                      value: _lifeBlock,
+                      value: dropdownValue,
                       isExpanded: true,
-                      items: (widget.availableBlocks.isNotEmpty ? widget.availableBlocks : <String>['general'])
-                          .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _lifeBlock = v ?? _lifeBlock),
+                      items: blocks.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                      onChanged: (v) {
+                        if (v == null) return;
+                        setState(() => _lifeBlock = v);
+                      },
                     ),
                   ),
                 ),
@@ -175,8 +227,11 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                       children: [
                         const Text('Длительность, ч'),
                         Slider(
-                          min: 0.5, max: 14, divisions: 27,
-                          value: _hours, label: _hours.toStringAsFixed(1),
+                          min: 0.5,
+                          max: 14,
+                          divisions: 27,
+                          value: _hours,
+                          label: _hours.toStringAsFixed(1),
                           onChanged: (v) => setState(() => _hours = v),
                         ),
                       ],

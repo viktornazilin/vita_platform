@@ -341,10 +341,10 @@ class _ReportsView extends StatelessWidget {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Всего: ${data.total.toStringAsFixed(2)} ₽',
+                          Text('Всего: ${data.total.toStringAsFixed(2)} €',
                               style: Theme.of(context).textTheme.titleMedium),
                           Text(
-                            'Средний расход/день: ${avgExpense.toStringAsFixed(2)} ₽',
+                            'Средний расход/день: ${avgExpense.toStringAsFixed(2)} €',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                           ),
                           const SizedBox(height: 12),
@@ -365,7 +365,7 @@ class _ReportsView extends StatelessWidget {
                           ReportLegend(
                             entries: sortedEntriesDouble(data.byCategory),
                             colors: palette(cs),
-                            valueFormatter: (n) => '${(n as double).toStringAsFixed(0)} ₽',
+                            valueFormatter: (n) => '${(n as double).toStringAsFixed(0)} €',
                             total: data.byCategory.values.fold<double>(0.0, (a, b) => a + b),
                           ),
                           const SizedBox(height: 16),
