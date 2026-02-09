@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class LauncherTile extends StatelessWidget {
   final String? imagePath; // путь к логотипу
-  final IconData? icon;    // иконка по умолчанию (если нет картинки)
+  final IconData? icon; // иконка по умолчанию (если нет картинки)
   final String label;
   final VoidCallback onTap;
 

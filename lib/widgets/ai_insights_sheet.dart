@@ -32,7 +32,9 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
         body: {'period': _period},
       );
 
-      final raw = res.data is String ? jsonDecode(res.data as String) : res.data;
+      final raw = res.data is String
+          ? jsonDecode(res.data as String)
+          : res.data;
 
       // Edge Function у нас возвращает JSON-объект {insights:[...]} (как мы делали)
       final map = (raw as Map).cast<String, dynamic>();
@@ -90,15 +92,27 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                   children: [
                     const Text(
                       'AI-инсайты',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const Spacer(),
                     DropdownButton<String>(
                       value: _period,
                       items: const [
-                        DropdownMenuItem(value: 'last_7_days', child: Text('7 дней')),
-                        DropdownMenuItem(value: 'last_30_days', child: Text('30 дней')),
-                        DropdownMenuItem(value: 'last_90_days', child: Text('90 дней')),
+                        DropdownMenuItem(
+                          value: 'last_7_days',
+                          child: Text('7 дней'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'last_30_days',
+                          child: Text('30 дней'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'last_90_days',
+                          child: Text('90 дней'),
+                        ),
                       ],
                       onChanged: _loading
                           ? null
@@ -134,16 +148,19 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                 child: _loading && _insights.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : _insights.isEmpty
-                        ? const Center(
-                            child: Text('Инсайтов пока нет — добавь данных и обнови.'),
-                          )
-                        : ListView.separated(
-                            controller: controller,
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                            itemCount: _insights.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (_, i) => AiInsightCard(item: _insights[i]),
-                          ),
+                    ? const Center(
+                        child: Text(
+                          'Инсайтов пока нет — добавь данных и обнови.',
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: controller,
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                        itemCount: _insights.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (_, i) =>
+                            AiInsightCard(item: _insights[i]),
+                      ),
               ),
             ],
           ),

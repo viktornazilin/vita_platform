@@ -11,30 +11,55 @@ import 'core/base_repo.dart';
 abstract class FinanceRepo {
   Future<List<dm.Category>> listCategories({required String kind});
   Future<String> ensureCategory(String name, String kind);
+
   Future<void> addTransaction({
     required DateTime ts,
-    required String kind,
+    required String kind, // 'expense' | 'income'
     required String categoryId,
     required double amount,
     String? note,
   });
+
   Future<List<TransactionItem>> listTransactionsByDay(DateTime date);
   Future<Map<String, double>> sumByMonth({required DateTime monthStart});
 
+  /// Autocomplete: ранее введённые заметки (note) по транзакциям.
+  /// kind: 'expense' | 'income'
+  Future<List<String>> searchTransactionNotes({
+    required String kind,
+    required String query,
+    int limit = 8,
+  });
+
   Future<List<Jar>> listJars();
-  Future<String> addJar({required String title, double? targetAmount, required double percentOfFree});
+  Future<String> addJar({
+    required String title,
+    double? targetAmount,
+    required double percentOfFree,
+  });
   Future<void> updateJarAmount({required String jarId, required double delta});
-  Future<void> addJarAllocation({required String jarId, required DateTime periodMonth, required double amount});
-  Future<List<JarAllocation>> listJarAllocationsForMonth({required DateTime periodMonth});
+  Future<void> addJarAllocation({
+    required String jarId,
+    required DateTime periodMonth,
+    required double amount,
+  });
+  Future<List<JarAllocation>> listJarAllocationsForMonth({
+    required DateTime periodMonth,
+  });
   Future<bool> hasAnyJarAllocationForMonth({required DateTime periodMonth});
   Future<void> deleteJarAllocationsForMonth({required DateTime periodMonth});
   Future<void> deleteJar(String jarId);
 
-  Future<List<TransactionItem>> listTransactionsBetween(DateTime from, DateTime to);
+  Future<List<TransactionItem>> listTransactionsBetween(
+    DateTime from,
+    DateTime to,
+  );
   Future<void> deleteTransaction(String id);
   Future<void> deleteCategory(String categoryId);
   Future<void> setCategoryLimit({required String categoryId, double? limit});
-  Future<Map<dm.Category, double>> monthlyExpenseByCategory({required DateTime monthStart});
+  Future<Map<dm.Category, double>> monthlyExpenseByCategory({
+    required DateTime monthStart,
+  });
 }
 
 mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
@@ -105,9 +130,12 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
             .eq('category_id', categoryId)
             .gte('ts', start.toIso8601String())
             .lt('ts', end.toIso8601String());
-        final spent = (spentRes as List)
-            .fold<double>(0, (sum, r) => sum + (r['amount'] as num).toDouble());
-        if (spent + amount > limit) throw Exception('Превышен лимит для категории');
+        final spent = (spentRes as List).fold<double>(
+          0,
+          (sum, r) => sum + (r['amount'] as num).toDouble(),
+        );
+        if (spent + amount > limit)
+          throw Exception('Превышен лимит для категории');
       }
     }
 
@@ -153,11 +181,14 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
     final end = nextMonth(start);
 
     final res = await client
-        .rpc('sum_transactions_by_kind_for_period', params: {
-          'p_user_id': uid,
-          'p_from': start.toIso8601String(),
-          'p_to': end.toIso8601String(),
-        })
+        .rpc(
+          'sum_transactions_by_kind_for_period',
+          params: {
+            'p_user_id': uid,
+            'p_from': start.toIso8601String(),
+            'p_to': end.toIso8601String(),
+          },
+        )
         .select();
 
     final out = <String, double>{'income': 0.0, 'expense': 0.0};
@@ -165,14 +196,59 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
       final r = Map<String, dynamic>.from(row as Map);
       out[r['kind'] as String] = (r['sum'] as num?)?.toDouble() ?? 0.0;
     }
-      return out;
+    return out;
+  }
+
+  @override
+  Future<List<String>> searchTransactionNotes({
+    required String kind,
+    required String query,
+    int limit = 8,
+  }) async {
+    final q = query.trim();
+    if (q.isEmpty) return [];
+
+    // PostgREST ilike: %pattern%
+    final pattern = '%$q%';
+
+    // Берём побольше строк и дедуплим локально, чтобы получить уникальные подсказки.
+    final rows = await client
+        .from('transactions')
+        .select('note, ts')
+        .eq('user_id', uid)
+        .eq('kind', kind)
+        .ilike('note', pattern)
+        .neq('note', '')
+        .order('ts', ascending: false)
+        .limit(200);
+
+    final seen = <String>{};
+    final out = <String>[];
+
+    for (final r in (rows as List)) {
+      final note = (r['note'] as String?)?.trim() ?? '';
+      if (note.isEmpty) continue;
+
+      final norm = note.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (norm.isEmpty) continue;
+      if (seen.contains(norm)) continue;
+
+      seen.add(norm);
+      out.add(note);
+
+      if (out.length >= limit) break;
+    }
+
+    return out;
   }
 
   @override
   Future<List<Jar>> listJars() async {
     final rows = await client
         .from('jars')
-        .select('id, title, target_amount, current_amount, percent_of_free, active')
+        .select(
+          'id, title, target_amount, current_amount, percent_of_free, active',
+        )
         .eq('user_id', uid)
         .order('title', ascending: true);
 
@@ -217,14 +293,14 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
     required double delta,
   }) async {
     try {
-      await client.rpc('increment_jar_amount', params: {
-        'p_delta': delta,
-        'p_jar_id': jarId,
-        'p_user_id': uid,
-      });
+      await client.rpc(
+        'increment_jar_amount',
+        params: {'p_delta': delta, 'p_jar_id': jarId, 'p_user_id': uid},
+      );
       return;
     } on PostgrestException catch (e) {
-      final isMissingRpc = e.code == 'PGRST202' ||
+      final isMissingRpc =
+          e.code == 'PGRST202' ||
           (e.message).toLowerCase().contains('increment_jar_amount');
       if (!isMissingRpc) rethrow;
     }
@@ -273,7 +349,9 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
 
   @override
   Future<List<TransactionItem>> listTransactionsBetween(
-      DateTime from, DateTime to) async {
+    DateTime from,
+    DateTime to,
+  ) async {
     final res = await client
         .from('transactions')
         .select()
@@ -302,7 +380,11 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
 
   @override
   Future<void> deleteCategory(String categoryId) async {
-    await client.from('categories').delete().eq('id', categoryId).eq('user_id', uid);
+    await client
+        .from('categories')
+        .delete()
+        .eq('id', categoryId)
+        .eq('user_id', uid);
   }
 
   @override
@@ -363,7 +445,9 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
   }
 
   @override
-  Future<bool> hasAnyJarAllocationForMonth({required DateTime periodMonth}) async {
+  Future<bool> hasAnyJarAllocationForMonth({
+    required DateTime periodMonth,
+  }) async {
     final monthStr =
         '${periodMonth.year.toString().padLeft(4, '0')}-${periodMonth.month.toString().padLeft(2, '0')}-01';
 

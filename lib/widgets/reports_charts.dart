@@ -18,10 +18,20 @@ List<PieChartSectionData> buildPieSectionsInt(
       title: '${pct.toStringAsFixed(0)}%',
       radius: 70,
       color: pal[i % pal.length],
-      titleStyle: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+      titleStyle: const TextStyle(
+        fontWeight: FontWeight.w700,
+        color: Colors.white,
+      ),
       badgeWidget: Padding(
         padding: const EdgeInsets.all(4),
-        child: Text(e.key, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: cs.onSurface)),
+        child: Text(
+          e.key,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: cs.onSurface,
+          ),
+        ),
       ),
       badgePositionPercentageOffset: 1.25,
     );
@@ -71,10 +81,20 @@ List<PieChartSectionData> buildExpensePieSections(
       title: '${pct.toStringAsFixed(0)}%',
       radius: 70,
       color: pal[i % pal.length],
-      titleStyle: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+      titleStyle: const TextStyle(
+        fontWeight: FontWeight.w700,
+        color: Colors.white,
+      ),
       badgeWidget: Padding(
         padding: const EdgeInsets.all(4),
-        child: Text(e.key, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: cs.onSurface)),
+        child: Text(
+          e.key,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: cs.onSurface,
+          ),
+        ),
       ),
       badgePositionPercentageOffset: 1.25,
     );
@@ -99,7 +119,10 @@ List<BarChartGroupData> buildExpenseBarGroups(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [cs.secondary.withOpacity(0.95), cs.secondary.withOpacity(0.6)],
+            colors: [
+              cs.secondary.withOpacity(0.95),
+              cs.secondary.withOpacity(0.6),
+            ],
           ),
         ),
       ],
@@ -109,8 +132,12 @@ List<BarChartGroupData> buildExpenseBarGroups(
 
 // палитра/сортировки
 List<Color> palette(ColorScheme cs) => [
-  cs.primary, cs.secondary, cs.tertiary,
-  cs.primaryContainer, cs.secondaryContainer, cs.tertiaryContainer,
+  cs.primary,
+  cs.secondary,
+  cs.tertiary,
+  cs.primaryContainer,
+  cs.secondaryContainer,
+  cs.tertiaryContainer,
 ];
 
 List<MapEntry<String, int>> sortedEntriesInt(Map<String, int> map) =>

@@ -4,12 +4,19 @@ import '../main.dart'; // dbRepo
 class ExpenseAnalytics {
   final double total;
   final Map<String, double> byCategory; // имя категории -> сумма
-  final Map<DateTime, double> byDay;    // день -> сумма
+  final Map<DateTime, double> byDay; // день -> сумма
 
-  ExpenseAnalytics({required this.total, required this.byCategory, required this.byDay});
+  ExpenseAnalytics({
+    required this.total,
+    required this.byCategory,
+    required this.byDay,
+  });
 }
 
-Future<ExpenseAnalytics> loadExpenseAnalytics(DateTime from, DateTime to) async {
+Future<ExpenseAnalytics> loadExpenseAnalytics(
+  DateTime from,
+  DateTime to,
+) async {
   final txs = await dbRepo.listTransactionsBetween(from, to);
   final expenses = txs.where((t) => t.kind == 'expense');
 

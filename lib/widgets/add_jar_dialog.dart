@@ -52,11 +52,16 @@ class _AddJarDialogState extends State<AddJarDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(controller: _title, decoration: const InputDecoration(labelText: 'Название')),
+          TextField(
+            controller: _title,
+            decoration: const InputDecoration(labelText: 'Название'),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _percent,
-            decoration: const InputDecoration(labelText: 'Процент от свободных, %'),
+            decoration: const InputDecoration(
+              labelText: 'Процент от свободных, %',
+            ),
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 8),
@@ -75,7 +80,10 @@ class _AddJarDialogState extends State<AddJarDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
         FilledButton(onPressed: _submit, child: const Text('Создать')),
       ],
     );

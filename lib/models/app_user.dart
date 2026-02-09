@@ -58,4 +58,3 @@ class AppUser extends HiveObject {
     this.hasCompletedQuestionnaire = false,
   });
 }
-

@@ -3,23 +3,19 @@ class XP {
   final int currentXP;
   final int level;
 
-  XP({
-    required this.userId,
-    this.currentXP = 0,
-    this.level = 1,
-  });
+  XP({required this.userId, this.currentXP = 0, this.level = 1});
 
   factory XP.fromMap(Map<String, dynamic> map) => XP(
-        userId: map['user_id'] as String,
-        currentXP: (map['current_xp'] ?? 0) as int,
-        level: (map['level'] ?? 1) as int,
-      );
+    userId: map['user_id'] as String,
+    currentXP: (map['current_xp'] ?? 0) as int,
+    level: (map['level'] ?? 1) as int,
+  );
 
   Map<String, dynamic> toMap() => {
-        'user_id': userId,
-        'current_xp': currentXP,
-        'level': level,
-      };
+    'user_id': userId,
+    'current_xp': currentXP,
+    'level': level,
+  };
 
   int xpToLevelUp() => 100 + (level - 1) * 25;
 

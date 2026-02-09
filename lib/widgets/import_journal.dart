@@ -18,21 +18,31 @@ Future<void> importFromJournal(
   try {
     final picker = ImagePicker();
     final platform = Theme.of(context).platform;
-    final source = (platform == TargetPlatform.iOS || platform == TargetPlatform.android)
+    final source =
+        (platform == TargetPlatform.iOS || platform == TargetPlatform.android)
         ? ImageSource.camera
         : ImageSource.gallery;
 
-    final file = await picker.pickImage(source: source, maxWidth: 2400, imageQuality: 92);
+    final file = await picker.pickImage(
+      source: source,
+      maxWidth: 2400,
+      imageQuality: 92,
+    );
     if (file == null) return;
 
     final bytes = await file.readAsBytes();
 
     // (опционально) сохраняем снимок в Supabase Storage
     final userId = Supabase.instance.client.auth.currentUser?.id ?? 'anon';
-    final path = '$userId/${DateTime.now().toIso8601String().replaceAll(":", "-")}_${file.name}';
+    final path =
+        '$userId/${DateTime.now().toIso8601String().replaceAll(":", "-")}_${file.name}';
     await Supabase.instance.client.storage
         .from('journal-uploads')
-        .uploadBinary(path, bytes, fileOptions: const FileOptions(cacheControl: '3600', upsert: true));
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
 
     // краткий лоадер
     if (context.mounted) {
@@ -88,31 +98,36 @@ Future<void> importFromJournal(
     if (!context.mounted) return;
     // закрыть лоадер, если вдруг открыт
     Navigator.of(context, rootNavigator: true).maybePop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Не удалось импортировать: $e')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Не удалось импортировать: $e')));
   }
 }
 
 /// Вызов Google Cloud Vision (DOCUMENT_TEXT_DETECTION).
-Future<String> _googleVisionOcr(Uint8List bytes, {required String visionApiKey}) async {
+Future<String> _googleVisionOcr(
+  Uint8List bytes, {
+  required String visionApiKey,
+}) async {
   if (visionApiKey.isEmpty) {
     throw 'VISION_API_KEY не задан. Запусти с --dart-define=VISION_API_KEY=...';
   }
-  final uri = Uri.parse('https://vision.googleapis.com/v1/images:annotate?key=$visionApiKey');
+  final uri = Uri.parse(
+    'https://vision.googleapis.com/v1/images:annotate?key=$visionApiKey',
+  );
 
   final payload = {
     "requests": [
       {
         "image": {"content": base64Encode(bytes)},
         "features": [
-          {"type": "DOCUMENT_TEXT_DETECTION"}
+          {"type": "DOCUMENT_TEXT_DETECTION"},
         ],
         "imageContext": {
-          "languageHints": ["ru", "en"]
-        }
-      }
-    ]
+          "languageHints": ["ru", "en"],
+        },
+      },
+    ],
   };
 
   final resp = await http.post(
@@ -186,7 +201,8 @@ class _ReviewParsedGoalsSheet extends StatefulWidget {
   });
 
   @override
-  State<_ReviewParsedGoalsSheet> createState() => _ReviewParsedGoalsSheetState();
+  State<_ReviewParsedGoalsSheet> createState() =>
+      _ReviewParsedGoalsSheetState();
 }
 
 class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
@@ -195,7 +211,9 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
   @override
   void initState() {
     super.initState();
-    items = widget.initial.map((e) => _EditableParsed(accepted: true, data: e)).toList();
+    items = widget.initial
+        .map((e) => _EditableParsed(accepted: true, data: e))
+        .toList();
   }
 
   Future<void> _editItem(int i) async {
@@ -211,7 +229,10 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Название')),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(labelText: 'Название'),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -219,7 +240,10 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                 const SizedBox(width: 8),
                 TextButton(
                   onPressed: () async {
-                    final picked = await showTimePicker(context: ctx, initialTime: time);
+                    final picked = await showTimePicker(
+                      context: ctx,
+                      initialTime: time,
+                    );
                     if (picked != null) setState(() => time = picked);
                   },
                   child: Text(time.format(ctx)),
@@ -231,24 +255,38 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                 const Text('Часы:'),
                 Expanded(
                   child: Slider(
-                    min: 0.5, max: 14, divisions: 27,
-                    value: hours, label: hours.toStringAsFixed(1),
+                    min: 0.5,
+                    max: 14,
+                    divisions: 27,
+                    value: hours,
+                    label: hours.toStringAsFixed(1),
                     onChanged: (v) => setState(() => hours = v),
                   ),
                 ),
-                SizedBox(width: 48, child: Text(hours.toStringAsFixed(1), textAlign: TextAlign.right)),
+                SizedBox(
+                  width: 48,
+                  child: Text(
+                    hours.toStringAsFixed(1),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
               ],
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
           FilledButton(
             onPressed: () {
               setState(() {
                 items[i] = items[i].copyWith(
                   data: AddGoalResult(
-                    title: titleCtrl.text.trim().isEmpty ? 'Без названия' : titleCtrl.text.trim(),
+                    title: titleCtrl.text.trim().isEmpty
+                        ? 'Без названия'
+                        : titleCtrl.text.trim(),
                     description: cur.description,
                     lifeBlock: widget.fixedLifeBlock ?? cur.lifeBlock,
                     importance: cur.importance,
@@ -281,11 +319,18 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(2)),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             const SizedBox(height: 12),
-            Text('Найденные задачи', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Найденные задачи',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Expanded(
               child: ListView.separated(
@@ -298,10 +343,14 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                   return ListTile(
                     leading: Checkbox(
                       value: it.accepted,
-                      onChanged: (v) => setState(() => items[i] = it.copyWith(accepted: v ?? true)),
+                      onChanged: (v) => setState(
+                        () => items[i] = it.copyWith(accepted: v ?? true),
+                      ),
                     ),
                     title: Text(d.title),
-                    subtitle: Text('${d.startTime.format(context)} • ${d.hours.toStringAsFixed(1)} ч'),
+                    subtitle: Text(
+                      '${d.startTime.format(context)} • ${d.hours.toStringAsFixed(1)} ч',
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: () => _editItem(i),
@@ -326,7 +375,10 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                     Expanded(
                       child: FilledButton(
                         onPressed: () {
-                          final accepted = items.where((e) => e.accepted).map((e) => e.data).toList();
+                          final accepted = items
+                              .where((e) => e.accepted)
+                              .map((e) => e.data)
+                              .toList();
                           Navigator.pop(context, accepted);
                         },
                         child: const Text('Добавить выбранные'),
@@ -349,5 +401,8 @@ class _EditableParsed {
   _EditableParsed({required this.accepted, required this.data});
 
   _EditableParsed copyWith({bool? accepted, AddGoalResult? data}) =>
-      _EditableParsed(accepted: accepted ?? this.accepted, data: data ?? this.data);
+      _EditableParsed(
+        accepted: accepted ?? this.accepted,
+        data: data ?? this.data,
+      );
 }

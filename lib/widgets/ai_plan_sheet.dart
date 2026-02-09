@@ -101,8 +101,13 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
           );
 
           for (final start in occ) {
-            final deadline =
-                DateTime(start.year, start.month, start.day, 23, 59);
+            final deadline = DateTime(
+              start.year,
+              start.month,
+              start.day,
+              23,
+              59,
+            );
             await dbRepo.createGoal(
               title: it.title,
               description: _desc(it),
@@ -161,9 +166,9 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не удалось применить: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Не удалось применить: $e')));
     }
   }
 
@@ -191,9 +196,11 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
     final out = <DateTime>[];
     final wds = weekdays.isEmpty ? {startDay.weekday} : weekdays;
 
-    for (var day = startDay;
-        !day.isAfter(until);
-        day = day.add(const Duration(days: 1))) {
+    for (
+      var day = startDay;
+      !day.isAfter(until);
+      day = day.add(const Duration(days: 1))
+    ) {
       if (wds.contains(day.weekday)) out.add(combine(day, time));
     }
     return out;
@@ -264,8 +271,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                 if (_planId != null)
                   Text(
                     'ID: ${_planId!.substring(0, 6)}…',
-                    style:
-                        tt.labelMedium?.copyWith(color: cs.onSurfaceVariant),
+                    style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant),
                   ),
               ],
             ),
@@ -368,21 +374,24 @@ class _PlanCard extends StatelessWidget {
                     children: [
                       Text(
                         item.title,
-                        style: tt.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                        style: tt.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _whenText(context, item.startTime.toLocal()),
-                        style: tt.labelMedium
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                        style: tt.labelMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                       if ((item.reason ?? '').trim().isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Text(
                           item.reason!,
-                          style: tt.bodySmall
-                              ?.copyWith(color: cs.onSurfaceVariant),
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ],
@@ -413,16 +422,26 @@ class _PlanCard extends StatelessWidget {
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'general', child: Text('general')),
+                      DropdownMenuItem(
+                        value: 'general',
+                        child: Text('general'),
+                      ),
                       DropdownMenuItem(value: 'sport', child: Text('sport')),
                       DropdownMenuItem(value: 'health', child: Text('health')),
                       DropdownMenuItem(
-                          value: 'business', child: Text('business')),
+                        value: 'business',
+                        child: Text('business'),
+                      ),
                       DropdownMenuItem(
-                          value: 'creative', child: Text('creative')),
+                        value: 'creative',
+                        child: Text('creative'),
+                      ),
                       DropdownMenuItem(value: 'family', child: Text('family')),
                       DropdownMenuItem(value: 'travel', child: Text('travel')),
-                      DropdownMenuItem(value: 'science', child: Text('science')),
+                      DropdownMenuItem(
+                        value: 'science',
+                        child: Text('science'),
+                      ),
                     ],
                     onChanged: (v) {
                       item.lifeBlock = _PlanItem.normalizeLifeBlock(v);
@@ -442,10 +461,12 @@ class _PlanCard extends StatelessWidget {
               onChanged: (v) {
                 item.isRecurring = v;
                 if (v) {
-                  item.time ??=
-                      TimeOfDay.fromDateTime(item.startTime.toLocal());
-                  item.until ??= DateUtils.dateOnly(DateTime.now())
-                      .add(const Duration(days: 14));
+                  item.time ??= TimeOfDay.fromDateTime(
+                    item.startTime.toLocal(),
+                  );
+                  item.until ??= DateUtils.dateOnly(
+                    DateTime.now(),
+                  ).add(const Duration(days: 14));
                   item.weekdays = {item.startTime.toLocal().weekday};
                 }
                 onChanged();
@@ -498,8 +519,9 @@ class _RecurringControls extends StatelessWidget {
         context: context,
         initialDate: item.until ?? DateTime.now().add(const Duration(days: 14)),
         firstDate: DateUtils.dateOnly(DateTime.now()),
-        lastDate:
-            DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 365)),
+        lastDate: DateUtils.dateOnly(
+          DateTime.now(),
+        ).add(const Duration(days: 365)),
       );
       if (d != null) {
         item.until = DateUtils.dateOnly(d);
@@ -510,8 +532,10 @@ class _RecurringControls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Дни недели',
-            style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Дни недели',
+          style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,

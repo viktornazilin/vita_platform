@@ -14,7 +14,10 @@ class ReportMetricRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: Text(label)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
+          Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface),
+          ),
         ],
       ),
     );

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/life_block.dart';
 import '../models/onboarding_questionnaire_model.dart';
 import '../services/user_service.dart';
 
 class OnboardingQuestionnaireScreen extends StatelessWidget {
-  /// Опциональный колбэк — если передан, он выполнится вместо дефолтной навигации.
   final VoidCallback? onCompleted;
-
-  /// ВАЖНО: передаём сюда ТОТ ЖЕ инстанс, что создаётся в VitaApp.
   final UserService userService;
 
   const OnboardingQuestionnaireScreen({
@@ -18,8 +16,14 @@ class OnboardingQuestionnaireScreen extends StatelessWidget {
   });
 
   static const prioritiesOptions = [
-    'Здоровье', 'Карьера', 'Деньги', 'Семья',
-    'Развитие', 'Любовь', 'Творчество', 'Баланс',
+    'Здоровье',
+    'Карьера',
+    'Деньги',
+    'Семья',
+    'Развитие',
+    'Любовь',
+    'Творчество',
+    'Баланс',
   ];
 
   @override
@@ -50,24 +54,20 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
 
   List<Widget> _buildSteps(OnboardingQuestionnaireModel m) {
     final steps = <Widget>[
+      const _StepProfileBasics(),
       const _StepLifeBlocks(),
-      const _StepSleep(),
-      const _StepActivity(),
-      const _StepEnergy(),
-      const _StepStress(),
-      const _StepFinance(),
       const _StepPriorities(),
     ];
+
     // динамические шаги: по одной карточке на выбранную сферу
     for (final b in m.selectedBlocks) {
-      steps.add(_StepBlockDreamsGoals(block: b));
+      steps.add(_StepBlockGoals(block: b));
     }
     return steps;
   }
 
   void _goNext(OnboardingQuestionnaireModel m, int stepsLen) {
     if (m.currentStep < stepsLen - 1) {
-      // только листаем; индекс шага обновится в onPageChanged
       _pageController.animateToPage(
         m.currentStep + 1,
         duration: const Duration(milliseconds: 220),
@@ -80,7 +80,6 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
 
   void _goPrev(OnboardingQuestionnaireModel m) {
     if (m.currentStep > 0) {
-      // только листаем; индекс шага обновится в onPageChanged
       _pageController.animateToPage(
         m.currentStep - 1,
         duration: const Duration(milliseconds: 200),
@@ -90,7 +89,6 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
   }
 
   Future<void> _submit(OnboardingQuestionnaireModel m) async {
-    // На всякий случай: блокируем двойные тапы
     if (m.isLoading) return;
 
     final ok = await m.submit();
@@ -100,16 +98,14 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
       if (widget.onCompleted != null) {
         widget.onCompleted!.call();
       } else {
-        // Дефолт: после опроса уходим на /login и чистим стек
-        Navigator.of(context, rootNavigator: true)
-            .pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } else {
-      // Покажем ошибку, если она есть
       final msg = m.errorText ?? 'Не удалось сохранить ответы';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
@@ -119,13 +115,11 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
     final steps = _buildSteps(m);
     final stepsLen = steps.length;
 
-    // Страховка на случай, если из-за динамики шагов текущий индекс стал вне диапазона
     if (stepsLen > 0 && m.currentStep > stepsLen - 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final safe = stepsLen - 1;
         _pageController.jumpToPage(safe);
-        // аккуратно синхронизируем индикатор
         m.currentStep = safe;
         m.notifyListeners();
       });
@@ -134,21 +128,15 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
     final progress = stepsLen == 0 ? 0.0 : (m.currentStep + 1) / stepsLen;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Инициация героя'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Инициация героя'), centerTitle: true),
       body: Column(
         children: [
           LinearProgressIndicator(value: progress, minHeight: 6),
           Expanded(
             child: PageView(
               controller: _pageController,
-              // РАЗРЕШАЕМ свайпы по страницам
-              physics: const PageScrollPhysics(), // было NeverScrollableScrollPhysics
-              // СИНХРОНИЗИРУЕМ currentStep и автосейв с моделью
+              physics: const PageScrollPhysics(),
               onPageChanged: (i) {
-                // дергаем логику модели, чтобы сохранить автосейвы/состояние
                 if (i > m.currentStep) {
                   m.nextStep(maxIndex: stepsLen - 1);
                 } else if (i < m.currentStep) {
@@ -184,7 +172,9 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                      onPressed: m.isLoading ? null : () => _goNext(m, stepsLen),
+                      onPressed: m.isLoading
+                          ? null
+                          : () => _goNext(m, stepsLen),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: m.currentStep == stepsLen - 1
@@ -203,7 +193,7 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
   }
 }
 
-/// ---------- общий контейнер шага (красиво и центрировано) ----------
+/// ---------- общий контейнер шага ----------
 class _StepScaffold extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -271,7 +261,82 @@ class _StepScaffold extends StatelessWidget {
   }
 }
 
-// ---------- шаг 1: выбор сфер жизни ----------
+/// ✅ Новый шаг: базовые данные профиля
+class _StepProfileBasics extends StatefulWidget {
+  const _StepProfileBasics();
+
+  @override
+  State<_StepProfileBasics> createState() => _StepProfileBasicsState();
+}
+
+class _StepProfileBasicsState extends State<_StepProfileBasics> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _ageCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = context.read<OnboardingQuestionnaireModel>();
+    _nameCtrl = TextEditingController(text: m.name ?? '');
+    _ageCtrl = TextEditingController(
+      text: m.age != null ? m.age.toString() : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _ageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final m = context.watch<OnboardingQuestionnaireModel>();
+
+    return _StepScaffold(
+      title: 'Давай познакомимся',
+      subtitle: 'Это нужно для профиля и персонализации',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Имя',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => m.setName(v.trim().isEmpty ? null : v.trim()),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ageCtrl,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Возраст',
+              hintText: 'Например: 26',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) {
+              final t = v.trim();
+              if (t.isEmpty) return m.setAge(null);
+              final parsed = int.tryParse(t);
+              if (parsed == null) return;
+              m.setAge(parsed);
+            },
+          ),
+          const SizedBox(height: 8),
+          const Opacity(
+            opacity: .7,
+            child: Text('Имя можно менять позже в профиле.'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// шаг: выбор сфер жизни
 class _StepLifeBlocks extends StatelessWidget {
   const _StepLifeBlocks();
 
@@ -298,157 +363,7 @@ class _StepLifeBlocks extends StatelessWidget {
   }
 }
 
-// ---------- шаг 2: сон ----------
-class _StepSleep extends StatelessWidget {
-  const _StepSleep();
-
-  @override
-  Widget build(BuildContext context) {
-    final m = context.watch<OnboardingQuestionnaireModel>();
-    final opts = const [
-      ['4-5', '4–5 часов'],
-      ['6-7', '6–7 часов'],
-      ['8+',  '8+ часов'],
-    ];
-    return _StepScaffold(
-      title: 'Сколько ты обычно спишь?',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: opts.map((o) {
-          final v = o[0];
-          return RadioListTile<String>(
-            value: v,
-            groupValue: m.sleep,
-            onChanged: (x) => m.setSleep(x!),
-            title: Text(o[1]),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-// ---------- шаг 3: активность ----------
-class _StepActivity extends StatelessWidget {
-  const _StepActivity();
-
-  @override
-  Widget build(BuildContext context) {
-    final m = context.watch<OnboardingQuestionnaireModel>();
-    final opts = const [
-      ['daily', 'Каждый день'],
-      ['3-4w',  '3–4 раза в неделю'],
-      ['rare',  'Иногда'],
-      ['none',  'Почти нет'],
-    ];
-    return _StepScaffold(
-      title: 'Как часто у тебя есть физическая активность?',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: opts.map((o) {
-          final v = o[0];
-          return RadioListTile<String>(
-            value: v,
-            groupValue: m.activity,
-            onChanged: (x) => m.setActivity(x!),
-            title: Text(o[1]),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-// ---------- шаг 4: энергия ----------
-class _StepEnergy extends StatelessWidget {
-  const _StepEnergy();
-
-  @override
-  Widget build(BuildContext context) {
-    final m = context.watch<OnboardingQuestionnaireModel>();
-    return _StepScaffold(
-      title: 'Сколько у тебя энергии сегодня?',
-      subtitle: 'Оцени от 0 до 10',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Slider(
-            value: m.energy.toDouble(),
-            min: 0,
-            max: 10,
-            divisions: 10,
-            label: '${m.energy}',
-            onChanged: (v) => m.setEnergy(v),
-          ),
-          const SizedBox(height: 8),
-          Text('Энергия: ${m.energy}/10'),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------- шаг 5: стресс ----------
-class _StepStress extends StatelessWidget {
-  const _StepStress();
-
-  @override
-  Widget build(BuildContext context) {
-    final m = context.watch<OnboardingQuestionnaireModel>();
-    final opts = const [
-      ['daily',     'Почти каждый день'],
-      ['sometimes', 'Иногда'],
-      ['rare',      'Редко'],
-      ['never',     'Почти никогда'],
-    ];
-    return _StepScaffold(
-      title: 'Как часто ты испытываешь стресс?',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: opts.map((o) {
-          final v = o[0];
-          return RadioListTile<String>(
-            value: v,
-            groupValue: m.stress,
-            onChanged: (x) => m.setStress(x!),
-            title: Text(o[1]),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-// ---------- шаг 6: финансы ----------
-class _StepFinance extends StatelessWidget {
-  const _StepFinance();
-
-  @override
-  Widget build(BuildContext context) {
-    final m = context.watch<OnboardingQuestionnaireModel>();
-    return _StepScaffold(
-      title: 'Насколько ты доволен своей финансовой ситуацией?',
-      subtitle: 'От 1 (совсем нет) до 5 (полностью)',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Slider(
-            value: m.finance.toDouble(),
-            min: 1,
-            max: 5,
-            divisions: 4,
-            label: '${m.finance}',
-            onChanged: (v) => m.setFinance(v),
-          ),
-          const SizedBox(height: 8),
-          Text('Оценка: ${m.finance}/5'),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------- шаг 7: приоритеты ----------
+/// шаг: приоритеты
 class _StepPriorities extends StatelessWidget {
   const _StepPriorities();
 
@@ -457,7 +372,7 @@ class _StepPriorities extends StatelessWidget {
     final m = context.watch<OnboardingQuestionnaireModel>();
     return _StepScaffold(
       title: 'Что для тебя важнее всего ближайшие 3–6 месяцев?',
-      subtitle: 'Выбери до трёх',
+      subtitle: 'Выбери до трёх — это влияет на рекомендации',
       child: Wrap(
         alignment: WrapAlignment.center,
         spacing: 8,
@@ -475,33 +390,47 @@ class _StepPriorities extends StatelessWidget {
   }
 }
 
-// ---------- динамический шаг: мечты/цели по сфере ----------
-class _StepBlockDreamsGoals extends StatefulWidget {
+/// ✅ Новый динамический шаг: цели по сфере (тактика / средний срок / долгий срок)
+class _StepBlockGoals extends StatefulWidget {
   final LifeBlock block;
-  const _StepBlockDreamsGoals({required this.block});
+  const _StepBlockGoals({required this.block});
 
   @override
-  State<_StepBlockDreamsGoals> createState() => _StepBlockDreamsGoalsState();
+  State<_StepBlockGoals> createState() => _StepBlockGoalsState();
 }
 
-class _StepBlockDreamsGoalsState extends State<_StepBlockDreamsGoals> {
-  late final TextEditingController _dreamsCtrl;
-  late final TextEditingController _goalsCtrl;
+class _StepBlockGoalsState extends State<_StepBlockGoals> {
+  late final TextEditingController _tacticalCtrl;
+  late final TextEditingController _midCtrl;
+  late final TextEditingController _longCtrl;
+  late final TextEditingController _whyCtrl;
 
   @override
   void initState() {
     super.initState();
     final m = context.read<OnboardingQuestionnaireModel>();
-    _dreamsCtrl =
-        TextEditingController(text: m.dreamsByBlock[widget.block.name] ?? '');
-    _goalsCtrl =
-        TextEditingController(text: m.goalsByBlock[widget.block.name] ?? '');
+
+    // Подхвати то, что у тебя уже хранится в модели.
+    _tacticalCtrl = TextEditingController(
+      text: m.goalsTacticalByBlock?[widget.block.name] ?? '',
+    );
+    _midCtrl = TextEditingController(
+      text: m.goalsMidByBlock?[widget.block.name] ?? '',
+    );
+    _longCtrl = TextEditingController(
+      text: m.goalsLongByBlock?[widget.block.name] ?? '',
+    );
+    _whyCtrl = TextEditingController(
+      text: m.whyByBlock?[widget.block.name] ?? '',
+    );
   }
 
   @override
   void dispose() {
-    _dreamsCtrl.dispose();
-    _goalsCtrl.dispose();
+    _tacticalCtrl.dispose();
+    _midCtrl.dispose();
+    _longCtrl.dispose();
+    _whyCtrl.dispose();
     super.dispose();
   }
 
@@ -511,34 +440,59 @@ class _StepBlockDreamsGoalsState extends State<_StepBlockDreamsGoals> {
     final label = getBlockLabel(widget.block);
 
     return _StepScaffold(
-      title: 'Мечты и цели в сфере «$label»',
-      subtitle: 'Необязательные вопросы — можно пропустить',
+      title: 'Цели в сфере «$label»',
+      subtitle: 'Сделаем фокус: тактика → средний срок → долгий срок',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
-            controller: _dreamsCtrl,
-            maxLines: 3,
+            controller: _longCtrl,
+            maxLines: 2,
             decoration: const InputDecoration(
-              labelText: 'Мечты в этой сфере (опционально)',
+              labelText: 'Долгосрочная цель (6–24 месяца)',
+              hintText: 'Например: выучить немецкий до уровня B2',
               border: OutlineInputBorder(),
             ),
-            onChanged: (v) => m.setBlockDream(widget.block, v),
+            onChanged: (v) => m.setBlockGoalLong(widget.block, v),
           ),
           const SizedBox(height: 12),
           TextField(
-            controller: _goalsCtrl,
-            maxLines: 3,
+            controller: _midCtrl,
+            maxLines: 2,
             decoration: const InputDecoration(
-              labelText: 'Цели на 3–6 месяцев (опционально)',
+              labelText: 'Среднесрочная цель (2–6 месяцев)',
+              hintText: 'Например: пройти курс A2→B1 и сдать экзамен',
               border: OutlineInputBorder(),
             ),
-            onChanged: (v) => m.setBlockGoal(widget.block, v),
+            onChanged: (v) => m.setBlockGoalMid(widget.block, v),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _tacticalCtrl,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Тактическая цель (2–4 недели)',
+              hintText:
+                  'Например: 12 занятий по 30 минут + 2 разговорных клуба',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => m.setBlockGoalTactical(widget.block, v),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _whyCtrl,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Почему это важно? (опционально)',
+              hintText: 'Мотивация/смысл — поможет удерживать курс',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => m.setBlockWhy(widget.block, v),
+          ),
+          const SizedBox(height: 6),
           const Opacity(
             opacity: .7,
-            child: Text('Оставь пустым и нажми «Далее», если пока не готов отвечать.'),
+            child: Text('Можно оставить пустым и нажать «Далее».'),
           ),
         ],
       ),

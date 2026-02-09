@@ -37,7 +37,10 @@ class WelcomeScreen extends StatelessWidget {
                       children: [
                         Hero(
                           tag: 'app_logo',
-                          child: Image.asset('assets/images/logo.png', height: 100),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: 100,
+                          ),
                         ),
                         const SizedBox(height: 20),
                         Text(
@@ -69,7 +72,9 @@ class WelcomeScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: cs.surface.withOpacity(0.85),
-                            border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+                            border: Border.all(
+                              color: cs.outlineVariant.withOpacity(0.6),
+                            ),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
@@ -84,7 +89,8 @@ class WelcomeScreen extends StatelessWidget {
                               _AnimatedButton(
                                 delay: 200,
                                 child: FilledButton.icon(
-                                  onPressed: () => Navigator.pushNamed(context, '/login'),
+                                  onPressed: () =>
+                                      Navigator.pushNamed(context, '/login'),
                                   icon: const Icon(Icons.login),
                                   label: const Text('Войти'),
                                   style: FilledButton.styleFrom(
@@ -99,8 +105,11 @@ class WelcomeScreen extends StatelessWidget {
                               _AnimatedButton(
                                 delay: 300,
                                 child: OutlinedButton.icon(
-                                  onPressed: () => Navigator.pushNamed(context, '/register'),
-                                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                                  onPressed: () =>
+                                      Navigator.pushNamed(context, '/register'),
+                                  icon: const Icon(
+                                    Icons.person_add_alt_1_outlined,
+                                  ),
                                   label: const Text('Создать аккаунт'),
                                   style: OutlinedButton.styleFrom(
                                     minimumSize: const Size.fromHeight(54),

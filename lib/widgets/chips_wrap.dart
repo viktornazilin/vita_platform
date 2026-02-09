@@ -38,25 +38,37 @@ class ChipsWrap extends StatelessWidget {
               onLongPress: it.menuBuilder == null
                   ? null
                   : () {
-                      final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+                      final overlay =
+                          Overlay.of(context).context.findRenderObject()
+                              as RenderBox?;
                       final box = context.findRenderObject() as RenderBox?;
-                      final offset = box?.localToGlobal(Offset.zero) ?? Offset.zero;
+                      final offset =
+                          box?.localToGlobal(Offset.zero) ?? Offset.zero;
                       final size = box?.size ?? const Size(0, 0);
                       showMenu<void>(
                         context: context,
                         position: RelativeRect.fromLTRB(
-                          offset.dx, offset.dy + size.height, overlay?.size.width ?? 0, 0,
+                          offset.dx,
+                          offset.dy + size.height,
+                          overlay?.size.width ?? 0,
+                          0,
                         ),
                         items: it.menuBuilder!(context),
                       );
                     },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.label_rounded, size: 16),
-                  const SizedBox(width: 6),
-                  Text(it.label, style: TextStyle(color: cs.onSurface)),
-                ]),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.label_rounded, size: 16),
+                    const SizedBox(width: 6),
+                    Text(it.label, style: TextStyle(color: cs.onSurface)),
+                  ],
+                ),
               ),
             ),
           ),

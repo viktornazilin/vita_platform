@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
-Future<double?> showLimitSheet(BuildContext context, {required String categoryName, double? current}) {
+Future<double?> showLimitSheet(
+  BuildContext context, {
+  required String categoryName,
+  double? current,
+}) {
   final ctrl = TextEditingController(text: current?.toStringAsFixed(0) ?? '');
   return showModalBottomSheet<double?>(
     context: context,
@@ -24,7 +28,9 @@ Future<double?> showLimitSheet(BuildContext context, {required String categoryNa
                   leading: const Icon(Icons.tune),
                   title: Text(
                     'Лимит для «$categoryName»',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   subtitle: const Text('Пусто — без лимита'),
                 ),
@@ -35,7 +41,9 @@ Future<double?> showLimitSheet(BuildContext context, {required String categoryNa
                   decoration: InputDecoration(
                     labelText: 'Максимум ₽ в месяц',
                     prefixIcon: const Icon(Icons.currency_ruble),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),

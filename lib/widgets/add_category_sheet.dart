@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
-Future<String?> showAddCategorySheet(BuildContext context, {required bool income}) {
+Future<String?> showAddCategorySheet(
+  BuildContext context, {
+  required bool income,
+}) {
   final cs = Theme.of(context).colorScheme;
   final ctrl = TextEditingController();
   return showModalBottomSheet<String>(
@@ -22,10 +25,17 @@ Future<String?> showAddCategorySheet(BuildContext context, {required bool income
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: Icon(income ? Icons.trending_up : Icons.trending_down, color: cs.primary),
+                  leading: Icon(
+                    income ? Icons.trending_up : Icons.trending_down,
+                    color: cs.primary,
+                  ),
                   title: Text(
-                    income ? 'Новая доходная категория' : 'Новая расходная категория',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    income
+                        ? 'Новая доходная категория'
+                        : 'Новая расходная категория',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -36,7 +46,9 @@ Future<String?> showAddCategorySheet(BuildContext context, {required bool income
                   decoration: InputDecoration(
                     labelText: 'Название',
                     prefixIcon: const Icon(Icons.label_outline),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   onSubmitted: (_) => Navigator.pop(ctx, ctrl.text.trim()),
                 ),
@@ -49,7 +61,9 @@ Future<String?> showAddCategorySheet(BuildContext context, {required bool income
                     label: const Text('Создать'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),

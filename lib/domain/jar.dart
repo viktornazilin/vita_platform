@@ -15,6 +15,12 @@ class Jar {
     this.active = true,
   });
 
-  Jar copyWith({double? currentAmount}) =>
-      Jar(id: id, title: title, targetAmount: targetAmount, currentAmount: currentAmount ?? this.currentAmount, percentOfFree: percentOfFree, active: active);
+  Jar copyWith({double? currentAmount}) => Jar(
+    id: id,
+    title: title,
+    targetAmount: targetAmount,
+    currentAmount: currentAmount ?? this.currentAmount,
+    percentOfFree: percentOfFree,
+    active: active,
+  );
 }

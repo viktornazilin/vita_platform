@@ -4,7 +4,12 @@ class BlockChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const BlockChip({super.key, required this.label, required this.selected, required this.onTap});
+  const BlockChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -3,14 +3,18 @@ import '../services/goal_service.dart';
 
 class GoalsCalendarModel extends ChangeNotifier {
   final GoalService _service;
-  GoalsCalendarModel({GoalService? service}) : _service = service ?? GoalService();
+  GoalsCalendarModel({GoalService? service})
+    : _service = service ?? GoalService();
 
   List<String> _lifeBlocks = [];
   List<String> get lifeBlocks => _lifeBlocks;
 
   String _selectedBlock = 'all';
   String get selectedBlock => _selectedBlock;
-  void setSelectedBlock(String v) { _selectedBlock = v; notifyListeners(); }
+  void setSelectedBlock(String v) {
+    _selectedBlock = v;
+    notifyListeners();
+  }
 
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime get month => _month;
@@ -23,10 +27,18 @@ class GoalsCalendarModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void prevMonth() { _month = DateTime(_month.year, _month.month - 1); notifyListeners(); }
-  void nextMonth() { _month = DateTime(_month.year, _month.month + 1); notifyListeners(); }
+  void prevMonth() {
+    _month = DateTime(_month.year, _month.month - 1);
+    notifyListeners();
+  }
 
-  bool isSameMonth(DateTime d) => d.month == _month.month && d.year == _month.year;
+  void nextMonth() {
+    _month = DateTime(_month.year, _month.month + 1);
+    notifyListeners();
+  }
+
+  bool isSameMonth(DateTime d) =>
+      d.month == _month.month && d.year == _month.year;
 
   List<DateTime> get daysInMonth {
     final first = DateTime(_month.year, _month.month, 1);
@@ -40,5 +52,6 @@ class GoalsCalendarModel extends ChangeNotifier {
     });
   }
 
-  String? get selectedBlockOrNull => _selectedBlock == 'all' ? null : _selectedBlock;
+  String? get selectedBlockOrNull =>
+      _selectedBlock == 'all' ? null : _selectedBlock;
 }

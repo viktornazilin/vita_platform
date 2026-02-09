@@ -4,7 +4,12 @@ class SectionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget child;
-  const SectionCard({super.key, required this.title, required this.subtitle, required this.child});
+  const SectionCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,13 +24,22 @@ class SectionCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(subtitle, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 12),
-          child,
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
       ),
     );
   }

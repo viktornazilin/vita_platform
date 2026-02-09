@@ -2,54 +2,44 @@ import 'package:flutter/foundation.dart';
 import '../models/life_block.dart';
 import '../services/user_service.dart';
 
-/// Лёгкий, «крючковый» опросник: по одному вопросу на экран.
-/// Все ответы сохраняются:
-///  - если юзер залогинен — сразу в таблицу users (по колонкам);
+/// Лёгкий опросник: по одному вопросу на экран.
+/// Сохраняем:
+///  - если юзер залогинен — в users (по колонкам/джсонам);
 ///  - если гость — в драфт через UserService.saveGuestOnboardingDraft(...),
 ///    который перенесёт данные в users после регистрации/логина.
 class OnboardingQuestionnaireModel extends ChangeNotifier {
   final UserService _userService;
   OnboardingQuestionnaireModel({UserService? service})
-      : _userService = service ?? UserService();
+    : _userService = service ?? UserService();
 
-  // --- ДАННЫЕ ---
+  // --- ПРОФИЛЬ ---
+  String? name;
+  int? age;
+
+  void setName(String? v) {
+    name = (v?.trim().isEmpty ?? true) ? null : v!.trim();
+    notifyListeners();
+    _autosaveDraft();
+  }
+
+  void setAge(int? v) {
+    age = v;
+    notifyListeners();
+    _autosaveDraft();
+  }
+
+  // --- СФЕРЫ ЖИЗНИ ---
   final Set<LifeBlock> selectedBlocks = {};
-  final Map<String, String> dreamsByBlock = {}; // key = LifeBlock.name
-  final Map<String, String> goalsByBlock = {};
-
-  // Компактные метрики
-  String? sleep;      // '4-5', '6-7', '8+'
-  String? activity;   // 'daily', '3-4w', 'rare', 'none'
-  int energy = 5;     // 0..10
-  String? stress;     // 'daily', 'sometimes', 'rare', 'never'
-  int finance = 3;    // 1..5
-  final List<String> selectedPriorities = []; // до 3-х
-
-  // Техсостояние
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  String? _errorText;
-  String? get errorText => _errorText;
-
-  // --- UI helpers ---
-  int currentStep = 0; // лимит приходит с экрана
-
-  // ======== Мутаторы ========
   void toggleBlock(LifeBlock block) {
     selectedBlocks.contains(block)
         ? selectedBlocks.remove(block)
         : selectedBlocks.add(block);
     notifyListeners();
-    _autosaveDraft(); // мгновенный автосейв при изменении важных полей
+    _autosaveDraft();
   }
 
-  void setSleep(String v) { sleep = v; notifyListeners(); _autosaveDraft(); }
-  void setActivity(String v) { activity = v; notifyListeners(); _autosaveDraft(); }
-  void setEnergy(double v) { energy = v.round(); notifyListeners(); _autosaveDraft(); }
-  void setStress(String v) { stress = v; notifyListeners(); _autosaveDraft(); }
-  void setFinance(double v) { finance = v.round(); notifyListeners(); _autosaveDraft(); }
-
+  // --- ПРИОРИТЕТЫ (до 3-х) ---
+  final List<String> selectedPriorities = [];
   void togglePriority(String p, {int max = 3}) {
     if (selectedPriorities.contains(p)) {
       selectedPriorities.remove(p);
@@ -60,7 +50,33 @@ class OnboardingQuestionnaireModel extends ChangeNotifier {
     _autosaveDraft();
   }
 
-  /// Переход вперёд. [maxIndex] — индекс последнего шага (stepsLen - 1).
+  // --- ЦЕЛИ ПО СФЕРАМ (новая структура) ---
+  // key = LifeBlock.name
+  final Map<String, String> goalsTacticalByBlock = {};
+  final Map<String, String> goalsMidByBlock = {};
+  final Map<String, String> goalsLongByBlock = {};
+  final Map<String, String> whyByBlock = {};
+
+  void setBlockGoalTactical(LifeBlock block, String text) {
+    goalsTacticalByBlock[block.name] = text;
+    // без notify на каждый символ
+  }
+
+  void setBlockGoalMid(LifeBlock block, String text) {
+    goalsMidByBlock[block.name] = text;
+  }
+
+  void setBlockGoalLong(LifeBlock block, String text) {
+    goalsLongByBlock[block.name] = text;
+  }
+
+  void setBlockWhy(LifeBlock block, String text) {
+    whyByBlock[block.name] = text;
+  }
+
+  // --- UI helpers ---
+  int currentStep = 0;
+
   void nextStep({required int maxIndex}) {
     if (currentStep < maxIndex) {
       currentStep++;
@@ -76,52 +92,45 @@ class OnboardingQuestionnaireModel extends ChangeNotifier {
     }
   }
 
-  void setBlockDream(LifeBlock block, String text) {
-    dreamsByBlock[block.name] = text;
-    // без лишних notify на каждый символ; автосейв сделаем по таймеру/на кнопке "Далее"
-  }
+  // --- Техсостояние ---
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-  void setBlockGoal(LifeBlock block, String text) {
-    goalsByBlock[block.name] = text;
-  }
+  String? _errorText;
+  String? get errorText => _errorText;
 
-  // Собираем единый payload, который:
-  // - для залогиненного юзера пойдёт в updateUserDetails (по колонкам),
-  // - для гостя сохранится в локальный драфт (UserService перенесёт в users после логина).
+  // --- Payload ---
   Map<String, dynamic> _buildPayload() => {
-        'life_blocks': selectedBlocks.map((e) => e.name).toList(),
-        'sleep': sleep,
-        'activity': activity,
-        'energy': energy,
-        'stress': stress,
-        'finance_satisfaction': finance,
-        'priorities': selectedPriorities,
-        'dreams_by_block': dreamsByBlock,
-        'goals_by_block': goalsByBlock,
-      };
+    // профиль
+    'name': name,
+    'age': age,
 
-  // ======== Submit ========
+    // выбор сфер / приоритеты
+    'life_blocks': selectedBlocks.map((e) => e.name).toList(),
+    'priorities': selectedPriorities,
+
+    // новая детализация целей
+    'goals_tactical_by_block': goalsTacticalByBlock,
+    'goals_mid_by_block': goalsMidByBlock,
+    'goals_long_by_block': goalsLongByBlock,
+    'why_by_block': whyByBlock,
+  };
+
+  // --- Submit ---
   Future<bool> submit() async {
-    if (_isLoading) return false; // защита от двойного тапа
+    if (_isLoading) return false;
     _isLoading = true;
     _errorText = null;
     notifyListeners();
 
     try {
       final id = _userService.currentUser?['id'];
-      final payload = {
-        ..._buildPayload(),
-        'has_completed_questionnaire': true,
-      };
+      final payload = {..._buildPayload(), 'has_completed_questionnaire': true};
 
       if (id != null) {
-        // сохраняем профиль (Supabase: таблица users, отдельные колонки)
         await _userService.updateUserDetails(payload);
-        // продублируем флаг локально на всякий
         await _userService.setHasCompletedQuestionnaire(true);
       } else {
-        // Гость — фиксируем завершение и сохраним драфт;
-        // UserService перенесёт в users при логине/регистрации.
         await _userService.saveGuestOnboardingDraft(
           _buildPayload(),
           completed: true,
@@ -138,13 +147,12 @@ class OnboardingQuestionnaireModel extends ChangeNotifier {
     }
   }
 
-  // ======== Draft (гость) ========
+  // --- Draft (гость) ---
   Future<void> _autosaveDraft() async {
     try {
-      // сохраняем текущий прогресс гостя (без отметки completed)
       await _userService.saveGuestOnboardingDraft(_buildPayload());
     } catch (_) {
-      // игнорируем ошибки автосейва, чтобы не мешать UX
+      // игнорируем автосейв ошибки
     }
   }
 }

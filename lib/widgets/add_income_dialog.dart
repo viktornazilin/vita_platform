@@ -51,7 +51,8 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
     );
     _noteCtrl = TextEditingController(text: widget.initialNote ?? '');
 
-    _catId = widget.initialCategoryId ??
+    _catId =
+        widget.initialCategoryId ??
         (widget.categories.isNotEmpty ? widget.categories.first.id : null);
   }
 
@@ -86,49 +87,60 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialAmount != null ? 'Редактировать доход' : 'Новый доход'),
+      title: Text(
+        widget.initialAmount != null ? 'Редактировать доход' : 'Новый доход',
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(
-              controller: _amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Сумма'),
-              validator: (v) {
-                final d = double.tryParse((v ?? '').replaceAll(',', '.'));
-                if (d == null || d <= 0) return 'Введите корректную сумму';
-                return null;
-              },
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _catId,
-                    items: widget.categories
-                        .map((c) =>
-                            DropdownMenuItem(value: c.id, child: Text(c.name)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _catId = v),
-                    decoration: const InputDecoration(labelText: 'Категория'),
-                    validator: (v) => v == null ? 'Выберите категорию' : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _amountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(labelText: 'Сумма'),
+                validator: (v) {
+                  final d = double.tryParse((v ?? '').replaceAll(',', '.'));
+                  if (d == null || d <= 0) return 'Введите корректную сумму';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _catId,
+                      items: widget.categories
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c.id,
+                              child: Text(c.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _catId = v),
+                      decoration: const InputDecoration(labelText: 'Категория'),
+                      validator: (v) => v == null ? 'Выберите категорию' : null,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: _createCategory,
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Создать категорию',
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _noteCtrl,
-              decoration: const InputDecoration(labelText: 'Комментарий'),
-            ),
-          ]),
+                  IconButton(
+                    onPressed: _createCategory,
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Создать категорию',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _noteCtrl,
+                decoration: const InputDecoration(labelText: 'Комментарий'),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -139,8 +151,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
         ElevatedButton(
           onPressed: () {
             if (!_formKey.currentState!.validate() || _catId == null) return;
-            final amount =
-                double.parse(_amountCtrl.text.replaceAll(',', '.'));
+            final amount = double.parse(_amountCtrl.text.replaceAll(',', '.'));
             Navigator.pop(
               context,
               AddIncomeResult(

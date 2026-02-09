@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'services/user_service.dart';
 import 'models/register_model.dart';
+
 import 'screens/home_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
@@ -11,9 +12,8 @@ import 'screens/settings_screen.dart' as screens;
 import 'screens/expenses_screen.dart';
 import 'screens/budget_setup_screen.dart';
 import 'screens/epic_intro_screen.dart';
-import 'screens/archetype_select_screen.dart';
+
 import 'controllers/theme_controller.dart';
-import 'main.dart'; // dbRepo (если нужно где-то в роутинге)
 
 class VitaApp extends StatefulWidget {
   const VitaApp({super.key});
@@ -35,9 +35,7 @@ class _VitaAppState extends State<VitaApp> {
   Future<void> _initialize() async {
     _userService = UserService();
     await _userService.init();
-    if (mounted) {
-      setState(() => _isReady = true);
-    }
+    if (mounted) setState(() => _isReady = true);
   }
 
   @override
@@ -51,55 +49,48 @@ class _VitaAppState extends State<VitaApp> {
 
     final theme = context.watch<ThemeController>();
 
-    final isLoggedIn   = _userService.currentUser != null;
+    final isLoggedIn = _userService.currentUser != null;
     final hasCompleted = _userService.hasCompletedQuestionnaire;
     final hasSeenIntro = _userService.hasSeenEpicIntro;
-    final hasArchetype = _userService.selectedArchetype != null;
 
     return MaterialApp(
       title: 'Vita Platform',
       debugShowCheckedModeBanner: false,
 
-      // <-- подключаем контроллер темы
+      // ✅ Theme (берём из ThemeController, чтобы применились premium настройки)
       themeMode: theme.mode,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: theme.seedColor,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF4F8FC),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
+      theme: theme.lightTheme.copyWith(
+        appBarTheme: theme.lightTheme.appBarTheme.copyWith(centerTitle: true),
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: theme.seedColor,
-        brightness: Brightness.dark,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
+      darkTheme: theme.darkTheme.copyWith(
+        appBarTheme: theme.darkTheme.appBarTheme.copyWith(centerTitle: true),
       ),
 
       routes: {
         '/home': (_) => const HomeScreen(),
+
         '/register': (_) => ChangeNotifierProvider(
-              create: (_) => RegisterModel(),
-              child: const RegisterScreen(),
-            ),
+          create: (_) => RegisterModel(),
+          child: const RegisterScreen(),
+        ),
+
         '/login': (_) => const LoginScreen(),
+
         '/onboarding': (ctx) => OnboardingQuestionnaireScreen(
-              userService: _userService,
-              onCompleted: () {
-                Navigator.of(ctx).pushReplacementNamed('/login');
-              },
-            ),
+          userService: _userService,
+          onCompleted: () {
+            final loggedIn = _userService.currentUser != null;
+            Navigator.of(
+              ctx,
+            ).pushReplacementNamed(loggedIn ? '/home' : '/login');
+          },
+        ),
+
         '/settings': (_) => const screens.SettingsScreen(),
         '/expenses': (_) => const ExpensesScreen(),
         '/budget': (_) => const BudgetSetupScreen(),
+
         '/intro': (_) => EpicIntroScreen(userService: _userService),
-        '/archetype': (_) => ArchetypeSelectScreen(userService: _userService),
       },
 
       home: _StartGate(
@@ -107,7 +98,6 @@ class _VitaAppState extends State<VitaApp> {
         isLoggedIn: isLoggedIn,
         hasCompleted: hasCompleted,
         hasSeenIntro: hasSeenIntro,
-        hasArchetype: hasArchetype,
       ),
     );
   }
@@ -119,14 +109,12 @@ class _StartGate extends StatelessWidget {
   final bool isLoggedIn;
   final bool hasCompleted;
   final bool hasSeenIntro;
-  final bool hasArchetype;
 
   const _StartGate({
     required this.userService,
     required this.isLoggedIn,
     required this.hasCompleted,
     required this.hasSeenIntro,
-    required this.hasArchetype,
   });
 
   @override
@@ -134,15 +122,15 @@ class _StartGate extends StatelessWidget {
     if (!hasSeenIntro) {
       return EpicIntroScreen(userService: userService);
     }
-    if (!hasArchetype) {
-      return ArchetypeSelectScreen(userService: userService);
+
+    if (!hasCompleted) {
+      return OnboardingQuestionnaireScreen(userService: userService);
     }
+
     if (isLoggedIn) {
-      return hasCompleted
-          ? const HomeScreen()
-          : OnboardingQuestionnaireScreen(userService: userService);
+      return const HomeScreen();
     }
-    // если не залогинен — на логин
+
     return const LoginScreen();
   }
 }

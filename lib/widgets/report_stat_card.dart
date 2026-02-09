@@ -4,7 +4,12 @@ class ReportStatCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
-  const ReportStatCard({super.key, required this.title, required this.value, required this.icon});
+  const ReportStatCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +33,19 @@ class ReportStatCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(value, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(
+                      value,
+                      style: tt.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(title, style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
+                    Text(
+                      title,
+                      style: tt.labelMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),

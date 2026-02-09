@@ -12,7 +12,9 @@ class GoalService {
 
   Future<List<Goal>> getGoalsByDate(DateTime date, {String? lifeBlock}) async {
     final all = await dbRepo.getGoalsByDate(date);
-    return lifeBlock == null ? all : all.where((g) => g.lifeBlock == lifeBlock).toList();
+    return lifeBlock == null
+        ? all
+        : all.where((g) => g.lifeBlock == lifeBlock).toList();
   }
 
   Future<Goal> createGoal({

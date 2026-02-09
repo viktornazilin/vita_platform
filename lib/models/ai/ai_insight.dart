@@ -34,10 +34,11 @@ class AiInsight {
       insight: (m['insight'] ?? '').toString(),
       impactGoal: (impact['goal'] ?? 'general').toString(),
       impactDirection: (impact['direction'] ?? 'mixed').toString(),
-      impactStrength: ((impact['strength'] is num)
-              ? (impact['strength'] as num).toDouble()
-              : 0.5)
-          .clamp(0.0, 1.0),
+      impactStrength:
+          ((impact['strength'] is num)
+                  ? (impact['strength'] as num).toDouble()
+                  : 0.5)
+              .clamp(0.0, 1.0),
       evidence: ev
           .map((e) => e.toString())
           .where((s) => s.trim().isNotEmpty)

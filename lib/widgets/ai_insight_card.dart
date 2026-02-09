@@ -67,7 +67,10 @@ class AiInsightCard extends StatelessWidget {
               runSpacing: -6,
               children: [
                 InfoChip(icon: Icons.flag_outlined, text: item.impactGoal),
-                InfoChip(icon: Icons.tune, text: _strengthLabel(item.impactStrength)),
+                InfoChip(
+                  icon: Icons.tune,
+                  text: _strengthLabel(item.impactStrength),
+                ),
                 InfoChip(
                   icon: Icons.speed,
                   text: '${(item.impactStrength * 100).round()}%',
@@ -81,7 +84,9 @@ class AiInsightCard extends StatelessWidget {
                 style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
-              ...item.evidence.take(3).map(
+              ...item.evidence
+                  .take(3)
+                  .map(
                     (e) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
@@ -114,7 +119,11 @@ class AiInsightCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lightbulb_outline, size: 18, color: cs.onSurfaceVariant),
+                    Icon(
+                      Icons.lightbulb_outline,
+                      size: 18,
+                      color: cs.onSurfaceVariant,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(item.suggestion!, style: tt.bodySmall),
@@ -170,13 +179,12 @@ class _ImpactPill extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
     );
   }
 }
-

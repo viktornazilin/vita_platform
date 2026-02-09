@@ -1,7 +1,8 @@
 class Mood {
   final String id;
   final String userId;
-  final DateTime date; // в БД хранится как DATE, но сюда — DateTime для удобства
+  final DateTime
+  date; // в БД хранится как DATE, но сюда — DateTime для удобства
   final String emoji;
   final String note;
 
@@ -14,19 +15,19 @@ class Mood {
   });
 
   factory Mood.fromMap(Map<String, dynamic> map) => Mood(
-        id: map['id'] as String,
-        userId: map['user_id'] as String,
-        date: DateTime.parse(map['date'] as String),
-        emoji: map['emoji'] as String,
-        note: (map['note'] ?? '') as String,
-      );
+    id: map['id'] as String,
+    userId: map['user_id'] as String,
+    date: DateTime.parse(map['date'] as String),
+    emoji: map['emoji'] as String,
+    note: (map['note'] ?? '') as String,
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'user_id': userId,
-        // нормализуем к дате без времени
-        'date': DateTime(date.year, date.month, date.day).toIso8601String(),
-        'emoji': emoji,
-        'note': note,
-      };
+    'id': id,
+    'user_id': userId,
+    // нормализуем к дате без времени
+    'date': DateTime(date.year, date.month, date.day).toIso8601String(),
+    'emoji': emoji,
+    'note': note,
+  };
 }

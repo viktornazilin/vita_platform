@@ -24,7 +24,9 @@ class SaveBar extends StatelessWidget {
                 : const Icon(Icons.save_outlined),
             label: Text(saving ? 'Сохранение…' : 'Сохранить'),
             style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),

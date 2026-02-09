@@ -15,7 +15,10 @@ class ReportEmptyChart extends StatelessWidget {
           children: [
             Icon(Icons.insights_outlined, color: cs.onSurfaceVariant),
             const SizedBox(height: 6),
-            Text('Недостаточно данных', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+            Text(
+              'Недостаточно данных',
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
           ],
         ),
       ),

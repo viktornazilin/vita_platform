@@ -27,7 +27,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) async {
       final event = data.event;
       final session = data.session;
       if (event == AuthChangeEvent.signedIn && session != null && mounted) {
@@ -57,7 +59,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final hasArchetype =
-        (userService.selectedArchetype != null && userService.selectedArchetype!.isNotEmpty);
+        (userService.selectedArchetype != null &&
+        userService.selectedArchetype!.isNotEmpty);
     if (!hasArchetype) {
       Navigator.pushNamedAndRemoveUntil(context, '/archetype', (_) => false);
       return;
@@ -103,7 +106,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (success && mounted) {
       await _routeAfterAuth();
     } else if (model.error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.error!)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(model.error!)));
     }
   }
 
@@ -145,7 +150,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: cs.surface.withOpacity(0.85),
-                          border: Border.all(color: cs.outlineVariant.withOpacity(0.7)),
+                          border: Border.all(
+                            color: cs.outlineVariant.withOpacity(0.7),
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.06),
@@ -155,18 +162,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ],
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 28,
+                          ),
                           child: Form(
                             key: _formKey,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                  Image.asset('assets/images/logo.png', height: 36),
-                                ]),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/logo.png',
+                                      height: 36,
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 16),
-                                Text('Создайте аккаунт',
-                                    style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                                Text(
+                                  'Создайте аккаунт',
+                                  style: tt.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 const SizedBox(height: 18),
 
                                 TextFormField(
@@ -174,11 +194,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   textInputAction: TextInputAction.next,
                                   decoration: InputDecoration(
                                     labelText: 'Имя',
-                                    prefixIcon: const Icon(Icons.person_outline),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                    prefixIcon: const Icon(
+                                      Icons.person_outline,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
                                     filled: true,
                                   ),
-                                  validator: (v) => v!.trim().isEmpty ? 'Введите имя' : null,
+                                  validator: (v) =>
+                                      v!.trim().isEmpty ? 'Введите имя' : null,
                                 ),
                                 const SizedBox(height: 12),
 
@@ -189,8 +214,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   validator: _validateEmail,
                                   decoration: InputDecoration(
                                     labelText: 'Email',
-                                    prefixIcon: const Icon(Icons.alternate_email),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                    prefixIcon: const Icon(
+                                      Icons.alternate_email,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
                                     filled: true,
                                   ),
                                 ),
@@ -205,10 +234,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     labelText: 'Пароль',
                                     prefixIcon: const Icon(Icons.lock_outline),
                                     suffixIcon: IconButton(
-                                      icon: Icon(_obscure1 ? Icons.visibility : Icons.visibility_off),
-                                      onPressed: () => setState(() => _obscure1 = !_obscure1),
+                                      icon: Icon(
+                                        _obscure1
+                                            ? Icons.visibility
+                                            : Icons.visibility_off,
+                                      ),
+                                      onPressed: () => setState(
+                                        () => _obscure1 = !_obscure1,
+                                      ),
                                     ),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
                                     filled: true,
                                   ),
                                 ),
@@ -224,17 +261,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     labelText: 'Подтвердите пароль',
                                     prefixIcon: const Icon(Icons.lock),
                                     suffixIcon: IconButton(
-                                      icon: Icon(_obscure2 ? Icons.visibility : Icons.visibility_off),
-                                      onPressed: () => setState(() => _obscure2 = !_obscure2),
+                                      icon: Icon(
+                                        _obscure2
+                                            ? Icons.visibility
+                                            : Icons.visibility_off,
+                                      ),
+                                      onPressed: () => setState(
+                                        () => _obscure2 = !_obscure2,
+                                      ),
                                     ),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
                                     filled: true,
                                   ),
                                 ),
 
                                 if (model.error != null) ...[
                                   const SizedBox(height: 10),
-                                  Text(model.error!, style: TextStyle(color: cs.error)),
+                                  Text(
+                                    model.error!,
+                                    style: TextStyle(color: cs.error),
+                                  ),
                                 ],
                                 const SizedBox(height: 16),
 
@@ -245,18 +293,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     child: model.loading
                                         ? const Padding(
                                             key: ValueKey('loader'),
-                                            padding: EdgeInsets.symmetric(vertical: 12),
-                                            child: Center(child: CircularProgressIndicator()),
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: 12,
+                                            ),
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
                                           )
                                         : FilledButton.icon(
                                             key: const ValueKey('regbtn'),
                                             onPressed: _onRegister,
-                                            icon: const Icon(Icons.person_add_alt_1_outlined),
-                                            label: const Text('Зарегистрироваться'),
+                                            icon: const Icon(
+                                              Icons.person_add_alt_1_outlined,
+                                            ),
+                                            label: const Text(
+                                              'Зарегистрироваться',
+                                            ),
                                             style: FilledButton.styleFrom(
-                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 14,
+                                                  ),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(14),
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
                                               ),
                                             ),
                                           ),
@@ -264,25 +325,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
 
                                 const SizedBox(height: 16),
-                                Row(children: [
-                                  const Expanded(child: Divider()),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    child: Text('или',
-                                        style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
-                                  ),
-                                  const Expanded(child: Divider()),
-                                ]),
+                                Row(
+                                  children: [
+                                    const Expanded(child: Divider()),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: Text(
+                                        'или',
+                                        style: tt.labelMedium?.copyWith(
+                                          color: cs.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                    const Expanded(child: Divider()),
+                                  ],
+                                ),
                                 const SizedBox(height: 12),
 
                                 SizedBox(
                                   width: double.infinity,
                                   child: OutlinedButton.icon(
-                                    onPressed: model.loading ? null : _registerWithGoogle,
+                                    onPressed: model.loading
+                                        ? null
+                                        : _registerWithGoogle,
                                     icon: const Icon(Icons.g_mobiledata),
-                                    label: const Text('Регистрация через Google'),
+                                    label: const Text(
+                                      'Регистрация через Google',
+                                    ),
                                     style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14),
                                       ),
@@ -292,7 +367,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                 const SizedBox(height: 12),
                                 TextButton(
-                                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                                  onPressed: () =>
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        '/login',
+                                      ),
                                   child: const Text('Уже есть аккаунт? Войти'),
                                 ),
                               ],

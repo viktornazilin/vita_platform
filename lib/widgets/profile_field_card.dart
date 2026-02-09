@@ -4,11 +4,7 @@ class ProfileFieldCard extends StatelessWidget {
   final String label;
   final dynamic value; // <- допускаем int, List, String, null
 
-  const ProfileFieldCard({
-    super.key,
-    required this.label,
-    required this.value,
-  });
+  const ProfileFieldCard({super.key, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

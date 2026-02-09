@@ -21,6 +21,8 @@ class GoalsScreen extends StatelessWidget {
   }
 }
 
+enum _ViewMode { dashboard, calendar }
+
 enum _CalMode { week, month }
 
 class _GoalsView extends StatefulWidget {
@@ -31,14 +33,16 @@ class _GoalsView extends StatefulWidget {
 }
 
 class _GoalsViewState extends State<_GoalsView> {
-  _CalMode _mode = _CalMode.week; // по умолчанию — текущая неделя
+  _ViewMode _view = _ViewMode.dashboard; // ✅ по умолчанию — дашборд
+  _CalMode _calMode = _CalMode.week; // календарь: неделя/месяц
+
   DateTime _anchor = DateTime.now();
 
   // heatmap: день -> (сфера -> часы выполненных задач)
   Map<DateTime, Map<String, double>> _heat = {};
   double _targetHours = 8; // дневная норма из настроек/БД
 
-  // цвета по сферам (подгони ключи под свои lifeBlock)
+  // цвета по сферам (general НЕ учитываем)
   static const Map<String, Color> _blockColors = {
     'health': Color(0xFF2E7D32),
     'career': Color.fromARGB(255, 96, 164, 241),
@@ -46,7 +50,6 @@ class _GoalsViewState extends State<_GoalsView> {
     'relations': Color.fromARGB(255, 240, 45, 116),
     'education': Color.fromARGB(255, 99, 232, 218),
     'finance': Color.fromARGB(255, 245, 153, 4),
-    'general': Color(0xFF546E7A),
   };
 
   // ---------- helpers (неделя/месяц) ----------
@@ -57,22 +60,36 @@ class _GoalsViewState extends State<_GoalsView> {
 
   List<DateTime> _weekDays(DateTime anchor) {
     final start = _startOfWeek(anchor);
-    return List.generate(7, (i) => DateTime(start.year, start.month, start.day + i));
+    return List.generate(
+      7,
+      (i) => DateTime(start.year, start.month, start.day + i),
+    );
   }
 
   int _isoWeekNumber(DateTime date) {
     final thursday = date.add(Duration(days: 3 - ((date.weekday + 6) % 7)));
     final firstThursday = DateTime(thursday.year, 1, 4);
-    final firstThursdayWeekStart =
-        firstThursday.subtract(Duration(days: (firstThursday.weekday + 6) % 7));
+    final firstThursdayWeekStart = firstThursday.subtract(
+      Duration(days: (firstThursday.weekday + 6) % 7),
+    );
     final diff = thursday.difference(firstThursdayWeekStart).inDays;
     return 1 + (diff ~/ 7);
   }
 
   String _rusMonth(int m) {
     const months = [
-      'Январь','Февраль','Март','Апрель','Май','Июнь',
-      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'
+      'Январь',
+      'Февраль',
+      'Март',
+      'Апрель',
+      'Май',
+      'Июнь',
+      'Июль',
+      'Август',
+      'Сентябрь',
+      'Октябрь',
+      'Ноябрь',
+      'Декабрь',
     ];
     return months[m - 1];
   }
@@ -103,6 +120,19 @@ class _GoalsViewState extends State<_GoalsView> {
       if (ru != null) return '$ru $year';
     }
     return modelTitle;
+  }
+
+  String _weekdayShortRu(int weekday) {
+    const map = {
+      DateTime.monday: 'Пн',
+      DateTime.tuesday: 'Вт',
+      DateTime.wednesday: 'Ср',
+      DateTime.thursday: 'Чт',
+      DateTime.friday: 'Пт',
+      DateTime.saturday: 'Сб',
+      DateTime.sunday: 'Вс',
+    };
+    return map[weekday] ?? '';
   }
 
   void _openDay(BuildContext context, DateTime date) {
@@ -144,17 +174,64 @@ class _GoalsViewState extends State<_GoalsView> {
     for (int i = 0; i < 7; i++) {
       final day = DateTime(monday.year, monday.month, monday.day + i);
       final list = await dbRepo.getGoalsByDate(day);
+
       for (final g in list) {
         if (g.isCompleted != true) continue;
-        final block = (g.lifeBlock ?? 'general').trim().isEmpty ? 'general' : g.lifeBlock!;
-        final hours = (g.spentHours is num) ? (g.spentHours as num).toDouble() : 0.0;
-        final inner = map.putIfAbsent(DateUtils.dateOnly(day), () => <String, double>{});
-        inner[block] = (inner[block] ?? 0) + hours;
+
+        // ✅ general НЕ учитываем
+        final raw = (g.lifeBlock ?? '').trim().toLowerCase();
+        if (raw.isEmpty || raw == 'general') continue;
+
+        final hours = (g.spentHours is num)
+            ? (g.spentHours as num).toDouble()
+            : 0.0;
+
+        if (hours <= 0) continue;
+
+        final inner = map.putIfAbsent(
+          DateUtils.dateOnly(day),
+          () => <String, double>{},
+        );
+        inner[raw] = (inner[raw] ?? 0) + hours;
       }
     }
 
     if (!mounted) return;
     setState(() => _heat = map);
+  }
+
+  // ---------- агрегаты для дашборда ----------
+  Map<String, double> _dayHeatFiltered(GoalsCalendarModel m, DateTime day) {
+    final src = _heat[DateUtils.dateOnly(day)];
+    if (src == null || src.isEmpty) return {};
+
+    // на всякий случай
+    final cleaned = Map<String, double>.from(src)..remove('general');
+
+    if (m.selectedBlock != 'all') {
+      final v = cleaned[m.selectedBlock] ?? 0.0;
+      return v > 0 ? {m.selectedBlock: v} : {};
+    }
+    return cleaned;
+  }
+
+  double _sumHours(Map<String, double> heat) {
+    double s = 0.0;
+    for (final v in heat.values) {
+      s += v;
+    }
+    return s;
+  }
+
+  double _p01(double hours, double target) {
+    if (target <= 0) return 0;
+    return (hours / target).clamp(0.0, 1.0);
+  }
+
+  List<MapEntry<String, double>> _top3(Map<String, double> heat) {
+    final list = heat.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return list.take(3).toList();
   }
 
   @override
@@ -166,23 +243,60 @@ class _GoalsViewState extends State<_GoalsView> {
     final mq = MediaQuery.of(context);
     final isCompact = mq.size.width < 600;
     const maxContentW = 900.0;
-    final sidePad = mq.size.width > maxContentW ? (mq.size.width - maxContentW) / 2 : 0.0;
+    final sidePad = mq.size.width > maxContentW
+        ? (mq.size.width - maxContentW) / 2
+        : 0.0;
 
-    final List<DateTime> daysList = _mode == _CalMode.week
-        ? _weekDays(_anchor)
+    final weekDays = _weekDays(_anchor);
+
+    final String headerTitle = _view == _ViewMode.dashboard
+        ? _headerWeek(_anchor)
+        : (_calMode == _CalMode.week
+              ? _headerWeek(_anchor)
+              : _formatModelMonthTitle(m.monthTitle));
+
+    final List<DateTime> daysList = _calMode == _CalMode.week
+        ? weekDays
         : m.daysInMonth;
 
-    final String headerTitle = _mode == _CalMode.week
-        ? _headerWeek(_anchor)
-        : _formatModelMonthTitle(m.monthTitle);
-
-    final weekdayFont = isCompact ? textTheme.titleSmall : textTheme.titleMedium;
     final weekCellHeight = isCompact ? 72.0 : 64.0;
+
+    Future<void> goPrev() async {
+      if (_view == _ViewMode.dashboard) {
+        setState(() => _anchor = _anchor.subtract(const Duration(days: 7)));
+        await _loadWeekHeat();
+        return;
+      }
+
+      // calendar
+      if (_calMode == _CalMode.week) {
+        setState(() => _anchor = _anchor.subtract(const Duration(days: 7)));
+        await _loadWeekHeat();
+      } else {
+        m.prevMonth();
+      }
+    }
+
+    Future<void> goNext() async {
+      if (_view == _ViewMode.dashboard) {
+        setState(() => _anchor = _anchor.add(const Duration(days: 7)));
+        await _loadWeekHeat();
+        return;
+      }
+
+      // calendar
+      if (_calMode == _CalMode.week) {
+        setState(() => _anchor = _anchor.add(const Duration(days: 7)));
+        await _loadWeekHeat();
+      } else {
+        m.nextMonth();
+      }
+    }
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // компактная шапка
+          // шапка
           SliverAppBar(
             pinned: true,
             centerTitle: false,
@@ -192,7 +306,7 @@ class _GoalsViewState extends State<_GoalsView> {
                 tooltip: 'Сегодня',
                 onPressed: () async {
                   setState(() => _anchor = DateTime.now());
-                  if (_mode == _CalMode.week) await _loadWeekHeat();
+                  await _loadWeekHeat();
                 },
                 icon: const Icon(Icons.today),
               ),
@@ -224,19 +338,23 @@ class _GoalsViewState extends State<_GoalsView> {
                           selected: m.selectedBlock == 'all',
                           onTap: () => m.setSelectedBlock('all'),
                         ),
-                        ...m.lifeBlocks.map((b) => Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: BlockChip(
-                                label: getBlockLabel(
-                                  LifeBlock.values.firstWhere(
-                                    (e) => e.name == b,
-                                    orElse: () => LifeBlock.health,
+                        ...m.lifeBlocks
+                            .where((b) => b.toLowerCase() != 'general') // ✅
+                            .map(
+                              (b) => Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: BlockChip(
+                                  label: getBlockLabel(
+                                    LifeBlock.values.firstWhere(
+                                      (e) => e.name == b,
+                                      orElse: () => LifeBlock.health,
+                                    ),
                                   ),
+                                  selected: m.selectedBlock == b,
+                                  onTap: () => m.setSelectedBlock(b),
                                 ),
-                                selected: m.selectedBlock == b,
-                                onTap: () => m.setSelectedBlock(b),
                               ),
-                            )),
+                            ),
                       ],
                     ),
                   ),
@@ -245,21 +363,14 @@ class _GoalsViewState extends State<_GoalsView> {
             ),
           ),
 
-          // заголовок периода + переключатель
+          // заголовок периода + навигация + переключатели
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(12 + sidePad, 8, 12 + sidePad, 0),
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () async {
-                      if (_mode == _CalMode.week) {
-                        setState(() => _anchor = _anchor.subtract(const Duration(days: 7)));
-                        await _loadWeekHeat();
-                      } else {
-                        m.prevMonth();
-                      }
-                    },
+                    onPressed: goPrev,
                     icon: const Icon(Icons.chevron_left),
                   ),
                   Expanded(
@@ -268,36 +379,71 @@ class _GoalsViewState extends State<_GoalsView> {
                         Text(
                           headerTitle,
                           textAlign: TextAlign.center,
-                          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        SegmentedButton<_CalMode>(
+                        const SizedBox(height: 8),
+
+                        // ✅ переключатель вида: Дашборд / Календарь
+                        SegmentedButton<_ViewMode>(
                           segments: const [
-                            ButtonSegment(value: _CalMode.week, label: Text('Неделя'), icon: Icon(Icons.view_week)),
-                            ButtonSegment(value: _CalMode.month, label: Text('Месяц'), icon: Icon(Icons.calendar_month)),
+                            ButtonSegment(
+                              value: _ViewMode.dashboard,
+                              label: Text('Дашборд'),
+                              icon: Icon(Icons.dashboard_outlined),
+                            ),
+                            ButtonSegment(
+                              value: _ViewMode.calendar,
+                              label: Text('Календарь'),
+                              icon: Icon(Icons.calendar_month),
+                            ),
                           ],
-                          selected: {_mode},
+                          selected: {_view},
                           onSelectionChanged: (v) async {
-                            final newMode = v.first;
-                            setState(() => _mode = newMode);
-                            if (newMode == _CalMode.week) {
-                              setState(() => _anchor = DateTime.now());
+                            final next = v.first;
+                            setState(() => _view = next);
+
+                            // в календаре неделя использует heat — подгружаем
+                            if (next == _ViewMode.calendar &&
+                                _calMode == _CalMode.week) {
                               await _loadWeekHeat();
                             }
                           },
                         ),
+
+                        // ✅ неделя/месяц только если календарь
+                        if (_view == _ViewMode.calendar) ...[
+                          const SizedBox(height: 8),
+                          SegmentedButton<_CalMode>(
+                            segments: const [
+                              ButtonSegment(
+                                value: _CalMode.week,
+                                label: Text('Неделя'),
+                                icon: Icon(Icons.view_week),
+                              ),
+                              ButtonSegment(
+                                value: _CalMode.month,
+                                label: Text('Месяц'),
+                                icon: Icon(Icons.calendar_month),
+                              ),
+                            ],
+                            selected: {_calMode},
+                            onSelectionChanged: (v) async {
+                              final newMode = v.first;
+                              setState(() => _calMode = newMode);
+                              if (newMode == _CalMode.week) {
+                                setState(() => _anchor = DateTime.now());
+                                await _loadWeekHeat();
+                              }
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   IconButton(
-                    onPressed: () async {
-                      if (_mode == _CalMode.week) {
-                        setState(() => _anchor = _anchor.add(const Duration(days: 7)));
-                        await _loadWeekHeat();
-                      } else {
-                        m.nextMonth();
-                      }
-                    },
+                    onPressed: goNext,
                     icon: const Icon(Icons.chevron_right),
                   ),
                 ],
@@ -305,83 +451,411 @@ class _GoalsViewState extends State<_GoalsView> {
             ),
           ),
 
-          // заголовок дней недели
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12 + sidePad, vertical: 6),
-              child: Row(
-                children: [
-                  _Weekday('Пн', style: weekdayFont),
-                  _Weekday('Вт', style: weekdayFont),
-                  _Weekday('Ср', style: weekdayFont),
-                  _Weekday('Чт', style: weekdayFont),
-                  _Weekday('Пт', style: weekdayFont),
-                  _Weekday('Сб', style: weekdayFont),
-                  _Weekday('Вс', style: weekdayFont),
-                ],
-              ),
-            ),
-          ),
-
-          // сетка календаря
-          SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: 12 + sidePad, vertical: 8),
-            sliver: SliverGrid.builder(
-              gridDelegate: _mode == _CalMode.week
-                  ? SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      mainAxisExtent: weekCellHeight,
-                    )
-                  : SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 1,
-                    ),
-              itemCount: (_mode == _CalMode.week ? _weekDays(_anchor) : daysList).length,
-              itemBuilder: (_, i) {
-                final d = _mode == _CalMode.week ? _weekDays(_anchor)[i] : daysList[i];
-                final inMonth = _mode == _CalMode.month ? m.isSameMonth(d) : true;
-
-                final now = DateTime.now();
-                final isToday = now.year == d.year && now.month == d.month && now.day == d.day;
-                final isWeekend = d.weekday == DateTime.saturday || d.weekday == DateTime.sunday;
-
-                if (_mode == _CalMode.month && !inMonth) return const SizedBox.shrink();
-
-                final heat = _mode == _CalMode.week ? _heat[DateUtils.dateOnly(d)] : null;
-
-                return _DayCell(
-                  date: d,
-                  isToday: isToday,
-                  isWeekend: isWeekend,
-                  inMonth: inMonth,
-                  largeText: isCompact,
-                  onTap: () => _openDay(context, d),
-
-                  // heat
-                  heat: heat,
+          // ===== DASHBOARD VIEW =====
+          if (_view == _ViewMode.dashboard) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  12 + sidePad,
+                  12,
+                  12 + sidePad,
+                  10,
+                ),
+                child: _WeekSummaryCard(
+                  days: weekDays,
+                  getDayHeat: (d) => _dayHeatFiltered(m, d),
                   targetHours: _targetHours,
                   colorsByBlock: _blockColors,
+                ),
+              ),
+            ),
+
+            SliverList.separated(
+              itemCount: 7,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) {
+                final d = weekDays[i];
+                final dayHeat = _dayHeatFiltered(m, d);
+                final hours = _sumHours(dayHeat);
+                final p = _p01(hours, _targetHours);
+                final top = _top3(dayHeat);
+
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12 + sidePad),
+                  child: _DayRowCard(
+                    date: d,
+                    weekday: _weekdayShortRu(d.weekday),
+                    isToday: DateUtils.isSameDay(d, DateTime.now()),
+                    progress01: p,
+                    hours: hours,
+                    targetHours: _targetHours,
+                    topBlocks: top,
+                    colorsByBlock: _blockColors,
+                    onTap: () => _openDay(context, d),
+                  ),
                 );
               },
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          ],
+
+          // ===== CALENDAR VIEW =====
+          if (_view == _ViewMode.calendar) ...[
+            // заголовок дней недели
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 12 + sidePad,
+                  vertical: 6,
+                ),
+                child: Row(
+                  children: const [
+                    _Weekday('Пн'),
+                    _Weekday('Вт'),
+                    _Weekday('Ср'),
+                    _Weekday('Чт'),
+                    _Weekday('Пт'),
+                    _Weekday('Сб'),
+                    _Weekday('Вс'),
+                  ],
+                ),
+              ),
+            ),
+
+            // сетка календаря
+            SliverPadding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 12 + sidePad,
+                vertical: 8,
+              ),
+              sliver: SliverGrid.builder(
+                gridDelegate: _calMode == _CalMode.week
+                    ? SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        mainAxisExtent: weekCellHeight,
+                      )
+                    : const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 1,
+                      ),
+                itemCount: daysList.length,
+                itemBuilder: (_, i) {
+                  final d = daysList[i];
+
+                  final inMonth = _calMode == _CalMode.month
+                      ? m.isSameMonth(d)
+                      : true;
+
+                  if (_calMode == _CalMode.month && !inMonth) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final isToday = DateUtils.isSameDay(d, DateTime.now());
+                  final isWeekend =
+                      d.weekday == DateTime.saturday ||
+                      d.weekday == DateTime.sunday;
+
+                  // ✅ в календаре показываем heat только в недельном режиме
+                  final rawHeat = _calMode == _CalMode.week
+                      ? _heat[DateUtils.dateOnly(d)]
+                      : null;
+
+                  // ✅ фильтруем под выбранный блок и выкидываем general
+                  Map<String, double>? heat;
+                  if (rawHeat != null && rawHeat.isNotEmpty) {
+                    final cleaned = Map<String, double>.from(rawHeat)
+                      ..remove('general');
+
+                    if (m.selectedBlock != 'all') {
+                      final v = cleaned[m.selectedBlock] ?? 0.0;
+                      heat = v > 0 ? {m.selectedBlock: v} : <String, double>{};
+                    } else {
+                      heat = cleaned;
+                    }
+                  }
+
+                  // ✅ если выбран блок — делаем моно-заливку (без слоёв)
+                  final forceMono = (m.selectedBlock != 'all');
+
+                  return _DayCell(
+                    date: d,
+                    isToday: isToday,
+                    isWeekend: isWeekend,
+                    inMonth: inMonth,
+                    onTap: () => _openDay(context, d),
+                    heat: heat,
+                    targetHours: _targetHours,
+                    colorsByBlock: _blockColors,
+                    forceMono: forceMono,
+                    monoKey: m.selectedBlock != 'all' ? m.selectedBlock : null,
+                  );
+                },
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          ],
         ],
       ),
     );
   }
 }
 
-// ---------- Вспомогательные виджеты ----------
+// ---------- DASHBOARD WIDGETS ----------
+
+class _WeekSummaryCard extends StatelessWidget {
+  final List<DateTime> days;
+  final Map<String, double> Function(DateTime day) getDayHeat;
+  final double targetHours;
+  final Map<String, Color> colorsByBlock;
+
+  const _WeekSummaryCard({
+    required this.days,
+    required this.getDayHeat,
+    required this.targetHours,
+    required this.colorsByBlock,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    double weekHours = 0;
+    final totalsByBlock = <String, double>{};
+
+    for (final d in days) {
+      final heat = getDayHeat(d);
+      for (final e in heat.entries) {
+        weekHours += e.value;
+        totalsByBlock[e.key] = (totalsByBlock[e.key] ?? 0) + e.value;
+      }
+    }
+
+    final weekTarget = targetHours * 7;
+    final p = weekTarget <= 0 ? 0.0 : (weekHours / weekTarget).clamp(0.0, 1.0);
+
+    final top = totalsByBlock.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top3 = top.take(3).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surface.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Итог недели',
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: p,
+              minHeight: 10,
+              backgroundColor: cs.surfaceVariant.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(
+                '${weekHours.toStringAsFixed(1)} ч',
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                ' / ${weekTarget.toStringAsFixed(0)} ч',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const Spacer(),
+              if (p >= 1)
+                Icon(Icons.verified, color: cs.primary, size: 20)
+              else
+                Icon(Icons.trending_up, color: cs.onSurfaceVariant, size: 20),
+            ],
+          ),
+          if (top3.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              children: top3.map((e) {
+                final c = colorsByBlock[e.key] ?? cs.primary;
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${e.key}: ${e.value.toStringAsFixed(1)}ч',
+                      style: tt.labelMedium,
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DayRowCard extends StatelessWidget {
+  final DateTime date;
+  final String weekday;
+  final bool isToday;
+
+  final double progress01;
+  final double hours;
+  final double targetHours;
+
+  final List<MapEntry<String, double>> topBlocks;
+  final Map<String, Color> colorsByBlock;
+
+  final VoidCallback onTap;
+
+  const _DayRowCard({
+    required this.date,
+    required this.weekday,
+    required this.isToday,
+    required this.progress01,
+    required this.hours,
+    required this.targetHours,
+    required this.topBlocks,
+    required this.colorsByBlock,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isToday
+                ? cs.primaryContainer.withOpacity(0.45)
+                : cs.surface.withOpacity(0.95),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 62,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      weekday,
+                      style: tt.labelLarge?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${date.day}',
+                      style: tt.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: progress01,
+                        minHeight: 10,
+                        backgroundColor: cs.surfaceVariant.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          '${hours.toStringAsFixed(1)}ч',
+                          style: tt.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          ' / ${targetHours.toStringAsFixed(0)}ч',
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: topBlocks.map((e) {
+                            final c = colorsByBlock[e.key] ?? cs.primary;
+                            return Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------- CALENDAR WIDGETS ----------
 
 class _Weekday extends StatelessWidget {
   final String s;
-  final TextStyle? style;
-  const _Weekday(this.s, {this.style});
+  const _Weekday(this.s);
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -389,7 +863,9 @@ class _Weekday extends StatelessWidget {
       child: Center(
         child: Text(
           s,
-          style: (style ?? Theme.of(context).textTheme.labelMedium)?.copyWith(color: color),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: color),
         ),
       ),
     );
@@ -401,7 +877,6 @@ class _DayCell extends StatefulWidget {
   final bool isToday;
   final bool isWeekend;
   final bool inMonth;
-  final bool largeText;
   final VoidCallback onTap;
 
   // heat:
@@ -409,16 +884,21 @@ class _DayCell extends StatefulWidget {
   final double targetHours;
   final Map<String, Color> colorsByBlock;
 
+  // ✅ если выбран блок — рисуем моно-заливку
+  final bool forceMono;
+  final String? monoKey;
+
   const _DayCell({
     required this.date,
     required this.isToday,
     required this.isWeekend,
     required this.inMonth,
     required this.onTap,
-    this.largeText = false,
     this.heat,
     this.targetHours = 8,
     this.colorsByBlock = const {},
+    this.forceMono = false,
+    this.monoKey,
   });
 
   @override
@@ -428,60 +908,44 @@ class _DayCell extends StatefulWidget {
 class _DayCellState extends State<_DayCell> {
   bool _pressed = false;
 
-  List<_FillSegment> _segmentsFromHeat(
-    Map<String, double>? heat,
-    double target,
-    Map<String, Color> colorsByBlock,
-    Color fallback,
-  ) {
-    if (heat == null || heat.isEmpty || target <= 0) return const [];
-
-    // сортируем по убыванию часов, чтобы крупные куски были снизу
-    final entries = heat.entries
-        .where((e) => (e.value) > 0)
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    final List<_FillSegment> out = [];
-    double remaining = 1.0; // доля «стакана», которую можно заполнить
-
-    for (final e in entries) {
-      if (remaining <= 0) break;
-      final color = colorsByBlock[e.key] ?? fallback;
-      final frac = (e.value / target).clamp(0.0, remaining);
-      if (frac > 0) {
-        out.add(_FillSegment(color: color, fraction: frac));
-        remaining -= frac;
-      }
-    }
-    return out;
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     final surface = cs.surface;
-    final bgBase = widget.isToday ? cs.primaryContainer.withOpacity(0.55) : surface.withOpacity(0.90);
-    final borderColor = widget.isToday ? cs.primary.withOpacity(0.6) : cs.outlineVariant.withOpacity(0.6);
+    final bgBase = widget.isToday
+        ? cs.primaryContainer.withOpacity(0.55)
+        : surface.withOpacity(0.90);
+    final borderColor = widget.isToday
+        ? cs.primary.withOpacity(0.6)
+        : cs.outlineVariant.withOpacity(0.6);
 
     final labelColor = !widget.inMonth
         ? cs.onSurfaceVariant.withOpacity(0.5)
         : widget.isWeekend
-            ? cs.onSurface.withOpacity(0.85)
-            : cs.onSurface;
+        ? cs.onSurface.withOpacity(0.85)
+        : cs.onSurface;
 
     final radius = 12.0;
 
-    // готовим «слои» заливки как стакан
-    final segments = _segmentsFromHeat(
-      widget.heat,
-      widget.targetHours,
-      widget.colorsByBlock,
-      cs.primary,
-    );
+    final heat = widget.heat ?? const <String, double>{};
 
-    final hasData = segments.isNotEmpty;
+    // общий прогресс (все выбранные блоки уже отфильтрованы выше)
+    double hours = 0;
+    for (final v in heat.values) {
+      hours += v;
+    }
+    final frac = widget.targetHours <= 0
+        ? 0.0
+        : (hours / widget.targetHours).clamp(0.0, 1.0);
+
+    // цвет моно-режима
+    Color monoColor = cs.primary;
+    if (widget.forceMono && widget.monoKey != null) {
+      monoColor = widget.colorsByBlock[widget.monoKey!] ?? cs.primary;
+    }
+
+    final hasData = frac > 0;
 
     return AnimatedScale(
       duration: const Duration(milliseconds: 100),
@@ -513,10 +977,13 @@ class _DayCellState extends State<_DayCell> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(radius),
               child: CustomPaint(
-                painter: _GlassFillPainter(
+                painter: _SingleFillPainter(
                   background: bgBase,
-                  rimColor: widget.isToday ? cs.primaryContainer.withOpacity(0.35) : null,
-                  segments: segments,
+                  fraction: frac,
+                  fillColor: widget.forceMono ? monoColor : cs.primary,
+                  rimColor: widget.isToday
+                      ? cs.primaryContainer.withOpacity(0.35)
+                      : null,
                 ),
                 child: Stack(
                   children: [
@@ -537,14 +1004,18 @@ class _DayCellState extends State<_DayCell> {
                       Positioned(
                         left: 6,
                         top: 6,
-                        child: Icon(Icons.water_drop, size: 12, color: cs.onSurfaceVariant.withOpacity(0.7)),
+                        child: Icon(
+                          Icons.check_circle,
+                          size: 14,
+                          color: cs.onSurfaceVariant.withOpacity(0.75),
+                        ),
                       ),
                     Center(
                       child: Text(
                         '${widget.date.day}',
                         style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: widget.largeText ? 18 : 16,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
                           height: 1.0,
                           color: labelColor,
                         ),
@@ -561,55 +1032,42 @@ class _DayCellState extends State<_DayCell> {
   }
 }
 
-class _FillSegment {
-  final Color color;
-  final double fraction; // 0..1 — доля высоты плитки
-  const _FillSegment({required this.color, required this.fraction});
-}
-
-/// Рисует «стакан» дня: фон + сегменты снизу вверх без смешивания цветов.
-class _GlassFillPainter extends CustomPainter {
+/// Простой “стакан” без слоёв: один цвет = понятность.
+/// В режиме "all" цвет тоже один (primary), а вклад блоков виден в дашборде.
+class _SingleFillPainter extends CustomPainter {
   final Color background;
-  final Color? rimColor; // лёгкий верхний отблеск для «стекла»
-  final List<_FillSegment> segments;
+  final double fraction; // 0..1
+  final Color fillColor;
+  final Color? rimColor;
 
-  const _GlassFillPainter({
+  const _SingleFillPainter({
     required this.background,
-    required this.segments,
+    required this.fraction,
+    required this.fillColor,
     this.rimColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(12),
+    );
+
     // фон
-    final bg = Paint()..color = background;
-    final rrect = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(12));
-    canvas.drawRRect(rrect, bg);
+    canvas.drawRRect(rrect, Paint()..color = background);
 
-    // заполняем снизу вверх, сегменты идут последовательными блоками
-    double filled = 0.0;
-    for (final s in segments) {
-      if (s.fraction <= 0) continue;
-      final h = (s.fraction * size.height).clamp(0.0, size.height - filled);
-      final top = size.height - filled - h;
-      final rect = Rect.fromLTWH(0, top, size.width, h);
-      final paint = Paint()..color = s.color;
-      canvas.save();
-      canvas.clipRRect(rrect);
-      canvas.drawRect(rect, paint);
+    // заливка снизу
+    final h = (fraction * size.height).clamp(0.0, size.height);
+    final top = size.height - h;
+    final rect = Rect.fromLTWH(0, top, size.width, h);
 
-      // тонкая разделительная линия между сегментами (как слой жидкости)
-      final divider = Paint()
-        ..color = Colors.white.withOpacity(0.08)
-        ..strokeWidth = 1;
-      canvas.drawLine(Offset(0, top), Offset(size.width, top), divider);
+    canvas.save();
+    canvas.clipRRect(rrect);
+    canvas.drawRect(rect, Paint()..color = fillColor.withOpacity(0.95));
+    canvas.restore();
 
-      canvas.restore();
-      filled += h;
-      if (filled >= size.height) break;
-    }
-
-    // лёгкий «блик» у кромки (визуально как стекло)
+    // блик
     if (rimColor != null) {
       final rim = Paint()
         ..shader = LinearGradient(
@@ -623,16 +1081,11 @@ class _GlassFillPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _GlassFillPainter oldDelegate) {
-    if (background != oldDelegate.background || rimColor != oldDelegate.rimColor) return true;
-    if (segments.length != oldDelegate.segments.length) return true;
-    for (var i = 0; i < segments.length; i++) {
-      if (segments[i].color != oldDelegate.segments[i].color ||
-          segments[i].fraction != oldDelegate.segments[i].fraction) {
-        return true;
-      }
-    }
-    return false;
+  bool shouldRepaint(covariant _SingleFillPainter oldDelegate) {
+    return background != oldDelegate.background ||
+        fraction != oldDelegate.fraction ||
+        fillColor != oldDelegate.fillColor ||
+        rimColor != oldDelegate.rimColor;
   }
 }
 
@@ -648,8 +1101,11 @@ class _StickyHeader extends SliverPersistentHeaderDelegate {
   double get maxExtent => extent;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
-      SizedBox(height: extent, child: child);
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => SizedBox(height: extent, child: child);
 
   @override
   bool shouldRebuild(covariant _StickyHeader oldDelegate) =>

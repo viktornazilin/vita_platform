@@ -11,8 +11,7 @@ class MoodService {
     required DateTime date,
     required String emoji,
     String note = '',
-  }) =>
-      dbRepo.upsertMood(date: _dateOnly(date), emoji: emoji, note: note);
+  }) => dbRepo.upsertMood(date: _dateOnly(date), emoji: emoji, note: note);
 
   Future<void> deleteByDate(DateTime date) =>
       dbRepo.deleteMoodByDate(_dateOnly(date));
@@ -23,9 +22,5 @@ class MoodService {
   Future<List<Mood>> fetchRange({
     required DateTime from,
     required DateTime to,
-  }) =>
-      dbRepo.fetchMoodsRange(
-        from: _dateOnly(from),
-        to: _dateOnly(to),
-      );
+  }) => dbRepo.fetchMoodsRange(from: _dateOnly(from), to: _dateOnly(to));
 }

@@ -38,11 +38,7 @@ mixin MoodsRepoMixin on BaseRepo {
 
   Future<void> deleteMoodByDate(DateTime date) async {
     final isoDate = _isoDateOnly(date);
-    await client
-        .from('moods')
-        .delete()
-        .eq('user_id', uid)
-        .eq('date', isoDate);
+    await client.from('moods').delete().eq('user_id', uid).eq('date', isoDate);
   }
 
   Future<List<Mood>> fetchMoods({int limit = 30}) async {

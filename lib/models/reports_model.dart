@@ -81,9 +81,14 @@ class ReportsModel extends ChangeNotifier {
     switch (_period) {
       case ReportPeriod.day:
         final start = DateTime(_anchor.year, _anchor.month, _anchor.day);
-        return DateTimeRange(start: start, end: start.add(const Duration(days: 1)));
+        return DateTimeRange(
+          start: start,
+          end: start.add(const Duration(days: 1)),
+        );
       case ReportPeriod.week:
-        final start = _anchor.subtract(Duration(days: (_anchor.weekday % 7))); // вс = 0
+        final start = _anchor.subtract(
+          Duration(days: (_anchor.weekday % 7)),
+        ); // вс = 0
         final s = DateTime(start.year, start.month, start.day);
         return DateTimeRange(start: s, end: s.add(const Duration(days: 7)));
       case ReportPeriod.month:
@@ -105,33 +110,41 @@ class ReportsModel extends ChangeNotifier {
     }
   }
 
-  Iterable<Goal> get goalsInRange => _allGoals.where((g) =>
-      g.deadline.isAfter(range.start.subtract(const Duration(microseconds: 1))) &&
-      g.deadline.isBefore(range.end));
+  Iterable<Goal> get goalsInRange => _allGoals.where(
+    (g) =>
+        g.deadline.isAfter(
+          range.start.subtract(const Duration(microseconds: 1)),
+        ) &&
+        g.deadline.isBefore(range.end),
+  );
 
-  Iterable<Mood> get moodsInRange => _allMoods.where((m) =>
-      m.date.isAfter(range.start.subtract(const Duration(microseconds: 1))) &&
-      m.date.isBefore(range.end));
+  Iterable<Mood> get moodsInRange => _allMoods.where(
+    (m) =>
+        m.date.isAfter(range.start.subtract(const Duration(microseconds: 1))) &&
+        m.date.isBefore(range.end),
+  );
 
   Map<String, int> get doneByBlock => groupBy(
-        goalsInRange.where((g) => g.isCompleted),
-        (Goal g) => g.lifeBlock.isEmpty ? 'unknown' : g.lifeBlock,
-      ).map((k, v) => MapEntry(k, v.length));
+    goalsInRange.where((g) => g.isCompleted),
+    (Goal g) => g.lifeBlock.isEmpty ? 'unknown' : g.lifeBlock,
+  ).map((k, v) => MapEntry(k, v.length));
 
-  Map<DateTime, double> get hoursByDay => groupBy(
+  Map<DateTime, double> get hoursByDay =>
+      groupBy(
         goalsInRange,
         (Goal g) => DateTime(g.deadline.year, g.deadline.month, g.deadline.day),
-      ).map((d, list) => MapEntry(
-            d,
-            list.fold<double>(0.0, (s, g) => s + g.spentHours),
-          ));
+      ).map(
+        (d, list) =>
+            MapEntry(d, list.fold<double>(0.0, (s, g) => s + g.spentHours)),
+      );
 
   Map<String, int> get moodRatio => groupBy(
-        moodsInRange,
-        (Mood m) => m.emoji,
-      ).map((k, v) => MapEntry(k, v.length));
+    moodsInRange,
+    (Mood m) => m.emoji,
+  ).map((k, v) => MapEntry(k, v.length));
 
-  double get totalHours => goalsInRange.fold<double>(0.0, (s, g) => s + g.spentHours);
+  double get totalHours =>
+      goalsInRange.fold<double>(0.0, (s, g) => s + g.spentHours);
 
   double get plannedHours {
     switch (_period) {
@@ -140,11 +153,13 @@ class ReportsModel extends ChangeNotifier {
       case ReportPeriod.week:
         return _targetHours * 7;
       case ReportPeriod.month:
-        return _targetHours * DateUtils.getDaysInMonth(_anchor.year, _anchor.month);
+        return _targetHours *
+            DateUtils.getDaysInMonth(_anchor.year, _anchor.month);
     }
   }
 
-  double get efficiency => plannedHours == 0 ? 0.0 : (totalHours / plannedHours).clamp(0.0, 1.0);
+  double get efficiency =>
+      plannedHours == 0 ? 0.0 : (totalHours / plannedHours).clamp(0.0, 1.0);
 
   // Доп. метрики (как в исходнике)
   double get avgTimePerGoal {
@@ -157,19 +172,27 @@ class ReportsModel extends ChangeNotifier {
     final goals = goalsInRange.toList();
     final completed = goals.where((g) => g.isCompleted).toList();
     if (completed.isEmpty) return 0;
-    final onTime = completed.where((g) => g.deadline.isAfter(DateTime.now())).length;
+    final onTime = completed
+        .where((g) => g.deadline.isAfter(DateTime.now()))
+        .length;
     return ((onTime / completed.length) * 100).round();
   }
 
   List<MapEntry<DateTime, double>> get top3DaysByHours {
-    final byDay = groupBy(
-      goalsInRange,
-      (Goal g) => DateTime(g.deadline.year, g.deadline.month, g.deadline.day),
-    ).entries
-        .map((e) => MapEntry(
-            e.key, e.value.fold<double>(0.0, (s, g) => s + g.spentHours)))
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final byDay =
+        groupBy(
+              goalsInRange,
+              (Goal g) =>
+                  DateTime(g.deadline.year, g.deadline.month, g.deadline.day),
+            ).entries
+            .map(
+              (e) => MapEntry(
+                e.key,
+                e.value.fold<double>(0.0, (s, g) => s + g.spentHours),
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
     return byDay.take(3).toList();
   }
 }

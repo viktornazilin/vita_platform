@@ -8,11 +8,11 @@ import '../models/login_model.dart';
 
 /// ─── Палитра Nest ─────────────────────────────────────────────────────────────
 const _kOffWhite = Color(0xFFFAF8F5); // мягкий фон
-const _kCloud    = Color(0xFFEFF6FB); // лёгкий облачный слой
-const _kSky      = Color(0xFF3FA7D6); // основной акцент (как в логотипе)
-const _kSkyDeep  = Color(0xFF2C7FB2); // тёмный акцент
-const _kInk      = Color(0xFF163043); // основной текст
-const _kInkSoft  = Color(0x99163043); // подписи/вторичный
+const _kCloud = Color(0xFFEFF6FB); // лёгкий облачный слой
+const _kSky = Color(0xFF3FA7D6); // основной акцент (как в логотипе)
+const _kSkyDeep = Color(0xFF2C7FB2); // тёмный акцент
+const _kInk = Color(0xFF163043); // основной текст
+const _kInkSoft = Color(0x99163043); // подписи/вторичный
 // ──────────────────────────────────────────────────────────────────────────────
 
 class LoginScreen extends StatelessWidget {
@@ -49,11 +49,15 @@ class _LoginViewState extends State<_LoginView> {
   void initState() {
     super.initState();
 
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) async {
       if (!mounted) return;
 
       if (data.event == AuthChangeEvent.passwordRecovery) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/password-reset', (_) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/password-reset', (_) => false);
         return;
       }
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
@@ -104,7 +108,9 @@ class _LoginViewState extends State<_LoginView> {
     if (ok) {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     } else if (model.errorText != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.errorText!)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(model.errorText!)));
     }
   }
 
@@ -145,7 +151,10 @@ class _LoginViewState extends State<_LoginView> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('Отмена'),
+          ),
           FilledButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
@@ -171,7 +180,9 @@ class _LoginViewState extends State<_LoginView> {
       await client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Письмо для смены пароля отправлено. Проверьте почту.')),
+        const SnackBar(
+          content: Text('Письмо для смены пароля отправлено. Проверьте почту.'),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -204,12 +215,15 @@ class _LoginViewState extends State<_LoginView> {
         child: SafeArea(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => FocusScope.of(context).unfocus(), // скрыть клавиатуру по тапу
+            onTap: () =>
+                FocusScope.of(context).unfocus(), // скрыть клавиатуру по тапу
             child: Center(
               child: AnimatedPadding(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
-                padding: EdgeInsets.only(bottom: bottomInset > 0 ? bottomInset + 12 : 20),
+                padding: EdgeInsets.only(
+                  bottom: bottomInset > 0 ? bottomInset + 12 : 20,
+                ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: ConstrainedBox(
@@ -224,11 +238,14 @@ class _LoginViewState extends State<_LoginView> {
                             color: _kSkyDeep.withOpacity(0.08),
                             blurRadius: 26,
                             offset: const Offset(0, 10),
-                          )
+                          ),
                         ],
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 28,
+                        ),
                         child: Form(
                           key: _formKey,
                           child: Column(
@@ -239,13 +256,17 @@ class _LoginViewState extends State<_LoginView> {
                                 assetPath: 'assets/images/logo.png',
                                 height: 196,
                                 borderRadius: 26,
-                                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-                            ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 22,
+                                  vertical: 18,
+                                ),
+                              ),
                               const SizedBox(height: 22),
 
                               Text(
                                 'Войдите в аккаунт',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
                                       color: _kInk,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -268,16 +289,22 @@ class _LoginViewState extends State<_LoginView> {
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
+                                    borderSide: BorderSide(
+                                      color: _kSky.withOpacity(0.24),
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
+                                    borderSide: const BorderSide(
+                                      color: _kSkyDeep,
+                                      width: 1.4,
+                                    ),
                                   ),
                                   filled: true,
                                   fillColor: Colors.white,
                                 ),
-                                onFieldSubmitted: (_) => _passFocus.requestFocus(),
+                                onFieldSubmitted: (_) =>
+                                    _passFocus.requestFocus(),
                               ),
                               const SizedBox(height: 12),
 
@@ -293,20 +320,32 @@ class _LoginViewState extends State<_LoginView> {
                                   labelText: 'Пароль',
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   suffixIcon: IconButton(
-                                    onPressed: () => setState(() => _obscure = !_obscure),
-                                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                                    tooltip: _obscure ? 'Показать пароль' : 'Скрыть пароль',
+                                    onPressed: () =>
+                                        setState(() => _obscure = !_obscure),
+                                    icon: Icon(
+                                      _obscure
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                    ),
+                                    tooltip: _obscure
+                                        ? 'Показать пароль'
+                                        : 'Скрыть пароль',
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
+                                    borderSide: BorderSide(
+                                      color: _kSky.withOpacity(0.24),
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
+                                    borderSide: const BorderSide(
+                                      color: _kSkyDeep,
+                                      width: 1.4,
+                                    ),
                                   ),
                                   filled: true,
                                   fillColor: Colors.white,
@@ -315,19 +354,29 @@ class _LoginViewState extends State<_LoginView> {
 
                               if (model.errorText != null) ...[
                                 const SizedBox(height: 10),
-                                Text(model.errorText!, style: const TextStyle(color: Colors.red)),
+                                Text(
+                                  model.errorText!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
                               ],
 
                               const SizedBox(height: 14),
                               Row(
                                 children: [
                                   TextButton(
-                                    onPressed: isLoading ? null : _startPasswordReset,
+                                    onPressed: isLoading
+                                        ? null
+                                        : _startPasswordReset,
                                     child: const Text('Забыли пароль?'),
                                   ),
                                   const Spacer(),
                                   TextButton(
-                                    onPressed: isLoading ? null : () => Navigator.pushNamed(context, '/register'),
+                                    onPressed: isLoading
+                                        ? null
+                                        : () => Navigator.pushNamed(
+                                            context,
+                                            '/register',
+                                          ),
                                     child: const Text('Создать аккаунт'),
                                   ),
                                 ],
@@ -340,7 +389,9 @@ class _LoginViewState extends State<_LoginView> {
                                 child: isLoading
                                     ? const Center(
                                         child: Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 10),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
                                           child: CircularProgressIndicator(),
                                         ),
                                       )
@@ -351,9 +402,13 @@ class _LoginViewState extends State<_LoginView> {
                                         style: FilledButton.styleFrom(
                                           backgroundColor: _kSky,
                                           foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(vertical: 14),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(14),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
                                           ),
                                           shadowColor: _kSky.withOpacity(0.25),
                                           elevation: 2,
@@ -362,30 +417,43 @@ class _LoginViewState extends State<_LoginView> {
                               ),
 
                               const SizedBox(height: 12),
-                              Row(children: [
-                                const Expanded(child: Divider()),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    'или',
-                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(color: _kInkSoft),
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      'или',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(color: _kInkSoft),
+                                    ),
                                   ),
-                                ),
-                                const Expanded(child: Divider()),
-                              ]),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
                               const SizedBox(height: 12),
 
                               // Google login
                               SizedBox(
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
-                                  onPressed: isLoading ? null : _loginWithGoogle,
+                                  onPressed: isLoading
+                                      ? null
+                                      : _loginWithGoogle,
                                   icon: const Icon(Icons.g_mobiledata),
                                   label: const Text('Продолжить с Google'),
                                   style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: _kSkyDeep.withOpacity(0.35)),
+                                    side: BorderSide(
+                                      color: _kSkyDeep.withOpacity(0.35),
+                                    ),
                                     foregroundColor: _kSkyDeep,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),

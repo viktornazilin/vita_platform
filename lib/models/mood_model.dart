@@ -32,11 +32,7 @@ class MoodModel extends ChangeNotifier {
     required String note,
   }) async {
     try {
-      await repo.upsertMood(
-        date: DateTime.now(),
-        emoji: emoji,
-        note: note,
-      );
+      await repo.upsertMood(date: DateTime.now(), emoji: emoji, note: note);
       await load(); // как и раньше — перезапрашиваем список
       return null;
     } catch (e) {

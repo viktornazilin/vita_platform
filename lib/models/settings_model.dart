@@ -48,7 +48,10 @@ class SettingsModel extends ChangeNotifier {
 
   Future<bool> saveSettings() async {
     try {
-      await dbRepo.saveUserSettings(weights: _weights, targetHours: _targetHours);
+      await dbRepo.saveUserSettings(
+        weights: _weights,
+        targetHours: _targetHours,
+      );
       return true;
     } catch (e) {
       _error = 'Ошибка сохранения: $e';

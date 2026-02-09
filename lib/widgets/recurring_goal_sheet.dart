@@ -50,7 +50,9 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   Set<int> _weekdays = {DateTime.monday, DateTime.wednesday, DateTime.friday};
 
   TimeOfDay _time = const TimeOfDay(hour: 9, minute: 0);
-  DateTime _until = DateUtils.dateOnly(DateTime.now().add(const Duration(days: 14)));
+  DateTime _until = DateUtils.dateOnly(
+    DateTime.now().add(const Duration(days: 14)),
+  );
 
   String _lifeBlock = 'health';
   int _importance = 2;
@@ -76,16 +78,15 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   }
 
   Future<void> _pickTime() async {
-    final t = await showTimePicker(
-      context: context,
-      initialTime: _time,
-    );
+    final t = await showTimePicker(context: context, initialTime: _time);
     if (t != null) setState(() => _time = t);
   }
 
-  String _fmtDate(DateTime d) => MaterialLocalizations.of(context).formatMediumDate(d);
+  String _fmtDate(DateTime d) =>
+      MaterialLocalizations.of(context).formatMediumDate(d);
 
-  String _fmtTime(TimeOfDay t) => MaterialLocalizations.of(context).formatTimeOfDay(t);
+  String _fmtTime(TimeOfDay t) =>
+      MaterialLocalizations.of(context).formatTimeOfDay(t);
 
   String _weekdayLabel(int weekday) {
     switch (weekday) {
@@ -119,7 +120,8 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
     final start = _dateOnly(startDay);
     final until = _dateOnly(untilDay);
 
-    DateTime withTime(DateTime day) => DateTime(day.year, day.month, day.day, time.hour, time.minute);
+    DateTime withTime(DateTime day) =>
+        DateTime(day.year, day.month, day.day, time.hour, time.minute);
 
     final out = <DateTime>[];
 
@@ -127,7 +129,11 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
 
     if (type == RecurrenceType.everyNDays) {
       final step = everyNDays < 1 ? 1 : everyNDays;
-      for (var day = start; !day.isAfter(until); day = day.add(Duration(days: step))) {
+      for (
+        var day = start;
+        !day.isAfter(until);
+        day = day.add(Duration(days: step))
+      ) {
         out.add(withTime(day));
       }
       return out;
@@ -135,7 +141,11 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
 
     // weekly
     final wds = weekdays.isEmpty ? {start.weekday} : weekdays;
-    for (var day = start; !day.isAfter(until); day = day.add(const Duration(days: 1))) {
+    for (
+      var day = start;
+      !day.isAfter(until);
+      day = day.add(const Duration(days: 1))
+    ) {
       if (wds.contains(day.weekday)) {
         out.add(withTime(day));
       }
@@ -163,13 +173,18 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
         16,
         8,
         16,
-        16 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom,
+        16 +
+            MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Регулярная цель', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Text(
+            'Регулярная цель',
+            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 6),
           Text(
             'Создаст цели с сегодняшнего дня до дедлайна.',
@@ -190,7 +205,10 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
           const SizedBox(height: 10),
 
           // Recurrence type
-          Text('Регулярность', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Регулярность',
+            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 8),
 
           Wrap(
@@ -200,12 +218,14 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
               ChoiceChip(
                 label: const Text('Каждые N дней'),
                 selected: _type == RecurrenceType.everyNDays,
-                onSelected: (_) => setState(() => _type = RecurrenceType.everyNDays),
+                onSelected: (_) =>
+                    setState(() => _type = RecurrenceType.everyNDays),
               ),
               ChoiceChip(
                 label: const Text('По дням недели'),
                 selected: _type == RecurrenceType.weekly,
-                onSelected: (_) => setState(() => _type = RecurrenceType.weekly),
+                onSelected: (_) =>
+                    setState(() => _type = RecurrenceType.weekly),
               ),
             ],
           ),
@@ -216,15 +236,21 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Интервал: каждые $_everyNDays дн.',
-                      style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                  child: Text(
+                    'Интервал: каждые $_everyNDays дн.',
+                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  ),
                 ),
                 IconButton(
-                  onPressed: _everyNDays > 1 ? () => setState(() => _everyNDays--) : null,
+                  onPressed: _everyNDays > 1
+                      ? () => setState(() => _everyNDays--)
+                      : null,
                   icon: const Icon(Icons.remove_circle_outline_rounded),
                 ),
                 IconButton(
-                  onPressed: _everyNDays < 14 ? () => setState(() => _everyNDays++) : null,
+                  onPressed: _everyNDays < 14
+                      ? () => setState(() => _everyNDays++)
+                      : null,
                   icon: const Icon(Icons.add_circle_outline_rounded),
                 ),
               ],
@@ -298,7 +324,10 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                     DropdownMenuItem(value: 'health', child: Text('Здоровье')),
                     DropdownMenuItem(value: 'sport', child: Text('Спорт')),
                     DropdownMenuItem(value: 'business', child: Text('Бизнес')),
-                    DropdownMenuItem(value: 'creative', child: Text('Творчество')),
+                    DropdownMenuItem(
+                      value: 'creative',
+                      child: Text('Творчество'),
+                    ),
                     DropdownMenuItem(value: 'family', child: Text('Семья')),
                     DropdownMenuItem(value: 'general', child: Text('Общее')),
                   ],
@@ -340,15 +369,21 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
           Row(
             children: [
               Expanded(
-                child: Text('План часов: ${_hours.toStringAsFixed(_hours.truncateToDouble() == _hours ? 0 : 1)}',
-                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                child: Text(
+                  'План часов: ${_hours.toStringAsFixed(_hours.truncateToDouble() == _hours ? 0 : 1)}',
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                ),
               ),
               IconButton(
-                onPressed: _hours > 0.5 ? () => setState(() => _hours = (_hours - 0.5)) : null,
+                onPressed: _hours > 0.5
+                    ? () => setState(() => _hours = (_hours - 0.5))
+                    : null,
                 icon: const Icon(Icons.remove_circle_outline_rounded),
               ),
               IconButton(
-                onPressed: _hours < 14 ? () => setState(() => _hours = (_hours + 0.5)) : null,
+                onPressed: _hours < 14
+                    ? () => setState(() => _hours = (_hours + 0.5))
+                    : null,
                 icon: const Icon(Icons.add_circle_outline_rounded),
               ),
             ],
@@ -392,7 +427,9 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
               }
               if (_type == RecurrenceType.weekly && _weekdays.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Выберите хотя бы один день недели')),
+                  const SnackBar(
+                    content: Text('Выберите хотя бы один день недели'),
+                  ),
                 );
                 return;
               }

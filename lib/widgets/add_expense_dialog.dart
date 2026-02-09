@@ -51,7 +51,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
     );
     _noteController = TextEditingController(text: widget.initialNote ?? '');
 
-    _selectedCategoryId = widget.initialCategoryId ??
+    _selectedCategoryId =
+        widget.initialCategoryId ??
         (widget.categories.isNotEmpty ? widget.categories.first.id : null);
   }
 
@@ -67,12 +68,13 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Отмена')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
           ElevatedButton(
-              onPressed: () =>
-                  Navigator.pop(context, nameCtrl.text.trim()),
-              child: const Text('Создать')),
+            onPressed: () => Navigator.pop(context, nameCtrl.text.trim()),
+            child: const Text('Создать'),
+          ),
         ],
       ),
     );
@@ -85,61 +87,67 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialAmount != null
-          ? 'Редактировать расход'
-          : 'Новый расход'),
+      title: Text(
+        widget.initialAmount != null ? 'Редактировать расход' : 'Новый расход',
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(
-              controller: _amountController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Сумма'),
-              validator: (v) {
-                final d =
-                    double.tryParse((v ?? '').replaceAll(',', '.'));
-                if (d == null || d <= 0) return 'Введите корректную сумму';
-                return null;
-              },
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedCategoryId,
-                    items: widget.categories
-                        .map((c) => DropdownMenuItem(
-                            value: c.id, child: Text(c.name)))
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedCategoryId = v),
-                    decoration:
-                        const InputDecoration(labelText: 'Категория'),
-                    validator: (v) =>
-                        v == null ? 'Выберите категорию' : null,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(labelText: 'Сумма'),
+                validator: (v) {
+                  final d = double.tryParse((v ?? '').replaceAll(',', '.'));
+                  if (d == null || d <= 0) return 'Введите корректную сумму';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _selectedCategoryId,
+                      items: widget.categories
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c.id,
+                              child: Text(c.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedCategoryId = v),
+                      decoration: const InputDecoration(labelText: 'Категория'),
+                      validator: (v) => v == null ? 'Выберите категорию' : null,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: _createCategory,
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Создать категорию',
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _noteController,
-              decoration: const InputDecoration(labelText: 'Комментарий'),
-            ),
-          ]),
+                  IconButton(
+                    onPressed: _createCategory,
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Создать категорию',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _noteController,
+                decoration: const InputDecoration(labelText: 'Комментарий'),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена')),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
         ElevatedButton(
           onPressed: () {
             if (!_formKey.currentState!.validate() ||
@@ -147,7 +155,8 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
               return;
             }
             final amount = double.parse(
-                _amountController.text.replaceAll(',', '.'));
+              _amountController.text.replaceAll(',', '.'),
+            );
             Navigator.pop(
               context,
               AddExpenseResult(

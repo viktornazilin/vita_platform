@@ -6,7 +6,7 @@ import '../services/user_service.dart';
 class LoginModel extends ChangeNotifier {
   final UserService _userService;
   LoginModel({UserService? userService})
-      : _userService = userService ?? UserService();
+    : _userService = userService ?? UserService();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

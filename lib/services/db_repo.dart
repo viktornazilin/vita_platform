@@ -1,11 +1,17 @@
+// lib/services/db_repo.dart
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/base_repo.dart';
+
 import 'finance_repo_mixin.dart';
 import 'goals_repo_mixin.dart';
 import 'moods_repo_mixin.dart';
 import 'xp_repo_mixin.dart';
 import 'users_repo_mixin.dart';
 import 'legacy_expenses_mixin.dart';
+import 'habits_repo_mixin.dart';
+import 'mental_repo_mixin.dart';
+import 'user_goals_repo_mixin.dart';
 
 class DbRepo extends BaseRepo
     with
@@ -14,7 +20,9 @@ class DbRepo extends BaseRepo
         MoodsRepoMixin,
         XpRepoMixin,
         UsersRepoMixin,
-        LegacyExpensesRepoMixin
-    implements FinanceRepo {
-  DbRepo(super.client);
+        LegacyExpensesRepoMixin,
+        HabitsRepoMixin,
+        MentalRepoMixin,
+        UserGoalsRepoMixin {
+  DbRepo(SupabaseClient client) : super(client);
 }

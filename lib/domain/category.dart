@@ -21,11 +21,6 @@ class Category {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'kind': kind,
-      'limit_amount': limitAmount,
-    };
+    return {'id': id, 'name': name, 'kind': kind, 'limit_amount': limitAmount};
   }
 }

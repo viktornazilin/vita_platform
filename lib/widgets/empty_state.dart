@@ -4,7 +4,12 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  const EmptyState({super.key, required this.icon, required this.title, required this.subtitle});
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +26,7 @@ class EmptyState extends StatelessWidget {
               '$title\n$subtitle',
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
-          )
+          ),
         ],
       ),
     );

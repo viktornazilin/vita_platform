@@ -39,7 +39,7 @@ class GoalPath extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                   ),
                 ),
-            ]
+            ],
           ],
         );
       },
@@ -52,7 +52,11 @@ class _GoalBubble extends StatelessWidget {
   final int index;
   final VoidCallback onTap;
 
-  const _GoalBubble({required this.goal, required this.index, required this.onTap});
+  const _GoalBubble({
+    required this.goal,
+    required this.index,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +74,10 @@ class _GoalBubble extends StatelessWidget {
             backgroundColor: bg,
             child: done
                 ? const Icon(Icons.check, color: Colors.white)
-                : Text(index.toString(), style: TextStyle(color: fg, fontWeight: FontWeight.bold)),
+                : Text(
+                    index.toString(),
+                    style: TextStyle(color: fg, fontWeight: FontWeight.bold),
+                  ),
           ),
           const SizedBox(height: 6),
           SizedBox(

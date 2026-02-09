@@ -32,15 +32,28 @@ class ReportLegend extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: cs.outlineVariant),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(e.key, style: tt.labelMedium),
-            const SizedBox(width: 6),
-            Text('• ${valueFormatter(e.value)}', style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
-            const SizedBox(width: 6),
-            Text('${pct.toStringAsFixed(0)}%', style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
-          ]),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Text(e.key, style: tt.labelMedium),
+              const SizedBox(width: 6),
+              Text(
+                '• ${valueFormatter(e.value)}',
+                style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${pct.toStringAsFixed(0)}%',
+                style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+              ),
+            ],
+          ),
         );
       }),
     );

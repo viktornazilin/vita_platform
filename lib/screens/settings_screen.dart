@@ -124,7 +124,7 @@ class _SettingsViewState extends State<_SettingsView> {
                       selected: {
                         {6, 8, 10}.contains(model.targetHours.round())
                             ? model.targetHours.round()
-                            : -1
+                            : -1,
                       },
                       onSelectionChanged: (s) {
                         final v = s.first;
@@ -146,7 +146,10 @@ class _SettingsViewState extends State<_SettingsView> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: cs.secondaryContainer,
                             borderRadius: BorderRadius.circular(12),
@@ -181,11 +184,16 @@ class _SettingsViewState extends State<_SettingsView> {
               onPressed: _saving ? null : () => _save(model),
               icon: _saving
                   ? const SizedBox(
-                      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.save_outlined),
               label: Text(_saving ? 'Сохранение…' : 'Сохранить'),
               style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ),
@@ -220,13 +228,22 @@ class _SectionCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(subtitle, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 12),
-          child,
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -255,7 +272,10 @@ class _WeightRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(label, style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                child: Text(
+                  label,
+                  style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -264,7 +284,10 @@ class _WeightRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: cs.outlineVariant),
                 ),
-                child: Text('${(value * 100).toStringAsFixed(0)}%', style: tt.labelSmall),
+                child: Text(
+                  '${(value * 100).toStringAsFixed(0)}%',
+                  style: tt.labelSmall,
+                ),
               ),
             ],
           ),

@@ -50,7 +50,7 @@ class ParsedGoalDraft {
     'hours': hours,
     'startTime': startTime == null
         ? null
-        : '${startTime!.hour.toString().padLeft(2,'0')}:${startTime!.minute.toString().padLeft(2,'0')}',
+        : '${startTime!.hour.toString().padLeft(2, '0')}:${startTime!.minute.toString().padLeft(2, '0')}',
   };
 
   ParsedGoalDraft copyWith({
@@ -95,13 +95,18 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 16,
+        left: 16,
+        right: 16,
+        top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Импортировать цели', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Импортировать цели',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           Flexible(
             child: ListView.separated(
@@ -111,7 +116,9 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
               itemBuilder: (_, i) {
                 final d = _drafts[i];
                 final titleCtrl = TextEditingController(text: d.title);
-                final descCtrl = TextEditingController(text: d.description ?? '');
+                final descCtrl = TextEditingController(
+                  text: d.description ?? '',
+                );
                 return StatefulBuilder(
                   builder: (ctx, setInner) => Card(
                     child: Padding(
@@ -122,21 +129,29 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                             children: [
                               Checkbox(
                                 value: _checked[i],
-                                onChanged: (v) => setState(() => _checked[i] = v ?? true),
+                                onChanged: (v) =>
+                                    setState(() => _checked[i] = v ?? true),
                               ),
                               Expanded(
                                 child: TextField(
                                   controller: titleCtrl,
-                                  decoration: const InputDecoration(labelText: 'Название'),
-                                  onChanged: (v) => _drafts[i] = _drafts[i].copyWith(title: v),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Название',
+                                  ),
+                                  onChanged: (v) => _drafts[i] = _drafts[i]
+                                      .copyWith(title: v),
                                 ),
                               ),
                             ],
                           ),
                           TextField(
                             controller: descCtrl,
-                            decoration: const InputDecoration(labelText: 'Описание'),
-                            onChanged: (v) => _drafts[i] = _drafts[i].copyWith(description: v),
+                            decoration: const InputDecoration(
+                              labelText: 'Описание',
+                            ),
+                            onChanged: (v) => _drafts[i] = _drafts[i].copyWith(
+                              description: v,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Row(
@@ -147,10 +162,16 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                                 onPressed: () async {
                                   final picked = await showTimePicker(
                                     context: context,
-                                    initialTime: d.startTime ?? const TimeOfDay(hour: 9, minute: 0),
+                                    initialTime:
+                                        d.startTime ??
+                                        const TimeOfDay(hour: 9, minute: 0),
                                   );
                                   if (picked != null) {
-                                    setState(() => _drafts[i] = _drafts[i].copyWith(startTime: picked));
+                                    setState(
+                                      () => _drafts[i] = _drafts[i].copyWith(
+                                        startTime: picked,
+                                      ),
+                                    );
                                   }
                                 },
                                 child: const Text('Изменить'),
@@ -198,6 +219,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
     );
   }
 
-  String _fmtTod(TimeOfDay? t) =>
-      t == null ? '—' : '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  String _fmtTod(TimeOfDay? t) => t == null
+      ? '—'
+      : '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }

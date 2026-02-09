@@ -4,14 +4,19 @@ import '../domain/jar.dart';
 import '../domain/transaction_item.dart';
 import '../services/finance_repo_mixin.dart' show FinanceRepo;
 
-bool _sameMonth(DateTime a, DateTime b) => a.year == b.year && a.month == b.month;
+bool _sameMonth(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month;
 
 class BudgetModel extends ChangeNotifier {
   final FinanceRepo repo;
   BudgetModel({required this.repo});
 
   DateTime selectedDay = DateTime.now();
-  DateTime _monthAnchor = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime _monthAnchor = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
 
   bool loading = true;
 
@@ -32,8 +37,14 @@ class BudgetModel extends ChangeNotifier {
   DateTime _withNowTime(DateTime day) {
     final now = DateTime.now();
     return DateTime(
-      day.year, day.month, day.day,
-      now.hour, now.minute, now.second, now.millisecond, now.microsecond,
+      day.year,
+      day.month,
+      day.day,
+      now.hour,
+      now.minute,
+      now.second,
+      now.millisecond,
+      now.microsecond,
     );
   }
 
@@ -58,19 +69,24 @@ class BudgetModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  double get freeCashFlowMonth => (incomeMonth - expenseMonth).clamp(0, double.infinity);
+  double get freeCashFlowMonth =>
+      (incomeMonth - expenseMonth).clamp(0, double.infinity);
 
   Map<String, double> previewJarAllocation() {
     final active = jars.where((j) => j.active && j.percentOfFree > 0).toList();
     final totalPercent = active.fold<double>(0, (s, j) => s + j.percentOfFree);
     if (totalPercent <= 0) return {};
     final free = freeCashFlowMonth;
-    return { for (final j in active) j.id: free * (j.percentOfFree / totalPercent) };
+    return {
+      for (final j in active) j.id: free * (j.percentOfFree / totalPercent),
+    };
   }
 
   Future<void> commitJarAllocationForMonth() async {
     // Проверяем факт фиксации по БД
-    final already = await repo.hasAnyJarAllocationForMonth(periodMonth: monthStart);
+    final already = await repo.hasAnyJarAllocationForMonth(
+      periodMonth: monthStart,
+    );
     if (already || monthCommitted) {
       monthCommitted = true;
       notifyListeners();
@@ -83,7 +99,11 @@ class BudgetModel extends ChangeNotifier {
     try {
       for (final e in alloc.entries) {
         await repo.updateJarAmount(jarId: e.key, delta: e.value);
-        await repo.addJarAllocation(jarId: e.key, periodMonth: monthStart, amount: e.value);
+        await repo.addJarAllocation(
+          jarId: e.key,
+          periodMonth: monthStart,
+          amount: e.value,
+        );
       }
       monthCommitted = true;
       jars = await repo.listJars();
@@ -130,7 +150,8 @@ class BudgetModel extends ChangeNotifier {
   }
 
   // ===== Категории =====
-  Future<String> createCategory(String name, String kind) => repo.ensureCategory(name, kind);
+  Future<String> createCategory(String name, String kind) =>
+      repo.ensureCategory(name, kind);
 
   Future<void> deleteCategory(String categoryId) async {
     await repo.deleteCategory(categoryId);
@@ -151,12 +172,11 @@ class BudgetModel extends ChangeNotifier {
     required String title,
     double? targetAmount,
     required double percent,
-  }) =>
-      repo.addJar(
-        title: title,
-        targetAmount: targetAmount,
-        percentOfFree: percent,
-      );
+  }) => repo.addJar(
+    title: title,
+    targetAmount: targetAmount,
+    percentOfFree: percent,
+  );
 
   // ===== Внутренние =====
   Future<void> _reloadMonthAndDay() async {
@@ -178,10 +198,14 @@ class BudgetModel extends ChangeNotifier {
     incomeMonth = sums['income'] ?? 0;
     expenseMonth = sums['expense'] ?? 0;
 
-    expenseBreakdownMonth = await repo.monthlyExpenseByCategory(monthStart: monthStart);
+    expenseBreakdownMonth = await repo.monthlyExpenseByCategory(
+      monthStart: monthStart,
+    );
 
     jars = await repo.listJars();
-    monthCommitted = await repo.hasAnyJarAllocationForMonth(periodMonth: monthStart);
+    monthCommitted = await repo.hasAnyJarAllocationForMonth(
+      periodMonth: monthStart,
+    );
   }
 
   /// Переключатель фиксации: зафиксировать / отменить
@@ -189,7 +213,9 @@ class BudgetModel extends ChangeNotifier {
     try {
       if (monthCommitted) {
         // === ОТМЕНА ===
-        final allocations = await repo.listJarAllocationsForMonth(periodMonth: monthStart);
+        final allocations = await repo.listJarAllocationsForMonth(
+          periodMonth: monthStart,
+        );
         for (final a in allocations) {
           await repo.updateJarAmount(jarId: a.jarId, delta: -a.amount);
         }
@@ -200,7 +226,9 @@ class BudgetModel extends ChangeNotifier {
         notifyListeners();
       } else {
         // === ФИКСАЦИЯ ===
-        final already = await repo.hasAnyJarAllocationForMonth(periodMonth: monthStart);
+        final already = await repo.hasAnyJarAllocationForMonth(
+          periodMonth: monthStart,
+        );
         if (already) {
           monthCommitted = true;
           notifyListeners();
@@ -212,7 +240,11 @@ class BudgetModel extends ChangeNotifier {
 
         for (final e in alloc.entries) {
           await repo.updateJarAmount(jarId: e.key, delta: e.value);
-          await repo.addJarAllocation(jarId: e.key, periodMonth: monthStart, amount: e.value);
+          await repo.addJarAllocation(
+            jarId: e.key,
+            periodMonth: monthStart,
+            amount: e.value,
+          );
         }
 
         monthCommitted = true;
@@ -223,10 +255,10 @@ class BudgetModel extends ChangeNotifier {
       debugPrint('toggleJarAllocationForMonth error: $e\n$st');
     }
   }
-  // в BudgetModel
-Future<void> deleteJar(String jarId) async {
-  await repo.deleteJar(jarId);
-  await load();
-}
 
+  // в BudgetModel
+  Future<void> deleteJar(String jarId) async {
+    await repo.deleteJar(jarId);
+    await load();
+  }
 }

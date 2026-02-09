@@ -9,8 +9,8 @@ class StickyHeader extends SliverPersistentHeaderDelegate {
     required double minExtent,
     required double maxExtent,
     required this.child,
-  })  : _min = minExtent,
-        _max = maxExtent;
+  }) : _min = minExtent,
+       _max = maxExtent;
 
   @override
   double get minExtent => _min;
@@ -19,7 +19,11 @@ class StickyHeader extends SliverPersistentHeaderDelegate {
   double get maxExtent => _max;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return SizedBox(
       height: maxExtent,
       child: Material(

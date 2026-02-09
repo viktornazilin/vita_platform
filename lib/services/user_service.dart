@@ -107,11 +107,7 @@ class UserService {
       throw Exception('Ошибка при регистрации');
     }
 
-    await _upsertUserRow(
-      id: authRes.user!.id,
-      email: email,
-      name: name,
-    );
+    await _upsertUserRow(id: authRes.user!.id, email: email, name: name);
 
     _currentUserData = await _client
         .from('users')
@@ -129,8 +125,10 @@ class UserService {
   }
 
   Future<bool> login(String email, String password) async {
-    final authRes = await _client.auth
-        .signInWithPassword(email: email, password: password);
+    final authRes = await _client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
 
     if (authRes.user != null) {
       await _ensureUserRow(authRes.user!);
@@ -159,10 +157,7 @@ class UserService {
     await _client.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: redirect,
-      queryParams: const {
-        'access_type': 'offline',
-        'prompt': 'consent',
-      },
+      queryParams: const {'access_type': 'offline', 'prompt': 'consent'},
     );
     // После редиректа слушай onAuthStateChange в UI и дерни init() или refreshCurrentUser().
   }
@@ -185,7 +180,9 @@ class UserService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefOnboardingCompleted, v);
-    } catch (_) {/* ignore */}
+    } catch (_) {
+      /* ignore */
+    }
 
     final id = _currentUserData?['id'];
     if (id != null) {
@@ -242,8 +239,10 @@ class UserService {
   // -------- NEW: драфт анкеты гостя --------
 
   /// Сохранить/обновить черновик анкеты (гость). Если [completed] = true, отмечаем как завершённый.
-  Future<void> saveGuestOnboardingDraft(Map<String, dynamic> data,
-      {bool completed = false}) async {
+  Future<void> saveGuestOnboardingDraft(
+    Map<String, dynamic> data, {
+    bool completed = false,
+  }) async {
     _cachedOnboardingDraft = data;
     if (completed) _cachedOnboardingCompleted = true;
 
@@ -313,8 +312,7 @@ class UserService {
     final raw = prefs.getString(_prefOnboardingDraft); // NEW
     if (raw != null && raw.isNotEmpty) {
       try {
-        _cachedOnboardingDraft =
-            jsonDecode(raw) as Map<String, dynamic>;
+        _cachedOnboardingDraft = jsonDecode(raw) as Map<String, dynamic>;
       } catch (_) {
         _cachedOnboardingDraft = null;
       }
@@ -354,14 +352,17 @@ class UserService {
     final d = _cachedOnboardingDraft;
     if (d != null) {
       putIfEmpty('life_blocks', (d['life_blocks'] as List?)?.cast<String>());
-      putIfEmpty('priorities',  (d['priorities']  as List?)?.cast<String>());
+      putIfEmpty('priorities', (d['priorities'] as List?)?.cast<String>());
       putIfEmpty('sleep', d['sleep']);
       putIfEmpty('activity', d['activity']);
       putIfEmpty('energy', (d['energy'] as num?)?.toInt());
       putIfEmpty('stress', d['stress']);
-      putIfEmpty('finance_satisfaction', (d['finance_satisfaction'] as num?)?.toInt());
+      putIfEmpty(
+        'finance_satisfaction',
+        (d['finance_satisfaction'] as num?)?.toInt(),
+      );
       putIfEmpty('dreams_by_block', d['dreams_by_block'] as Map?);
-      putIfEmpty('goals_by_block',  d['goals_by_block']  as Map?);
+      putIfEmpty('goals_by_block', d['goals_by_block'] as Map?);
 
       if ((_currentUserData?['has_completed_questionnaire'] != true) &&
           (_cachedOnboardingCompleted == true)) {

@@ -29,13 +29,14 @@ class GoalCard extends StatelessWidget {
         trailing: Wrap(
           children: [
             IconButton(
-              icon: Icon(goal.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked),
+              icon: Icon(
+                goal.isCompleted
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+              ),
               onPressed: onToggle,
             ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: onDelete,
-            ),
+            IconButton(icon: const Icon(Icons.delete), onPressed: onDelete),
           ],
         ),
       ),

@@ -21,17 +21,21 @@ mixin UsersRepoMixin on BaseRepo {
     required double targetHours,
   }) async {
     try {
-      await client.from('users').update({
-        'priorities': weights.keys.toList(),
-        'weights': weights.values.toList(),
-        'target_hours': targetHours,
-      }).eq('id', uid);
+      await client
+          .from('users')
+          .update({
+            'priorities': weights.keys.toList(),
+            'weights': weights.values.toList(),
+            'target_hours': targetHours,
+          })
+          .eq('id', uid);
     } on PostgrestException catch (e) {
       // 42703 = column does not exist
       if (e.code == '42703' || e.message.toLowerCase().contains('column')) {
-        await client.from('users').update({
-          'priorities': weights.keys.toList(),
-        }).eq('id', uid);
+        await client
+            .from('users')
+            .update({'priorities': weights.keys.toList()})
+            .eq('id', uid);
       } else {
         rethrow;
       }

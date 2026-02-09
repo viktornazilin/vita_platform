@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+
 import '../models/goal.dart';
-import 'add_day_goal_sheet.dart'; // для AddGoalResult
+import 'add_day_goal_sheet.dart'; // AddGoalResult
 
 class EditGoalSheet extends StatefulWidget {
   final Goal goal;
@@ -28,7 +30,6 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   late double _hours; // 0.5..14
   late TimeOfDay _start; // TimeOfDay
 
-  /// ✅ нормализуем список блоков: без дублей + гарантируем наличие текущего значения
   List<String> _normalizeBlocks({
     required List<String> availableBlocks,
     String? fixedLifeBlock,
@@ -36,25 +37,20 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   }) {
     final set = <String>{};
 
-    // фиксированный блок (если есть) — первым
     if (fixedLifeBlock != null && fixedLifeBlock.trim().isNotEmpty) {
       set.add(fixedLifeBlock.trim());
     }
 
-    // доступные блоки
     for (final b in availableBlocks) {
       final v = b.trim();
       if (v.isNotEmpty) set.add(v);
     }
 
-    // текущий блок цели (например "general") — обязательно добавляем
     if (currentValue != null && currentValue.trim().isNotEmpty) {
       set.add(currentValue.trim());
     }
 
-    // fallback
     if (set.isEmpty) set.add('general');
-
     return set.toList();
   }
 
@@ -68,7 +64,11 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     _emotionCtrl = TextEditingController(text: g.emotion);
 
     final initialValue =
-        widget.fixedLifeBlock ?? g.lifeBlock ?? (widget.availableBlocks.isNotEmpty ? widget.availableBlocks.first : 'general');
+        widget.fixedLifeBlock ??
+        g.lifeBlock ??
+        (widget.availableBlocks.isNotEmpty
+            ? widget.availableBlocks.first
+            : 'general');
 
     final blocks = _normalizeBlocks(
       availableBlocks: widget.availableBlocks,
@@ -76,14 +76,9 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
       currentValue: initialValue,
     );
 
-    // ✅ гарантируем: _lifeBlock всегда есть в items
     _lifeBlock = blocks.contains(initialValue) ? initialValue : blocks.first;
-
     _importance = (g.importance).clamp(1, 3);
-
-    // ✅ важно: это "план часов" -> у тебя в Goal модель это spentHours, оставляем как есть
     _hours = (g.spentHours).clamp(0.5, 14.0);
-
     _start = TimeOfDay.fromDateTime(g.startTime);
   }
 
@@ -101,7 +96,10 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   }
 
   void _submit() {
-    final title = _titleCtrl.text.trim().isEmpty ? 'Без названия' : _titleCtrl.text.trim();
+    final title = _titleCtrl.text.trim().isEmpty
+        ? 'Без названия'
+        : _titleCtrl.text.trim();
+
     Navigator.pop(
       context,
       AddGoalResult(
@@ -118,115 +116,214 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final canEditBlock = widget.fixedLifeBlock == null;
 
-    // ✅ items для dropdown — уже нормализованы и без дублей
     final blocks = _normalizeBlocks(
       availableBlocks: widget.availableBlocks,
       fixedLifeBlock: widget.fixedLifeBlock,
       currentValue: _lifeBlock,
     );
 
-    // ✅ value должен быть null или строго один раз встречаться в items
     final dropdownValue = blocks.contains(_lifeBlock) ? _lifeBlock : null;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottom),
-      child: DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.85,
-        minChildSize: 0.6,
-        maxChildSize: 0.95,
-        builder: (ctx, controller) => SingleChildScrollView(
-          controller: controller,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text('Редактировать цель', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
+    final inputTheme = theme.inputDecorationTheme.copyWith(
+      filled: true,
+      fillColor: const Color(0x6611121A),
+      labelStyle: TextStyle(
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
+      ),
+      hintStyle: TextStyle(
+        color: theme.colorScheme.onSurface.withOpacity(0.45),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(
+          color: theme.colorScheme.primary.withOpacity(0.55),
+          width: 1.4,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    );
 
-              TextField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Название',
-                  prefixIcon: Icon(Icons.flag_outlined),
+    return Theme(
+      data: theme.copyWith(inputDecorationTheme: inputTheme),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottom),
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.88,
+          minChildSize: 0.62,
+          maxChildSize: 0.96,
+          builder: (ctx, controller) => SingleChildScrollView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 4),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurface.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-              TextField(
-                controller: _descCtrl,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Описание',
-                  prefixIcon: Icon(Icons.notes_outlined),
+                Row(
+                  children: [
+                    _IconBubble(icon: Icons.edit_rounded),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Редактировать цель',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.05,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-              if (canEditBlock) ...[
-                InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Сфера/блок'),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _titleCtrl,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: 'Название',
+                          hintText: 'Например: Пробежка 3 км',
+                          prefixIcon: Icon(Icons.flag_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _descCtrl,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          labelText: 'Описание',
+                          hintText: 'Что именно нужно сделать?',
+                          prefixIcon: Icon(Icons.notes_outlined),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                if (canEditBlock) ...[
+                  _SectionCard(
+                    child: DropdownButtonFormField<String>(
                       value: dropdownValue,
-                      isExpanded: true,
-                      items: blocks.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                      decoration: const InputDecoration(
+                        labelText: 'Сфера/блок',
+                        prefixIcon: Icon(Icons.grid_view_rounded),
+                      ),
+                      items: blocks
+                          .map(
+                            (b) => DropdownMenuItem<String>(
+                              value: b,
+                              child: Text(b),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (v) {
                         if (v == null) return;
                         setState(() => _lifeBlock = v);
                       },
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
+                  const SizedBox(height: 12),
+                ],
 
-              InputDecorator(
-                decoration: const InputDecoration(labelText: 'Важность'),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _importance,
-                    isExpanded: true,
-                    items: const [
-                      DropdownMenuItem(value: 1, child: Text('Низкая')),
-                      DropdownMenuItem(value: 2, child: Text('Средняя')),
-                      DropdownMenuItem(value: 3, child: Text('Высокая')),
+                _SectionCard(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          value: _importance,
+                          decoration: const InputDecoration(
+                            labelText: 'Важность',
+                            prefixIcon: Icon(
+                              Icons.local_fire_department_rounded,
+                            ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 1, child: Text('Низкая')),
+                            DropdownMenuItem(value: 2, child: Text('Средняя')),
+                            DropdownMenuItem(value: 3, child: Text('Высокая')),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _importance = v ?? _importance),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _emotionCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Эмоция',
+                            hintText: '😊',
+                            prefixIcon: Icon(Icons.emoji_emotions_outlined),
+                          ),
+                        ),
+                      ),
                     ],
-                    onChanged: (v) => setState(() => _importance = v ?? _importance),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
 
-              TextField(
-                controller: _emotionCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Эмоция (необязательно)',
-                  prefixIcon: Icon(Icons.emoji_emotions_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Длительность, ч'),
-                        Slider(
+                _SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.timelapse_rounded, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Длительность (ч)',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          _ValuePill(text: _hours.toStringAsFixed(1)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3.5,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 8,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 18,
+                          ),
+                        ),
+                        child: Slider(
                           min: 0.5,
                           max: 14,
                           divisions: 27,
@@ -234,46 +331,298 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           label: _hours.toStringAsFixed(1),
                           onChanged: (v) => setState(() => _hours = v),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Начало'),
-                      TextButton.icon(
-                        icon: const Icon(Icons.access_time),
-                        label: Text(_start.format(context)),
-                        onPressed: _pickTime,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.schedule_rounded, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Начало',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          _PillButton(
+                            label: _start.format(context),
+                            icon: Icons.access_time_rounded,
+                            onTap: _pickTime,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                ),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Отмена'),
+                const SizedBox(height: 14),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SoftButton(
+                        label: 'Отмена',
+                        kind: _SoftButtonKind.secondary,
+                        onTap: () => Navigator.pop(context),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.check),
-                      label: const Text('Сохранить'),
-                      onPressed: _submit,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SoftButton(
+                        label: 'Сохранить',
+                        kind: _SoftButtonKind.primary,
+                        onTap: _submit,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+                const SafeArea(top: false, child: SizedBox(height: 0)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final Widget child;
+  const _SectionCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0x8011121A),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0x22FFFFFF)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x66000000),
+                blurRadius: 22,
+                offset: Offset(0, 14),
               ),
-              const SizedBox(height: 8),
-              const SafeArea(top: false, child: SizedBox(height: 0)),
+              BoxShadow(
+                color: Color(0x14FFFFFF),
+                blurRadius: 18,
+                offset: Offset(0, -6),
+              ),
             ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _IconBubble extends StatelessWidget {
+  final IconData icon;
+  const _IconBubble({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary.withOpacity(0.95),
+            theme.colorScheme.primary.withOpacity(0.55),
+          ],
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x55000000),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+          BoxShadow(
+            color: Color(0x22FFFFFF),
+            blurRadius: 14,
+            offset: Offset(0, -6),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: Colors.white, size: 18),
+    );
+  }
+}
+
+class _ValuePill extends StatelessWidget {
+  final String text;
+  const _ValuePill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0x7011121A),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+          ),
+          child: Text(
+            text,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+              color: theme.colorScheme.onSurface.withOpacity(0.9),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PillButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _PillButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0x7011121A),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withOpacity(0.12)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x44000000),
+                  blurRadius: 14,
+                  offset: Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Color(0x14FFFFFF),
+                  blurRadius: 12,
+                  offset: Offset(0, -6),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: theme.colorScheme.onSurface.withOpacity(0.85),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: theme.colorScheme.onSurface.withOpacity(0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _SoftButtonKind { primary, secondary }
+
+class _SoftButton extends StatelessWidget {
+  final String label;
+  final _SoftButtonKind kind;
+  final VoidCallback onTap;
+
+  const _SoftButton({
+    required this.label,
+    required this.kind,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPrimary = kind == _SoftButtonKind.primary;
+
+    final bg = isPrimary ? null : const Color(0x7011121A);
+
+    final gradient = isPrimary
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.primary.withOpacity(0.95),
+              theme.colorScheme.primary.withOpacity(0.55),
+            ],
+          )
+        : null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 46,
+        decoration: BoxDecoration(
+          color: bg,
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.white.withOpacity(isPrimary ? 0.10 : 0.12),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 18,
+              offset: Offset(0, 12),
+            ),
+            BoxShadow(
+              color: Color(0x14FFFFFF),
+              blurRadius: 14,
+              offset: Offset(0, -6),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: isPrimary
+                  ? Colors.white
+                  : theme.colorScheme.onSurface.withOpacity(0.9),
+            ),
           ),
         ),
       ),

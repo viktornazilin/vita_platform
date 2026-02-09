@@ -27,32 +27,32 @@ class Goal {
   });
 
   factory Goal.fromMap(Map<String, dynamic> map) => Goal(
-        id: map['id'] as String,
-        userId: map['user_id'] as String,
-        title: map['title'] as String,
-        description: (map['description'] ?? '') as String,
-        deadline: DateTime.parse(map['deadline'] as String),
-        startTime: DateTime.parse(map['start_time'] as String), // <-- читаем
-        isCompleted: (map['is_completed'] ?? false) as bool,
-        lifeBlock: (map['life_block'] ?? '') as String,
-        importance: (map['importance'] ?? 1) as int,
-        emotion: (map['emotion'] ?? '') as String,
-        spentHours: (map['spent_hours'] ?? 0).toDouble(),
-      );
+    id: map['id'] as String,
+    userId: map['user_id'] as String,
+    title: map['title'] as String,
+    description: (map['description'] ?? '') as String,
+    deadline: DateTime.parse(map['deadline'] as String),
+    startTime: DateTime.parse(map['start_time'] as String), // <-- читаем
+    isCompleted: (map['is_completed'] ?? false) as bool,
+    lifeBlock: (map['life_block'] ?? '') as String,
+    importance: (map['importance'] ?? 1) as int,
+    emotion: (map['emotion'] ?? '') as String,
+    spentHours: (map['spent_hours'] ?? 0).toDouble(),
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'user_id': userId,
-        'title': title,
-        'description': description,
-        'deadline': deadline.toIso8601String(),
-        'start_time': startTime.toIso8601String(), // <-- сохраняем
-        'is_completed': isCompleted,
-        'life_block': lifeBlock,
-        'importance': importance,
-        'emotion': emotion,
-        'spent_hours': spentHours,
-      };
+    'id': id,
+    'user_id': userId,
+    'title': title,
+    'description': description,
+    'deadline': deadline.toIso8601String(),
+    'start_time': startTime.toIso8601String(), // <-- сохраняем
+    'is_completed': isCompleted,
+    'life_block': lifeBlock,
+    'importance': importance,
+    'emotion': emotion,
+    'spent_hours': spentHours,
+  };
 
   Goal copyWith({
     String? id,

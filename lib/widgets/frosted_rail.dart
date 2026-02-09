@@ -19,7 +19,11 @@ class FrostedRail extends StatelessWidget {
               color: cs.surface.withOpacity(0.85),
               border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, 6)),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
               ],
             ),
             child: child,

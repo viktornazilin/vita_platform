@@ -9,7 +9,10 @@ class XPService {
     await dbRepo.addXP(points.toInt());
   }
 
-  Future<void> addXPForGoalCompleted({required String lifeBlock, required double hoursSpent}) async {
+  Future<void> addXPForGoalCompleted({
+    required String lifeBlock,
+    required double hoursSpent,
+  }) async {
     final weight = await dbRepo.getLifeBlockWeight(lifeBlock);
     final points = (20 * weight + hoursSpent).toInt();
     await dbRepo.addXP(points);

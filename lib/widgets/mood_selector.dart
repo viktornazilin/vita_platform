@@ -23,7 +23,9 @@ class MoodSelector extends StatelessWidget {
             emoji,
             style: TextStyle(
               fontSize: 32,
-              decoration: selectedEmoji == emoji ? TextDecoration.underline : null,
+              decoration: selectedEmoji == emoji
+                  ? TextDecoration.underline
+                  : null,
             ),
           ),
         );
