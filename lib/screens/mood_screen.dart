@@ -12,6 +12,9 @@ import '../models/mood.dart';
 import '../models/habit.dart';
 import '../models/mental_question.dart';
 
+import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_blur_card.dart';
+
 import '../main.dart'; // dbRepo
 
 class MoodScreen extends StatelessWidget {
@@ -41,7 +44,6 @@ class _MoodViewState extends State<_MoodView> {
 
   static const int _maxLen = 200;
 
-  // --- Week analytics cache ---
   Future<_WeekInsights>? _weekFuture;
 
   @override
@@ -64,12 +66,10 @@ class _MoodViewState extends State<_MoodView> {
 
   List<DateTime> _last7Days() {
     final today = _dateOnly(DateTime.now());
-    // oldest -> newest
     return List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
   }
 
   String _weekdayShort(DateTime d) {
-    // Без intl — просто 2 буквы
     const names = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     return names[d.weekday % 7];
   }
@@ -94,8 +94,7 @@ class _MoodViewState extends State<_MoodView> {
       final key = DateUtils.dateOnly(m.date);
       map.putIfAbsent(key, () => []).add(m);
     }
-    final entries = map.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
+    final entries = map.entries.toList()..sort((a, b) => b.key.compareTo(a.key));
     return {for (final e in entries) e.key: e.value};
   }
 
@@ -111,13 +110,12 @@ class _MoodViewState extends State<_MoodView> {
       lastDate: DateTime.now(),
       builder: (context, child) {
         final cs = Theme.of(context).colorScheme;
-
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: cs.copyWith(surface: cs.surface),
             dialogTheme: const DialogThemeData(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(20)),
+                borderRadius: BorderRadius.all(Radius.circular(22)),
               ),
             ),
           ),
@@ -136,10 +134,10 @@ class _MoodViewState extends State<_MoodView> {
     setState(() => _saving = true);
 
     final err = await context.read<MoodModel>().saveMoodForDate(
-      date: _selectedDate,
-      emoji: _selectedEmoji,
-      note: note,
-    );
+          date: _selectedDate,
+          emoji: _selectedEmoji,
+          note: note,
+        );
 
     if (!mounted) return;
     setState(() => _saving = false);
@@ -157,7 +155,6 @@ class _MoodViewState extends State<_MoodView> {
       _selectedDate = DateUtils.dateOnly(DateTime.now());
     });
 
-    // обновляем week insights
     setState(() => _weekFuture = _loadWeekInsights());
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -216,16 +213,13 @@ class _MoodViewState extends State<_MoodView> {
   Future<_WeekInsights> _loadWeekInsights() async {
     final days = _last7Days();
 
-    // 1) Habits
     final habits = await dbRepo.listHabits();
 
-    // day -> habitId -> entry
     final habitEntriesByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
     for (final d in days) {
       habitEntriesByDay[d] = await dbRepo.getHabitEntriesForDay(d);
     }
 
-    // habitId -> doneCount
     final habitDoneCount = <String, int>{};
     for (final h in habits) {
       habitDoneCount[h.id] = 0;
@@ -247,7 +241,6 @@ class _MoodViewState extends State<_MoodView> {
         return cb.compareTo(ca);
       });
 
-    // 2) Mental questions
     final questions = await dbRepo.listMentalQuestions(onlyActive: true);
 
     final answersByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
@@ -255,14 +248,10 @@ class _MoodViewState extends State<_MoodView> {
       answersByDay[d] = await dbRepo.getMentalAnswersForDay(d);
     }
 
-    // mood bar data (based on moods in MoodModel)
-    // We map emoji -> score (1..5) for a simple weekly chart.
-    // Это не идеально, но очень user-friendly.
     final moods = context.read<MoodModel>().moods;
     final moodByDay = <DateTime, Mood>{};
     for (final m in moods) {
       final k = DateUtils.dateOnly(m.date);
-      // берём первую запись дня
       moodByDay.putIfAbsent(k, () => m);
     }
 
@@ -272,16 +261,9 @@ class _MoodViewState extends State<_MoodView> {
       return _emojiToScore(m.emoji);
     }).toList();
 
-    // mental aggregates
-    final yesNoQuestions = questions
-        .where((q) => q.answerType == 'yes_no')
-        .toList();
+    final yesNoQuestions = questions.where((q) => q.answerType == 'yes_no').toList();
+    final scaleQuestions = questions.where((q) => q.answerType == 'scale').toList();
 
-    final scaleQuestions = questions
-        .where((q) => q.answerType == 'scale')
-        .toList();
-
-    // yes/no: percent yes
     final yesNoStats = <String, _YesNoStat>{};
     for (final q in yesNoQuestions) {
       int yes = 0;
@@ -302,7 +284,6 @@ class _MoodViewState extends State<_MoodView> {
       yesNoStats[q.id] = _YesNoStat(question: q, yes: yes, total: total);
     }
 
-    // scale: avg + series
     final scaleStats = <String, _ScaleStat>{};
     for (final q in scaleQuestions) {
       final series = <int?>[];
@@ -325,9 +306,7 @@ class _MoodViewState extends State<_MoodView> {
       }
 
       final vals = series.whereType<int>().toList();
-      final avg = vals.isEmpty
-          ? null
-          : (vals.reduce((a, b) => a + b) / vals.length);
+      final avg = vals.isEmpty ? null : (vals.reduce((a, b) => a + b) / vals.length);
 
       scaleStats[q.id] = _ScaleStat(question: q, series: series, avg: avg);
     }
@@ -346,7 +325,6 @@ class _MoodViewState extends State<_MoodView> {
   }
 
   int _emojiToScore(String e) {
-    // Простая шкала 1..5 (можно потом улучшить)
     switch (e) {
       case '😫':
       case '😭':
@@ -389,342 +367,285 @@ class _MoodViewState extends State<_MoodView> {
     final grouped = _groupByDay(moods);
 
     return Scaffold(
-      body: RefreshIndicator.adaptive(
-        onRefresh: _refresh,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverAppBar.large(
-              title: const Text('Настроение'),
-              centerTitle: false,
-              actions: [
-                IconButton(
-                  tooltip: 'Обновить',
-                  onPressed: _refresh,
-                  icon: const Icon(Icons.refresh_rounded),
-                ),
-              ],
-            ),
+      body: NestBackground(
+        child: RefreshIndicator.adaptive(
+          onRefresh: _refresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverAppBar.large(
+                title: const Text('Настроение'),
+                centerTitle: false,
+                actions: [
+                  IconButton(
+                    tooltip: 'Обновить',
+                    onPressed: _refresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ],
+              ),
 
-            // -----------------------------------------------------------------
-            // Composer
-            // -----------------------------------------------------------------
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                child: _GlassCard(
-                  borderRadius: 22,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  _ChipButton(
-                                    icon: Icons.calendar_month_rounded,
-                                    label: _formatDateShort(
-                                      context,
-                                      _selectedDate,
-                                    ),
-                                    onTap: _pickDate,
-                                  ),
-                                  _ChipInfo(
-                                    icon: Icons.auto_awesome_rounded,
-                                    label: '1 запись = 1 день',
-                                  ),
-                                ],
+              // -----------------------------------------------------------------
+              // Composer (Nest style)
+              // -----------------------------------------------------------------
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: NestBlurCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _NestChipButton(
+                                icon: Icons.calendar_month_rounded,
+                                label: _formatDateShort(context, _selectedDate),
+                                onTap: _pickDate,
+                              ),
+                              const _NestChipInfo(
+                                icon: Icons.auto_awesome_rounded,
+                                label: '1 запись = 1 день',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Как ты себя чувствуешь?',
+                            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Mood selector container (Nest glass)
+                          _NestInset(
+                            radius: 18,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              child: MoodSelector(
+                                selectedEmoji: _selectedEmoji,
+                                onSelect: (emoji) => setState(() => _selectedEmoji = emoji),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Как ты себя чувствуешь?',
-                          style: tt.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
                           ),
-                        ),
-                        const SizedBox(height: 10),
 
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: cs.surfaceContainerHighest.withOpacity(0.55),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: cs.outlineVariant.withOpacity(0.6),
-                            ),
-                          ),
-                          child: MoodSelector(
-                            selectedEmoji: _selectedEmoji,
-                            onSelect: (emoji) =>
-                                setState(() => _selectedEmoji = emoji),
-                          ),
-                        ),
+                          const SizedBox(height: 14),
 
-                        const SizedBox(height: 14),
-
-                        TextField(
-                          controller: _noteController,
-                          maxLines: 3,
-                          maxLength: _maxLen,
-                          textInputAction: TextInputAction.done,
-                          decoration: InputDecoration(
+                          _NestTextField(
+                            controller: _noteController,
+                            maxLines: 3,
+                            maxLength: _maxLen,
                             labelText: 'Заметка (необязательно)',
                             hintText: 'Что повлияло на твоё состояние?',
-                            prefixIcon: const Icon(Icons.edit_note_rounded),
-                            filled: true,
-                            fillColor: cs.surfaceContainerHighest.withOpacity(
-                              0.45,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(color: cs.outlineVariant),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(
-                                color: cs.outlineVariant.withOpacity(0.7),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(
-                                color: cs.primary,
-                                width: 1.4,
-                              ),
-                            ),
+                            prefixIcon: Icons.edit_note_rounded,
                           ),
-                        ),
 
-                        const SizedBox(height: 10),
+                          const SizedBox(height: 10),
 
-                        SizedBox(
-                          height: 52,
-                          child: FilledButton.icon(
-                            onPressed: _saving ? null : () => _save(context),
-                            icon: _saving
-                                ? SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator.adaptive(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        cs.onPrimary,
+                          SizedBox(
+                            height: 52,
+                            child: FilledButton.icon(
+                              onPressed: _saving ? null : () => _save(context),
+                              icon: _saving
+                                  ? SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator.adaptive(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(cs.onPrimary),
                                       ),
-                                    ),
-                                  )
-                                : const Icon(Icons.check_rounded),
-                            label: Text(_saving ? 'Сохранение…' : 'Сохранить'),
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
+                                    )
+                                  : const Icon(Icons.check_rounded),
+                              label: Text(_saving ? 'Сохранение…' : 'Сохранить'),
+                              style: FilledButton.styleFrom(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
 
-            // -----------------------------------------------------------------
-            // WEEK INSIGHTS (Mood + Habits + Mental)
-            // -----------------------------------------------------------------
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: FutureBuilder<_WeekInsights>(
-                  future: _weekFuture,
-                  builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const _WeekLoadingCard();
-                    }
-                    if (!snap.hasData) {
-                      return _WeekErrorCard(
-                        onRetry: () =>
-                            setState(() => _weekFuture = _loadWeekInsights()),
+              // -----------------------------------------------------------------
+              // WEEK INSIGHTS
+              // -----------------------------------------------------------------
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: FutureBuilder<_WeekInsights>(
+                    future: _weekFuture,
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const _WeekLoadingCard();
+                      }
+                      if (!snap.hasData) {
+                        return _WeekErrorCard(
+                          onRetry: () => setState(() => _weekFuture = _loadWeekInsights()),
+                        );
+                      }
+
+                      final data = snap.data!;
+                      return Column(
+                        children: [
+                          _MoodWeekCard(
+                            days: data.days,
+                            scores: data.moodScores,
+                            weekdayLabel: _weekdayShort,
+                          ),
+                          const SizedBox(height: 10),
+                          _HabitsWeekCard(
+                            days: data.days,
+                            habits: data.topHabits.take(3).toList(),
+                            entriesByDay: data.habitEntriesByDay,
+                            doneCount: data.habitDoneCount,
+                            weekdayLabel: _weekdayShort,
+                          ),
+                          const SizedBox(height: 10),
+                          _MentalWeekCard(
+                            days: data.days,
+                            yesNoStats: data.yesNoStats.values.take(2).toList(),
+                            scaleStats: data.scaleStats.values.take(2).toList(),
+                            weekdayLabel: _weekdayShort,
+                          ),
+                        ],
                       );
-                    }
-
-                    final data = snap.data!;
-                    return Column(
-                      children: [
-                        _MoodWeekCard(
-                          days: data.days,
-                          scores: data.moodScores,
-                          weekdayLabel: _weekdayShort,
-                        ),
-                        const SizedBox(height: 10),
-                        _HabitsWeekCard(
-                          days: data.days,
-                          habits: data.topHabits.take(3).toList(),
-                          entriesByDay: data.habitEntriesByDay,
-                          doneCount: data.habitDoneCount,
-                          weekdayLabel: _weekdayShort,
-                        ),
-                        const SizedBox(height: 10),
-                        _MentalWeekCard(
-                          days: data.days,
-                          yesNoStats: data.yesNoStats.values.take(2).toList(),
-                          scaleStats: data.scaleStats.values.take(2).toList(),
-                          weekdayLabel: _weekdayShort,
-                        ),
-                      ],
-                    );
-                  },
+                    },
+                  ),
                 ),
               ),
-            ),
 
-            // -----------------------------------------------------------------
-            // History header
-            // -----------------------------------------------------------------
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                child: Row(
-                  children: [
-                    Text(
-                      'История настроений',
-                      style: tt.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (!loading && moods.isNotEmpty)
+              // -----------------------------------------------------------------
+              // History header
+              // -----------------------------------------------------------------
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                  child: Row(
+                    children: [
                       Text(
-                        '${moods.length}',
-                        style: tt.labelLarge?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
+                        'История настроений',
+                        style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                       ),
-                  ],
+                      const Spacer(),
+                      if (!loading && moods.isNotEmpty)
+                        Text(
+                          '${moods.length}',
+                          style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            if (loading)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator.adaptive()),
-              )
-            else if (moods.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _EmptyState(
-                  emoji: '📝',
-                  title: 'Пока нет записей',
-                  subtitle: 'Выбери дату, отметь настроение и сохрани запись.',
-                ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final entries = grouped.entries.toList();
-                    int cursor = 0;
+              if (loading)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator.adaptive()),
+                )
+              else if (moods.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyState(
+                    emoji: '📝',
+                    title: 'Пока нет записей',
+                    subtitle: 'Выбери дату, отметь настроение и сохрани запись.',
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final entries = grouped.entries.toList();
+                      int cursor = 0;
 
-                    for (final entry in entries) {
-                      final date = entry.key;
-                      final items = entry.value;
-                      final blockLen = 1 + items.length;
+                      for (final entry in entries) {
+                        final date = entry.key;
+                        final items = entry.value;
+                        final blockLen = 1 + items.length;
 
-                      if (index >= cursor && index < cursor + blockLen) {
-                        final innerIndex = index - cursor;
+                        if (index >= cursor && index < cursor + blockLen) {
+                          final innerIndex = index - cursor;
 
-                        if (innerIndex == 0) {
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-                            child: Text(
-                              _formatDateHeader(context, date),
-                              style: tt.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: cs.onSurfaceVariant,
+                          if (innerIndex == 0) {
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                              child: Text(
+                                _formatDateHeader(context, date),
+                                style: tt.labelLarge?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: cs.onSurfaceVariant,
+                                ),
                               ),
+                            );
+                          }
+
+                          final mood = items[innerIndex - 1];
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                            child: _MoodHistoryTile(
+                              mood: mood,
+                              onEdit: () => _editMood(context, mood),
+                              onDelete: () async {
+                                final ok =
+                                    await showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(22),
+                                        ),
+                                        title: const Text('Удалить запись?'),
+                                        content: Text(
+                                          '${_formatDateShort(context, DateUtils.dateOnly(mood.date))}: '
+                                          '${mood.emoji}'
+                                          '${mood.note.isEmpty ? '' : '\n\n${mood.note}'}',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: const Text('Отмена'),
+                                          ),
+                                          FilledButton.tonal(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: const Text('Удалить'),
+                                          ),
+                                        ],
+                                      ),
+                                    ) ??
+                                    false;
+
+                                if (!ok) return;
+
+                                final err = await context.read<MoodModel>().deleteMoodByDate(mood.date);
+                                if (err != null && mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
+                                  );
+                                }
+
+                                setState(() => _weekFuture = _loadWeekInsights());
+                              },
                             ),
                           );
                         }
 
-                        final mood = items[innerIndex - 1];
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                          child: _MoodHistoryTile(
-                            mood: mood,
-                            onEdit: () => _editMood(context, mood),
-                            onDelete: () async {
-                              final ok =
-                                  await showDialog<bool>(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: const Text('Удалить запись?'),
-                                      content: Text(
-                                        '${_formatDateShort(context, DateUtils.dateOnly(mood.date))}: '
-                                        '${mood.emoji}'
-                                        '${mood.note.isEmpty ? '' : '\n\n${mood.note}'}',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: const Text('Отмена'),
-                                        ),
-                                        FilledButton.tonal(
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: const Text('Удалить'),
-                                        ),
-                                      ],
-                                    ),
-                                  ) ??
-                                  false;
-
-                              if (!ok) return;
-
-                              final err = await context
-                                  .read<MoodModel>()
-                                  .deleteMoodByDate(mood.date);
-                              if (err != null && mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(err),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-
-                              setState(() => _weekFuture = _loadWeekInsights());
-                            },
-                          ),
-                        );
+                        cursor += blockLen;
                       }
 
-                      cursor += blockLen;
-                    }
-
-                    return const SizedBox.shrink();
-                  },
-                  childCount: grouped.entries.fold<int>(
-                    0,
-                    (sum, e) => sum + 1 + e.value.length,
+                      return const SizedBox.shrink();
+                    },
+                    childCount: grouped.entries.fold<int>(0, (sum, e) => sum + 1 + e.value.length),
                   ),
                 ),
-              ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 18)),
-          ],
+              const SliverToBoxAdapter(child: SizedBox(height: 18)),
+            ],
+          ),
         ),
       ),
     );
@@ -737,17 +658,13 @@ class _MoodViewState extends State<_MoodView> {
 
 class _WeekInsights {
   final List<DateTime> days;
-
-  // mood chart: 0..5
   final List<int> moodScores;
 
-  // habits
   final List<Habit> habits;
   final List<Habit> topHabits;
   final Map<DateTime, Map<String, Map<String, dynamic>>> habitEntriesByDay;
   final Map<String, int> habitDoneCount;
 
-  // mental
   final List<MentalQuestion> questions;
   final Map<String, _YesNoStat> yesNoStats;
   final Map<String, _ScaleStat> scaleStats;
@@ -777,14 +694,14 @@ class _YesNoStat {
 
 class _ScaleStat {
   final MentalQuestion question;
-  final List<int?> series; // 7 values
+  final List<int?> series;
   final double? avg;
 
   _ScaleStat({required this.question, required this.series, required this.avg});
 }
 
 // ============================================================================
-// Week insight cards
+// Week insight cards (оставил как есть, но “внутренние” контейнеры = Nest)
 // ============================================================================
 
 class _WeekLoadingCard extends StatelessWidget {
@@ -816,15 +733,9 @@ class _WeekErrorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Не удалось загрузить статистику',
-            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
+          Text('Не удалось загрузить статистику', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
           const SizedBox(height: 6),
-          Text(
-            'Проверь интернет или повтори позже.',
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
+          Text('Проверь интернет или повтори позже.', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -857,10 +768,8 @@ class _MoodWeekCard extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     final filled = scores.where((v) => v > 0).length;
-    final avg = scores.where((v) => v > 0).isEmpty
-        ? null
-        : scores.where((v) => v > 0).reduce((a, b) => a + b) /
-              scores.where((v) => v > 0).length;
+    final valid = scores.where((v) => v > 0).toList();
+    final avg = valid.isEmpty ? null : valid.reduce((a, b) => a + b) / valid.length;
 
     return ReportSectionCard(
       title: 'Состояние недели',
@@ -873,15 +782,10 @@ class _MoodWeekCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _MiniPill(
-                icon: Icons.check_circle_rounded,
-                label: 'Отмечено: $filled/7',
-              ),
-              _MiniPill(
+              _NestMiniPill(icon: Icons.check_circle_rounded, label: 'Отмечено: $filled/7'),
+              _NestMiniPill(
                 icon: Icons.auto_graph_rounded,
-                label: avg == null
-                    ? 'Среднее: —'
-                    : 'Среднее: ${avg.toStringAsFixed(1)}/5',
+                label: avg == null ? 'Среднее: —' : 'Среднее: ${avg.toStringAsFixed(1)}/5',
               ),
             ],
           ),
@@ -898,7 +802,7 @@ class _MoodWeekCard extends StatelessWidget {
 
 class _HabitsWeekCard extends StatelessWidget {
   final List<DateTime> days;
-  final List<Habit> habits; // already top 3
+  final List<Habit> habits;
   final Map<DateTime, Map<String, Map<String, dynamic>>> entriesByDay;
   final Map<String, int> doneCount;
   final String Function(DateTime d) weekdayLabel;
@@ -953,7 +857,6 @@ class _HabitsWeekCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                // позже можно сделать переход на habits screen
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Скоро: экран привычек'),
@@ -1005,10 +908,7 @@ class _MentalWeekCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (yesNoStats.isNotEmpty) ...[
-            Text(
-              'Да/Нет (неделя)',
-              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
+            Text('Да/Нет (неделя)', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: 10),
             for (final s in yesNoStats) ...[
               _YesNoBar(stat: s),
@@ -1017,10 +917,7 @@ class _MentalWeekCard extends StatelessWidget {
           ],
           if (scaleStats.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(
-              'Шкалы (тренд)',
-              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-            ),
+            Text('Шкалы (тренд)', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: 10),
             for (final s in scaleStats) ...[
               _ScaleSparkline(stat: s, days: days, weekdayLabel: weekdayLabel),
@@ -1038,12 +935,12 @@ class _MentalWeekCard extends StatelessWidget {
 }
 
 // ============================================================================
-// Charts (pure Flutter, lightweight)
+// Charts (Nest containers)
 // ============================================================================
 
 class _MoodBars extends StatelessWidget {
   final List<DateTime> days;
-  final List<int> scores; // 0..5
+  final List<int> scores;
   final String Function(DateTime d) weekdayLabel;
 
   const _MoodBars({
@@ -1054,50 +951,47 @@ class _MoodBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    return _NestInset(
+      radius: 18,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(days.length, (i) {
+            final cs = Theme.of(context).colorScheme;
+            final v = scores[i].clamp(0, 5);
+            final h = 10 + (v * 10);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(days.length, (i) {
-          final v = scores[i].clamp(0, 5);
-          final h = 10 + (v * 10); // 10..60
-
-          return Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  height: v == 0 ? 8 : h.toDouble(),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: v == 0
-                        ? cs.surfaceContainerHighest.withOpacity(0.35)
-                        : cs.primary.withOpacity(0.75),
+            return Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    height: v == 0 ? 8 : h.toDouble(),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: v == 0
+                          ? cs.surfaceContainerHighest.withOpacity(0.30)
+                          : cs.primary.withOpacity(0.75),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  weekdayLabel(days[i]),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 6),
+                  Text(
+                    weekdayLabel(days[i]),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
+                ],
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
@@ -1137,10 +1031,7 @@ class _HabitHeatmapRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              '$doneCount/7',
-              style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
-            ),
+            Text('$doneCount/7', style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant)),
           ],
         ),
         const SizedBox(height: 8),
@@ -1159,12 +1050,8 @@ class _HabitHeatmapRow extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(7),
-                      color: done
-                          ? cs.tertiary.withOpacity(0.8)
-                          : cs.surfaceContainerHighest.withOpacity(0.35),
-                      border: Border.all(
-                        color: cs.outlineVariant.withOpacity(0.55),
-                      ),
+                      color: done ? cs.tertiary.withOpacity(0.80) : cs.surfaceContainerHighest.withOpacity(0.30),
+                      border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1173,7 +1060,7 @@ class _HabitHeatmapRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
@@ -1201,28 +1088,30 @@ class _YesNoBar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-        ),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 6),
-        Container(
-          height: 12,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: cs.surfaceContainerHighest.withOpacity(0.35),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: ratio.clamp(0, 1),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                color: cs.secondary.withOpacity(0.8),
-              ),
+        _NestInset(
+          radius: 999,
+          child: SizedBox(
+            height: 12,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: ratio.clamp(0, 1),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: cs.secondary.withOpacity(0.80),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1264,38 +1153,30 @@ class _ScaleSparkline extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-              ),
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
             ),
             const SizedBox(width: 10),
-            Text(
-              avg == null ? '—' : avg.toStringAsFixed(1),
-              style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
-            ),
+            Text(avg == null ? '—' : avg.toStringAsFixed(1), style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant)),
           ],
         ),
         const SizedBox(height: 8),
-        Container(
-          height: 54,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withOpacity(0.35),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
-          ),
-          child: CustomPaint(
-            painter: _SparklinePainter(
-              values: stat.series,
-              min: minV,
-              max: maxV,
-              color: cs.primary.withOpacity(0.9),
-              bgColor: cs.onSurfaceVariant.withOpacity(0.08),
+        _NestInset(
+          radius: 16,
+          child: SizedBox(
+            height: 54,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: CustomPaint(
+                painter: _SparklinePainter(
+                  values: stat.series,
+                  min: minV,
+                  max: maxV,
+                  color: cs.primary.withOpacity(0.9),
+                  bgColor: cs.onSurfaceVariant.withOpacity(0.06),
+                ),
+                child: const SizedBox.expand(),
+              ),
             ),
-            child: const SizedBox.expand(),
           ),
         ),
         const SizedBox(height: 6),
@@ -1305,10 +1186,7 @@ class _ScaleSparkline extends StatelessWidget {
               child: Text(
                 weekdayLabel(days[i]),
                 textAlign: TextAlign.center,
-                style: tt.bodySmall?.copyWith(
-                  fontSize: 11,
-                  color: cs.onSurfaceVariant,
-                ),
+                style: tt.bodySmall?.copyWith(fontSize: 11, color: cs.onSurfaceVariant),
               ),
             );
           }),
@@ -1335,9 +1213,7 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paintBg = Paint()
-      ..color = bgColor
-      ..style = PaintingStyle.fill;
+    final paintBg = Paint()..color = bgColor..style = PaintingStyle.fill;
 
     final paintLine = Paint()
       ..color = color
@@ -1345,19 +1221,15 @@ class _SparklinePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final paintDot = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    final paintDot = Paint()..color = color..style = PaintingStyle.fill;
 
-    // background
     final r = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, size.height),
       const Radius.circular(14),
     );
     canvas.drawRRect(r, paintBg);
 
-    final vals = values;
-    final n = vals.length;
+    final n = values.length;
     if (n < 2) return;
 
     double norm(int v) {
@@ -1367,7 +1239,7 @@ class _SparklinePainter extends CustomPainter {
 
     final points = <Offset>[];
     for (int i = 0; i < n; i++) {
-      final v = vals[i];
+      final v = values[i];
       if (v == null) continue;
 
       final x = (i / (n - 1)) * size.width;
@@ -1383,7 +1255,6 @@ class _SparklinePainter extends CustomPainter {
     }
 
     canvas.drawPath(path, paintLine);
-
     for (final p in points) {
       canvas.drawCircle(p, 2.8, paintDot);
     }
@@ -1399,86 +1270,62 @@ class _SparklinePainter extends CustomPainter {
 }
 
 // ============================================================================
-// Small UI helpers
+// Nest small UI helpers
 // ============================================================================
 
-class _MiniPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _MiniPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: cs.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Modern UI pieces (твой стиль)
-// -----------------------------------------------------------------------------
-
-class _GlassCard extends StatelessWidget {
+class _NestInset extends StatelessWidget {
   final Widget child;
-  final double borderRadius;
-  const _GlassCard({required this.child, this.borderRadius = 20});
+  final double radius;
+  const _NestInset({required this.child, this.radius = 18});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 18,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-                color: Colors.black.withOpacity(0.06),
+            color: cs.surfaceContainerHighest.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+          ),
+          child: Stack(
+            children: [
+              child,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(radius),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.center,
+                        colors: [
+                          Colors.white.withOpacity(0.18),
+                          Colors.white.withOpacity(0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          child: child,
         ),
       ),
     );
   }
 }
 
-class _ChipButton extends StatelessWidget {
+class _NestChipButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const _ChipButton({
+  const _NestChipButton({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -1489,25 +1336,51 @@ class _ChipButton extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: cs.surface.withOpacity(0.55),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: cs.outlineVariant.withOpacity(0.7)),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: _NestInset(
+          radius: 999,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: cs.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Text(label, style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _NestChipInfo extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _NestChipInfo({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return _NestInset(
+      radius: 999,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 18, color: cs.onSurfaceVariant),
             const SizedBox(width: 8),
-            Text(
-              label,
-              style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
+            Text(label, style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -1515,38 +1388,86 @@ class _ChipButton extends StatelessWidget {
   }
 }
 
-class _ChipInfo extends StatelessWidget {
+class _NestMiniPill extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _ChipInfo({required this.icon, required this.label});
+  const _NestMiniPill({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.45)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: cs.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
-          ),
-        ],
+    return _NestInset(
+      radius: 999,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: cs.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text(label, style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+          ],
+        ),
       ),
     );
   }
 }
+
+class _NestTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final int maxLines;
+  final int? maxLength;
+  final String labelText;
+  final String hintText;
+  final IconData prefixIcon;
+
+  const _NestTextField({
+    required this.controller,
+    required this.maxLines,
+    required this.maxLength,
+    required this.labelText,
+    required this.hintText,
+    required this.prefixIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      maxLength: maxLength,
+      textInputAction: TextInputAction.done,
+      decoration: InputDecoration(
+        labelText: labelText,
+        hintText: hintText,
+        prefixIcon: Icon(prefixIcon),
+        filled: true,
+        fillColor: cs.surfaceContainerHighest.withOpacity(0.30),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.65)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.55)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: cs.primary, width: 1.4),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// History tile (NestBlurCard вместо _GlassCard)
+// ============================================================================
 
 class _MoodHistoryTile extends StatelessWidget {
   final Mood mood;
@@ -1583,29 +1504,24 @@ class _MoodHistoryTile extends StatelessWidget {
         ),
         child: Icon(Icons.delete_rounded, color: cs.onErrorContainer),
       ),
-      child: _GlassCard(
-        borderRadius: 18,
+      child: NestBlurCard(
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 10,
-          ),
-          leading: Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: cs.surface.withOpacity(0.6),
-              shape: BoxShape.circle,
-              border: Border.all(color: cs.outlineVariant.withOpacity(0.7)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          leading: _NestInset(
+            radius: 999,
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(
+                child: Text(mood.emoji, style: const TextStyle(fontSize: 22)),
+              ),
             ),
-            child: Text(mood.emoji, style: const TextStyle(fontSize: 22)),
           ),
           title: Text(
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
           ),
           subtitle: Text(
             'Нажми, чтобы редактировать',
@@ -1620,7 +1536,7 @@ class _MoodHistoryTile extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// Dialog
+// Dialog (чуть округлил и добавил Nest-поле)
 // -----------------------------------------------------------------------------
 
 class _EditMoodResult {
@@ -1710,10 +1626,8 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
             decoration: InputDecoration(
               labelText: 'Заметка',
               filled: true,
-              fillColor: cs.surfaceContainerHighest.withOpacity(0.4),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              fillColor: cs.surfaceContainerHighest.withOpacity(0.30),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
             ),
           ),
         ],
@@ -1722,12 +1636,7 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
         TextButton.icon(
           onPressed: () => Navigator.pop(
             context,
-            _EditMoodResult(
-              delete: true,
-              date: _date,
-              emoji: _emoji,
-              note: _note.text.trim(),
-            ),
+            _EditMoodResult(delete: true, date: _date, emoji: _emoji, note: _note.text.trim()),
           ),
           icon: Icon(Icons.delete_outline_rounded, color: cs.error),
           label: Text('Удалить', style: TextStyle(color: cs.error)),
@@ -1739,12 +1648,7 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
         FilledButton(
           onPressed: () => Navigator.pop(
             context,
-            _EditMoodResult(
-              delete: false,
-              date: _date,
-              emoji: _emoji,
-              note: _note.text.trim(),
-            ),
+            _EditMoodResult(delete: false, date: _date, emoji: _emoji, note: _note.text.trim()),
           ),
           child: const Text('Сохранить'),
         ),
@@ -1754,7 +1658,7 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
 }
 
 // -----------------------------------------------------------------------------
-// Empty state
+// Empty state (Nest)
 // -----------------------------------------------------------------------------
 
 class _EmptyState extends StatelessWidget {
@@ -1779,22 +1683,15 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withOpacity(0.55),
-                shape: BoxShape.circle,
-                border: Border.all(color: cs.outlineVariant.withOpacity(0.7)),
-              ),
-              child: Text(emoji, style: const TextStyle(fontSize: 34)),
+            _NestInset(
+              radius: 999,
+              child: const SizedBox(width: 72, height: 72),
+            ),
+            Positioned.fill(
+              child: Container(),
             ),
             const SizedBox(height: 14),
-            Text(
-              title,
-              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
+            Text(title, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
             Text(
               subtitle,
@@ -1809,7 +1706,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXTENSIONS НА МОДЕЛЬ — твой стиль
+// EXTENSIONS НА МОДЕЛЬ — твой стиль (оставил как было)
 // ─────────────────────────────────────────────────────────────────────────────
 
 extension MoodModelOps on MoodModel {

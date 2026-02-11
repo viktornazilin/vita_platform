@@ -38,55 +38,78 @@ class _VitaAppState extends State<VitaApp> {
     if (mounted) setState(() => _isReady = true);
   }
 
+  ThemeData _patchNestTheme(ThemeData base, {required bool isDark}) {
+    // ✅ Единый "Nest-blue" вместо зелёно-бирюзового
+    // Поменяй на свой фирменный цвет при желании.
+    const seed = Color(0xFF2F80FF);
+
+    final cs = ColorScheme.fromSeed(
+      seedColor: seed,
+      brightness: isDark ? Brightness.dark : Brightness.light,
+    );
+
+    return base.copyWith(
+      useMaterial3: true,
+      colorScheme: cs,
+
+      // ✅ чтобы все AppBar были одинаковыми
+      appBarTheme: base.appBarTheme.copyWith(
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      // ✅ фикс: чтобы FAB/кнопки не уходили в "старый" primary
+      floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
+      ),
+
+      // ✅ нормальный tinted "surface" без зелени
+      scaffoldBackgroundColor: cs.surface,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeCtl = context.watch<ThemeController>();
 
-    // ✅ Единственный MaterialApp на всё приложение (важно для Web!)
-    final ThemeData light = themeCtl.lightTheme;
-    final ThemeData dark = themeCtl.darkTheme;
+    final ThemeData light = _patchNestTheme(themeCtl.lightTheme, isDark: false);
+    final ThemeData dark = _patchNestTheme(themeCtl.darkTheme, isDark: true);
 
-    // если хочешь centerTitle=true — делаем безопасный patch
-    final ThemeData lightPatched = light.copyWith(
-      appBarTheme: light.appBarTheme.copyWith(centerTitle: true),
-    );
-    final ThemeData darkPatched = dark.copyWith(
-      appBarTheme: dark.appBarTheme.copyWith(centerTitle: true),
-    );
-
-    // вычисляем стартовые флаги (если сервис ещё не готов — не трогаем userService поля)
     final bool isLoggedIn = _isReady && _userService.currentUser != null;
     final bool hasCompleted =
         _isReady && _userService.hasCompletedQuestionnaire;
     final bool hasSeenIntro = _isReady && _userService.hasSeenEpicIntro;
 
     return MaterialApp(
-      title: 'Vita Platform',
+      title: 'Nest App',
       debugShowCheckedModeBanner: false,
 
       themeMode: themeCtl.mode,
-      theme: lightPatched,
-      darkTheme: darkPatched,
+      theme: light,
+      darkTheme: dark,
 
       routes: {
         '/home': (_) => const HomeScreen(),
 
         '/register': (_) => ChangeNotifierProvider(
-          create: (_) => RegisterModel(),
-          child: const RegisterScreen(),
-        ),
+              create: (_) => RegisterModel(),
+              child: const RegisterScreen(),
+            ),
 
         '/login': (_) => const LoginScreen(),
 
         '/onboarding': (ctx) => OnboardingQuestionnaireScreen(
-          userService: _userService,
-          onCompleted: () {
-            final loggedIn = _userService.currentUser != null;
-            Navigator.of(
-              ctx,
-            ).pushReplacementNamed(loggedIn ? '/home' : '/login');
-          },
-        ),
+              userService: _userService,
+              onCompleted: () {
+                final loggedIn = _userService.currentUser != null;
+                Navigator.of(ctx)
+                    .pushReplacementNamed(loggedIn ? '/home' : '/login');
+              },
+            ),
 
         '/settings': (_) => const screens.SettingsScreen(),
         '/expenses': (_) => const ExpensesScreen(),
@@ -95,7 +118,6 @@ class _VitaAppState extends State<VitaApp> {
         '/intro': (_) => EpicIntroScreen(userService: _userService),
       },
 
-      // ✅ Важно: во время загрузки — НЕ другой MaterialApp, а просто home = splash
       home: !_isReady
           ? const _BootSplash()
           : _StartGate(
@@ -113,12 +135,10 @@ class _BootSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // можешь сделать сюда свой красивый glass фон
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 
-/// 🔑 Шлюз выбора стартового экрана
 class _StartGate extends StatelessWidget {
   final UserService userService;
   final bool isLoggedIn;
@@ -137,15 +157,12 @@ class _StartGate extends StatelessWidget {
     if (!hasSeenIntro) {
       return EpicIntroScreen(userService: userService);
     }
-
     if (!hasCompleted) {
       return OnboardingQuestionnaireScreen(userService: userService);
     }
-
     if (isLoggedIn) {
       return const HomeScreen();
     }
-
     return const LoginScreen();
   }
 }

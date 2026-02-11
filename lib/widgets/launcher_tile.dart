@@ -26,21 +26,21 @@ class LauncherTile extends StatelessWidget {
         children: [
           // icon/logo bubble
           ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: Container(
-                width: 56,
-                height: 56,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: const Color(0xFFEFF7FF).withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFBBD9F7)),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x1A2B5B7A),
-                      blurRadius: 18,
-                      offset: Offset(0, 10),
+                      blurRadius: 16,
+                      offset: Offset(0, 9),
                     ),
                   ],
                 ),
@@ -48,13 +48,13 @@ class LauncherTile extends StatelessWidget {
                   child: (imagePath != null)
                       ? Image.asset(
                           imagePath!,
-                          height: 34,
-                          width: 34,
+                          height: 28,
+                          width: 28,
                           fit: BoxFit.contain,
                         )
                       : Icon(
                           icon ?? Icons.apps_rounded,
-                          size: 26,
+                          size: 22,
                           color: cs.primary,
                         ),
                 ),
@@ -62,7 +62,7 @@ class LauncherTile extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           Text(
             label,
@@ -70,9 +70,9 @@ class LauncherTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF2E4B5A),
-            ),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF2E4B5A),
+                ),
           ),
         ],
       ),
@@ -90,27 +90,31 @@ class _NestTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
+      borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
+            borderRadius: BorderRadius.circular(22),
             child: Ink(
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.70),
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: const Color(0xFFD6E6F5)),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x1A2B5B7A),
-                    blurRadius: 26,
-                    offset: Offset(0, 14),
+                    blurRadius: 22,
+                    offset: Offset(0, 12),
                   ),
                 ],
               ),
-              child: Padding(padding: const EdgeInsets.all(14), child: child),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: child,
+              ),
             ),
           ),
         ),

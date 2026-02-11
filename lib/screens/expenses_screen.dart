@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,6 +9,10 @@ import '../domain/jar.dart';
 import '../widgets/add_expense_dialog.dart';
 import '../widgets/add_income_dialog.dart';
 import '../main.dart'; // dbRepo
+
+// ✅ Nest
+import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_blur_card.dart';
 
 class ExpensesScreen extends StatelessWidget {
   const ExpensesScreen({super.key});
@@ -41,6 +47,7 @@ class _ExpensesView extends StatelessWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        behavior: SnackBarBehavior.floating,
         content: Text(
           wasCommitted ? 'Фиксация отменена' : 'Распределение зафиксировано',
         ),
@@ -95,201 +102,237 @@ class _ExpensesView extends StatelessWidget {
     final expense = m.expenseMonth;
     final free = (income - expense).clamp(0, double.infinity).toDouble();
 
-    // адаптивные поля для центрирования контента на широких экранах
+    // центрирование контента на широких экранах
     final w = MediaQuery.of(context).size.width;
     const maxContentW = 900.0;
     final sidePad = w > maxContentW ? (w - maxContentW) / 2 : 0.0;
 
+    double dayExpenseSum() => m.dayTx
+        .where((t) => t.kind == 'expense')
+        .fold<double>(0.0, (s, t) => s + t.amount);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Расходы'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month),
-            onPressed: () => _pickDate(context),
-          ),
-          IconButton(
-            icon: Icon(m.monthCommitted ? Icons.undo : Icons.savings_outlined),
-            tooltip: m.monthCommitted
-                ? 'Отменить фиксацию'
-                : 'Зафиксировать распределение по копилкам',
-            onPressed:
-                (m.jars.isNotEmpty &&
-                    (m.monthCommitted || m.freeCashFlowMonth > 0))
-                ? () => _toggleCommit(context)
-                : null,
-          ),
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: 'Настройки копилок и категорий',
-            onPressed: () => Navigator.of(context).pushNamed('/budget'),
-          ),
-        ],
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () => m.load(),
-              child: CustomScrollView(
-                slivers: [
-                  // ===== Верхняя сводка доход/расход/свободно =====
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      16 + sidePad,
-                      16,
-                      16 + sidePad,
-                      8,
+      body: NestBackground(
+        child: loading
+            ? const Center(child: CircularProgressIndicator.adaptive())
+            : RefreshIndicator.adaptive(
+                onRefresh: () => m.load(),
+                child: CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      pinned: true,
+                      title: const Text('Расходы'),
+                      actions: [
+                        IconButton(
+                          icon: const Icon(Icons.calendar_month),
+                          tooltip: 'Выбрать дату',
+                          onPressed: () => _pickDate(context),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            m.monthCommitted
+                                ? Icons.undo
+                                : Icons.savings_outlined,
+                          ),
+                          tooltip: m.monthCommitted
+                              ? 'Отменить фиксацию'
+                              : 'Зафиксировать распределение по копилкам',
+                          onPressed: (m.jars.isNotEmpty &&
+                                  (m.monthCommitted ||
+                                      m.freeCashFlowMonth > 0))
+                              ? () => _toggleCommit(context)
+                              : null,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.tune),
+                          tooltip: 'Настройки копилок и категорий',
+                          onPressed: () =>
+                              Navigator.of(context).pushNamed('/budget'),
+                        ),
+                      ],
                     ),
-                    sliver: SliverToBoxAdapter(
-                      child: _BudgetTopCard(
-                        income: income,
-                        expense: expense,
-                        free: free,
-                      ),
-                    ),
-                  ),
 
-                  // ===== Сумма за выбранный день =====
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 16 + sidePad,
-                      vertical: 8,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Text(
-                        "Сумма за день: ${m.dayTx.where((t) => t.kind == 'expense').fold<double>(0.0, (s, t) => s + t.amount).toStringAsFixed(2)} €",
-                        textAlign: TextAlign.center,
-                        style: tt.titleMedium,
+                    // ===== Верхняя сводка доход/расход/свободно =====
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        16 + sidePad,
+                        16,
+                        16 + sidePad,
+                        8,
                       ),
-                    ),
-                  ),
-
-                  // ===== Список операций за день (с удалением свайпом) =====
-                  if (m.dayTx.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16 + sidePad),
-                        child: const Center(
-                          child: Text('Нет операций за этот день'),
+                      sliver: SliverToBoxAdapter(
+                        child: _BudgetTopCard(
+                          income: income,
+                          expense: expense,
+                          free: free,
                         ),
                       ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: 16 + sidePad),
-                      sliver: SliverList.separated(
-                        itemCount: m.dayTx.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (context, i) {
-                          final t = m.dayTx[i];
-                          final catList = t.kind == 'expense'
-                              ? m.expenseCategories
-                              : m.incomeCategories;
-                          final cat = catList.firstWhere(
-                            (c) => c.id == t.categoryId,
-                            orElse: () =>
-                                dm.Category(id: '', name: '—', kind: t.kind),
-                          );
-                          final color = t.kind == 'expense'
-                              ? Colors.red
-                              : Colors.green;
+                    ),
 
-                          return Dismissible(
-                            key: ValueKey(t.id),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              color: Colors.red.withOpacity(0.15),
-                              child: const Icon(
-                                Icons.delete,
-                                color: Colors.red,
+                    // ===== Сумма за выбранный день =====
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16 + sidePad,
+                        vertical: 8,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: NestBlurCard(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            child: Text(
+                              "Сумма за день: ${dayExpenseSum().toStringAsFixed(2)} €",
+                              textAlign: TextAlign.center,
+                              style: tt.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
-                            confirmDismiss: (_) async {
-                              return await showDialog<bool>(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: const Text('Удалить операцию?'),
-                                      content: Text(
-                                        "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // ===== Список операций за день =====
+                    if (m.dayTx.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Padding(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 16 + sidePad),
+                          child: Center(
+                            child: Text(
+                              'Нет операций за этот день',
+                              style: tt.bodyMedium?.copyWith(
+                                color: cs.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(horizontal: 16 + sidePad),
+                        sliver: SliverList.separated(
+                          itemCount: m.dayTx.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, i) {
+                            final t = m.dayTx[i];
+                            final catList = t.kind == 'expense'
+                                ? m.expenseCategories
+                                : m.incomeCategories;
+                            final cat = catList.firstWhere(
+                              (c) => c.id == t.categoryId,
+                              orElse: () =>
+                                  dm.Category(id: '', name: '—', kind: t.kind),
+                            );
+
+                            final isExpense = t.kind == 'expense';
+                            final kindColor = isExpense
+                                ? cs.error
+                                : cs.tertiary; // мягче, чем pure green
+
+                            return Dismissible(
+                              key: ValueKey(t.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: cs.errorContainer.withOpacity(0.55),
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Icon(
+                                  Icons.delete_rounded,
+                                  color: cs.onErrorContainer,
+                                ),
+                              ),
+                              confirmDismiss: (_) async {
+                                return await showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(22),
+                                        ),
+                                        title:
+                                            const Text('Удалить операцию?'),
+                                        content: Text(
+                                          "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text('Отмена'),
+                                          ),
+                                          FilledButton.tonal(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text('Удалить'),
+                                          ),
+                                        ],
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: const Text('Отмена'),
-                                        ),
-                                        FilledButton.tonal(
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: const Text('Удалить'),
-                                        ),
-                                      ],
-                                    ),
-                                  ) ??
-                                  false;
-                            },
-                            onDismissed: (_) => context
-                                .read<BudgetModel>()
-                                .deleteTransaction(t.id),
-                            child: Card(
-                              child: ListTile(
-                                leading: Icon(
-                                  t.kind == 'expense'
-                                      ? Icons.remove_circle
-                                      : Icons.add_circle,
-                                  color: color,
-                                ),
-                                title: Text(
-                                  "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
-                                ),
-                                subtitle: Text(t.note ?? ''),
-                                trailing: Text(
-                                  "${t.ts.hour.toString().padLeft(2, '0')}:${t.ts.minute.toString().padLeft(2, '0')}",
-                                  style: tt.bodySmall,
-                                ),
+                                    ) ??
+                                    false;
+                              },
+                              onDismissed: (_) => context
+                                  .read<BudgetModel>()
+                                  .deleteTransaction(t.id),
+                              child: _TxTileNest(
+                                title:
+                                    "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
+                                subtitle: (t.note ?? '').trim(),
+                                time:
+                                    "${t.ts.hour.toString().padLeft(2, '0')}:${t.ts.minute.toString().padLeft(2, '0')}",
+                                icon: isExpense
+                                    ? Icons.remove_circle_rounded
+                                    : Icons.add_circle_rounded,
+                                iconColor: kindColor,
                                 onTap: () async {
                                   final action =
                                       await showModalBottomSheet<String>(
-                                        context: context,
-                                        builder: (ctx) => SafeArea(
-                                          top: false,
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              ListTile(
-                                                leading: const Icon(Icons.edit),
-                                                title: const Text(
-                                                  'Редактировать',
-                                                ),
-                                                onTap: () =>
-                                                    Navigator.pop(ctx, 'edit'),
-                                              ),
-                                              ListTile(
-                                                leading: const Icon(
-                                                  Icons.delete,
-                                                ),
-                                                title: const Text('Удалить'),
-                                                onTap: () => Navigator.pop(
-                                                  ctx,
-                                                  'delete',
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                            ],
+                                    context: context,
+                                    showDragHandle: true,
+                                    builder: (ctx) => SafeArea(
+                                      top: false,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          ListTile(
+                                            leading: const Icon(Icons.edit),
+                                            title:
+                                                const Text('Редактировать'),
+                                            onTap: () =>
+                                                Navigator.pop(ctx, 'edit'),
                                           ),
-                                        ),
-                                      );
+                                          ListTile(
+                                            leading:
+                                                const Icon(Icons.delete_rounded),
+                                            title: const Text('Удалить'),
+                                            onTap: () =>
+                                                Navigator.pop(ctx, 'delete'),
+                                          ),
+                                          const SizedBox(height: 8),
+                                        ],
+                                      ),
+                                    ),
+                                  );
 
                                   if (action == 'delete') {
-                                    final confirm = await showDialog<bool>(
+                                    final confirm =
+                                        await showDialog<bool>(
                                       context: context,
                                       builder: (_) => AlertDialog(
-                                        title: const Text('Удалить операцию?'),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(22),
+                                        ),
+                                        title:
+                                            const Text('Удалить операцию?'),
                                         content: Text(
                                           "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
                                         ),
@@ -317,19 +360,19 @@ class _ExpensesView extends StatelessWidget {
                                     if (t.kind == 'expense') {
                                       final res =
                                           await showDialog<AddExpenseResult>(
-                                            context: context,
-                                            builder: (_) => AddExpenseDialog(
-                                              categories: m.expenseCategories,
-                                              initialAmount: t.amount,
-                                              initialCategoryId: t.categoryId,
-                                              initialNote: t.note,
-                                              onCreateCategory: (name) =>
-                                                  m.createCategory(
-                                                    name,
-                                                    'expense',
-                                                  ),
-                                            ),
-                                          );
+                                        context: context,
+                                        builder: (_) => AddExpenseDialog(
+                                          categories: m.expenseCategories,
+                                          initialAmount: t.amount,
+                                          initialCategoryId: t.categoryId,
+                                          initialNote: t.note,
+                                          onCreateCategory: (name) =>
+                                              m.createCategory(
+                                            name,
+                                            'expense',
+                                          ),
+                                        ),
+                                      );
                                       if (res != null) {
                                         await m.deleteTransaction(t.id);
                                         await m.addExpense(
@@ -341,19 +384,19 @@ class _ExpensesView extends StatelessWidget {
                                     } else {
                                       final res =
                                           await showDialog<AddIncomeResult>(
-                                            context: context,
-                                            builder: (_) => AddIncomeDialog(
-                                              categories: m.incomeCategories,
-                                              initialAmount: t.amount,
-                                              initialCategoryId: t.categoryId,
-                                              initialNote: t.note,
-                                              onCreateCategory: (name) =>
-                                                  m.createCategory(
-                                                    name,
-                                                    'income',
-                                                  ),
-                                            ),
-                                          );
+                                        context: context,
+                                        builder: (_) => AddIncomeDialog(
+                                          categories: m.incomeCategories,
+                                          initialAmount: t.amount,
+                                          initialCategoryId: t.categoryId,
+                                          initialNote: t.note,
+                                          onCreateCategory: (name) =>
+                                              m.createCategory(
+                                            name,
+                                            'income',
+                                          ),
+                                        ),
+                                      );
                                       if (res != null) {
                                         await m.deleteTransaction(t.id);
                                         await m.addIncome(
@@ -366,76 +409,82 @@ class _ExpensesView extends StatelessWidget {
                                   }
                                 },
                               ),
+                            );
+                          },
+                        ),
+                      ),
+
+                    // ===== «Банки» по категориям расходов за месяц =====
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        16 + sidePad,
+                        16,
+                        16 + sidePad,
+                        8,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          'Категории расходов за месяц',
+                          style: tt.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
+                      sliver: SliverToBoxAdapter(
+                        child: _CategoryJarsGrid(data: m.expenseBreakdownMonth),
+                      ),
+                    ),
+
+                    // ===== Копилки =====
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        16 + sidePad,
+                        16,
+                        16 + sidePad,
+                        8,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Копилки',
+                              style: tt.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
-                          );
-                        },
+                            if (m.monthCommitted)
+                              TextButton.icon(
+                                onPressed: () => _toggleCommit(context),
+                                icon: const Icon(Icons.undo),
+                                label: const Text('Отменить фиксацию'),
+                              )
+                            else if (m.jars.isNotEmpty && m.freeCashFlowMonth > 0)
+                              TextButton(
+                                onPressed: () => _toggleCommit(context),
+                                child: const Text('Зафиксировать'),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
+                      sliver: SliverToBoxAdapter(
+                        child: _SavingsJarsGrid(jars: m.jars),
                       ),
                     ),
 
-                  // ===== «Банки» по категориям расходов за месяц =====
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      16 + sidePad,
-                      16,
-                      16 + sidePad,
-                      8,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Text(
-                        'Категории расходов за месяц',
-                        style: tt.titleMedium,
-                      ),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
-                    sliver: SliverToBoxAdapter(
-                      child: _CategoryJarsGrid(data: m.expenseBreakdownMonth),
-                    ),
-                  ),
-
-                  // ===== Копилки =====
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      16 + sidePad,
-                      16,
-                      16 + sidePad,
-                      8,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Копилки', style: tt.titleMedium),
-                          if (m.monthCommitted)
-                            TextButton.icon(
-                              onPressed: () => _toggleCommit(context),
-                              icon: const Icon(Icons.undo),
-                              label: const Text('Отменить фиксацию'),
-                            )
-                          else if (m.jars.isNotEmpty && m.freeCashFlowMonth > 0)
-                            TextButton(
-                              onPressed: () => _toggleCommit(context),
-                              child: const Text('Зафиксировать'),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
-                    sliver: SliverToBoxAdapter(
-                      child: _SavingsJarsGrid(jars: m.jars),
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                ],
+                    const SliverToBoxAdapter(child: SizedBox(height: 92)),
+                  ],
+                ),
               ),
-            ),
+      ),
 
-      // ===== FAB: добавить доход / расход =====
-      floatingActionButton: _FabMenu(
+      floatingActionButton: _FabMenuNest(
         onAddExpense: () => _addExpense(context),
         onAddIncome: () => _addIncome(context),
       ),
@@ -443,7 +492,101 @@ class _ExpensesView extends StatelessWidget {
   }
 }
 
-/// Верхняя карточка со «стековой» полосой (адаптивная)
+/// ============================================================================
+/// Nest tiles/cards
+/// ============================================================================
+
+class _TxTileNest extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String time;
+  final IconData icon;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _TxTileNest({
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: NestBlurCard(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withOpacity(0.35),
+                    shape: BoxShape.circle,
+                    border:
+                        Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 26),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  time,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right_rounded,
+                    color: cs.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Верхняя карточка со «стековой» полосой (Nest)
 class _BudgetTopCard extends StatelessWidget {
   final double income, expense, free;
   const _BudgetTopCard({
@@ -454,63 +597,76 @@ class _BudgetTopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     final totalIncome = income <= 0 ? 1.0 : income;
     final expenseW = (expense / totalIncome).clamp(0.0, 1.0);
     final freeW = (free / totalIncome).clamp(0.0, 1.0);
 
     final w = MediaQuery.of(context).size.width;
-    final barH = w < 400 ? 14.0 : 18.0;
+    final barH = w < 400 ? 12.0 : 14.0;
 
-    return Card(
+    return NestBlurCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Wrap(
               alignment: WrapAlignment.center,
               spacing: 12,
-              runSpacing: 6,
+              runSpacing: 8,
               children: [
                 _legendDot(
-                  color: Colors.green,
+                  color: cs.tertiary,
                   text: "Доходы ${income.toStringAsFixed(2)} €",
                 ),
                 _legendDot(
-                  color: Colors.red,
+                  color: cs.error,
                   text: "Расходы ${expense.toStringAsFixed(2)} €",
                 ),
                 _legendDot(
-                  color: Colors.blue,
+                  color: cs.primary,
                   text: "Свободно ${free.toStringAsFixed(2)} €",
                 ),
               ],
             ),
             const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(999),
               child: SizedBox(
                 height: barH,
                 child: Row(
                   children: [
                     Expanded(
                       flex: (expenseW * 1000).round(),
-                      child: Container(color: Colors.red),
+                      child: Container(color: cs.error.withOpacity(0.75)),
                     ),
                     Expanded(
                       flex: (freeW * 1000).round(),
-                      child: Container(color: Colors.blue),
+                      child: Container(color: cs.primary.withOpacity(0.75)),
                     ),
                     Expanded(
-                      flex:
-                          (1000 -
-                                  (expenseW * 1000).round() -
-                                  (freeW * 1000).round())
-                              .clamp(0, 1000),
-                      child: Container(color: Colors.grey.shade300),
+                      flex: (1000 -
+                              (expenseW * 1000).round() -
+                              (freeW * 1000).round())
+                          .clamp(0, 1000),
+                      child: Container(
+                        color: cs.surfaceContainerHighest.withOpacity(0.35),
+                      ),
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Сводка месяца',
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -535,17 +691,25 @@ class _BudgetTopCard extends StatelessWidget {
   }
 }
 
-/// «Банки» категорий расходов за месяц — адаптивная сетка
+/// «Банки» категорий расходов за месяц — адаптивная сетка (Nest)
 class _CategoryJarsGrid extends StatelessWidget {
   final Map<dm.Category, double> data;
   const _CategoryJarsGrid({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     if (data.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Text('Пока нет данных по категориям'),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          'Пока нет данных по категориям',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
       );
     }
 
@@ -554,30 +718,28 @@ class _CategoryJarsGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (ctx, c) {
         final maxW = c.maxWidth;
-        // ширина плитки 150–220, считаем кол-во колонок
         const minTile = 150.0;
         const maxTile = 220.0;
         int cols = (maxW / minTile).floor().clamp(1, 6);
         double tileW = (maxW / cols).clamp(minTile, maxTile);
 
-        // если получилось больше maxTile — попробуем добавить колонку
         while (tileW > maxTile && cols < 8) {
           cols += 1;
           tileW = (maxW / cols).clamp(minTile, maxTile);
         }
 
         return Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 10,
+          runSpacing: 10,
           children: data.entries.map((e) {
             final p = maxVal == 0 ? 0.0 : (e.value / maxVal).clamp(0.0, 1.0);
             return SizedBox(
-              width: tileW - 8, // учитывать spacing
-              child: _JarTile(
+              width: tileW - 10,
+              child: _JarTileNest(
                 title: e.key.name,
                 subtitle: "${e.value.toStringAsFixed(0)} €",
                 fill: p,
-                color: Colors.orange,
+                color: cs.secondary, // мягкий “янтарный” в теме — если есть
               ),
             );
           }).toList(),
@@ -587,14 +749,14 @@ class _CategoryJarsGrid extends StatelessWidget {
   }
 }
 
-/// Карточка-«банка»
-class _JarTile extends StatelessWidget {
+/// Карточка-«банка» (Nest)
+class _JarTileNest extends StatelessWidget {
   final String title;
   final String? subtitle;
   final double fill; // 0..1
   final Color color;
 
-  const _JarTile({
+  const _JarTileNest({
     required this.title,
     this.subtitle,
     required this.fill,
@@ -604,12 +766,9 @@ class _JarTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final tt = Theme.of(context).textTheme;
+
+    return NestBlurCard(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -623,33 +782,49 @@ class _JarTile extends StatelessWidget {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: cs.outlineVariant),
-                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   FractionallySizedBox(
-                    heightFactor: fill,
+                    heightFactor: fill.clamp(0.0, 1.0),
                     widthFactor: 1,
-                    child: Container(
+                    child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.25 + 0.55 * fill),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            color.withOpacity(0.85),
+                            color.withOpacity(0.35),
+                            color.withOpacity(0.12),
+                          ],
+                          stops: const [0.0, 0.7, 1.0],
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               title,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
+              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
-              Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                subtitle!,
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ],
         ),
@@ -664,10 +839,18 @@ class _SavingsJarsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     if (jars.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Text('Копилок пока нет'),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          'Копилок пока нет',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
       );
     }
 
@@ -684,13 +867,13 @@ class _SavingsJarsGrid extends StatelessWidget {
         }
 
         return Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 10,
+          runSpacing: 10,
           children: jars.map<Widget>((j) {
             final target =
-                j.targetAmount ??
-                (j.currentAmount == 0 ? 1 : j.currentAmount * 2);
+                j.targetAmount ?? (j.currentAmount == 0 ? 1 : j.currentAmount * 2);
             final p = (j.currentAmount / target).clamp(0.0, 1.0);
+
             final subtitle = [
               if (j.targetAmount != null)
                 "цель: ${j.targetAmount!.toStringAsFixed(0)} €",
@@ -698,13 +881,14 @@ class _SavingsJarsGrid extends StatelessWidget {
               if (j.percentOfFree > 0)
                 "${j.percentOfFree.toStringAsFixed(0)}% от свободных",
             ].join(' • ');
+
             return SizedBox(
-              width: tileW - 8,
-              child: _JarTile(
+              width: tileW - 10,
+              child: _JarTileNest(
                 title: j.title,
                 subtitle: subtitle,
                 fill: p,
-                color: Colors.blue,
+                color: cs.primary,
               ),
             );
           }).toList(),
@@ -714,53 +898,78 @@ class _SavingsJarsGrid extends StatelessWidget {
   }
 }
 
-/// FAB с меню добавления дохода/расхода
-class _FabMenu extends StatefulWidget {
+/// FAB menu (Nest)
+class _FabMenuNest extends StatefulWidget {
   final VoidCallback onAddIncome;
   final VoidCallback onAddExpense;
 
-  const _FabMenu({required this.onAddIncome, required this.onAddExpense});
+  const _FabMenuNest({required this.onAddIncome, required this.onAddExpense});
 
   @override
-  State<_FabMenu> createState() => _FabMenuState();
+  State<_FabMenuNest> createState() => _FabMenuNestState();
 }
 
-class _FabMenuState extends State<_FabMenu> {
+class _FabMenuNestState extends State<_FabMenuNest> {
   bool _open = false;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
+    Widget mini({
+      required String hero,
+      required IconData icon,
+      required VoidCallback onTap,
+      required String tooltip,
+    }) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Material(
+            color: cs.surface.withOpacity(0.70),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(999),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Icon(icon, color: cs.onSurface, size: 20),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 180),
           child: !_open
               ? const SizedBox.shrink()
               : Column(
                   children: [
-                    FloatingActionButton.small(
-                      heroTag: 'addIncome',
-                      onPressed: () {
+                    mini(
+                      hero: 'addIncome',
+                      icon: Icons.trending_up_rounded,
+                      tooltip: 'Добавить доход',
+                      onTap: () {
                         setState(() => _open = false);
                         widget.onAddIncome();
                       },
-                      tooltip: 'Добавить доход',
-                      child: const Icon(Icons.trending_up),
                     ),
-                    const SizedBox(height: 8),
-                    FloatingActionButton.small(
-                      heroTag: 'addExpense',
-                      onPressed: () {
+                    const SizedBox(height: 10),
+                    mini(
+                      hero: 'addExpense',
+                      icon: Icons.trending_down_rounded,
+                      tooltip: 'Добавить расход',
+                      onTap: () {
                         setState(() => _open = false);
                         widget.onAddExpense();
                       },
-                      tooltip: 'Добавить расход',
-                      child: const Icon(Icons.trending_down),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                   ],
                 ),
         ),
@@ -769,7 +978,7 @@ class _FabMenuState extends State<_FabMenu> {
           backgroundColor: cs.primary,
           foregroundColor: cs.onPrimary,
           onPressed: () => setState(() => _open = !_open),
-          child: Icon(_open ? Icons.close : Icons.add),
+          child: Icon(_open ? Icons.close_rounded : Icons.add_rounded),
         ),
       ],
     );
