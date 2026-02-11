@@ -24,13 +24,16 @@ class TimelineRow extends StatelessWidget {
     required this.onEdit,
   });
 
-  // ширина левой колонки (время + зазор + круг)
-  static const double _railWidth = 100;
+  // ЛЕВАЯ КОЛОНКА: timeBadge + gap + dot
+  static const double _timeBadgeWidth = 72;
+  static const double _timeToDotGap = 10;
   static const double _dotRadius = 14;
 
-  // фиксированная ширина под бейдж времени и зазор до кружка
-  static const double _timeBadgeWidth = 58; // под "HH:mm"
-  static const double _timeToDotGap = 8;
+  // ширина всей колонки слева
+  static const double _railWidth = _timeBadgeWidth + _timeToDotGap + _dotRadius * 2;
+
+  // X-координата центра dot внутри левой колонки — нужна для пунктиров
+  static const double _dotCenterX = _timeBadgeWidth + _timeToDotGap + _dotRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +41,9 @@ class TimelineRow extends StatelessWidget {
     final primary = theme.colorScheme.primary;
 
     final railColor = goal.isCompleted
-        ? primary.withOpacity(0.9)
-        : theme.colorScheme.outline.withOpacity(0.28);
+        ? primary.withOpacity(0.85)
+        : theme.colorScheme.outline.withOpacity(0.25);
 
-    // Стэггер-анимация появления строки
     final duration = Duration(milliseconds: 220 + index * 60);
 
     return TweenAnimationBuilder<double>(
@@ -51,47 +53,79 @@ class TimelineRow extends StatelessWidget {
       builder: (context, t, child) {
         return Opacity(
           opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 10),
-            child: child,
-          ),
+          child: Transform.translate(offset: Offset(0, (1 - t) * 10), child: child),
         );
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // -------- ЛЕВАЯ КОЛОНКА: время + пунктир + кружок --------
+              // ---------- ЛЕВАЯ КОЛОНКА (время + чек строго на одной линии) ----------
               SizedBox(
                 width: _railWidth,
                 child: Stack(
-                  alignment: Alignment.center,
                   children: [
-                    // Сдвигаем рейку (пунктир + круг) вправо, оставив место под время
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: _timeBadgeWidth + _timeToDotGap,
-                      ),
+                    // пунктиры — строго по X центра dot
+                    Positioned.fill(
                       child: Column(
                         children: [
                           if (index != 0)
                             Expanded(
-                              child: Center(
-                                child: DashedLine(color: railColor),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Transform.translate(
+                                  offset: const Offset(_dotCenterX - 1.5, 0), // 1.5 ~ половина dashedLine width
+                                  child: DashedLine(color: railColor),
+                                ),
                               ),
                             )
                           else
                             const SizedBox(height: 12),
 
-                          // Кружок: мягкий объём + glow при выполнении
+                          const SizedBox(height: _dotRadius * 2),
+
+                          if (index != total - 1)
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Transform.translate(
+                                  offset: const Offset(_dotCenterX - 1.5, 0),
+                                  child: DashedLine(color: railColor),
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+
+                    // время + dot в одной строке (❗️вот это фиксит “бегание”)
+                    Align(
+                      alignment: Alignment.center,
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: _timeBadgeWidth,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: _TimeBadge(
+                                text: _fmtHHmm(goal.startTime),
+                                isCompleted: goal.isCompleted,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: _timeToDotGap),
+
+                          // dot / check
                           GestureDetector(
                             onTap: onToggle,
                             behavior: HitTestBehavior.opaque,
                             child: AnimatedScale(
-                              scale: goal.isCompleted ? 1.08 : 1.0,
-                              duration: const Duration(milliseconds: 190),
+                              scale: goal.isCompleted ? 1.06 : 1.0,
+                              duration: const Duration(milliseconds: 180),
                               curve: Curves.easeOutBack,
                               child: _SoftDot(
                                 radius: _dotRadius,
@@ -102,47 +136,22 @@ class TimelineRow extends StatelessWidget {
                               ),
                             ),
                           ),
-
-                          if (index != total - 1)
-                            Expanded(
-                              child: Center(
-                                child: DashedLine(color: railColor),
-                              ),
-                            )
-                          else
-                            const SizedBox(height: 12),
                         ],
-                      ),
-                    ),
-
-                    // Бейдж времени — фикс-ширина слева, по центру по вертикали
-                    Positioned(
-                      left: 0,
-                      child: SizedBox(
-                        width: _timeBadgeWidth,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _TimeBadge(
-                            text: _fmtHHmm(goal.startTime),
-                            isCompleted: goal.isCompleted,
-                          ),
-                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // -------- ПРАВАЯ КАРТОЧКА (клик => actions) --------
+              const SizedBox(width: 10),
+
+              // ---------- ПРАВАЯ КАРТОЧКА ----------
               Expanded(
                 child: _GlassCard(
                   isCompleted: goal.isCompleted,
                   onTap: () => _showGoalActions(context),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     child: GoalCell(goal: goal),
                   ),
                 ),
@@ -164,38 +173,32 @@ class TimelineRow extends StatelessWidget {
       builder: (ctx) {
         return _GlassSheet(
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _SheetGrabber(
-                    color: theme.colorScheme.onSurface.withOpacity(0.25),
-                  ),
-                  const SizedBox(height: 12),
-
-                  _ActionTile(
-                    icon: Icons.edit_outlined,
-                    title: 'Редактировать',
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onEdit();
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _ActionTile(
-                    icon: Icons.delete_outline,
-                    title: 'Удалить',
-                    isDestructive: true,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onDelete();
-                    },
-                  ),
-
-                  const SizedBox(height: 6),
-                ],
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 10),
+                _SheetGrabber(color: theme.colorScheme.onSurface.withOpacity(0.25)),
+                const SizedBox(height: 10),
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Редактировать'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onEdit();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                  title: const Text('Удалить'),
+                  textColor: theme.colorScheme.error,
+                  iconColor: theme.colorScheme.error,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onDelete();
+                  },
+                ),
+                const SizedBox(height: 10),
+              ],
             ),
           ),
         );
@@ -230,12 +233,12 @@ class _SoftDot extends StatelessWidget {
 
     final baseShadows = <BoxShadow>[
       const BoxShadow(
-        color: Color(0x55000000),
-        blurRadius: 16,
-        offset: Offset(0, 10),
+        color: Color(0x22000000),
+        blurRadius: 18,
+        offset: Offset(0, 12),
       ),
       const BoxShadow(
-        color: Color(0x22FFFFFF),
+        color: Color(0x10FFFFFF),
         blurRadius: 14,
         offset: Offset(0, -6),
       ),
@@ -243,15 +246,15 @@ class _SoftDot extends StatelessWidget {
 
     final completedGlow = <BoxShadow>[
       BoxShadow(
-        color: color.withOpacity(0.28),
+        color: color.withOpacity(0.20),
         blurRadius: 18,
         spreadRadius: 1,
-        offset: const Offset(0, 8),
+        offset: const Offset(0, 10),
       ),
     ];
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
       width: size,
       height: size,
@@ -259,9 +262,7 @@ class _SoftDot extends StatelessWidget {
         shape: BoxShape.circle,
         color: isCompleted ? color : surface,
         border: Border.all(
-          color: isCompleted
-              ? color.withOpacity(0.0)
-              : outline.withOpacity(0.55),
+          color: isCompleted ? Colors.transparent : outline.withOpacity(0.45),
           width: isCompleted ? 0 : 2,
         ),
         boxShadow: isCompleted ? (baseShadows + completedGlow) : baseShadows,
@@ -269,7 +270,6 @@ class _SoftDot extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // “блик” сверху для 3D-эффекта
           Positioned(
             top: 3,
             left: 4,
@@ -280,16 +280,15 @@ class _SoftDot extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    Colors.white.withOpacity(isCompleted ? 0.22 : 0.14),
+                    Colors.white.withOpacity(isCompleted ? 0.20 : 0.12),
                     Colors.transparent,
                   ],
                 ),
               ),
             ),
           ),
-
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 160),
+            duration: const Duration(milliseconds: 140),
             switchInCurve: Curves.easeOutBack,
             switchOutCurve: Curves.easeIn,
             child: isCompleted
@@ -307,7 +306,7 @@ class _SoftDot extends StatelessWidget {
   }
 }
 
-class _GlassCard extends StatefulWidget {
+class _GlassCard extends StatelessWidget {
   final Widget child;
   final VoidCallback onTap;
   final bool isCompleted;
@@ -319,40 +318,23 @@ class _GlassCard extends StatefulWidget {
   });
 
   @override
-  State<_GlassCard> createState() => _GlassCardState();
-}
-
-class _GlassCardState extends State<_GlassCard> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final overlay = isCompleted ? 0.10 : 0.06;
 
-    final baseColor = const Color(0xB911121A);
-    final overlay = widget.isCompleted ? 0.10 : 0.06;
-
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedScale(
-        scale: _pressed ? 0.99 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
               decoration: BoxDecoration(
-                color: baseColor,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white.withOpacity(0.10)),
+                color: Colors.white.withOpacity(0.72),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFD6E6F5), width: 1.0),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -361,26 +343,15 @@ class _GlassCardState extends State<_GlassCard> {
                     Colors.transparent,
                   ],
                 ),
-                boxShadow: [
-                  const BoxShadow(
-                    color: Color(0x66000000),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x142B5B7A),
                     blurRadius: 22,
-                    offset: Offset(0, 14),
+                    offset: Offset(0, 16),
                   ),
-                  const BoxShadow(
-                    color: Color(0x18FFFFFF),
-                    blurRadius: 18,
-                    offset: Offset(0, -6),
-                  ),
-                  if (_pressed)
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.12),
-                      blurRadius: 18,
-                      offset: const Offset(0, 10),
-                    ),
                 ],
               ),
-              child: widget.child,
+              child: child,
             ),
           ),
         ),
@@ -393,47 +364,40 @@ class _TimeBadge extends StatelessWidget {
   final String text;
   final bool isCompleted;
 
-  const _TimeBadge({required this.text, required this.isCompleted});
+  const _TimeBadge({
+    required this.text,
+    required this.isCompleted,
+  });
+
+  static const _accent = Color(0xFF3AA8E6);
+  static const _ink = Color(0xFF2E4B5A);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
+    final borderColor = isCompleted ? _accent.withOpacity(0.45) : _accent.withOpacity(0.25);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0x8011121A),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: (isCompleted ? primary : Colors.white).withOpacity(0.18),
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x55000000),
-                blurRadius: 16,
-                offset: Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Color(0x14FFFFFF),
-                blurRadius: 12,
-                offset: Offset(0, -6),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.78),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor, width: 1.1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x102B5B7A),
+            blurRadius: 16,
+            offset: Offset(0, 12),
           ),
-          child: Text(
-            text,
-            style: theme.textTheme.labelMedium?.copyWith(
+        ],
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
+              fontWeight: FontWeight.w900,
               letterSpacing: 0.2,
-              color: theme.colorScheme.onSurface.withOpacity(0.85),
+              color: _ink.withOpacity(0.92),
             ),
-          ),
-        ),
       ),
     );
   }
@@ -445,26 +409,16 @@ class _GlassSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Material(
+          color: Colors.white.withOpacity(0.86),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xCC11121A),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(26),
-              ),
-              border: Border.all(color: const Color(0x22FFFFFF)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x66000000),
-                  blurRadius: 30,
-                  offset: Offset(0, -6),
-                ),
-              ],
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+              border: Border.all(color: const Color(0xFFD6E6F5)),
             ),
             child: child,
           ),
@@ -486,69 +440,6 @@ class _SheetGrabber extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(99),
-      ),
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final bool isDestructive;
-
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.isDestructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = isDestructive
-        ? theme.colorScheme.error
-        : theme.colorScheme.onSurface.withOpacity(0.92);
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: const Color(0x6611121A),
-          border: Border.all(color: Colors.white.withOpacity(0.10)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x44000000),
-              blurRadius: 16,
-              offset: Offset(0, 10),
-            ),
-            BoxShadow(
-              color: Color(0x14FFFFFF),
-              blurRadius: 12,
-              offset: Offset(0, -6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.7)),
-          ],
-        ),
       ),
     );
   }

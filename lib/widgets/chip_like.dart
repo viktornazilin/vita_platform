@@ -1,85 +1,81 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class ChipLike extends StatelessWidget {
   final String label;
-
-  /// Если хочешь точечно сделать чип “акцентнее” (например важность),
-  /// можешь передать значение 0..1. По умолчанию нейтрально.
-  final double accentStrength;
-
-  /// Если хочешь добавить иконку без ломания стиля.
   final IconData? icon;
+  final Color? accent;
+  final bool isLifeBlock;
 
   const ChipLike({
     super.key,
     required this.label,
-    this.accentStrength = 0.0,
     this.icon,
+    this.accent,
+    this.isLifeBlock = false,
   });
+
+  /// Специальный конструктор под “сферу”
+  factory ChipLike.lifeBlock({
+    Key? key,
+    required String label,
+    required IconData icon,
+    required Color accent,
+  }) {
+    return ChipLike(
+      key: key,
+      label: label,
+      icon: icon,
+      accent: accent,
+      isLifeBlock: true,
+    );
+  }
+
+  static const _ink = Color(0xFF2E4B5A);
+  static const _border = Color(0xFFD6E6F5);
+
+  bool get _looksNumeric =>
+      label.contains(RegExp(r'\d')) || label.contains('Часы') || label.contains('Важность');
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
+    final a = accent ?? const Color(0xFF3AA8E6);
 
-    final baseBg = const Color(0x7011121A);
-    final border = Colors.white.withOpacity(0.12);
+    final bg = isLifeBlock
+        ? a.withOpacity(0.12)
+        : (_looksNumeric ? const Color(0xFF3AA8E6).withOpacity(0.12) : Colors.white.withOpacity(0.70));
 
-    final accent = primary.withOpacity(
-      0.10 + 0.18 * accentStrength.clamp(0.0, 1.0),
-    );
+    final stroke = isLifeBlock ? a.withOpacity(0.40) : (_looksNumeric ? a.withOpacity(0.35) : _border);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: baseBg,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: border),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [accent, Colors.transparent],
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x44000000),
-                blurRadius: 14,
-                offset: Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Color(0x14FFFFFF),
-                blurRadius: 12,
-                offset: Offset(0, -6),
-              ),
-            ],
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: isLifeBlock ? 12 : 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: stroke, width: 1.1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x102B5B7A),
+            blurRadius: 14,
+            offset: Offset(0, 10),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 16,
-                  color: theme.colorScheme.onSurface.withOpacity(0.78),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: a.withOpacity(0.95)),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: _ink.withOpacity(0.90),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.1,
                 ),
-                const SizedBox(width: 6),
-              ],
-              Text(
-                label,
-                style: (theme.textTheme.labelMedium ?? const TextStyle())
-                    .copyWith(
-                      letterSpacing: 0.2,
-                      color: theme.colorScheme.onSurface.withOpacity(0.86),
-                    ),
-              ),
-            ],
           ),
-        ),
+        ],
       ),
     );
   }

@@ -10,9 +10,10 @@ import '../widgets/timeline_row.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
 
-/// Лучше читать из --dart-define: --dart-define=VISION_API_KEY=...
+/// ✅ Правильно: имя переменной, а не сам ключ
+/// запуск: flutter run --dart-define=VISION_API_KEY=xxxxx
 const String _kVisionApiKey = String.fromEnvironment(
-  'AIzaSyBBEjM1LYnJw1_SmsAJbZIl-y08xjF5X-s',
+  'VISION_API_KEY',
   defaultValue: '',
 );
 
@@ -65,7 +66,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _PrettySheet(
+      builder: (_) => _NestSheet(
         child: AddDayGoalSheet(
           fixedLifeBlock: vm.lifeBlock,
           availableBlocks: vm.availableBlocks,
@@ -73,27 +74,27 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       ),
     );
 
-    if (res != null) {
-      await vm.createGoal(
-        title: res.title,
-        description: res.description,
-        lifeBlockValue: res.lifeBlock,
-        importance: res.importance,
-        emotion: res.emotion,
-        hours: res.hours,
-        startTime: res.startTime,
-      );
+    if (res == null) return;
 
-      if (mounted) {
-        await Future.delayed(const Duration(milliseconds: 60));
-        if (_scroll.hasClients) {
-          _scroll.animateTo(
-            _scroll.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOut,
-          );
-        }
-      }
+    await vm.createGoal(
+      title: res.title,
+      description: res.description,
+      lifeBlockValue: res.lifeBlock,
+      importance: res.importance,
+      emotion: res.emotion,
+      hours: res.hours,
+      startTime: res.startTime,
+    );
+
+    if (!mounted) return;
+
+    await Future.delayed(const Duration(milliseconds: 80));
+    if (_scroll.hasClients) {
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
@@ -105,7 +106,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _PrettySheet(
+      builder: (_) => _NestSheet(
         child: EditGoalSheet(
           goal: g,
           fixedLifeBlock: vm.lifeBlock,
@@ -114,18 +115,18 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       ),
     );
 
-    if (res != null) {
-      await vm.updateGoal(
-        id: g.id,
-        title: res.title,
-        description: res.description,
-        lifeBlockValue: res.lifeBlock,
-        importance: res.importance,
-        emotion: res.emotion,
-        hours: res.hours,
-        startTime: res.startTime,
-      );
-    }
+    if (res == null) return;
+
+    await vm.updateGoal(
+      id: g.id,
+      title: res.title,
+      description: res.description,
+      lifeBlockValue: res.lifeBlock,
+      importance: res.importance,
+      emotion: res.emotion,
+      hours: res.hours,
+      startTime: res.startTime,
+    );
   }
 
   List<Goal> _sortedByStartTime(List<Goal> src) {
@@ -144,42 +145,45 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text('${vm.formattedDate}  •  $title'),
-        centerTitle: false,
+        centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      floatingActionButton: _PrettyFab(
-        onManual: () => _openAdd(context),
-        onScan: () =>
-            importFromJournal(context, vm, visionApiKey: _kVisionApiKey),
+
+      /// ✅ Только “+”, меню появляется по нажатию
+      floatingActionButton: _MainFab(
+        onAdd: () => _openAdd(context),
+        onScan: () => importFromJournal(
+          context,
+          vm,
+          visionApiKey: _kVisionApiKey,
+        ),
       ),
+
       body: Stack(
         children: [
-          const _SoftBackground(),
+          const _NestBackground(),
           SafeArea(
             child: vm.loading
                 ? const Center(child: CircularProgressIndicator())
                 : goals.isEmpty
-                    ? const _EmptyState()
+                    ? const _NestEmptyState()
                     : ListView.builder(
                         controller: _scroll,
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 116),
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
                         itemCount: goals.length,
                         itemBuilder: (_, i) {
                           final g = goals[i];
-                          return _SoftLift(
+                          return TimelineRow(
+                            key: ValueKey(g.id),
+                            goal: g,
                             index: i,
-                            child: TimelineRow(
-                              key: ValueKey(g.id),
-                              goal: g,
-                              index: i,
-                              total: goals.length,
-                              onToggle: () => vm.toggleComplete(g),
-                              onDelete: () => vm.deleteGoal(g),
-                              onEdit: () => _openEdit(context, g),
-                            ),
+                            total: goals.length,
+                            onToggle: () => vm.toggleComplete(g),
+                            onDelete: () => vm.deleteGoal(g),
+                            onEdit: () => _openEdit(context, g),
                           );
                         },
                       ),
@@ -190,73 +194,54 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+class _NestBackground extends StatelessWidget {
+  const _NestBackground();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xB911121A),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0x22FFFFFF)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x55000000),
-              blurRadius: 18,
-              offset: Offset(0, 10),
-            ),
-          ],
-        ),
-        child: const Text(
-          'Целей на этот день нет',
-          style: TextStyle(color: Colors.white70),
-        ),
-      ),
-    );
-  }
-}
-
-class _SoftBackground extends StatelessWidget {
-  const _SoftBackground();
-
-  @override
-  Widget build(BuildContext context) {
+    // Палитра как на интро (воздушный голубой)
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0B0C10), Color(0xFF0E1020), Color(0xFF0A0B12)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF7FCFF),
+            Color(0xFFEAF6FF),
+            Color(0xFFD7EEFF),
+            Color(0xFFF2FAFF),
+          ],
         ),
       ),
       child: Stack(
         children: const [
-          Positioned(top: -120, left: -90, child: _GlowBlob(size: 280)),
-          Positioned(bottom: -160, right: -110, child: _GlowBlob(size: 340)),
+          Positioned(top: -140, left: -120, child: _SoftBlob(size: 360)),
+          Positioned(bottom: -180, right: -140, child: _SoftBlob(size: 420)),
+          Positioned(top: 120, right: -90, child: _SoftBlob(size: 240)),
         ],
       ),
     );
   }
 }
 
-class _GlowBlob extends StatelessWidget {
+class _SoftBlob extends StatelessWidget {
   final double size;
-  const _GlowBlob({required this.size});
+  const _SoftBlob({required this.size});
 
   @override
   Widget build(BuildContext context) {
     return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 44, sigmaY: 44),
+      imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
       child: Container(
         width: size,
         height: size,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: [Color(0x332A7FFF), Color(0x001D1E2A)],
+            colors: [
+              Color(0x663AA8E6),
+              Color(0x0058B9FF),
+            ],
           ),
         ),
       ),
@@ -264,63 +249,60 @@ class _GlowBlob extends StatelessWidget {
   }
 }
 
-class _SoftLift extends StatelessWidget {
-  final Widget child;
-  final int index;
-
-  const _SoftLift({required this.child, required this.index});
+class _NestEmptyState extends StatelessWidget {
+  const _NestEmptyState();
 
   @override
   Widget build(BuildContext context) {
-    final lift = (index % 2 == 0) ? 0.0 : 1.5;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Transform.translate(
-        offset: Offset(0, -lift),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 24,
-                offset: Offset(0, 14),
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.70),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFD6E6F5)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A2B5B7A),
+              blurRadius: 24,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Text(
+          'Целей на этот день нет',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2E4B5A),
               ),
-              BoxShadow(
-                color: Color(0x22FFFFFF),
-                blurRadius: 18,
-                offset: Offset(0, -6),
-              ),
-            ],
-          ),
-          child: child,
         ),
       ),
     );
   }
 }
 
-class _PrettySheet extends StatelessWidget {
+class _NestSheet extends StatelessWidget {
   final Widget child;
-  const _PrettySheet({required this.child});
+  const _NestSheet({required this.child});
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xCC11121A),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-            border: Border.all(color: const Color(0x22FFFFFF)),
+            color: Colors.white.withOpacity(0.75),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: const Color(0xFFD6E6F5)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 30,
-                offset: Offset(0, -6),
+                color: Color(0x1A2B5B7A),
+                blurRadius: 28,
+                offset: Offset(0, -10),
               ),
             ],
           ),
@@ -331,149 +313,103 @@ class _PrettySheet extends StatelessWidget {
   }
 }
 
-class _PrettyFab extends StatefulWidget {
-  final VoidCallback onManual;
+/// ===============================
+/// FAB: один "+" → меню (Add/Scan)
+/// ===============================
+
+enum _FabAction { add, scan }
+
+class _MainFab extends StatelessWidget {
+  final VoidCallback onAdd;
   final VoidCallback onScan;
 
-  const _PrettyFab({required this.onManual, required this.onScan});
-
-  @override
-  State<_PrettyFab> createState() => _PrettyFabState();
-}
-
-class _PrettyFabState extends State<_PrettyFab>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 220),
-  );
-
-  bool get _open => _c.value > 0.0;
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  void _toggle() => _open ? _c.reverse() : _c.forward();
+  const _MainFab({required this.onAdd, required this.onScan});
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final t = Curves.easeOut.transform(_c.value);
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            _MiniAction(
-              visibleT: t,
-              icon: Icons.edit,
-              label: 'Добавить',
-              onTap: () {
-                _c.reverse();
-                widget.onManual();
-              },
-            ),
-            const SizedBox(height: 10),
-            _MiniAction(
-              visibleT: t,
-              icon: Icons.document_scanner_outlined,
-              label: 'Скан',
-              onTap: () {
-                _c.reverse();
-                widget.onScan();
-              },
-            ),
-            const SizedBox(height: 10),
-            _MainFabButton(
-              open: _open,
-              onTap: _toggle,
-            ),
-          ],
-        );
-      },
+    return SizedBox(
+      width: 62,
+      height: 62,
+      child: FloatingActionButton(
+        onPressed: () => _openMenu(context),
+        elevation: 10,
+        backgroundColor: const Color(0xFF3AA8E6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: const Icon(Icons.add, size: 30, color: Colors.white),
+      ),
     );
   }
+
+  Future<void> _openMenu(BuildContext context) async {
+    final action = await showModalBottomSheet<_FabAction>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _FabMenuSheet(),
+    );
+
+    if (action == null) return;
+
+    if (action == _FabAction.add) {
+      onAdd();
+    } else {
+      onScan();
+    }
+  }
 }
 
-/// Мини-экшен без вложенных GestureDetector (важно для Web)
-class _MiniAction extends StatelessWidget {
-  final double visibleT;
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _MiniAction({
-    required this.visibleT,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+class _FabMenuSheet extends StatelessWidget {
+  const _FabMenuSheet();
 
   @override
   Widget build(BuildContext context) {
-    final opacity = visibleT.clamp(0.0, 1.0);
-    final y = (1 - visibleT) * 14;
-
-    return IgnorePointer(
-      ignoring: opacity < 0.85,
-      child: Opacity(
-        opacity: opacity,
-        child: Transform.translate(
-          offset: Offset(0, y),
-          child: GestureDetector(
-            onTap: onTap,
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.92),
+            border: Border.all(color: const Color(0xFFD6E6F5)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A2B5B7A),
+                blurRadius: 28,
+                offset: Offset(0, -8),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9BC7E6).withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xCC11121A),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0x22FFFFFF)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x44000000),
-                        blurRadius: 14,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
+                  const SizedBox(height: 14),
+                  _FabMenuButton(
+                    icon: Icons.edit_rounded,
+                    title: 'Добавить цель',
+                    subtitle: 'Создать вручную',
+                    onTap: () => Navigator.pop(context, _FabAction.add),
                   ),
-                  child: Text(label, style: const TextStyle(color: Colors.white)),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xCC11121A),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0x22FFFFFF)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x44000000),
-                        blurRadius: 14,
-                        offset: Offset(0, 8),
-                      ),
-                      BoxShadow(
-                        color: Color(0x11FFFFFF),
-                        blurRadius: 12,
-                        offset: Offset(0, -6),
-                      ),
-                    ],
+                  const SizedBox(height: 10),
+                  _FabMenuButton(
+                    icon: Icons.document_scanner_rounded,
+                    title: 'Скан',
+                    subtitle: 'Фото ежедневника',
+                    onTap: () => Navigator.pop(context, _FabAction.scan),
                   ),
-                  child: Icon(icon, color: Colors.white),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -482,45 +418,80 @@ class _MiniAction extends StatelessWidget {
   }
 }
 
-class _MainFabButton extends StatelessWidget {
-  final bool open;
+class _FabMenuButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
   final VoidCallback onTap;
 
-  const _MainFabButton({
-    required this.open,
+  const _FabMenuButton({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF6E7CFF), Color(0xFFB06CFF)],
+    return Material(
+      color: const Color(0xFFF4FAFF),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFD6E6F5)),
           ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x55000000),
-              blurRadius: 18,
-              offset: Offset(0, 10),
-            ),
-            BoxShadow(
-              color: Color(0x22FFFFFF),
-              blurRadius: 14,
-              offset: Offset(0, -6),
-            ),
-          ],
-        ),
-        child: Icon(
-          open ? Icons.close : Icons.add,
-          color: Colors.white,
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x162B5B7A),
+                      blurRadius: 18,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF2E4B5A),
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF7AAECF)),
+            ],
+          ),
         ),
       ),
     );

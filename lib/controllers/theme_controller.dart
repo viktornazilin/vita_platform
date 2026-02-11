@@ -5,7 +5,7 @@ class ThemeController extends ChangeNotifier {
   static const _kSeedKey = 'app_seed_color';
   static const _kModeKey = 'app_theme_mode';
 
-  Color _seed = const Color(0xFF6750A4);
+  Color _seed = const Color(0x83DDF9);
   ThemeMode _mode = ThemeMode.system;
 
   Color get seedColor => _seed;
@@ -45,6 +45,14 @@ class ThemeController extends ChangeNotifier {
     );
 
     return base.copyWith(
+      // ✅ Web-fix: полностью отключаем Ink (splash/highlight/hover/focus),
+      // чтобы не создавать _InkFeatures и избежать GlobalKey ink renderer бага.
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      focusColor: Colors.transparent,
+
       // Карточки
       cardTheme: CardThemeData(
         elevation: 0,
@@ -53,6 +61,8 @@ class ThemeController extends ChangeNotifier {
           borderRadius: BorderRadius.circular(22),
           side: BorderSide(color: scheme.outline.withOpacity(0.18)),
         ),
+        margin: EdgeInsets.zero,
+        surfaceTintColor: Colors.transparent,
       ),
 
       appBarTheme: AppBarTheme(
@@ -60,6 +70,7 @@ class ThemeController extends ChangeNotifier {
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
+        surfaceTintColor: Colors.transparent,
         titleTextStyle: base.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w800,
           color: scheme.onSurface,
@@ -92,7 +103,7 @@ class ThemeController extends ChangeNotifier {
         hintStyle: TextStyle(color: scheme.onSurface.withOpacity(0.45)),
       ),
 
-      // Buttons
+      // Buttons (без Ink)
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -119,6 +130,8 @@ class ThemeController extends ChangeNotifier {
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: Colors.transparent,
+        showDragHandle: false,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         ),
@@ -131,7 +144,7 @@ class ThemeController extends ChangeNotifier {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
 
-      // Menu
+      // Menu / Dropdown (без Ink)
       menuTheme: MenuThemeData(
         style: MenuStyle(
           backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHigh),

@@ -40,51 +40,52 @@ class _VitaAppState extends State<VitaApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isReady) {
-      return const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
-    }
+    final themeCtl = context.watch<ThemeController>();
 
-    final theme = context.watch<ThemeController>();
+    // ✅ Единственный MaterialApp на всё приложение (важно для Web!)
+    final ThemeData light = themeCtl.lightTheme;
+    final ThemeData dark = themeCtl.darkTheme;
 
-    final isLoggedIn = _userService.currentUser != null;
-    final hasCompleted = _userService.hasCompletedQuestionnaire;
-    final hasSeenIntro = _userService.hasSeenEpicIntro;
+    // если хочешь centerTitle=true — делаем безопасный patch
+    final ThemeData lightPatched = light.copyWith(
+      appBarTheme: light.appBarTheme.copyWith(centerTitle: true),
+    );
+    final ThemeData darkPatched = dark.copyWith(
+      appBarTheme: dark.appBarTheme.copyWith(centerTitle: true),
+    );
+
+    // вычисляем стартовые флаги (если сервис ещё не готов — не трогаем userService поля)
+    final bool isLoggedIn = _isReady && _userService.currentUser != null;
+    final bool hasCompleted = _isReady && _userService.hasCompletedQuestionnaire;
+    final bool hasSeenIntro = _isReady && _userService.hasSeenEpicIntro;
 
     return MaterialApp(
       title: 'Vita Platform',
       debugShowCheckedModeBanner: false,
 
-      // ✅ Theme (берём из ThemeController, чтобы применились premium настройки)
-      themeMode: theme.mode,
-      theme: theme.lightTheme.copyWith(
-        appBarTheme: theme.lightTheme.appBarTheme.copyWith(centerTitle: true),
-      ),
-      darkTheme: theme.darkTheme.copyWith(
-        appBarTheme: theme.darkTheme.appBarTheme.copyWith(centerTitle: true),
-      ),
+      themeMode: themeCtl.mode,
+      theme: lightPatched,
+      darkTheme: darkPatched,
 
       routes: {
         '/home': (_) => const HomeScreen(),
 
         '/register': (_) => ChangeNotifierProvider(
-          create: (_) => RegisterModel(),
-          child: const RegisterScreen(),
-        ),
+              create: (_) => RegisterModel(),
+              child: const RegisterScreen(),
+            ),
 
         '/login': (_) => const LoginScreen(),
 
         '/onboarding': (ctx) => OnboardingQuestionnaireScreen(
-          userService: _userService,
-          onCompleted: () {
-            final loggedIn = _userService.currentUser != null;
-            Navigator.of(
-              ctx,
-            ).pushReplacementNamed(loggedIn ? '/home' : '/login');
-          },
-        ),
+              userService: _userService,
+              onCompleted: () {
+                final loggedIn = _userService.currentUser != null;
+                Navigator.of(ctx).pushReplacementNamed(
+                  loggedIn ? '/home' : '/login',
+                );
+              },
+            ),
 
         '/settings': (_) => const screens.SettingsScreen(),
         '/expenses': (_) => const ExpensesScreen(),
@@ -93,12 +94,27 @@ class _VitaAppState extends State<VitaApp> {
         '/intro': (_) => EpicIntroScreen(userService: _userService),
       },
 
-      home: _StartGate(
-        userService: _userService,
-        isLoggedIn: isLoggedIn,
-        hasCompleted: hasCompleted,
-        hasSeenIntro: hasSeenIntro,
-      ),
+      // ✅ Важно: во время загрузки — НЕ другой MaterialApp, а просто home = splash
+      home: !_isReady
+          ? const _BootSplash()
+          : _StartGate(
+              userService: _userService,
+              isLoggedIn: isLoggedIn,
+              hasCompleted: hasCompleted,
+              hasSeenIntro: hasSeenIntro,
+            ),
+    );
+  }
+}
+
+class _BootSplash extends StatelessWidget {
+  const _BootSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    // можешь сделать сюда свой красивый glass фон
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }

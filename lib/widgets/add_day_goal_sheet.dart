@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class AddGoalResult {
@@ -41,7 +40,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
   final _emotions = const ['😊', '😐', '😢', '😎', '😤', '🤔', '😴', '😇'];
   String _emotion = '😊';
-  int _importance = 1;
+  int _importance = 2;
   double _hours = 1.0;
   late String _lifeBlock;
 
@@ -54,7 +53,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         widget.fixedLifeBlock ??
         (widget.availableBlocks.isNotEmpty
             ? widget.availableBlocks.first
-            : 'health');
+            : 'general');
   }
 
   @override
@@ -69,16 +68,14 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
       context: context,
       initialTime: _startTime,
     );
-    if (picked != null) {
-      setState(() => _startTime = picked);
-    }
+    if (picked != null) setState(() => _startTime = picked);
   }
 
   void _submit() {
     if (_titleCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Введите название')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите название')),
+      );
       return;
     }
 
@@ -98,369 +95,383 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
 
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    // Унифицированный стиль инпутов под “glass”
-    final inputTheme = theme.inputDecorationTheme.copyWith(
-      filled: true,
-      fillColor: const Color(0x6611121A),
-      labelStyle: TextStyle(
-        color: theme.colorScheme.onSurface.withOpacity(0.7),
-      ),
-      hintStyle: TextStyle(
-        color: theme.colorScheme.onSurface.withOpacity(0.45),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(
-          color: theme.colorScheme.primary.withOpacity(0.55),
-          width: 1.4,
-        ),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    );
-
-    return Theme(
-      data: theme.copyWith(inputDecorationTheme: inputTheme),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 14,
-          right: 14,
-          top: 10,
-          bottom: bottomInset + 14,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 4),
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Заголовок
-              Row(
-                children: [
-                  _IconBubble(icon: Icons.add_task_rounded),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Новая цель на день',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.05,
-                      ),
-                    ),
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.82,
+        minChildSize: 0.55,
+        maxChildSize: 0.95,
+        builder: (ctx, controller) {
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.94),
+                border: Border.all(color: const Color(0xFFD6E6F5)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A2B5B7A),
+                    blurRadius: 30,
+                    offset: Offset(0, -10),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-
-              // Карточка-секция (glass)
-              _SectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: _titleCtrl,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Название *',
-                        hintText: 'Например: Тренировка 5 км',
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                children: [
+                  Center(
+                    child: Container(
+                      width: 46,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF9BC7E6).withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(99),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _descCtrl,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Описание (опционально)',
-                        hintText: 'Кратко опиши задачу',
+                  ),
+                  const SizedBox(height: 14),
+
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
+                          ),
+                        ),
+                        child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Время начала (как отдельный “премиум” блок)
-              _SectionCard(
-                child: Row(
-                  children: [
-                    const Icon(Icons.schedule_rounded, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Время начала',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Новая цель на день',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF2E4B5A),
+                              ),
                         ),
                       ),
-                    ),
-                    _PillButton(
-                      label: _startTime.format(context),
-                      icon: Icons.access_time_rounded,
-                      onTap: _pickStartTime,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              if (widget.fixedLifeBlock == null) ...[
-                _SectionCard(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _lifeBlock,
-                    decoration: const InputDecoration(labelText: 'Сфера жизни'),
-                    items:
-                        (widget.availableBlocks.isEmpty
-                                ? <String>['health']
-                                : widget.availableBlocks)
-                            .map(
-                              (b) => DropdownMenuItem(value: b, child: Text(b)),
-                            )
-                            .toList(),
-                    onChanged: (v) =>
-                        setState(() => _lifeBlock = v ?? _lifeBlock),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
 
-              // Важность + эмоция
-              _SectionCard(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _LabeledDropdown<int>(
-                        label: 'Важность',
-                        value: _importance,
-                        items: List.generate(5, (i) => i + 1),
-                        itemLabel: (v) => '$v',
-                        onChanged: (v) =>
-                            setState(() => _importance = v ?? _importance),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _LabeledDropdown<String>(
-                        label: 'Эмоция',
-                        value: _emotion,
-                        items: _emotions,
-                        itemLabel: (v) => v,
-                        onChanged: (v) =>
-                            setState(() => _emotion = v ?? _emotion),
-                        itemBuilder: (ctx, v) =>
-                            Text(v, style: const TextStyle(fontSize: 18)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  const SizedBox(height: 14),
 
-              const SizedBox(height: 12),
-
-              // Часы (slider)
-              _SectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+                  _Section(
+                    child: Column(
                       children: [
-                        const Icon(Icons.timelapse_rounded, size: 18),
+                        _PrettyField(
+                          controller: _titleCtrl,
+                          label: 'Название *',
+                          hint: 'Например: Тренировка / Работа / Учёба',
+                          icon: Icons.flag_rounded,
+                        ),
+                        const SizedBox(height: 10),
+                        _PrettyField(
+                          controller: _descCtrl,
+                          label: 'Описание',
+                          hint: 'Коротко: что именно нужно сделать',
+                          icon: Icons.notes_rounded,
+                          minLines: 2,
+                          maxLines: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  _Section(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.access_time_rounded, color: Color(0xFF3AA8E6)),
                         const SizedBox(width: 10),
-                        Expanded(
+                        const Expanded(
                           child: Text(
-                            'Часы',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
+                            'Время начала',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF2E4B5A),
                             ),
                           ),
                         ),
-                        _ValuePill(text: _hours.toStringAsFixed(1)),
+                        _PillButton(
+                          text: _startTime.format(context),
+                          onTap: _pickStartTime,
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 3.5,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 8,
-                        ),
-                        overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 18,
-                        ),
-                      ),
-                      child: Slider(
-                        min: 0.5,
-                        max: 14.0,
-                        divisions: 27,
-                        value: _hours,
-                        label: _hours.toStringAsFixed(1),
-                        onChanged: (v) => setState(() => _hours = v),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  if (widget.fixedLifeBlock == null) ...[
+                    _Section(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.category_rounded, color: Color(0xFF3AA8E6)),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Сфера жизни',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF2E4B5A),
+                              ),
+                            ),
+                          ),
+                          DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _lifeBlock,
+                              items: (widget.availableBlocks.isEmpty
+                                      ? const <String>['general']
+                                      : widget.availableBlocks)
+                                  .map(
+                                    (b) => DropdownMenuItem(
+                                      value: b,
+                                      child: Text(b),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (v) => setState(() => _lifeBlock = v ?? _lifeBlock),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-              ),
 
-              const SizedBox(height: 14),
-
-              // Кнопки
-              Row(
-                children: [
-                  Expanded(
-                    child: _SoftButton(
-                      label: 'Отмена',
-                      kind: _SoftButtonKind.secondary,
-                      onTap: () => Navigator.pop(context),
+                  _Section(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Важность',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2E4B5A),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 10,
+                          children: List.generate(5, (i) {
+                            final v = i + 1;
+                            final selected = _importance == v;
+                            return ChoiceChip(
+                              label: Text('$v'),
+                              selected: selected,
+                              onSelected: (_) => setState(() => _importance = v),
+                              selectedColor: const Color(0xFF3AA8E6).withOpacity(0.18),
+                              backgroundColor: const Color(0xFFF4FAFF),
+                              side: BorderSide(
+                                color: selected
+                                    ? const Color(0xFF3AA8E6).withOpacity(0.35)
+                                    : const Color(0xFFD6E6F5),
+                              ),
+                              labelStyle: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF2E4B5A).withOpacity(selected ? 1 : 0.75),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SoftButton(
-                      label: 'Добавить',
-                      kind: _SoftButtonKind.primary,
-                      onTap: _submit,
+
+                  const SizedBox(height: 12),
+
+                  _Section(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Эмоция',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2E4B5A),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 10,
+                          children: _emotions.map((e) {
+                            final selected = _emotion == e;
+                            return ChoiceChip(
+                              label: Text(e, style: const TextStyle(fontSize: 18)),
+                              selected: selected,
+                              onSelected: (_) => setState(() => _emotion = e),
+                              selectedColor: const Color(0xFF3AA8E6).withOpacity(0.18),
+                              backgroundColor: const Color(0xFFF4FAFF),
+                              side: BorderSide(
+                                color: selected
+                                    ? const Color(0xFF3AA8E6).withOpacity(0.35)
+                                    : const Color(0xFFD6E6F5),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
                   ),
+
+                  const SizedBox(height: 12),
+
+                  _Section(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Часы',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF2E4B5A),
+                                ),
+                              ),
+                            ),
+                            _Pill(text: _hours.toStringAsFixed(1)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Slider(
+                          min: 0.5,
+                          max: 14.0,
+                          divisions: 27,
+                          value: _hours,
+                          onChanged: (v) => setState(() => _hours = v),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            side: const BorderSide(color: Color(0xFFD6E6F5)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text(
+                            'Отмена',
+                            style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF2E4B5A)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3AA8E6),
+                            foregroundColor: Colors.white,
+                            elevation: 10,
+                            shadowColor: const Color(0x334AAAE6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text(
+                            'Добавить',
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
                 ],
               ),
-
-              const SizedBox(height: 10),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class _SectionCard extends StatelessWidget {
+class _Section extends StatelessWidget {
   final Widget child;
-  const _SectionCard({required this.child});
+  const _Section({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0x8011121A),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0x22FFFFFF)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 22,
-                offset: Offset(0, 14),
-              ),
-              BoxShadow(
-                color: Color(0x14FFFFFF),
-                blurRadius: 18,
-                offset: Offset(0, -6),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _IconBubble extends StatelessWidget {
-  final IconData icon;
-  const _IconBubble({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
-      width: 38,
-      height: 38,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary.withOpacity(0.95),
-            theme.colorScheme.primary.withOpacity(0.55),
-          ],
-        ),
+        color: const Color(0xFFF4FAFF),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x55000000),
+            color: Color(0x0F2B5B7A),
             blurRadius: 18,
             offset: Offset(0, 10),
           ),
-          BoxShadow(
-            color: Color(0x22FFFFFF),
-            blurRadius: 14,
-            offset: Offset(0, -6),
-          ),
         ],
       ),
-      child: const Icon(
-        Icons.auto_awesome_rounded,
-        color: Colors.white,
-        size: 18,
-      ),
+      child: child,
     );
   }
 }
 
-class _ValuePill extends StatelessWidget {
-  final String text;
-  const _ValuePill({required this.text});
+class _PrettyField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final int minLines;
+  final int maxLines;
+
+  const _PrettyField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.minLines = 1,
+    this.maxLines = 1,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0x7011121A),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
-          ),
-          child: Text(
-            text,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-              color: theme.colorScheme.onSurface.withOpacity(0.9),
-            ),
-          ),
+    return TextField(
+      controller: controller,
+      minLines: minLines,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: const Color(0xFF3AA8E6)),
+        labelText: label,
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: Color(0xFFD6E6F5)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: Color(0xFFD6E6F5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: const Color(0xFF3AA8E6).withOpacity(0.6), width: 1.4),
         ),
       ),
     );
@@ -468,63 +479,27 @@ class _ValuePill extends StatelessWidget {
 }
 
 class _PillButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
+  final String text;
   final VoidCallback onTap;
-
-  const _PillButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
+  const _PillButton({required this.text, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(999),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: const Color(0x7011121A),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x44000000),
-                  blurRadius: 14,
-                  offset: Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: Color(0x14FFFFFF),
-                  blurRadius: 12,
-                  offset: Offset(0, -6),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: theme.colorScheme.onSurface.withOpacity(0.85),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    color: theme.colorScheme.onSurface.withOpacity(0.9),
-                  ),
-                ),
-              ],
-            ),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFD6E6F5)),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF2E4B5A)),
           ),
         ),
       ),
@@ -532,122 +507,22 @@ class _PillButton extends StatelessWidget {
   }
 }
 
-class _LabeledDropdown<T> extends StatelessWidget {
-  final String label;
-  final T value;
-  final List<T> items;
-  final String Function(T) itemLabel;
-  final ValueChanged<T?> onChanged;
-  final Widget Function(BuildContext, T)? itemBuilder;
-
-  const _LabeledDropdown({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.itemLabel,
-    required this.onChanged,
-    this.itemBuilder,
-  });
+class _Pill extends StatelessWidget {
+  final String text;
+  const _Pill({required this.text});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface.withOpacity(0.75),
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<T>(
-          value: value,
-          decoration: const InputDecoration(isDense: true),
-          items: items
-              .map(
-                (e) => DropdownMenuItem<T>(
-                  value: e,
-                  child: itemBuilder?.call(context, e) ?? Text(itemLabel(e)),
-                ),
-              )
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-}
-
-enum _SoftButtonKind { primary, secondary }
-
-class _SoftButton extends StatelessWidget {
-  final String label;
-  final _SoftButtonKind kind;
-  final VoidCallback onTap;
-
-  const _SoftButton({
-    required this.label,
-    required this.kind,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isPrimary = kind == _SoftButtonKind.primary;
-
-    final bg = isPrimary ? null : const Color(0x7011121A);
-
-    final gradient = isPrimary
-        ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.primary.withOpacity(0.95),
-              theme.colorScheme.primary.withOpacity(0.55),
-            ],
-          )
-        : null;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        decoration: BoxDecoration(
-          color: bg,
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: Colors.white.withOpacity(isPrimary ? 0.10 : 0.12),
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 18,
-              offset: Offset(0, 12),
-            ),
-            BoxShadow(
-              color: Color(0x14FFFFFF),
-              blurRadius: 14,
-              offset: Offset(0, -6),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: isPrimary
-                  ? Colors.white
-                  : theme.colorScheme.onSurface.withOpacity(0.9),
-            ),
-          ),
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF2E4B5A)),
       ),
     );
   }
