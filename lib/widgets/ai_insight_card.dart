@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../models/ai/ai_insight.dart';
@@ -12,13 +13,13 @@ class AiInsightCard extends StatelessWidget {
       case 'risk':
         return Icons.warning_amber_rounded;
       case 'emotional':
-        return Icons.mood;
+        return Icons.mood_rounded;
       case 'habit':
-        return Icons.autorenew;
+        return Icons.autorenew_rounded;
       case 'goal':
-        return Icons.flag;
+        return Icons.flag_rounded;
       default:
-        return Icons.insights;
+        return Icons.insights_rounded;
     }
   }
 
@@ -34,106 +35,276 @@ class AiInsightCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(14),
-      ),
+    final typeIcon = _iconForType(item.type);
+    final typeLabel = switch (item.type) {
+      'risk' => 'Риск',
+      'emotional' => 'Эмоции',
+      'habit' => 'Привычки',
+      'goal' => 'Цели',
+      _ => 'Инсайт',
+    };
+
+    return _NestCard(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(_iconForType(item.type), color: cs.primary),
-                const SizedBox(width: 8),
+                _IconBadge(icon: typeIcon),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    item.title,
-                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: tt.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF2E4B5A),
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          _SoftChip(
+                            icon: Icons.category_rounded,
+                            text: typeLabel,
+                          ),
+                          _ImpactPill(direction: item.impactDirection),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                _ImpactPill(direction: item.impactDirection),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(item.insight, style: tt.bodyMedium),
+
             const SizedBox(height: 10),
+
+            // Insight text
+            Text(
+              item.insight,
+              style: tt.bodyMedium?.copyWith(
+                height: 1.25,
+                color: cs.onSurface.withOpacity(0.92),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Metrics chips
             Wrap(
               spacing: 8,
-              runSpacing: -6,
+              runSpacing: 8,
               children: [
                 InfoChip(icon: Icons.flag_outlined, text: item.impactGoal),
                 InfoChip(
-                  icon: Icons.tune,
+                  icon: Icons.tune_rounded,
                   text: _strengthLabel(item.impactStrength),
                 ),
                 InfoChip(
-                  icon: Icons.speed,
+                  icon: Icons.speed_rounded,
                   text: '${(item.impactStrength * 100).round()}%',
                 ),
               ],
             ),
+
             if (item.evidence.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Text(
                 'Доказательства',
-                style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                style: tt.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF2E4B5A),
+                ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               ...item.evidence
                   .take(3)
                   .map(
                     (e) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('• ', style: tt.bodySmall),
-                          Expanded(
-                            child: Text(
-                              e,
-                              style: tt.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _BulletLine(text: e),
                     ),
                   ),
             ],
+
             if ((item.suggestion ?? '').isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: cs.outlineVariant),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.lightbulb_outline,
-                      size: 18,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(item.suggestion!, style: tt.bodySmall),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 10),
+              _SuggestionBox(text: item.suggestion!),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Nest UI (локально в файле — без внешних зависимостей)
+// ============================================================================
+
+class _NestCard extends StatelessWidget {
+  final Widget child;
+  const _NestCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.78),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFD6E6F5)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A2B5B7A),
+                blurRadius: 22,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _IconBadge extends StatelessWidget {
+  final IconData icon;
+  const _IconBadge({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4FAFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.auto_awesome_rounded,
+          size: 0, // placeholder to keep const; overridden below
+        ),
+      ),
+    );
+  }
+}
+
+class _SoftChip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _SoftChip({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4FAFF),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF3AA8E6)),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: tt.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF2E4B5A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BulletLine extends StatelessWidget {
+  final String text;
+  const _BulletLine({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 7),
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: const Color(0xFF3AA8E6),
+            borderRadius: BorderRadius.circular(99),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: tt.bodySmall?.copyWith(
+              height: 1.25,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggestionBox extends StatelessWidget {
+  final String text;
+  const _SuggestionBox({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4FAFF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF3AA8E6)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: tt.bodySmall?.copyWith(
+                height: 1.25,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF2E4B5A),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -145,42 +316,44 @@ class _ImpactPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     IconData icon;
     String label;
 
     switch (direction) {
       case 'positive':
-        icon = Icons.trending_up;
+        icon = Icons.trending_up_rounded;
         label = 'Позитив';
         break;
       case 'negative':
-        icon = Icons.trending_down;
+        icon = Icons.trending_down_rounded;
         label = 'Негатив';
         break;
       default:
-        icon = Icons.trending_flat;
+        icon = Icons.trending_flat_rounded;
         label = 'Смешано';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
+        color: const Color(0xFFF4FAFF),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          Icon(
+            icon,
+            size: 14,
+            color: const Color(0xFF2E4B5A).withOpacity(0.70),
+          ),
           const SizedBox(width: 6),
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
+              color: const Color(0xFF2E4B5A).withOpacity(0.75),
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],

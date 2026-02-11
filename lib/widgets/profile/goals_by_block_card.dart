@@ -75,9 +75,11 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
     final descCtrl = TextEditingController(text: existing?.description ?? '');
 
     DateTime? targetDate = existing?.targetDate;
-    GoalHorizon horizon = initialHorizon ?? existing?.horizon ?? GoalHorizon.mid;
+    GoalHorizon horizon =
+        initialHorizon ?? existing?.horizon ?? GoalHorizon.mid;
 
-    String lifeBlock = existing?.lifeBlock ??
+    String lifeBlock =
+        existing?.lifeBlock ??
         (initialBlock ??
             (allowedBlocks.isNotEmpty ? allowedBlocks.first : 'general'));
 
@@ -103,7 +105,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _SheetHeader(
-                    title: existing == null ? 'Новая цель' : 'Редактировать цель',
+                    title: existing == null
+                        ? 'Новая цель'
+                        : 'Редактировать цель',
                   ),
                   const SizedBox(height: 12),
 
@@ -111,37 +115,49 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   Text(
                     'Сфера',
                     style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF2E4B5A),
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF2E4B5A),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   NestCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     child: Row(
                       children: [
-                        Icon(meta.icon, size: 18, color: const Color(0xFF2E4B5A)),
+                        Icon(
+                          meta.icon,
+                          size: 18,
+                          color: const Color(0xFF2E4B5A),
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: lifeBlock,
                               isExpanded: true,
-                              items: (allowedBlocks.isEmpty ? [lifeBlock] : allowedBlocks)
-                                  .map((b) {
-                                final m = ProfileUi.blockMeta(b);
-                                return DropdownMenuItem(
-                                  value: b,
-                                  child: Row(
-                                    children: [
-                                      Icon(m.icon, size: 16),
-                                      const SizedBox(width: 8),
-                                      Text(m.label),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (v) => setSt(() => lifeBlock = v ?? lifeBlock),
+                              items:
+                                  (allowedBlocks.isEmpty
+                                          ? [lifeBlock]
+                                          : allowedBlocks)
+                                      .map((b) {
+                                        final m = ProfileUi.blockMeta(b);
+                                        return DropdownMenuItem(
+                                          value: b,
+                                          child: Row(
+                                            children: [
+                                              Icon(m.icon, size: 16),
+                                              const SizedBox(width: 8),
+                                              Text(m.label),
+                                            ],
+                                          ),
+                                        );
+                                      })
+                                      .toList(),
+                              onChanged: (v) =>
+                                  setSt(() => lifeBlock = v ?? lifeBlock),
                             ),
                           ),
                         ),
@@ -155,9 +171,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   Text(
                     'Горизонт',
                     style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF2E4B5A),
-                        ),
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF2E4B5A),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   NestCard(
@@ -181,9 +197,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   Text(
                     _hLabelLong(horizon),
                     style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF2E4B5A).withOpacity(0.65),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
 
                   const SizedBox(height: 14),
@@ -213,7 +229,10 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
                   // Deadline row
                   NestCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     child: Row(
                       children: [
                         const Icon(Icons.event_rounded, size: 18),
@@ -222,9 +241,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                           child: Text(
                             'Дедлайн: ${_fmtDate(targetDate)}',
                             style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF2E4B5A),
-                                ),
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF2E4B5A),
+                            ),
                           ),
                         ),
                         TextButton(
@@ -237,7 +256,13 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                               initialDate: targetDate ?? now,
                             );
                             if (picked != null) {
-                              setSt(() => targetDate = DateTime(picked.year, picked.month, picked.day));
+                              setSt(
+                                () => targetDate = DateTime(
+                                  picked.year,
+                                  picked.month,
+                                  picked.day,
+                                ),
+                              );
                             }
                           },
                           child: const Text('Выбрать'),
@@ -299,7 +324,10 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
     return res;
   }
 
-  Future<bool> _confirmDelete(BuildContext context, {required String title}) async {
+  Future<bool> _confirmDelete(
+    BuildContext context, {
+    required String title,
+  }) async {
     final ok = await showModalBottomSheet<bool>(
       context: context,
       useSafeArea: true,
@@ -316,9 +344,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
               Text(
                 '«$title» будет удалена без возможности восстановления.',
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF2E4B5A).withOpacity(0.8),
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: const Color(0xFF2E4B5A).withOpacity(0.8),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 14),
               Row(
@@ -370,9 +398,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
               child: Text(
                 'Цели по сферам',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF2E4B5A),
-                    ),
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF2E4B5A),
+                ),
               ),
             ),
             IconButton(
@@ -386,7 +414,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                         initialHorizon: _selectedH,
                       );
                       if (dto == null) return;
-                      final err = await context.read<UserGoalsModel>().upsert(dto);
+                      final err = await context.read<UserGoalsModel>().upsert(
+                        dto,
+                      );
                       if (err != null && context.mounted) widget.onSnack(err);
                     },
               icon: const Icon(Icons.add_circle_outline),
@@ -437,9 +467,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
             child: Text(
               'Пока нет целей. Добавь первую цель для выбранных сфер.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF2E4B5A).withOpacity(0.7),
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: const Color(0xFF2E4B5A).withOpacity(0.7),
+                fontWeight: FontWeight.w700,
+              ),
             ),
           )
         else
@@ -462,12 +492,17 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   children: [
                     Row(
                       children: [
-                        Icon(meta.icon, size: 18, color: const Color(0xFF2E4B5A)),
+                        Icon(
+                          meta.icon,
+                          size: 18,
+                          color: const Color(0xFF2E4B5A),
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             meta.label,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: const Color(0xFF2E4B5A),
                                 ),
@@ -479,13 +514,18 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                               : () async {
                                   final dto = await _openGoalEditor(
                                     context,
-                                    allowedBlocks: allowedBlocks.isEmpty ? [block] : allowedBlocks,
+                                    allowedBlocks: allowedBlocks.isEmpty
+                                        ? [block]
+                                        : allowedBlocks,
                                     initialBlock: block,
                                     initialHorizon: _selectedH,
                                   );
                                   if (dto == null) return;
-                                  final err = await context.read<UserGoalsModel>().upsert(dto);
-                                  if (err != null && context.mounted) widget.onSnack(err);
+                                  final err = await context
+                                      .read<UserGoalsModel>()
+                                      .upsert(dto);
+                                  if (err != null && context.mounted)
+                                    widget.onSnack(err);
                                 },
                           child: const Text('Добавить'),
                         ),
@@ -495,9 +535,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                     Text(
                       '${_hLabelShort(_selectedH)} • ${_hLabelLong(_selectedH)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF2E4B5A).withOpacity(0.60),
-                            fontWeight: FontWeight.w700,
-                          ),
+                        color: const Color(0xFF2E4B5A).withOpacity(0.60),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 10),
 
@@ -505,37 +545,52 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                       Text(
                         '—',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF2E4B5A).withOpacity(0.55),
-                              fontWeight: FontWeight.w700,
-                            ),
+                          color: const Color(0xFF2E4B5A).withOpacity(0.55),
+                          fontWeight: FontWeight.w700,
+                        ),
                       )
                     else
                       ...list.map((g) {
                         final subtitleParts = <String>[
-                          if (g.description.trim().isNotEmpty) g.description.trim(),
-                          if (g.targetDate != null) 'Дедлайн: ${_fmtDate(g.targetDate)}',
+                          if (g.description.trim().isNotEmpty)
+                            g.description.trim(),
+                          if (g.targetDate != null)
+                            'Дедлайн: ${_fmtDate(g.targetDate)}',
                         ];
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _GoalRow(
                             title: g.title,
-                            subtitle: subtitleParts.isEmpty ? null : subtitleParts.join(' • '),
+                            subtitle: subtitleParts.isEmpty
+                                ? null
+                                : subtitleParts.join(' • '),
                             onTap: () async {
                               final dto = await _openGoalEditor(
                                 context,
-                                allowedBlocks: allowedBlocks.isEmpty ? [block] : allowedBlocks,
+                                allowedBlocks: allowedBlocks.isEmpty
+                                    ? [block]
+                                    : allowedBlocks,
                                 existing: g,
                               );
                               if (dto == null) return;
-                              final err = await context.read<UserGoalsModel>().upsert(dto);
-                              if (err != null && context.mounted) widget.onSnack(err);
+                              final err = await context
+                                  .read<UserGoalsModel>()
+                                  .upsert(dto);
+                              if (err != null && context.mounted)
+                                widget.onSnack(err);
                             },
                             onDelete: () async {
-                              final ok = await _confirmDelete(context, title: g.title);
+                              final ok = await _confirmDelete(
+                                context,
+                                title: g.title,
+                              );
                               if (!ok) return;
-                              final err = await context.read<UserGoalsModel>().delete(g.id);
-                              if (err != null && context.mounted) widget.onSnack(err);
+                              final err = await context
+                                  .read<UserGoalsModel>()
+                                  .delete(g.id);
+                              if (err != null && context.mounted)
+                                widget.onSnack(err);
                             },
                           ),
                         );
@@ -566,13 +621,13 @@ class _GoalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tTitle = Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontWeight: FontWeight.w900,
-          color: const Color(0xFF2E4B5A),
-        );
+      fontWeight: FontWeight.w900,
+      color: const Color(0xFF2E4B5A),
+    );
     final tSub = Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF2E4B5A).withOpacity(0.65),
-        );
+      fontWeight: FontWeight.w700,
+      color: const Color(0xFF2E4B5A).withOpacity(0.65),
+    );
 
     return InkWell(
       onTap: onTap,
@@ -638,9 +693,9 @@ class _SheetHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
-                ),
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF2E4B5A),
+            ),
           ),
         ),
       ],

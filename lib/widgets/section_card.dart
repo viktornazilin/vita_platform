@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'nest/nest_blur_card.dart';
+
 class SectionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget child;
+
   const SectionCard({
     super.key,
     required this.title,
@@ -13,33 +16,32 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    return Card(
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+
+    return NestBlurCard(
+      radius: 26,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: tt.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF2E4B5A),
             ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: tt.bodySmall?.copyWith(
+              color: const Color(0xFF2E4B5A).withOpacity(0.65),
+              height: 1.2,
             ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }

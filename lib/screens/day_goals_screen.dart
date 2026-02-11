@@ -1,3 +1,4 @@
+// lib/screens/day_goals_screen.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,9 @@ import '../widgets/add_day_goal_sheet.dart';
 import '../widgets/timeline_row.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
+
+// ✅ новый виджет синхронизации (вынеси в отдельный файл, см. ниже)
+import '../widgets/day_google_calendar_sync_sheet.dart';
 
 /// ✅ Правильно: имя переменной, а не сам ключ
 /// запуск: flutter run --dart-define=VISION_API_KEY=xxxxx
@@ -129,6 +133,19 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
     );
   }
 
+  Future<void> _openGoogleCalendarSync(BuildContext context) async {
+    final vm = context.read<DayGoalsModel>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          _NestSheet(child: DayGoogleCalendarSyncSheet(date: vm.date)),
+    );
+  }
+
   List<Goal> _sortedByStartTime(List<Goal> src) {
     final list = List<Goal>.from(src);
     list.sort((a, b) => a.startTime.compareTo(b.startTime));
@@ -151,14 +168,12 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
         scrolledUnderElevation: 0,
       ),
 
-      /// ✅ Только “+”, меню появляется по нажатию
+      /// ✅ Один "+" → меню (Add/Scan/Google Calendar)
       floatingActionButton: _MainFab(
         onAdd: () => _openAdd(context),
-        onScan: () => importFromJournal(
-          context,
-          vm,
-          visionApiKey: _kVisionApiKey,
-        ),
+        onScan: () =>
+            importFromJournal(context, vm, visionApiKey: _kVisionApiKey),
+        onCalendar: () => _openGoogleCalendarSync(context),
       ),
 
       body: Stack(
@@ -168,25 +183,25 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
             child: vm.loading
                 ? const Center(child: CircularProgressIndicator())
                 : goals.isEmpty
-                    ? const _NestEmptyState()
-                    : ListView.builder(
-                        controller: _scroll,
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
-                        itemCount: goals.length,
-                        itemBuilder: (_, i) {
-                          final g = goals[i];
-                          return TimelineRow(
-                            key: ValueKey(g.id),
-                            goal: g,
-                            index: i,
-                            total: goals.length,
-                            onToggle: () => vm.toggleComplete(g),
-                            onDelete: () => vm.deleteGoal(g),
-                            onEdit: () => _openEdit(context, g),
-                          );
-                        },
-                      ),
+                ? const _NestEmptyState()
+                : ListView.builder(
+                    controller: _scroll,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
+                    itemCount: goals.length,
+                    itemBuilder: (_, i) {
+                      final g = goals[i];
+                      return TimelineRow(
+                        key: ValueKey(g.id),
+                        goal: g,
+                        index: i,
+                        total: goals.length,
+                        onToggle: () => vm.toggleComplete(g),
+                        onDelete: () => vm.deleteGoal(g),
+                        onEdit: () => _openEdit(context, g),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -238,10 +253,7 @@ class _SoftBlob extends StatelessWidget {
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: [
-              Color(0x663AA8E6),
-              Color(0x0058B9FF),
-            ],
+            colors: [Color(0x663AA8E6), Color(0x0058B9FF)],
           ),
         ),
       ),
@@ -274,9 +286,9 @@ class _NestEmptyState extends StatelessWidget {
           'Целей на этот день нет',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF2E4B5A),
-              ),
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF2E4B5A),
+          ),
         ),
       ),
     );
@@ -314,16 +326,21 @@ class _NestSheet extends StatelessWidget {
 }
 
 /// ===============================
-/// FAB: один "+" → меню (Add/Scan)
+/// FAB: один "+" → меню (Add/Scan/Calendar)
 /// ===============================
 
-enum _FabAction { add, scan }
+enum _FabAction { add, scan, calendar }
 
 class _MainFab extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback onScan;
+  final VoidCallback onCalendar;
 
-  const _MainFab({required this.onAdd, required this.onScan});
+  const _MainFab({
+    required this.onAdd,
+    required this.onScan,
+    required this.onCalendar,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -352,8 +369,10 @@ class _MainFab extends StatelessWidget {
 
     if (action == _FabAction.add) {
       onAdd();
-    } else {
+    } else if (action == _FabAction.scan) {
       onScan();
+    } else {
+      onCalendar();
     }
   }
 }
@@ -407,6 +426,13 @@ class _FabMenuSheet extends StatelessWidget {
                     title: 'Скан',
                     subtitle: 'Фото ежедневника',
                     onTap: () => Navigator.pop(context, _FabAction.scan),
+                  ),
+                  const SizedBox(height: 10),
+                  _FabMenuButton(
+                    icon: Icons.calendar_month_rounded,
+                    title: 'Google Calendar',
+                    subtitle: 'Импорт/экспорт целей за сегодня',
+                    onTap: () => Navigator.pop(context, _FabAction.calendar),
                   ),
                 ],
               ),
@@ -475,16 +501,16 @@ class _FabMenuButton extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFF2E4B5A),
-                          ),
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF2E4B5A),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF2E4B5A).withOpacity(0.65),
-                          ),
+                        color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                      ),
                     ),
                   ],
                 ),

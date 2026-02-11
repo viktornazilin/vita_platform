@@ -82,7 +82,9 @@ class ProfileLeftColumn extends StatelessWidget {
             title: const Text('Пролог пройден'),
             subtitle: const Text('Можно изменить вручную'),
             value: model.hasSeenIntro,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(22))),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(22)),
+            ),
             onChanged: (v) async {
               final err = await model.setHasSeenIntro(v);
               if (err != null && context.mounted) {

@@ -57,7 +57,10 @@ class GoalCell extends StatelessWidget {
               accent: lb.accent,
             ),
             ChipLike(label: 'Важность ${goal.importance}/5', accent: lb.accent),
-            ChipLike(label: 'Часы ${goal.spentHours.toStringAsFixed(1)}', accent: lb.accent),
+            ChipLike(
+              label: 'Часы ${goal.spentHours.toStringAsFixed(1)}',
+              accent: lb.accent,
+            ),
           ],
         ),
 
@@ -120,10 +123,7 @@ class _EmotionBadge extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        emoji,
-        style: const TextStyle(fontSize: 18, color: _ink),
-      ),
+      child: Text(emoji, style: const TextStyle(fontSize: 18, color: _ink)),
     );
   }
 }

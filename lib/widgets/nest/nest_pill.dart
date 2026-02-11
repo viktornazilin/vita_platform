@@ -23,9 +23,9 @@ class NestPill extends StatelessWidget {
           Text(
             text,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF2E4B5A),
-                ),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF2E4B5A),
+            ),
           ),
         ],
       ),

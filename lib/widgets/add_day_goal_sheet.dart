@@ -73,9 +73,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
   void _submit() {
     if (_titleCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Введите название')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Введите название')));
       return;
     }
 
@@ -148,13 +148,17 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
                           ),
                         ),
-                        child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+                        child: const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Новая цель на день',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: const Color(0xFF2E4B5A),
                               ),
@@ -192,7 +196,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                   _Section(
                     child: Row(
                       children: [
-                        const Icon(Icons.access_time_rounded, color: Color(0xFF3AA8E6)),
+                        const Icon(
+                          Icons.access_time_rounded,
+                          color: Color(0xFF3AA8E6),
+                        ),
                         const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
@@ -217,7 +224,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                     _Section(
                       child: Row(
                         children: [
-                          const Icon(Icons.category_rounded, color: Color(0xFF3AA8E6)),
+                          const Icon(
+                            Icons.category_rounded,
+                            color: Color(0xFF3AA8E6),
+                          ),
                           const SizedBox(width: 10),
                           const Expanded(
                             child: Text(
@@ -231,17 +241,19 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _lifeBlock,
-                              items: (widget.availableBlocks.isEmpty
-                                      ? const <String>['general']
-                                      : widget.availableBlocks)
-                                  .map(
-                                    (b) => DropdownMenuItem(
-                                      value: b,
-                                      child: Text(b),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (v) => setState(() => _lifeBlock = v ?? _lifeBlock),
+                              items:
+                                  (widget.availableBlocks.isEmpty
+                                          ? const <String>['general']
+                                          : widget.availableBlocks)
+                                      .map(
+                                        (b) => DropdownMenuItem(
+                                          value: b,
+                                          child: Text(b),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged: (v) =>
+                                  setState(() => _lifeBlock = v ?? _lifeBlock),
                             ),
                           ),
                         ],
@@ -270,8 +282,11 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             return ChoiceChip(
                               label: Text('$v'),
                               selected: selected,
-                              onSelected: (_) => setState(() => _importance = v),
-                              selectedColor: const Color(0xFF3AA8E6).withOpacity(0.18),
+                              onSelected: (_) =>
+                                  setState(() => _importance = v),
+                              selectedColor: const Color(
+                                0xFF3AA8E6,
+                              ).withOpacity(0.18),
                               backgroundColor: const Color(0xFFF4FAFF),
                               side: BorderSide(
                                 color: selected
@@ -280,7 +295,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               ),
                               labelStyle: TextStyle(
                                 fontWeight: FontWeight.w900,
-                                color: const Color(0xFF2E4B5A).withOpacity(selected ? 1 : 0.75),
+                                color: const Color(
+                                  0xFF2E4B5A,
+                                ).withOpacity(selected ? 1 : 0.75),
                               ),
                             );
                           }),
@@ -308,10 +325,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           children: _emotions.map((e) {
                             final selected = _emotion == e;
                             return ChoiceChip(
-                              label: Text(e, style: const TextStyle(fontSize: 18)),
+                              label: Text(
+                                e,
+                                style: const TextStyle(fontSize: 18),
+                              ),
                               selected: selected,
                               onSelected: (_) => setState(() => _emotion = e),
-                              selectedColor: const Color(0xFF3AA8E6).withOpacity(0.18),
+                              selectedColor: const Color(
+                                0xFF3AA8E6,
+                              ).withOpacity(0.18),
                               backgroundColor: const Color(0xFFF4FAFF),
                               side: BorderSide(
                                 color: selected
@@ -365,13 +387,18 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
                             side: const BorderSide(color: Color(0xFFD6E6F5)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text(
                             'Отмена',
-                            style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF2E4B5A)),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2E4B5A),
+                            ),
                           ),
                         ),
                       ),
@@ -384,7 +411,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             foregroundColor: Colors.white,
                             elevation: 10,
                             shadowColor: const Color(0x334AAAE6),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text(
@@ -471,7 +500,10 @@ class _PrettyField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: const Color(0xFF3AA8E6).withOpacity(0.6), width: 1.4),
+          borderSide: BorderSide(
+            color: const Color(0xFF3AA8E6).withOpacity(0.6),
+            width: 1.4,
+          ),
         ),
       ),
     );
@@ -499,7 +531,10 @@ class _PillButton extends StatelessWidget {
           ),
           child: Text(
             text,
-            style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF2E4B5A)),
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF2E4B5A),
+            ),
           ),
         ),
       ),
@@ -522,7 +557,10 @@ class _Pill extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF2E4B5A)),
+        style: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: Color(0xFF2E4B5A),
+        ),
       ),
     );
   }

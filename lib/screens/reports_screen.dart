@@ -8,6 +8,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/reports_model.dart';
 
+// ✅ Nest style
+import '../widgets/nest/nest_background.dart';
+
 // твои существующие блоки/утилиты
 import '../widgets/sticky_header.dart';
 import '../widgets/report_section_card.dart';
@@ -40,19 +43,28 @@ class _ReportsView extends StatelessWidget {
     final model = context.watch<ReportsModel>();
 
     return Scaffold(
-      body: RefreshIndicator.adaptive(
-        onRefresh: () => context.read<ReportsModel>().loadAll(),
-        child: model.loading
-            ? CustomScrollView(
-                slivers: const [
-                  SliverAppBar.large(title: Text('Отчёты')),
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ],
-              )
-            : const _ReportsBody(),
+      backgroundColor: Colors.transparent,
+      body: NestBackground(
+        child: RefreshIndicator.adaptive(
+          onRefresh: () => context.read<ReportsModel>().loadAll(),
+          child: model.loading
+              ? CustomScrollView(
+                  slivers: const [
+                    SliverAppBar.large(
+                      title: Text('Отчёты'),
+                      centerTitle: true,
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      scrolledUnderElevation: 0,
+                    ),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ],
+                )
+              : const _ReportsBody(),
+        ),
       ),
     );
   }
@@ -288,6 +300,9 @@ class _ReportsBody extends StatelessWidget {
             title: const Text('Отчёты'),
             centerTitle: true,
             pinned: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
           ),
 
           // фиксированная панель: период + навигация
@@ -297,7 +312,7 @@ class _ReportsBody extends StatelessWidget {
               minExtent: 76,
               maxExtent: 84,
               child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
+                color: Colors.transparent, // ✅ было scaffoldBackgroundColor
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
                 child: centered(
                   _PeriodBar(
@@ -317,7 +332,7 @@ class _ReportsBody extends StatelessWidget {
             pinned: true,
             delegate: _TabHeaderDelegate(
               child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
+                color: Colors.transparent, // ✅ было scaffoldBackgroundColor
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 child: centered(
                   Container(
@@ -378,7 +393,6 @@ class _ReportsBody extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 SliverToBoxAdapter(
                   child: centered(
                     Padding(
@@ -407,7 +421,6 @@ class _ReportsBody extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 SliverToBoxAdapter(
                   child: centered(
                     Padding(
@@ -424,7 +437,6 @@ class _ReportsBody extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const SliverToBoxAdapter(child: SizedBox(height: 8)),
               ],
             ),
@@ -442,7 +454,7 @@ class _ReportsBody extends StatelessWidget {
                         title: 'Связи между показателями',
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: const [
                             _HintPill(
                               text:
                                   'Это не “научная корреляция”, а понятные сравнения по периодам.',
@@ -552,8 +564,9 @@ class _ReportsBody extends StatelessWidget {
                                             reservedSize: 26,
                                             getTitlesWidget: (v, _) {
                                               final idx = v.toInt();
-                                              if (idx < 0 || idx > 2)
+                                              if (idx < 0 || idx > 2) {
                                                 return const SizedBox.shrink();
+                                              }
                                               final label = switch (idx) {
                                                 0 => '😊',
                                                 1 => '😐',
@@ -753,8 +766,9 @@ class _ReportsBody extends StatelessWidget {
                                             reservedSize: 26,
                                             getTitlesWidget: (v, _) {
                                               final idx = v.toInt();
-                                              if (idx < 0 || idx > 1)
+                                              if (idx < 0 || idx > 1) {
                                                 return const SizedBox.shrink();
+                                              }
                                               return Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 6,
@@ -899,12 +913,15 @@ class _ReportsBody extends StatelessWidget {
                                             interval: 1,
                                             getTitlesWidget: (v, _) {
                                               final idx = v.toInt();
-                                              if (idx < 0 || idx >= keys.length)
+                                              if (idx < 0 ||
+                                                  idx >= keys.length) {
                                                 return const SizedBox.shrink();
+                                              }
                                               // чтобы не слипалось
                                               if (keys.length > 14 &&
-                                                  idx % 2 == 1)
+                                                  idx % 2 == 1) {
                                                 return const SizedBox.shrink();
+                                              }
                                               final d = keys[idx];
                                               final emoji = p.moods[d] ?? '';
                                               return Padding(
@@ -1057,8 +1074,9 @@ class _ReportsBody extends StatelessWidget {
                                             reservedSize: 26,
                                             getTitlesWidget: (v, _) {
                                               final idx = v.toInt();
-                                              if (idx < 0 || idx > 1)
+                                              if (idx < 0 || idx > 1) {
                                                 return const SizedBox.shrink();
+                                              }
                                               return Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 6,
@@ -1241,12 +1259,14 @@ class _ReportsBody extends StatelessWidget {
                                                 byDayHours.keys.toList()
                                                   ..sort();
                                             final idx = v.toInt();
-                                            if (idx < 0 || idx >= keys.length)
+                                            if (idx < 0 || idx >= keys.length) {
                                               return const SizedBox.shrink();
+                                            }
                                             final d = keys[idx];
                                             if (keys.length > 14 &&
-                                                idx % 2 == 1)
+                                                idx % 2 == 1) {
                                               return const SizedBox.shrink();
+                                            }
                                             return Padding(
                                               padding: const EdgeInsets.only(
                                                 top: 6,
@@ -1304,12 +1324,14 @@ class _ReportsBody extends StatelessWidget {
                                 ),
                               );
                             }
-                            if (!snapshot.hasData)
+                            if (!snapshot.hasData) {
                               return const ReportEmptyChart();
+                            }
 
                             final data = snapshot.data!;
-                            if (data.total <= 0 && data.byDay.isEmpty)
+                            if (data.total <= 0 && data.byDay.isEmpty) {
                               return const ReportEmptyChart();
+                            }
 
                             final days =
                                 (model.range.end
@@ -1416,12 +1438,15 @@ class _ReportsBody extends StatelessWidget {
                                                   data.byDay.keys.toList()
                                                     ..sort();
                                               final idx = v.toInt();
-                                              if (idx < 0 || idx >= keys.length)
+                                              if (idx < 0 ||
+                                                  idx >= keys.length) {
                                                 return const SizedBox();
+                                              }
                                               final d = keys[idx];
                                               if (keys.length > 14 &&
-                                                  idx % 2 == 1)
+                                                  idx % 2 == 1) {
                                                 return const SizedBox.shrink();
+                                              }
                                               return Padding(
                                                 padding: const EdgeInsets.only(
                                                   top: 6,

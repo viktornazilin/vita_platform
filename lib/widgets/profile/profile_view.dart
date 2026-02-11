@@ -112,9 +112,7 @@ class ProfileView extends StatelessWidget {
             elevation: 0,
             scrolledUnderElevation: 0,
           ),
-          body: NestBackground(
-            child: content,
-          ),
+          body: NestBackground(child: content),
         );
       },
     );

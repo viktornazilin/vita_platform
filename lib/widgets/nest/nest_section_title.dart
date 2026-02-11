@@ -17,10 +17,10 @@ class NestSectionTitle extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF2E4B5A),
-              letterSpacing: 0.2,
-            ),
+          fontWeight: FontWeight.w800,
+          color: const Color(0xFF2E4B5A),
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }

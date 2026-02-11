@@ -277,6 +277,23 @@ mixin GoalsRepoMixin on BaseRepo {
     return (res['target_hours'] as num).toDouble();
   }
 
+  Future<List<Goal>> fetchGoalsInRange({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final res = await client
+        .from('goals')
+        .select()
+        .eq('user_id', uid)
+        .gte('start_time', start.toIso8601String())
+        .lt('start_time', end.toIso8601String())
+        .order('start_time', ascending: true);
+
+    return (res as List)
+        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<double> getTotalHoursSpentOnDate(DateTime date) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));

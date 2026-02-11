@@ -11,10 +11,7 @@ class ProfileUi {
     final sm = ScaffoldMessenger.maybeOf(context);
     if (sm == null) return;
     sm.showSnackBar(
-      SnackBar(
-        content: Text(text),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -191,7 +188,10 @@ class ProfileUi {
               TextField(
                 controller: ctrl,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: label, hintText: '$min…$max'),
+                decoration: InputDecoration(
+                  labelText: label,
+                  hintText: '$min…$max',
+                ),
               ),
               const SizedBox(height: 10),
               Row(
@@ -265,9 +265,9 @@ class ProfileUi {
                         child: Text(
                           label,
                           style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF2E4B5A),
-                              ),
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF2E4B5A),
+                          ),
                         ),
                       ),
                       Text(
@@ -357,15 +357,16 @@ class ProfileUi {
                     child: FilledButton(
                       onPressed: () {
                         final raw = ctrl.text.trim();
-                        final list = raw.isEmpty
-                            ? <String>[]
-                            : raw
-                                .split(',')
-                                .map((e) => e.trim())
-                                .where((e) => e.isNotEmpty)
-                                .toSet()
-                                .toList()
-                          ..sort();
+                        final list =
+                            raw.isEmpty
+                                  ? <String>[]
+                                  : raw
+                                        .split(',')
+                                        .map((e) => e.trim())
+                                        .where((e) => e.isNotEmpty)
+                                        .toSet()
+                                        .toList()
+                              ..sort();
                         Navigator.pop(ctx, list);
                       },
                       child: const Text('Сохранить'),
@@ -393,13 +394,13 @@ class ProfileUi {
     IconData icon = Icons.edit_outlined,
   }) {
     final labelStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w900,
-          color: const Color(0xFF2E4B5A),
-        );
+      fontWeight: FontWeight.w900,
+      color: const Color(0xFF2E4B5A),
+    );
     final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF2E4B5A).withOpacity(0.75),
-          fontWeight: FontWeight.w600,
-        );
+      color: const Color(0xFF2E4B5A).withOpacity(0.75),
+      fontWeight: FontWeight.w600,
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -419,7 +420,11 @@ class ProfileUi {
               ),
             ),
             const SizedBox(width: 10),
-            Icon(icon, size: 18, color: const Color(0xFF2E4B5A).withOpacity(0.65)),
+            Icon(
+              icon,
+              size: 18,
+              color: const Color(0xFF2E4B5A).withOpacity(0.65),
+            ),
           ],
         ),
       ),
@@ -433,9 +438,9 @@ class ProfileUi {
     required VoidCallback onEdit,
   }) {
     final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w900,
-          color: const Color(0xFF2E4B5A),
-        );
+      fontWeight: FontWeight.w900,
+      color: const Color(0xFF2E4B5A),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,7 +452,10 @@ class ProfileUi {
               onTap: onEdit,
               borderRadius: BorderRadius.circular(14),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 child: Icon(
                   Icons.edit_outlined,
                   size: 18,
@@ -459,7 +467,10 @@ class ProfileUi {
         ),
         const SizedBox(height: 10),
         if (items.isEmpty)
-          Text('—', style: TextStyle(color: const Color(0xFF2E4B5A).withOpacity(0.55)))
+          Text(
+            '—',
+            style: TextStyle(color: const Color(0xFF2E4B5A).withOpacity(0.55)),
+          )
         else
           Wrap(
             spacing: 10,
@@ -495,9 +506,9 @@ class ProfileUi {
           Text(
             meta.label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
-                ),
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF2E4B5A),
+            ),
           ),
         ],
       ),
@@ -542,9 +553,9 @@ class _SheetHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
-                ),
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF2E4B5A),
+            ),
           ),
         ),
       ],

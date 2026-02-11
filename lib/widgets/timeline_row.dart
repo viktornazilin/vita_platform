@@ -30,10 +30,12 @@ class TimelineRow extends StatelessWidget {
   static const double _dotRadius = 14;
 
   // ширина всей колонки слева
-  static const double _railWidth = _timeBadgeWidth + _timeToDotGap + _dotRadius * 2;
+  static const double _railWidth =
+      _timeBadgeWidth + _timeToDotGap + _dotRadius * 2;
 
   // X-координата центра dot внутри левой колонки — нужна для пунктиров
-  static const double _dotCenterX = _timeBadgeWidth + _timeToDotGap + _dotRadius;
+  static const double _dotCenterX =
+      _timeBadgeWidth + _timeToDotGap + _dotRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +55,10 @@ class TimelineRow extends StatelessWidget {
       builder: (context, t, child) {
         return Opacity(
           opacity: t,
-          child: Transform.translate(offset: Offset(0, (1 - t) * 10), child: child),
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 10),
+            child: child,
+          ),
         );
       },
       child: Padding(
@@ -76,7 +81,10 @@ class TimelineRow extends StatelessWidget {
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Transform.translate(
-                                  offset: const Offset(_dotCenterX - 1.5, 0), // 1.5 ~ половина dashedLine width
+                                  offset: const Offset(
+                                    _dotCenterX - 1.5,
+                                    0,
+                                  ), // 1.5 ~ половина dashedLine width
                                   child: DashedLine(color: railColor),
                                 ),
                               ),
@@ -151,7 +159,10 @@ class TimelineRow extends StatelessWidget {
                   isCompleted: goal.isCompleted,
                   onTap: () => _showGoalActions(context),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     child: GoalCell(goal: goal),
                   ),
                 ),
@@ -177,7 +188,9 @@ class TimelineRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 10),
-                _SheetGrabber(color: theme.colorScheme.onSurface.withOpacity(0.25)),
+                _SheetGrabber(
+                  color: theme.colorScheme.onSurface.withOpacity(0.25),
+                ),
                 const SizedBox(height: 10),
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
@@ -188,7 +201,10 @@ class TimelineRow extends StatelessWidget {
                   },
                 ),
                 ListTile(
-                  leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: theme.colorScheme.error,
+                  ),
                   title: const Text('Удалить'),
                   textColor: theme.colorScheme.error,
                   iconColor: theme.colorScheme.error,
@@ -364,17 +380,16 @@ class _TimeBadge extends StatelessWidget {
   final String text;
   final bool isCompleted;
 
-  const _TimeBadge({
-    required this.text,
-    required this.isCompleted,
-  });
+  const _TimeBadge({required this.text, required this.isCompleted});
 
   static const _accent = Color(0xFF3AA8E6);
   static const _ink = Color(0xFF2E4B5A);
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isCompleted ? _accent.withOpacity(0.45) : _accent.withOpacity(0.25);
+    final borderColor = isCompleted
+        ? _accent.withOpacity(0.45)
+        : _accent.withOpacity(0.25);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -393,11 +408,11 @@ class _TimeBadge extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.2,
-              color: _ink.withOpacity(0.92),
-            ),
+          fontFeatures: const [FontFeature.tabularFigures()],
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.2,
+          color: _ink.withOpacity(0.92),
+        ),
       ),
     );
   }
@@ -417,7 +432,9 @@ class _GlassSheet extends StatelessWidget {
           color: Colors.white.withOpacity(0.86),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(26),
+              ),
               border: Border.all(color: const Color(0xFFD6E6F5)),
             ),
             child: child,

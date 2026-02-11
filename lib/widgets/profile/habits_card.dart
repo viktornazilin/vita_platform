@@ -92,9 +92,9 @@ class HabitsCard extends StatelessWidget {
                         ? 'Отмечай, если хочешь отслеживать и сокращать.'
                         : 'Позитивная/нейтральная привычка для укрепления.',
                     style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF2E4B5A).withOpacity(0.65),
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
 
                   const SizedBox(height: 14),
@@ -149,9 +149,9 @@ class HabitsCard extends StatelessWidget {
               Text(
                 '«${h.title}» будет удалена без возможности восстановления.',
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF2E4B5A).withOpacity(0.8),
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: const Color(0xFF2E4B5A).withOpacity(0.8),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 14),
               Row(
@@ -214,9 +214,9 @@ class HabitsCard extends StatelessWidget {
                 child: Text(
                   'Привычки',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF2E4B5A),
-                      ),
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF2E4B5A),
+                  ),
                 ),
               ),
               IconButton(
@@ -237,30 +237,33 @@ class HabitsCard extends StatelessWidget {
             Text(
               'Пока нет привычек. Добавь первую.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF2E4B5A).withOpacity(0.7),
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: const Color(0xFF2E4B5A).withOpacity(0.7),
+                fontWeight: FontWeight.w700,
+              ),
             )
           else
-            ...habits.items.map((h) => _HabitRow(
-                  habit: h,
-                  onTap: () => _saveHabit(context, existing: h),
-                  onEdit: () => _saveHabit(context, existing: h),
-                  onDelete: () async {
-                    final ok = await _confirmDelete(context, h);
-                    if (!ok) return;
-                    final err = await context.read<HabitsModel>().delete(h.id);
-                    if (err != null && context.mounted) ProfileUi.snack(context, err);
-                  },
-                )),
+            ...habits.items.map(
+              (h) => _HabitRow(
+                habit: h,
+                onTap: () => _saveHabit(context, existing: h),
+                onEdit: () => _saveHabit(context, existing: h),
+                onDelete: () async {
+                  final ok = await _confirmDelete(context, h);
+                  if (!ok) return;
+                  final err = await context.read<HabitsModel>().delete(h.id);
+                  if (err != null && context.mounted)
+                    ProfileUi.snack(context, err);
+                },
+              ),
+            ),
 
           const SizedBox(height: 10),
           Text(
             'Позже добавим “отсеивание” привычек на главном экране.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF2E4B5A).withOpacity(0.55),
-                  fontWeight: FontWeight.w700,
-                ),
+              color: const Color(0xFF2E4B5A).withOpacity(0.55),
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -314,17 +317,17 @@ class _HabitRow extends StatelessWidget {
                     Text(
                       habit.title,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFF2E4B5A),
-                          ),
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF2E4B5A),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       isNeg ? 'Негативная' : 'Позитивная/нейтральная',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2E4B5A).withOpacity(0.65),
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                      ),
                     ),
                   ],
                 ),
@@ -376,9 +379,9 @@ class _SheetHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
-                ),
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF2E4B5A),
+            ),
           ),
         ),
       ],

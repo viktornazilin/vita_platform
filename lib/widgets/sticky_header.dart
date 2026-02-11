@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'nest/nest_blur_card.dart';
+
 class StickyHeader extends SliverPersistentHeaderDelegate {
   final double _min;
   final double _max;

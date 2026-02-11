@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'services/user_service.dart';
 import 'models/register_model.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_questionnaire_screen.dart';
@@ -56,7 +56,8 @@ class _VitaAppState extends State<VitaApp> {
 
     // вычисляем стартовые флаги (если сервис ещё не готов — не трогаем userService поля)
     final bool isLoggedIn = _isReady && _userService.currentUser != null;
-    final bool hasCompleted = _isReady && _userService.hasCompletedQuestionnaire;
+    final bool hasCompleted =
+        _isReady && _userService.hasCompletedQuestionnaire;
     final bool hasSeenIntro = _isReady && _userService.hasSeenEpicIntro;
 
     return MaterialApp(
@@ -71,21 +72,21 @@ class _VitaAppState extends State<VitaApp> {
         '/home': (_) => const HomeScreen(),
 
         '/register': (_) => ChangeNotifierProvider(
-              create: (_) => RegisterModel(),
-              child: const RegisterScreen(),
-            ),
+          create: (_) => RegisterModel(),
+          child: const RegisterScreen(),
+        ),
 
         '/login': (_) => const LoginScreen(),
 
         '/onboarding': (ctx) => OnboardingQuestionnaireScreen(
-              userService: _userService,
-              onCompleted: () {
-                final loggedIn = _userService.currentUser != null;
-                Navigator.of(ctx).pushReplacementNamed(
-                  loggedIn ? '/home' : '/login',
-                );
-              },
-            ),
+          userService: _userService,
+          onCompleted: () {
+            final loggedIn = _userService.currentUser != null;
+            Navigator.of(
+              ctx,
+            ).pushReplacementNamed(loggedIn ? '/home' : '/login');
+          },
+        ),
 
         '/settings': (_) => const screens.SettingsScreen(),
         '/expenses': (_) => const ExpensesScreen(),
@@ -113,9 +114,7 @@ class _BootSplash extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // можешь сделать сюда свой красивый glass фон
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 

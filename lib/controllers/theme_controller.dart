@@ -98,7 +98,10 @@ class ThemeController extends ChangeNotifier {
             width: 1.4,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         labelStyle: TextStyle(color: scheme.onSurface.withOpacity(0.70)),
         hintStyle: TextStyle(color: scheme.onSurface.withOpacity(0.45)),
       ),
@@ -106,23 +109,35 @@ class ThemeController extends ChangeNotifier {
       // Buttons (без Ink)
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          textStyle: base.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          textStyle: base.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           side: BorderSide(color: scheme.outline.withOpacity(0.22)),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          textStyle: base.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          textStyle: base.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: base.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: base.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
 

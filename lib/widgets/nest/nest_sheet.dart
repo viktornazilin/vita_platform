@@ -16,7 +16,9 @@ class NestSheet extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.78),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               border: Border.all(color: const Color(0xFFD6E6F5)),
               boxShadow: const [
                 BoxShadow(

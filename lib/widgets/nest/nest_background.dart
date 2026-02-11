@@ -59,10 +59,7 @@ class _SoftBlob extends StatelessWidget {
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: [
-              Color(0x663AA8E6),
-              Color(0x0058B9FF),
-            ],
+            colors: [Color(0x663AA8E6), Color(0x0058B9FF)],
           ),
         ),
       ),

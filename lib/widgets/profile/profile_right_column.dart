@@ -45,9 +45,9 @@ class ProfileRightColumn extends StatelessWidget {
                 Text(
                   'Вы ещё не прошли опросник.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF2E4B5A).withOpacity(0.75),
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 12),
 
@@ -78,7 +78,8 @@ class ProfileRightColumn extends StatelessWidget {
                 );
                 if (v == null) return;
                 final err = await model.setLifeBlocks(v);
-                if (err != null && context.mounted) ProfileUi.snack(context, err);
+                if (err != null && context.mounted)
+                  ProfileUi.snack(context, err);
               },
             ),
           ),
@@ -99,7 +100,8 @@ class ProfileRightColumn extends StatelessWidget {
                 );
                 if (v == null) return;
                 final err = await model.setPriorities(v);
-                if (err != null && context.mounted) ProfileUi.snack(context, err);
+                if (err != null && context.mounted)
+                  ProfileUi.snack(context, err);
               },
             ),
           ),
@@ -143,9 +145,9 @@ class _NestLinkButton extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF2E4B5A),
-                  ),
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2E4B5A),
+              ),
             ),
           ],
         ),
@@ -185,9 +187,9 @@ class _NestPrimaryButton extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ),
     );

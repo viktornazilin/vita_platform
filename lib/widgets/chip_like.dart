@@ -34,7 +34,9 @@ class ChipLike extends StatelessWidget {
   static const _border = Color(0xFFD6E6F5);
 
   bool get _looksNumeric =>
-      label.contains(RegExp(r'\d')) || label.contains('Часы') || label.contains('Важность');
+      label.contains(RegExp(r'\d')) ||
+      label.contains('Часы') ||
+      label.contains('Важность');
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +44,19 @@ class ChipLike extends StatelessWidget {
 
     final bg = isLifeBlock
         ? a.withOpacity(0.12)
-        : (_looksNumeric ? const Color(0xFF3AA8E6).withOpacity(0.12) : Colors.white.withOpacity(0.70));
+        : (_looksNumeric
+              ? const Color(0xFF3AA8E6).withOpacity(0.12)
+              : Colors.white.withOpacity(0.70));
 
-    final stroke = isLifeBlock ? a.withOpacity(0.40) : (_looksNumeric ? a.withOpacity(0.35) : _border);
+    final stroke = isLifeBlock
+        ? a.withOpacity(0.40)
+        : (_looksNumeric ? a.withOpacity(0.35) : _border);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: isLifeBlock ? 12 : 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isLifeBlock ? 12 : 12,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
@@ -70,10 +79,10 @@ class ChipLike extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: _ink.withOpacity(0.90),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.1,
-                ),
+              color: _ink.withOpacity(0.90),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.1,
+            ),
           ),
         ],
       ),

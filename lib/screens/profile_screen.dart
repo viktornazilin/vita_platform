@@ -19,9 +19,13 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ProfileModel(repo: dbRepo)..load()),
+        ChangeNotifierProvider(
+          create: (_) => ProfileModel(repo: dbRepo)..load(),
+        ),
         ChangeNotifierProvider(create: (_) => HabitsModel()..load()),
-        ChangeNotifierProvider(create: (_) => UserGoalsModel(repo: dbRepo)..load()),
+        ChangeNotifierProvider(
+          create: (_) => UserGoalsModel(repo: dbRepo)..load(),
+        ),
       ],
       child: const ProfileView(),
     );
