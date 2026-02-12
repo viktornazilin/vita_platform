@@ -1,4 +1,5 @@
-import 'dart:convert'; // NEW
+// lib/services/user_service.dart
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +17,7 @@ class UserService {
   static const _prefSeenIntro = 'vita_seen_intro';
   static const _prefArchetype = 'vita_archetype';
   static const _prefOnboardingCompleted = 'vita_onboarding_completed';
-  static const _prefOnboardingDraft = 'vita_onboarding_draft_json'; // NEW
+  static const _prefOnboardingDraft = 'vita_onboarding_draft_json';
 
   Map<String, dynamic>? _currentUserData;
   Map<String, dynamic>? get currentUser => _currentUserData;
@@ -44,7 +45,7 @@ class UserService {
   bool? _cachedSeenIntro;
   String? _cachedArchetype;
   bool? _cachedOnboardingCompleted;
-  Map<String, dynamic>? _cachedOnboardingDraft; // NEW
+  Map<String, dynamic>? _cachedOnboardingDraft;
 
   // ==================== жизненный цикл ====================
 
@@ -52,76 +53,81 @@ class UserService {
     await _loadLocalGuestPrefs();
 
     final user = _client.auth.currentUser;
-    if (user != null) {
-      await _ensureUserRow(user);
-      _currentUserData = await _client
-          .from('users')
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
-
-      await _syncGuestOnLogin();
-
-      _currentUserData = await _client
-          .from('users')
-          .select()
-          .eq('id', user.id)
-          .maybeSingle();
-    } else {
+    if (user == null) {
       _currentUserData = null;
+      return;
     }
+
+    // ✅ НИКОГДА не делаем insert/upsert в public.users с клиента (RLS)
+    _currentUserData =
+        await _waitUserRow(user.id) ?? {'id': user.id, 'email': user.email};
+
+    await _syncGuestOnLogin();
+
+    _currentUserData =
+        await _waitUserRow(user.id) ?? _currentUserData; // refresh
   }
 
-  /// 🔄 Вызови после события signedIn, чтобы подтянуть профиль.
+  /// 🔄 Вызови после signedIn, чтобы подтянуть профиль.
   Future<void> refreshCurrentUser() async {
     final user = _client.auth.currentUser;
     if (user == null) {
       _currentUserData = null;
       return;
     }
-    await _ensureUserRow(user);
-    _currentUserData = await _client
-        .from('users')
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
+
+    _currentUserData =
+        await _waitUserRow(user.id) ?? {'id': user.id, 'email': user.email};
 
     await _syncGuestOnLogin();
 
-    _currentUserData = await _client
-        .from('users')
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
+    _currentUserData =
+        await _waitUserRow(user.id) ?? _currentUserData; // refresh
   }
 
   // ==================== аутентификация ====================
 
-  Future<void> register(String name, String email, String password) async {
+  /// ✅ Email/password регистрация (+ GDPR флаги в metadata)
+  Future<void> register(
+    String name,
+    String email,
+    String password, {
+    bool termsAccepted = false,
+    bool analyticsAccepted = false,
+    bool marketingAccepted = false,
+  }) async {
     final authRes = await _client.auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': name},
+      data: {
+        'full_name': name,
+        // ✅ GDPR/consent metadata (для аудита/логики)
+        'termsAccepted': termsAccepted,
+        'analyticsAccepted': analyticsAccepted,
+        'marketingAccepted': marketingAccepted,
+        'termsAcceptedAt': termsAccepted
+            ? DateTime.now().toIso8601String()
+            : null,
+      },
     );
-    if (authRes.user == null) {
+
+    final u = authRes.user;
+    if (u == null) {
       throw Exception('Ошибка при регистрации');
     }
 
-    await _upsertUserRow(id: authRes.user!.id, email: email, name: name);
+    // ✅ Ждём, пока БД/триггер создаст строку public.users (если триггера нет — вернёт null)
+    _currentUserData = await _waitUserRow(u.id) ?? {'id': u.id, 'email': email};
 
-    _currentUserData = await _client
-        .from('users')
-        .select()
-        .eq('id', authRes.user!.id)
-        .maybeSingle();
+    // ✅ Пытаемся записать имя через UPDATE (RLS обычно разрешает update своей строки)
+    // Если политика UPDATE не настроена — просто проигнорируем (UI не сломаем).
+    try {
+      await _client.from('users').update({'name': name}).eq('id', u.id);
+    } catch (_) {}
 
     await _syncGuestOnLogin();
 
-    _currentUserData = await _client
-        .from('users')
-        .select()
-        .eq('id', authRes.user!.id)
-        .maybeSingle();
+    _currentUserData = await _waitUserRow(u.id) ?? _currentUserData;
   }
 
   Future<bool> login(String email, String password) async {
@@ -130,36 +136,61 @@ class UserService {
       password: password,
     );
 
-    if (authRes.user != null) {
-      await _ensureUserRow(authRes.user!);
-      _currentUserData = await _client
-          .from('users')
-          .select()
-          .eq('id', authRes.user!.id)
-          .maybeSingle();
+    final user = authRes.user;
+    if (user == null) return false;
 
-      await _syncGuestOnLogin();
+    _currentUserData =
+        await _waitUserRow(user.id) ?? {'id': user.id, 'email': user.email};
 
-      _currentUserData = await _client
-          .from('users')
-          .select()
-          .eq('id', authRes.user!.id)
-          .maybeSingle();
+    await _syncGuestOnLogin();
 
-      return true;
-    }
-    return false;
+    _currentUserData =
+        await _waitUserRow(user.id) ?? _currentUserData; // refresh
+
+    return true;
   }
 
   /// ✅ Вход/регистрация через Google OAuth (универсальный поток).
-  Future<void> signInWithGoogle() async {
+  /// ВАЖНО: consent-флаги мы запишем в user_metadata после того, как пользователь вернётся (signedIn).
+  Future<void> signInWithGoogle({
+    bool termsAccepted = false,
+    bool analyticsAccepted = false,
+    bool marketingAccepted = false,
+  }) async {
+    // 1) сохраняем consents локально, чтобы применить после callback (когда появится user)
+    await _cachePendingConsents(
+      termsAccepted: termsAccepted,
+      analyticsAccepted: analyticsAccepted,
+      marketingAccepted: marketingAccepted,
+    );
+
     final redirect = kIsWeb ? null : _mobileRedirect;
     await _client.auth.signInWithOAuth(
       OAuthProvider.google,
       redirectTo: redirect,
       queryParams: const {'access_type': 'offline', 'prompt': 'consent'},
     );
-    // После редиректа слушай onAuthStateChange в UI и дерни init() или refreshCurrentUser().
+    // После редиректа слушай onAuthStateChange в UI и дерни refreshCurrentUser().
+  }
+
+  /// ✅ Вход/регистрация через Apple ID (iOS requirement, если есть другие social logins)
+  /// consent-флаги также применим после signedIn.
+  Future<void> signInWithApple({
+    bool termsAccepted = false,
+    bool analyticsAccepted = false,
+    bool marketingAccepted = false,
+  }) async {
+    await _cachePendingConsents(
+      termsAccepted: termsAccepted,
+      analyticsAccepted: analyticsAccepted,
+      marketingAccepted: marketingAccepted,
+    );
+
+    final redirect = kIsWeb ? null : _mobileRedirect;
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.apple,
+      redirectTo: redirect,
+    );
   }
 
   Future<void> logout() async {
@@ -236,7 +267,7 @@ class UserService {
     }
   }
 
-  // -------- NEW: драфт анкеты гостя --------
+  // -------- драфт анкеты гостя --------
 
   /// Сохранить/обновить черновик анкеты (гость). Если [completed] = true, отмечаем как завершённый.
   Future<void> saveGuestOnboardingDraft(
@@ -262,45 +293,71 @@ class UserService {
     await prefs.remove(_prefOnboardingCompleted);
   }
 
-  // ==================== private helpers ====================
+  // ==================== GDPR / Consents helpers ====================
 
-  Future<void> _ensureUserRow(User user) async {
-    final existing = await _client
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
+  static const _prefPendingConsents = 'vita_pending_consents_json';
 
-    if (existing == null) {
-      await _upsertUserRow(
-        id: user.id,
-        email: user.email,
-        name: _extractNameFromMetadata(user),
-      );
+  Future<void> _cachePendingConsents({
+    required bool termsAccepted,
+    required bool analyticsAccepted,
+    required bool marketingAccepted,
+  }) async {
+    // сохраняем только если вообще есть что сохранять
+    final map = <String, dynamic>{
+      'termsAccepted': termsAccepted,
+      'analyticsAccepted': analyticsAccepted,
+      'marketingAccepted': marketingAccepted,
+      'termsAcceptedAt': termsAccepted
+          ? DateTime.now().toIso8601String()
+          : null,
+    };
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefPendingConsents, jsonEncode(map));
+  }
+
+  Future<Map<String, dynamic>?> _takePendingConsents() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_prefPendingConsents);
+    if (raw == null || raw.isEmpty) return null;
+    await prefs.remove(_prefPendingConsents);
+    try {
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      return m;
+    } catch (_) {
+      return null;
     }
   }
 
-  Future<void> _upsertUserRow({
-    required String id,
-    String? email,
-    String? name,
-  }) async {
-    await _client.from('users').upsert({
-      'id': id,
-      'email': email,
-      'name': name,
-      'created_at': DateTime.now().toIso8601String(),
-      'has_seen_intro': _cachedSeenIntro ?? false,
-      'archetype': _cachedArchetype,
-      'has_completed_questionnaire': _cachedOnboardingCompleted ?? false,
-      // сами ответы анкеты в колонки переносим в _syncGuestOnLogin()
-    });
+  Future<void> _applyPendingConsentsIfAny() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return;
+
+    final consents = await _takePendingConsents();
+    if (consents == null) return;
+
+    // не затираем существующие, если они уже есть
+    final meta = (user.userMetadata ?? {});
+    final next = <String, dynamic>{...meta};
+
+    void setIfMissing(String key, dynamic value) {
+      if (value == null) return;
+      if (!next.containsKey(key) || next[key] == null) next[key] = value;
+    }
+
+    setIfMissing('termsAccepted', consents['termsAccepted']);
+    setIfMissing('analyticsAccepted', consents['analyticsAccepted']);
+    setIfMissing('marketingAccepted', consents['marketingAccepted']);
+    setIfMissing('termsAcceptedAt', consents['termsAcceptedAt']);
+
+    // update auth user metadata
+    try {
+      await _client.auth.updateUser(UserAttributes(data: next));
+    } catch (_) {
+      // не падаем — это не должно ломать onboarding
+    }
   }
 
-  String? _extractNameFromMetadata(User user) {
-    final meta = user.userMetadata ?? {};
-    return (meta['full_name'] ?? meta['name'] ?? meta['given_name']) as String?;
-  }
+  // ==================== private helpers ====================
 
   Future<void> _loadLocalGuestPrefs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -309,7 +366,7 @@ class UserService {
     _cachedOnboardingCompleted =
         prefs.getBool(_prefOnboardingCompleted) ?? false;
 
-    final raw = prefs.getString(_prefOnboardingDraft); // NEW
+    final raw = prefs.getString(_prefOnboardingDraft);
     if (raw != null && raw.isNotEmpty) {
       try {
         _cachedOnboardingDraft = jsonDecode(raw) as Map<String, dynamic>;
@@ -319,16 +376,51 @@ class UserService {
     }
   }
 
+  /// ✅ Ждём, пока сервер создаст строку public.users (trigger on auth.users).
+  /// ВАЖНО: если триггера нет — вернёт null.
+  Future<Map<String, dynamic>?> _waitUserRow(String uid) async {
+    Map<String, dynamic>? row;
+    for (int i = 0; i < 8; i++) {
+      row = await _client.from('users').select().eq('id', uid).maybeSingle();
+      if (row != null) return (row as Map).cast<String, dynamic>();
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+    return null;
+  }
+
+  String? _extractNameFromMetadata(User user) {
+    final meta = user.userMetadata ?? {};
+    return (meta['full_name'] ?? meta['name'] ?? meta['given_name']) as String?;
+  }
+
   /// Если гость что-то ввёл до логина — переносим в профиль.
   Future<void> _syncGuestOnLogin() async {
-    final id = _currentUserData?['id'];
-    if (id == null) return;
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return;
+
+    // ✅ применяем pending consents (после OAuth callback)
+    await _applyPendingConsentsIfAny();
+
+    // если строки ещё нет — нечего обновлять
+    final row = await _waitUserRow(uid);
+    if (row == null) return;
+
+    _currentUserData = (row as Map).cast<String, dynamic>();
 
     final updates = <String, dynamic>{};
 
     if ((_currentUserData?['has_seen_intro'] != true) &&
         (_cachedSeenIntro == true)) {
       updates['has_seen_intro'] = true;
+    }
+
+    // если name пустое — возьмём из метадаты auth или из кэша (аргументы register)
+    final profileName = (_currentUserData?['name'] as String?) ?? '';
+    if (profileName.isEmpty) {
+      final metaName = _extractNameFromMetadata(_client.auth.currentUser!);
+      if (metaName != null && metaName.isNotEmpty) {
+        updates['name'] = metaName;
+      }
     }
 
     final profileArchetype = (_currentUserData?['archetype'] as String?) ?? '';
@@ -374,12 +466,14 @@ class UserService {
       final updated = await _client
           .from('users')
           .update(updates)
-          .eq('id', id)
+          .eq('id', uid)
           .select()
           .maybeSingle();
+
       if (updated != null) {
-        _currentUserData = {...?_currentUserData, ...updated};
+        _currentUserData = {...?_currentUserData, ...(updated as Map)};
       }
+
       // черновик больше не нужен
       await clearGuestOnboardingDraft();
     }

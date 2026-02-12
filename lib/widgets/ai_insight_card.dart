@@ -1,3 +1,4 @@
+// ai_insight_card.dart  ✅ фикс бага с иконкой + защита от null/пустых полей
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -10,6 +11,8 @@ class AiInsightCard extends StatelessWidget {
 
   IconData _iconForType(String t) {
     switch (t) {
+      case 'data_quality':
+        return Icons.rule_rounded;
       case 'risk':
         return Icons.warning_amber_rounded;
       case 'emotional':
@@ -23,6 +26,15 @@ class AiInsightCard extends StatelessWidget {
     }
   }
 
+  String _labelForType(String t) => switch (t) {
+    'data_quality' => 'Качество данных',
+    'risk' => 'Риск',
+    'emotional' => 'Эмоции',
+    'habit' => 'Привычки',
+    'goal' => 'Цели',
+    _ => 'Инсайт',
+  };
+
   String _strengthLabel(double v) {
     if (v >= 0.75) return 'Сильное влияние';
     if (v >= 0.5) return 'Заметное влияние';
@@ -35,14 +47,16 @@ class AiInsightCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final typeIcon = _iconForType(item.type);
-    final typeLabel = switch (item.type) {
-      'risk' => 'Риск',
-      'emotional' => 'Эмоции',
-      'habit' => 'Привычки',
-      'goal' => 'Цели',
-      _ => 'Инсайт',
-    };
+    final type = (item.type).toString();
+    final typeIcon = _iconForType(type);
+    final typeLabel = _labelForType(type);
+
+    // ✅ защита от пустых impact полей
+    final impactGoal = (item.impactGoal.isNotEmpty) ? item.impactGoal : '—';
+    final strength = item.impactStrength.clamp(0.0, 1.0);
+    final direction = item.impactDirection.isNotEmpty
+        ? item.impactDirection
+        : 'mixed';
 
     return _NestCard(
       child: Padding(
@@ -54,7 +68,7 @@ class AiInsightCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _IconBadge(icon: typeIcon),
+                _IconBadge(icon: typeIcon), // ✅ теперь реально показывает icon
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -77,7 +91,7 @@ class AiInsightCard extends StatelessWidget {
                             icon: Icons.category_rounded,
                             text: typeLabel,
                           ),
-                          _ImpactPill(direction: item.impactDirection),
+                          _ImpactPill(direction: direction),
                         ],
                       ),
                     ],
@@ -104,14 +118,14 @@ class AiInsightCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                InfoChip(icon: Icons.flag_outlined, text: item.impactGoal),
+                InfoChip(icon: Icons.flag_outlined, text: impactGoal),
                 InfoChip(
                   icon: Icons.tune_rounded,
-                  text: _strengthLabel(item.impactStrength),
+                  text: _strengthLabel(strength),
                 ),
                 InfoChip(
                   icon: Icons.speed_rounded,
-                  text: '${(item.impactStrength * 100).round()}%',
+                  text: '${(strength * 100).round()}%',
                 ),
               ],
             ),
@@ -136,9 +150,9 @@ class AiInsightCard extends StatelessWidget {
                   ),
             ],
 
-            if ((item.suggestion ?? '').isNotEmpty) ...[
+            if ((item.suggestion ?? '').trim().isNotEmpty) ...[
               const SizedBox(height: 10),
-              _SuggestionBox(text: item.suggestion!),
+              _SuggestionBox(text: item.suggestion!.trim()),
             ],
           ],
         ),
@@ -195,11 +209,12 @@ class _IconBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFD6E6F5)),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
-          Icons.auto_awesome_rounded,
-          size: 0, // placeholder to keep const; overridden below
-        ),
+          icon,
+          size: 20,
+          color: const Color(0xFF3AA8E6),
+        ), // ✅ баг фикс
       ),
     );
   }

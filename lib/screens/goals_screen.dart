@@ -1,31 +1,57 @@
+// lib/screens/goals_screen.dart
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../main.dart'; // dbRepo
+
 import '../models/goals_calendar_model.dart';
 import '../models/life_block.dart';
-import '../widgets/block_chip.dart';
-import 'day_goals_screen.dart';
+import '../models/profile_model.dart';
+import '../models/user_goals_model.dart';
 
-// ✅ Nest style widgets
+import '../widgets/block_chip.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
 
-// репозиторий
-import '../main.dart'; // dbRepo
+// ✅ Виджет “Цели по сферам”
+import '../widgets/profile/goals_by_block_card.dart';
+
+// ✅ Быстрые функции под "+"
+import '../widgets/mass_daily_entry_sheet.dart';
+import '../widgets/recurring_goal_sheet.dart';
+import '../screens/home/home_google_calendar_sheet.dart';
+
+import '../services/habits_repo_mixin.dart' show HabitEntryUpsert;
+import '../services/mental_repo_mixin.dart';
+
+import 'day_goals_screen.dart';
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => GoalsCalendarModel()..loadBlocks(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => GoalsCalendarModel()..loadBlocks(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProfileModel(repo: dbRepo)..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => UserGoalsModel(repo: dbRepo)..load(),
+        ),
+      ],
       child: const _GoalsView(),
     );
   }
 }
 
 enum _ViewMode { dashboard, calendar }
+
 enum _CalMode { week, month }
 
 class _GoalsView extends StatefulWidget {
@@ -45,6 +71,8 @@ class _GoalsViewState extends State<_GoalsView> {
   Map<DateTime, Map<String, double>> _heat = {};
   double _targetHours = 8;
 
+  bool _showGoalsByBlock = true; // ✅ hide/show “Цели по сферам”
+
   static const Map<String, Color> _blockColors = {
     'health': Color(0xFF2E7D32),
     'career': Color.fromARGB(255, 96, 164, 241),
@@ -52,6 +80,8 @@ class _GoalsViewState extends State<_GoalsView> {
     'relations': Color.fromARGB(255, 240, 45, 116),
     'education': Color.fromARGB(255, 99, 232, 218),
     'finance': Color.fromARGB(255, 245, 153, 4),
+    'hobby': Color(0xFF7E57C2),
+    'hobbies': Color(0xFF7E57C2),
   };
 
   // ---------- helpers ----------
@@ -62,14 +92,18 @@ class _GoalsViewState extends State<_GoalsView> {
 
   List<DateTime> _weekDays(DateTime anchor) {
     final start = _startOfWeek(anchor);
-    return List.generate(7, (i) => DateTime(start.year, start.month, start.day + i));
+    return List.generate(
+      7,
+      (i) => DateTime(start.year, start.month, start.day + i),
+    );
   }
 
   int _isoWeekNumber(DateTime date) {
     final thursday = date.add(Duration(days: 3 - ((date.weekday + 6) % 7)));
     final firstThursday = DateTime(thursday.year, 1, 4);
-    final firstThursdayWeekStart =
-        firstThursday.subtract(Duration(days: (firstThursday.weekday + 6) % 7));
+    final firstThursdayWeekStart = firstThursday.subtract(
+      Duration(days: (firstThursday.weekday + 6) % 7),
+    );
     final diff = thursday.difference(firstThursdayWeekStart).inDays;
     return 1 + (diff ~/ 7);
   }
@@ -176,7 +210,9 @@ class _GoalsViewState extends State<_GoalsView> {
         final raw = (g.lifeBlock ?? '').trim().toLowerCase();
         if (raw.isEmpty || raw == 'general') continue;
 
-        final hours = (g.spentHours is num) ? (g.spentHours as num).toDouble() : 0.0;
+        final hours = (g.spentHours is num)
+            ? (g.spentHours as num).toDouble()
+            : 0.0;
         if (hours <= 0) continue;
 
         final key = DateUtils.dateOnly(day);
@@ -203,7 +239,9 @@ class _GoalsViewState extends State<_GoalsView> {
         final raw = (g.lifeBlock ?? '').trim().toLowerCase();
         if (raw.isEmpty || raw == 'general') continue;
 
-        final hours = (g.spentHours is num) ? (g.spentHours as num).toDouble() : 0.0;
+        final hours = (g.spentHours is num)
+            ? (g.spentHours as num).toDouble()
+            : 0.0;
         if (hours <= 0) continue;
 
         final key = DateUtils.dateOnly(day);
@@ -261,23 +299,439 @@ class _GoalsViewState extends State<_GoalsView> {
     return list.take(3).toList();
   }
 
+  // ---------- icons for blocks ----------
+  IconData _blockIcon(String key) {
+    switch (key.toLowerCase()) {
+      case 'career':
+        return Icons.work_rounded;
+      case 'education':
+        return Icons.school_rounded;
+      case 'health':
+        return Icons.favorite_rounded;
+      case 'family':
+        return Icons.family_restroom_rounded;
+      case 'relations':
+        return Icons.favorite_border_rounded;
+      case 'finance':
+        return Icons.account_balance_wallet_rounded;
+      case 'hobby':
+      case 'hobbies':
+        return Icons.sports_esports_rounded;
+      default:
+        return Icons.circle;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // ✅ Bottom sheet под "+"
+  // ---------------------------------------------------------------------------
+
+  Future<void> _openQuickActions(BuildContext context) async {
+    final cs = Theme.of(context).colorScheme;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _NestSheet(
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              10,
+              16,
+              16 +
+                  MediaQuery.of(ctx).viewInsets.bottom +
+                  MediaQuery.of(ctx).padding.bottom,
+            ),
+            child: Column(
+              children: [
+                const _NestSheetHeader(
+                  title: 'Быстрые функции',
+                  subtitle: 'Добавление и планирование в один тап',
+                ),
+                const SizedBox(height: 14),
+
+                // ✅ Массовое добавление
+                _NestQuickActionTile(
+                  icon: Icons.bolt,
+                  color: cs.primary,
+                  title: 'Массовое добавление за день',
+                  subtitle: 'Расходы + Доходы + Задачи + Настроение + Привычки',
+                  onTap: () async {
+                    final goalsModel = GoalsCalendarModel();
+                    await goalsModel.loadBlocks();
+
+                    final result =
+                        await showModalBottomSheet<MassDailyEntryResult>(
+                          context: ctx,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          backgroundColor: cs.surface,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                          ),
+                          builder: (_) => MassDailyEntrySheet(
+                            availableBlocks: goalsModel.lifeBlocks,
+                          ),
+                        );
+
+                    if (result == null || !context.mounted) return;
+
+                    Navigator.pop(ctx); // закрываем sheet быстрых функций
+
+                    try {
+                      // 1) Настроение
+                      if (result.mood != null) {
+                        await dbRepo.upsertMood(
+                          date: DateUtils.dateOnly(result.date),
+                          emoji: result.mood!.emoji,
+                          note: result.mood!.note,
+                        );
+                      }
+
+                      // 2) Расходы
+                      for (final e in result.expenses) {
+                        final ts = DateTime(
+                          result.date.year,
+                          result.date.month,
+                          result.date.day,
+                          12,
+                          0,
+                        );
+                        await dbRepo.addTransaction(
+                          ts: ts,
+                          kind: 'expense',
+                          categoryId: e.categoryId,
+                          amount: e.amount,
+                          note: e.note.isEmpty ? null : e.note,
+                        );
+                      }
+
+                      // 2.5) Доходы
+                      for (final i in result.incomes) {
+                        final ts = DateTime(
+                          result.date.year,
+                          result.date.month,
+                          result.date.day,
+                          12,
+                          0,
+                        );
+                        await dbRepo.addTransaction(
+                          ts: ts,
+                          kind: 'income',
+                          categoryId: i.categoryId,
+                          amount: i.amount,
+                          note: i.note.isEmpty ? null : i.note,
+                        );
+                      }
+
+                      // 3) Привычки
+                      if (result.habits.isNotEmpty) {
+                        final habitRows = result.habits
+                            .map(
+                              (h) => HabitEntryUpsert(
+                                habitId: h.habitId,
+                                day: DateUtils.dateOnly(result.date),
+                                done: h.done,
+                                value: h.value,
+                              ),
+                            )
+                            .toList();
+                        await dbRepo.upsertHabitEntries(habitRows);
+                      }
+
+                      // 4) Менталка
+                      if (result.mental.isNotEmpty) {
+                        final rows = result.mental.map((a) {
+                          if (a.valueBool != null) {
+                            return MentalAnswerUpsert.yesNo(
+                              questionId: a.questionId,
+                              day: DateUtils.dateOnly(result.date),
+                              value: a.valueBool!,
+                            );
+                          }
+                          if (a.valueInt != null) {
+                            return MentalAnswerUpsert.scale(
+                              questionId: a.questionId,
+                              day: DateUtils.dateOnly(result.date),
+                              value: a.valueInt!,
+                            );
+                          }
+                          return MentalAnswerUpsert.text(
+                            questionId: a.questionId,
+                            day: DateUtils.dateOnly(result.date),
+                            value: (a.valueText ?? '').trim(),
+                          );
+                        }).toList();
+
+                        await dbRepo.upsertMentalAnswers(rows);
+                      }
+
+                      // 5) Задачи
+                      DateTime combine(DateTime day, TimeOfDay t) => DateTime(
+                        day.year,
+                        day.month,
+                        day.day,
+                        t.hour,
+                        t.minute,
+                      );
+
+                      for (final g in result.goals) {
+                        final start = combine(
+                          result.date,
+                          g.startTime ?? const TimeOfDay(hour: 9, minute: 0),
+                        );
+                        final deadline = DateTime(
+                          result.date.year,
+                          result.date.month,
+                          result.date.day,
+                          23,
+                          59,
+                        );
+
+                        final desc = g.hours > 0
+                            ? 'План: ${g.hours.toStringAsFixed(g.hours.truncateToDouble() == g.hours ? 0 : 1)} ч'
+                            : '';
+
+                        await dbRepo.createGoal(
+                          title: g.title,
+                          description: desc,
+                          deadline: deadline,
+                          lifeBlock: g.lifeBlock,
+                          importance: g.importance,
+                          emotion: g.emotion ?? '',
+                          spentHours: g.hours,
+                          startTime: start,
+                        );
+                      }
+
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Сохранено: '
+                            '${result.expenses.length} расход(ов), '
+                            '${result.incomes.length} доход(ов), '
+                            '${result.goals.length} задач(и), '
+                            '${result.habits.length} привыч(ек)'
+                            '${result.mood != null ? ', настроение' : ''}',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+
+                      // обновим heat
+                      await _reloadHeat(context.read<GoalsCalendarModel>());
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Ошибка сохранения: $e'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // 🔁 Регулярная цель
+                _NestQuickActionTile(
+                  icon: Icons.event_repeat_rounded,
+                  color: cs.primaryContainer,
+                  title: 'Регулярная цель',
+                  subtitle: 'Планирование на несколько дней вперёд',
+                  onTap: () async {
+                    final plan = await showModalBottomSheet<RecurringGoalPlan>(
+                      context: ctx,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      backgroundColor: cs.surface,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (_) => const RecurringGoalSheet(),
+                    );
+
+                    if (plan == null) return;
+
+                    final today = DateUtils.dateOnly(DateTime.now());
+
+                    DateTime combine(DateTime day, TimeOfDay t) => DateTime(
+                      day.year,
+                      day.month,
+                      day.day,
+                      t.hour,
+                      t.minute,
+                    );
+
+                    List<DateTime> buildOccurrences() {
+                      final start = DateUtils.dateOnly(today);
+                      final until = DateUtils.dateOnly(plan.until);
+
+                      final out = <DateTime>[];
+                      if (until.isBefore(start)) return out;
+
+                      if (plan.type == RecurrenceType.everyNDays) {
+                        final step = plan.everyNDays < 1 ? 1 : plan.everyNDays;
+                        for (
+                          var day = start;
+                          !day.isAfter(until);
+                          day = day.add(Duration(days: step))
+                        ) {
+                          out.add(combine(day, plan.time));
+                        }
+                        return out;
+                      }
+
+                      final wds = plan.weekdays.isEmpty
+                          ? {start.weekday}
+                          : plan.weekdays;
+                      for (
+                        var day = start;
+                        !day.isAfter(until);
+                        day = day.add(const Duration(days: 1))
+                      ) {
+                        if (wds.contains(day.weekday))
+                          out.add(combine(day, plan.time));
+                      }
+                      return out;
+                    }
+
+                    final occurrences = buildOccurrences();
+
+                    if (occurrences.isEmpty) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Нет дат для создания (проверь дедлайн/настройки).',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+
+                    try {
+                      Navigator.pop(ctx); // закрываем quick actions
+
+                      for (final start in occurrences) {
+                        final deadline = DateTime(
+                          start.year,
+                          start.month,
+                          start.day,
+                          23,
+                          59,
+                        );
+
+                        final desc = plan.plannedHours > 0
+                            ? 'План: ${plan.plannedHours.toStringAsFixed(plan.plannedHours.truncateToDouble() == plan.plannedHours ? 0 : 1)} ч'
+                            : '';
+
+                        await dbRepo.createGoal(
+                          title: plan.title,
+                          description: desc,
+                          deadline: deadline,
+                          lifeBlock: plan.lifeBlock,
+                          importance: plan.importance,
+                          emotion: plan.emotion,
+                          spentHours: plan.plannedHours,
+                          startTime: start,
+                        );
+                      }
+
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Создано целей: ${occurrences.length}'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+
+                      await _reloadHeat(context.read<GoalsCalendarModel>());
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Не удалось создать серию целей: $e'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // ✅ Google Calendar
+                _NestQuickActionTile(
+                  icon: Icons.calendar_month_rounded,
+                  color: cs.primary,
+                  title: 'Синхронизация с Google Calendar',
+                  subtitle: 'Экспорт целей в календарь',
+                  onTap: () async {
+                    Navigator.pop(ctx);
+
+                    await showModalBottomSheet<void>(
+                      context: context,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (_) => const HomeGoogleCalendarSheet(),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final m = context.watch<GoalsCalendarModel>();
+    final profile = context.watch<ProfileModel>();
     final textTheme = Theme.of(context).textTheme;
 
     final mq = MediaQuery.of(context);
     final isCompact = mq.size.width < 600;
     const maxContentW = 900.0;
-    final sidePad = mq.size.width > maxContentW ? (mq.size.width - maxContentW) / 2 : 0.0;
+    final sidePad = mq.size.width > maxContentW
+        ? (mq.size.width - maxContentW) / 2
+        : 0.0;
 
     final weekDays = _weekDays(_anchor);
 
     final String headerTitle = _view == _ViewMode.dashboard
         ? _headerWeek(_anchor)
-        : (_calMode == _CalMode.week ? _headerWeek(_anchor) : _formatModelMonthTitle(m.monthTitle));
+        : (_calMode == _CalMode.week
+              ? _headerWeek(_anchor)
+              : _formatModelMonthTitle(m.monthTitle));
 
-    final List<DateTime> daysList = _calMode == _CalMode.week ? weekDays : m.daysInMonth;
+    final List<DateTime> daysList = _calMode == _CalMode.week
+        ? weekDays
+        : m.daysInMonth;
     final weekCellHeight = isCompact ? 72.0 : 64.0;
 
     Future<void> goPrev() async {
@@ -292,7 +746,6 @@ class _GoalsViewState extends State<_GoalsView> {
         await _loadWeekHeat();
       } else {
         m.prevMonth();
-        // синхронизируем anchor на предыдущий месяц
         setState(() => _anchor = DateTime(_anchor.year, _anchor.month - 1, 1));
         await _loadMonthHeat(_anchor.year, _anchor.month);
       }
@@ -325,10 +778,16 @@ class _GoalsViewState extends State<_GoalsView> {
               title: const Text('Цели'),
               actions: [
                 IconButton(
+                  tooltip: 'Быстрые функции',
+                  onPressed: () => _openQuickActions(context),
+                  icon: const Icon(Icons.add),
+                ),
+                IconButton(
                   tooltip: 'Сегодня',
                   onPressed: () async {
                     setState(() => _anchor = DateTime.now());
-                    if (_view == _ViewMode.calendar && _calMode == _CalMode.month) {
+                    if (_view == _ViewMode.calendar &&
+                        _calMode == _CalMode.month) {
                       await _loadMonthHeat(_anchor.year, _anchor.month);
                     } else {
                       await _loadWeekHeat();
@@ -339,7 +798,7 @@ class _GoalsViewState extends State<_GoalsView> {
               ],
             ),
 
-            // категории (НЕ pinned)
+            // категории
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(12 + sidePad, 8, 12 + sidePad, 0),
@@ -383,18 +842,22 @@ class _GoalsViewState extends State<_GoalsView> {
                 padding: EdgeInsets.fromLTRB(12 + sidePad, 8, 12 + sidePad, 0),
                 child: Row(
                   children: [
-                    IconButton(onPressed: goPrev, icon: const Icon(Icons.chevron_left)),
+                    IconButton(
+                      onPressed: goPrev,
+                      icon: const Icon(Icons.chevron_left),
+                    ),
                     Expanded(
                       child: Column(
                         children: [
                           Text(
                             headerTitle,
                             textAlign: TextAlign.center,
-                            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                           const SizedBox(height: 8),
 
-                          // ✅ ВАЖНО: меняем _view
                           SegmentedButton<_ViewMode>(
                             segments: const [
                               ButtonSegment(
@@ -438,9 +901,17 @@ class _GoalsViewState extends State<_GoalsView> {
                                 if (newMode == _CalMode.week) {
                                   await _loadWeekHeat();
                                 } else {
-                                  // sync anchor to current "shown" month (просто текущий anchor)
-                                  setState(() => _anchor = DateTime(_anchor.year, _anchor.month, 1));
-                                  await _loadMonthHeat(_anchor.year, _anchor.month);
+                                  setState(
+                                    () => _anchor = DateTime(
+                                      _anchor.year,
+                                      _anchor.month,
+                                      1,
+                                    ),
+                                  );
+                                  await _loadMonthHeat(
+                                    _anchor.year,
+                                    _anchor.month,
+                                  );
                                 }
                               },
                             ),
@@ -448,7 +919,10 @@ class _GoalsViewState extends State<_GoalsView> {
                         ],
                       ),
                     ),
-                    IconButton(onPressed: goNext, icon: const Icon(Icons.chevron_right)),
+                    IconButton(
+                      onPressed: goNext,
+                      icon: const Icon(Icons.chevron_right),
+                    ),
                   ],
                 ),
               ),
@@ -458,15 +932,103 @@ class _GoalsViewState extends State<_GoalsView> {
             if (_view == _ViewMode.dashboard) ...[
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(12 + sidePad, 12, 12 + sidePad, 10),
+                  padding: EdgeInsets.fromLTRB(
+                    12 + sidePad,
+                    12,
+                    12 + sidePad,
+                    10,
+                  ),
                   child: _WeekSummaryCard(
                     days: weekDays,
                     getDayHeat: (d) => _dayHeatFiltered(m, d),
                     targetHours: _targetHours,
                     colorsByBlock: _blockColors,
+                    blockIcon: _blockIcon,
                   ),
                 ),
               ),
+
+              // ✅ “Цели по сферам” (фильтр по верхним чипам + hide/show)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    12 + sidePad,
+                    0,
+                    12 + sidePad,
+                    10,
+                  ),
+                  child: NestBlurCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Цели по сферам',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w900),
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: _showGoalsByBlock
+                                    ? 'Скрыть'
+                                    : 'Показать',
+                                onPressed: () => setState(
+                                  () => _showGoalsByBlock = !_showGoalsByBlock,
+                                ),
+                                icon: Icon(
+                                  _showGoalsByBlock
+                                      ? Icons.visibility_off_rounded
+                                      : Icons.visibility_rounded,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 220),
+                            crossFadeState: _showGoalsByBlock
+                                ? CrossFadeState.showFirst
+                                : CrossFadeState.showSecond,
+                            firstChild: GoalsByBlockCard(
+                              // ⚠️ ВАЖНО: твой GoalsByBlockCard сейчас требует allowedBlocks (по твоей ошибке компиляции)
+                              allowedBlocks: profile.lifeBlocks,
+                              selectedBlock:
+                                  m.selectedBlock, // ✅ фильтр по верхним чипам
+                              onSnack: (t) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(t),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                            ),
+                            secondChild: Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                'Скрыто. Нажми 👁 чтобы показать.',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               SliverList.separated(
                 itemCount: 7,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -500,7 +1062,10 @@ class _GoalsViewState extends State<_GoalsView> {
             if (_view == _ViewMode.calendar) ...[
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12 + sidePad, vertical: 6),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12 + sidePad,
+                    vertical: 6,
+                  ),
                   child: const Row(
                     children: [
                       _Weekday('Пн'),
@@ -516,7 +1081,10 @@ class _GoalsViewState extends State<_GoalsView> {
               ),
 
               SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: 12 + sidePad, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 12 + sidePad,
+                  vertical: 8,
+                ),
                 sliver: SliverGrid.builder(
                   gridDelegate: _calMode == _CalMode.week
                       ? SliverGridDelegateWithFixedCrossAxisCount(
@@ -535,25 +1103,30 @@ class _GoalsViewState extends State<_GoalsView> {
                   itemBuilder: (_, i) {
                     final d = daysList[i];
 
-                    final inMonth = _calMode == _CalMode.month ? m.isSameMonth(d) : true;
+                    final inMonth = _calMode == _CalMode.month
+                        ? m.isSameMonth(d)
+                        : true;
                     if (_calMode == _CalMode.month && !inMonth) {
                       return const SizedBox.shrink();
                     }
 
                     final isToday = DateUtils.isSameDay(d, DateTime.now());
                     final isWeekend =
-                        d.weekday == DateTime.saturday || d.weekday == DateTime.sunday;
+                        d.weekday == DateTime.saturday ||
+                        d.weekday == DateTime.sunday;
 
-                    // ✅ FIX: heat показываем и в week, и в month
                     final rawHeat = _heat[DateUtils.dateOnly(d)];
 
                     Map<String, double>? heat;
                     if (rawHeat != null && rawHeat.isNotEmpty) {
-                      final cleaned = Map<String, double>.from(rawHeat)..remove('general');
+                      final cleaned = Map<String, double>.from(rawHeat)
+                        ..remove('general');
 
                       if (m.selectedBlock != 'all') {
                         final v = cleaned[m.selectedBlock] ?? 0.0;
-                        heat = v > 0 ? {m.selectedBlock: v} : <String, double>{};
+                        heat = v > 0
+                            ? {m.selectedBlock: v}
+                            : <String, double>{};
                       } else {
                         heat = cleaned;
                       }
@@ -571,7 +1144,9 @@ class _GoalsViewState extends State<_GoalsView> {
                       targetHours: _targetHours,
                       colorsByBlock: _blockColors,
                       forceMono: forceMono,
-                      monoKey: m.selectedBlock != 'all' ? m.selectedBlock : null,
+                      monoKey: m.selectedBlock != 'all'
+                          ? m.selectedBlock
+                          : null,
                     );
                   },
                 ),
@@ -591,12 +1166,14 @@ class _WeekSummaryCard extends StatelessWidget {
   final Map<String, double> Function(DateTime day) getDayHeat;
   final double targetHours;
   final Map<String, Color> colorsByBlock;
+  final IconData Function(String key) blockIcon;
 
   const _WeekSummaryCard({
     required this.days,
     required this.getDayHeat,
     required this.targetHours,
     required this.colorsByBlock,
+    required this.blockIcon,
   });
 
   @override
@@ -628,7 +1205,10 @@ class _WeekSummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Итог недели', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+              'Итог недели',
+              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 10),
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
@@ -641,10 +1221,14 @@ class _WeekSummaryCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Text('${weekHours.toStringAsFixed(1)} ч',
-                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                Text(' / ${weekTarget.toStringAsFixed(0)} ч',
-                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                Text(
+                  '${weekHours.toStringAsFixed(1)} ч',
+                  style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  ' / ${weekTarget.toStringAsFixed(0)} ч',
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                ),
                 const Spacer(),
                 Icon(
                   p >= 1 ? Icons.verified : Icons.trending_up,
@@ -653,27 +1237,73 @@ class _WeekSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            // ✅ вместо "career: 19.0ч" — иконки + часы
             if (top3.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(
-                spacing: 12,
+                spacing: 10,
                 runSpacing: 10,
                 children: top3.map((e) {
-                  final c = colorsByBlock[e.key] ?? cs.primary;
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(width: 10, height: 10,
-                          decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-                      const SizedBox(width: 6),
-                      Text('${e.key}: ${e.value.toStringAsFixed(1)}ч', style: tt.labelMedium),
-                    ],
+                  final key = e.key;
+                  final c = colorsByBlock[key] ?? cs.primary;
+
+                  return _BlockStatPill(
+                    color: c,
+                    icon: blockIcon(key),
+                    hours: e.value,
                   );
                 }).toList(),
               ),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BlockStatPill extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final double hours;
+
+  const _BlockStatPill({
+    required this.color,
+    required this.icon,
+    required this.hours,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.14),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFD6E6F5)),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${hours.toStringAsFixed(hours.truncateToDouble() == hours ? 0 : 1)}ч',
+            style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ],
       ),
     );
   }
@@ -725,10 +1355,19 @@ class _DayRowCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(weekday, style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant)),
+                      Text(
+                        weekday,
+                        style: tt.labelLarge?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text('${date.day}',
-                          style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                      Text(
+                        '${date.day}',
+                        style: tt.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -747,10 +1386,18 @@ class _DayRowCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text('${hours.toStringAsFixed(1)}ч',
-                              style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
-                          Text(' / ${targetHours.toStringAsFixed(0)}ч',
-                              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                          Text(
+                            '${hours.toStringAsFixed(1)}ч',
+                            style: tt.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            ' / ${targetHours.toStringAsFixed(0)}ч',
+                            style: tt.bodyMedium?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
                           const Spacer(),
                           Row(
                             children: topBlocks.map((e) {
@@ -759,7 +1406,10 @@ class _DayRowCard extends StatelessWidget {
                                 margin: const EdgeInsets.only(left: 6),
                                 width: 8,
                                 height: 8,
-                                decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                                decoration: BoxDecoration(
+                                  color: c,
+                                  shape: BoxShape.circle,
+                                ),
                               );
                             }).toList(),
                           ),
@@ -791,7 +1441,9 @@ class _Weekday extends StatelessWidget {
       child: Center(
         child: Text(
           s,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: color),
         ),
       ),
     );
@@ -843,8 +1495,8 @@ class _DayCellState extends State<_DayCell> {
     final labelColor = !widget.inMonth
         ? cs.onSurfaceVariant.withOpacity(0.5)
         : widget.isWeekend
-            ? cs.onSurface.withOpacity(0.85)
-            : cs.onSurface;
+        ? cs.onSurface.withOpacity(0.85)
+        : cs.onSurface;
 
     const radius = 12.0;
 
@@ -855,7 +1507,9 @@ class _DayCellState extends State<_DayCell> {
       hours += v;
     }
 
-    final frac = widget.targetHours <= 0 ? 0.0 : (hours / widget.targetHours).clamp(0.0, 1.0);
+    final frac = widget.targetHours <= 0
+        ? 0.0
+        : (hours / widget.targetHours).clamp(0.0, 1.0);
 
     Color fillColor = cs.primary;
     if (widget.forceMono && widget.monoKey != null) {
@@ -882,17 +1536,15 @@ class _DayCellState extends State<_DayCell> {
               borderRadius: BorderRadius.circular(radius),
               child: Stack(
                 children: [
-                  // фон на всю ячейку
                   Positioned.fill(child: ColoredBox(color: bgBase)),
 
-                  // ✅ ЗАЛИВКА НА ВСЮ ЯЧЕЙКУ (не “середина”)
                   if (hasData)
                     Positioned.fill(
                       child: Align(
                         alignment: Alignment.bottomCenter,
                         child: FractionallySizedBox(
                           widthFactor: 1.0,
-                          heightFactor: frac, // <-- вот это растягивает по всей ячейке
+                          heightFactor: frac,
                           alignment: Alignment.bottomCenter,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
@@ -912,7 +1564,6 @@ class _DayCellState extends State<_DayCell> {
                       ),
                     ),
 
-                  // sheen
                   Positioned.fill(
                     child: IgnorePointer(
                       child: DecoratedBox(
@@ -960,6 +1611,168 @@ class _DayCellState extends State<_DayCell> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Nest sheet widgets (локально)
+// ============================================================================
+
+class _NestSheet extends StatelessWidget {
+  final Widget child;
+  const _NestSheet({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.78),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border.all(color: const Color(0xFFD6E6F5)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A2B5B7A),
+              blurRadius: 28,
+              offset: Offset(0, -10),
+            ),
+          ],
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _NestSheetHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _NestSheetHeader({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF3AA8E6), Color(0xFF6C8CFF)],
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1F2B5B7A),
+                blurRadius: 16,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: tt.bodySmall?.copyWith(
+                  color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NestQuickActionTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final Future<void> Function() onTap;
+
+  const _NestQuickActionTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: () => onTap(),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.72),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD6E6F5)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x142B5B7A),
+              blurRadius: 18,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withOpacity(0.14),
+                border: Border.all(color: const Color(0xFFD6E6F5)),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: tt.bodySmall?.copyWith(
+                      color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF2E4B5A)),
+          ],
         ),
       ),
     );

@@ -1,11 +1,7 @@
 import 'package:flutter/foundation.dart';
-import '../services/goal_service.dart';
+import '../main.dart'; // dbRepo
 
 class GoalsCalendarModel extends ChangeNotifier {
-  final GoalService _service;
-  GoalsCalendarModel({GoalService? service})
-    : _service = service ?? GoalService();
-
   List<String> _lifeBlocks = [];
   List<String> get lifeBlocks => _lifeBlocks;
 
@@ -23,7 +19,8 @@ class GoalsCalendarModel extends ChangeNotifier {
       '${_month.year}, ${_month.month.toString().padLeft(2, '0')}';
 
   Future<void> loadBlocks() async {
-    _lifeBlocks = await _service.getUserLifeBlocks();
+    // GoalService убран — идём напрямую в dbRepo
+    _lifeBlocks = await dbRepo.getUserLifeBlocks();
     notifyListeners();
   }
 
@@ -46,6 +43,7 @@ class GoalsCalendarModel extends ChangeNotifier {
     final leadingEmpty = (first.weekday % 7); // воскресенье = 0
     final total = leadingEmpty + daysCount;
     final slots = (total / 7.0).ceil() * 7;
+
     return List.generate(slots, (i) {
       final dayOffset = i - leadingEmpty + 1;
       return DateTime(_month.year, _month.month, dayOffset);

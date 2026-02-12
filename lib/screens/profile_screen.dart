@@ -7,9 +7,6 @@ import '../models/profile_model.dart';
 // HABITS
 import '../models/habits_model.dart';
 
-// GOALS
-import '../models/user_goals_model.dart';
-
 import '../widgets/profile/profile_view.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -23,9 +20,7 @@ class ProfileScreen extends StatelessWidget {
           create: (_) => ProfileModel(repo: dbRepo)..load(),
         ),
         ChangeNotifierProvider(create: (_) => HabitsModel()..load()),
-        ChangeNotifierProvider(
-          create: (_) => UserGoalsModel(repo: dbRepo)..load(),
-        ),
+        // ✅ Убрали UserGoalsModel отсюда
       ],
       child: const ProfileView(),
     );

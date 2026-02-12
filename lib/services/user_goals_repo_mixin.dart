@@ -2,18 +2,6 @@
 //
 // Repo для таблицы public.user_goals
 // Поддерживает: список целей, upsert, delete, получение по life_block и по диапазону дат.
-//
-// ОЖИДАЕМАЯ СХЕМА (минимум):
-// - id (uuid) PK
-// - user_id (uuid)
-// - life_block (text)         // например "career"
-// - horizon (text)            // "tactical" | "mid" | "long"
-// - title (text)
-// - description (text) NULL
-// - target_date (date) NULL
-// - created_at (timestamptz) default now()
-//
-// Если названия колонок отличаются — скажи какие, я подгоню 1-в-1.
 
 import 'core/base_repo.dart';
 
@@ -72,7 +60,6 @@ class UserGoal {
       if (v is DateTime) return DateTime(v.year, v.month, v.day);
       final s = v.toString();
       if (s.isEmpty) return null;
-      // DATE может прийти как 'YYYY-MM-DD' или timestamptz
       final dt = DateTime.tryParse(s);
       if (dt == null) return null;
       return DateTime(dt.year, dt.month, dt.day);
@@ -118,14 +105,13 @@ class UserGoal {
       'title': titleT,
       'description': descT.isEmpty ? null : descT,
       'target_date': dateOnly(targetDate),
-      // created_at не трогаем — пусть проставляет БД
     };
   }
 }
 
 /// DTO для создания/апдейта
 class UserGoalUpsert {
-  final String? id; // null -> insert (БД сгенерит или ты передашь uuid)
+  final String? id; // null -> insert
   final String lifeBlock;
   final GoalHorizon horizon;
   final String title;
@@ -143,18 +129,21 @@ class UserGoalUpsert {
 }
 
 abstract class UserGoalsRepo {
-  Future<List<UserGoal>> listGoals({String? lifeBlock, GoalHorizon? horizon});
-
-  Future<Map<String, List<UserGoal>>> listGoalsGroupedByBlock({
+  // ✅ переименовано, чтобы не конфликтовать с GoalsRepoMixin.fetchGoals
+  Future<List<UserGoal>> listUserGoals({
+    String? lifeBlock,
     GoalHorizon? horizon,
   });
 
-  Future<void> upsertGoals(List<UserGoalUpsert> goals);
+  Future<Map<String, List<UserGoal>>> listUserGoalsGroupedByBlock({
+    GoalHorizon? horizon,
+  });
 
-  Future<void> deleteGoal(String goalId);
+  // ✅ переименовано, чтобы не конфликтовать с GoalsRepoMixin.createGoal/updateGoal/deleteGoal
+  Future<void> upsertUserGoals(List<UserGoalUpsert> goals);
+  Future<void> deleteUserGoal(String goalId);
 
-  /// Удобно для "периодных" отчётов (если нужно)
-  Future<List<UserGoal>> listGoalsWithTargetDateInRange(
+  Future<List<UserGoal>> listUserGoalsWithTargetDateInRange(
     DateTime start,
     DateTime end,
   );
@@ -167,7 +156,7 @@ mixin UserGoalsRepoMixin on BaseRepo implements UserGoalsRepo {
       '${d.day.toString().padLeft(2, '0')}';
 
   @override
-  Future<List<UserGoal>> listGoals({
+  Future<List<UserGoal>> listUserGoals({
     String? lifeBlock,
     GoalHorizon? horizon,
   }) async {
@@ -192,10 +181,10 @@ mixin UserGoalsRepoMixin on BaseRepo implements UserGoalsRepo {
   }
 
   @override
-  Future<Map<String, List<UserGoal>>> listGoalsGroupedByBlock({
+  Future<Map<String, List<UserGoal>>> listUserGoalsGroupedByBlock({
     GoalHorizon? horizon,
   }) async {
-    final list = await listGoals(horizon: horizon);
+    final list = await listUserGoals(horizon: horizon);
     final out = <String, List<UserGoal>>{};
     for (final g in list) {
       out.putIfAbsent(g.lifeBlock, () => []).add(g);
@@ -204,15 +193,11 @@ mixin UserGoalsRepoMixin on BaseRepo implements UserGoalsRepo {
   }
 
   @override
-  Future<void> upsertGoals(List<UserGoalUpsert> goals) async {
+  Future<void> upsertUserGoals(List<UserGoalUpsert> goals) async {
     if (goals.isEmpty) return;
 
     final rows = goals.map((g) {
       final titleT = g.title.trim();
-      if (titleT.isEmpty) {
-        // Не кидаем исключение, просто сохраним пустое как невалидное не будем:
-        // Но лучше на UI не допускать.
-      }
 
       final row = UserGoal(
         id: g.id ?? '',
@@ -233,29 +218,36 @@ mixin UserGoalsRepoMixin on BaseRepo implements UserGoalsRepo {
       return row;
     }).toList();
 
-    // если id есть — upsert по id, если id нет — Supabase вставит (если у тебя default uuid)
-    // Вариант 1: onConflict: 'id' (самый простой)
     await client.from('user_goals').upsert(rows, onConflict: 'id');
   }
 
   @override
-  Future<void> deleteGoal(String goalId) async {
+  Future<void> deleteUserGoal(String goalId) async {
     final id = goalId.trim();
     if (id.isEmpty) return;
 
-    await client.from('user_goals').delete().eq('user_id', uid).eq('id', id);
+    // делаем delete "наблюдаемым": вернём id удалённых строк
+    final res = await client
+        .from('user_goals')
+        .delete()
+        .eq('user_id', uid)
+        .eq('id', id)
+        .select('id');
+
+    final deleted = (res as List).cast<Map<String, dynamic>>();
+    if (deleted.isEmpty) {
+      throw Exception('UserGoal delete matched 0 rows. uid=$uid id=$id');
+    }
   }
 
   @override
-  Future<List<UserGoal>> listGoalsWithTargetDateInRange(
+  Future<List<UserGoal>> listUserGoalsWithTargetDateInRange(
     DateTime start,
     DateTime end,
   ) async {
     final s = DateTime(start.year, start.month, start.day);
     final e = DateTime(end.year, end.month, end.day);
 
-    // В Postgres DATE сравнения включительные/исключительные — тут делаем включительно:
-    // target_date >= start AND target_date <= end
     final res = await client
         .from('user_goals')
         .select()

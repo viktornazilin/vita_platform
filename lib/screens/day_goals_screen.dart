@@ -10,12 +10,9 @@ import '../widgets/add_day_goal_sheet.dart';
 import '../widgets/timeline_row.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
-
-// ✅ новый виджет синхронизации (вынеси в отдельный файл, см. ниже)
 import '../widgets/day_google_calendar_sync_sheet.dart';
 
-/// ✅ Правильно: имя переменной, а не сам ключ
-/// запуск: flutter run --dart-define=VISION_API_KEY=xxxxx
+/// запуск: flutter run -d chrome --dart-define=VISION_API_KEY=xxxxx
 const String _kVisionApiKey = String.fromEnvironment(
   'VISION_API_KEY',
   defaultValue: '',
@@ -55,6 +52,7 @@ class _DayGoalsView extends StatefulWidget {
 
 class _DayGoalsViewState extends State<_DayGoalsView> {
   final _scroll = ScrollController();
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -62,7 +60,22 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
     super.dispose();
   }
 
-  Future<void> _openAdd(BuildContext context) async {
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _withBusy(Future<void> Function() fn) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await fn();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _openAdd() async {
     final vm = context.read<DayGoalsModel>();
 
     final res = await showModalBottomSheet<AddGoalResult>(
@@ -80,29 +93,37 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
     if (res == null) return;
 
-    await vm.createGoal(
-      title: res.title,
-      description: res.description,
-      lifeBlockValue: res.lifeBlock,
-      importance: res.importance,
-      emotion: res.emotion,
-      hours: res.hours,
-      startTime: res.startTime,
-    );
+    await _withBusy(() async {
+      try {
+        await vm.createGoal(
+          title: res.title,
+          description: res.description,
+          lifeBlockValue: res.lifeBlock,
+          importance: res.importance,
+          emotion: res.emotion,
+          hours: res.hours,
+          startTime: res.startTime,
+        );
 
-    if (!mounted) return;
+        // ✅ на всякий случай обновим (если внутри createGoal нет load)
+        await vm.load();
 
-    await Future.delayed(const Duration(milliseconds: 80));
-    if (_scroll.hasClients) {
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeOutCubic,
-      );
-    }
+        if (!mounted) return;
+        await Future.delayed(const Duration(milliseconds: 120));
+        if (_scroll.hasClients) {
+          _scroll.animateTo(
+            _scroll.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      } catch (e) {
+        _snack('Не удалось добавить цель: $e');
+      }
+    });
   }
 
-  Future<void> _openEdit(BuildContext context, Goal g) async {
+  Future<void> _openEdit(Goal g) async {
     final vm = context.read<DayGoalsModel>();
 
     final res = await showModalBottomSheet<AddGoalResult>(
@@ -121,19 +142,76 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
     if (res == null) return;
 
-    await vm.updateGoal(
-      id: g.id,
-      title: res.title,
-      description: res.description,
-      lifeBlockValue: res.lifeBlock,
-      importance: res.importance,
-      emotion: res.emotion,
-      hours: res.hours,
-      startTime: res.startTime,
-    );
+    await _withBusy(() async {
+      try {
+        await vm.updateGoal(
+          id: g.id,
+          title: res.title,
+          description: res.description,
+          lifeBlockValue: res.lifeBlock,
+          importance: res.importance,
+          emotion: res.emotion,
+          hours: res.hours,
+          startTime: res.startTime,
+        );
+
+        // ✅ гарантированно подтянем свежие данные
+        await vm.load();
+
+        _snack('Цель обновлена');
+      } catch (e) {
+        _snack('Не удалось обновить цель: $e');
+      }
+    });
   }
 
-  Future<void> _openGoogleCalendarSync(BuildContext context) async {
+  Future<void> _confirmAndDelete(Goal g) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить цель?'),
+        content: Text('“${g.title}”'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true) return;
+
+    final vm = context.read<DayGoalsModel>();
+
+    await _withBusy(() async {
+      try {
+        // ✅ новый миксин/репо удаляет по id
+        await vm.deleteGoal(g.id);
+        _snack('Цель удалена');
+      } catch (e) {
+        _snack('Не удалось удалить: $e');
+      }
+    });
+  }
+
+  Future<void> _toggleComplete(Goal g) async {
+    final vm = context.read<DayGoalsModel>();
+    await _withBusy(() async {
+      try {
+        await vm.toggleComplete(g);
+        await vm.load();
+      } catch (e) {
+        _snack('Не удалось изменить статус: $e');
+      }
+    });
+  }
+
+  Future<void> _openGoogleCalendarSync() async {
     final vm = context.read<DayGoalsModel>();
 
     await showModalBottomSheet<void>(
@@ -144,67 +222,98 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       builder: (_) =>
           _NestSheet(child: DayGoogleCalendarSyncSheet(date: vm.date)),
     );
+
+    // на случай импорта/изменений
+    await _withBusy(() async {
+      try {
+        await vm.load();
+      } catch (_) {}
+    });
   }
 
-  List<Goal> _sortedByStartTime(List<Goal> src) {
-    final list = List<Goal>.from(src);
-    list.sort((a, b) => a.startTime.compareTo(b.startTime));
-    return list;
+  void _onScanPressed() {
+    if (_busy) return;
+    final vm = context.read<DayGoalsModel>();
+    importFromJournal(context, vm, visionApiKey: _kVisionApiKey);
   }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<DayGoalsModel>();
-    final goals = _sortedByStartTime(vm.goals);
+    final goals = vm.goals;
     final title = vm.lifeBlock ?? 'Все сферы';
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text('${vm.formattedDate}  •  $title'),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-
-      /// ✅ Один "+" → меню (Add/Scan/Google Calendar)
-      floatingActionButton: _MainFab(
-        onAdd: () => _openAdd(context),
-        onScan: () =>
-            importFromJournal(context, vm, visionApiKey: _kVisionApiKey),
-        onCalendar: () => _openGoogleCalendarSync(context),
-      ),
-
-      body: Stack(
-        children: [
-          const _NestBackground(),
-          SafeArea(
-            child: vm.loading
-                ? const Center(child: CircularProgressIndicator())
-                : goals.isEmpty
-                ? const _NestEmptyState()
-                : ListView.builder(
-                    controller: _scroll,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
-                    itemCount: goals.length,
-                    itemBuilder: (_, i) {
-                      final g = goals[i];
-                      return TimelineRow(
-                        key: ValueKey(g.id),
-                        goal: g,
-                        index: i,
-                        total: goals.length,
-                        onToggle: () => vm.toggleComplete(g),
-                        onDelete: () => vm.deleteGoal(g),
-                        onEdit: () => _openEdit(context, g),
-                      );
-                    },
-                  ),
+    return Stack(
+      children: [
+        Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: Text('${vm.formattedDate}  •  $title'),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
           ),
-        ],
-      ),
+          floatingActionButton: _MainFab(
+            onAdd: () {
+              if (_busy) return;
+              _openAdd();
+            },
+            onScan: () {
+              if (_busy) return;
+              _onScanPressed();
+            },
+            onCalendar: () {
+              if (_busy) return;
+              _openGoogleCalendarSync();
+            },
+          ),
+          body: Stack(
+            children: [
+              const _NestBackground(),
+              SafeArea(
+                child: vm.loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : goals.isEmpty
+                    ? const _NestEmptyState()
+                    : ListView.builder(
+                        controller: _scroll,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
+                        itemCount: goals.length,
+                        itemBuilder: (_, i) {
+                          final g = goals[i];
+                          return TimelineRow(
+                            key: ValueKey(g.id),
+                            goal: g,
+                            index: i,
+                            total: goals.length,
+                            onToggle: () => _toggleComplete(g),
+                            onDelete: () => _confirmAndDelete(g),
+                            onEdit: () => _openEdit(g),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+
+        if (_busy)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                color: Colors.black.withOpacity(0.04),
+                alignment: Alignment.center,
+                child: const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -214,7 +323,6 @@ class _NestBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Палитра как на интро (воздушный голубой)
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -325,10 +433,7 @@ class _NestSheet extends StatelessWidget {
   }
 }
 
-/// ===============================
 /// FAB: один "+" → меню (Add/Scan/Calendar)
-/// ===============================
-
 enum _FabAction { add, scan, calendar }
 
 class _MainFab extends StatelessWidget {

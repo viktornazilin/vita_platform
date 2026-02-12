@@ -199,4 +199,33 @@ class ProfileModel extends ChangeNotifier {
     final next = {...goalsByBlock}..[block] = text;
     return savePatch({'goals_by_block': next});
   }
+
+  // =========================
+  // ✅ Delete account (Supabase RPC)
+  // Требует SQL-функцию public.delete_my_account()
+  // =========================
+  bool deletingAccount = false;
+
+  Future<String?> deleteAccount() async {
+    if (deletingAccount) return null;
+    deletingAccount = true;
+    notifyListeners();
+
+    try {
+      // 1) удаляем ВСЕ данные + auth.users через RPC
+      await _sb.rpc('delete_my_account');
+
+      // 2) на всякий случай выходим из сессии локально
+      try {
+        await _sb.auth.signOut();
+      } catch (_) {}
+
+      return null;
+    } catch (e) {
+      return 'Не удалось удалить аккаунт: $e';
+    } finally {
+      deletingAccount = false;
+      notifyListeners();
+    }
+  }
 }

@@ -6,13 +6,21 @@ import '../../models/reports_model.dart';
 import '../../models/mood_model.dart';
 import '../../models/mood.dart';
 
+// ✅ week insights types
+import '../../models/habit.dart';
+import '../../models/mental_question.dart';
+import '../../models/week_insights.dart';
+
+// ✅ new widgets (week cards)
+import '../../widgets/mood/mood_week_card.dart';
+import '../../widgets/mood/habits_week_card.dart';
+import '../../widgets/mood/mental_week_card.dart';
+
 import '../../widgets/report_section_card.dart';
-import '../../widgets/report_stat_card.dart';
 import '../../widgets/mood_selector.dart';
 import '../../widgets/expense_analytics.dart';
 
 import '../../main.dart'; // dbRepo
-import 'home_hero_pill.dart';
 
 class HomeDashboardTab extends StatelessWidget {
   const HomeDashboardTab({super.key});
@@ -50,8 +58,22 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   final TextEditingController _noteCtrl = TextEditingController();
   bool _savingMood = false;
 
+  // ✅ week insights future for new widgets
+  Future<WeekInsights>? _weekFuture;
+
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Safe init (providers are already above in the tree, but this is the most stable way)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _weekFuture = _loadWeekInsights());
+    });
+  }
 
   @override
   void dispose() {
@@ -64,6 +86,9 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
       context.read<ReportsModel>().loadAll(),
       context.read<MoodModel>().load(),
     ]);
+
+    if (!mounted) return;
+    setState(() => _weekFuture = _loadWeekInsights());
   }
 
   Mood? _todayMood(List<Mood> moods) {
@@ -101,6 +126,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
         _editingMood = false;
         _selectedEmoji = '😊';
         _savingMood = false;
+        _weekFuture = _loadWeekInsights(); // ✅ refresh week insights after save
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -172,6 +198,175 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // ✅ Week insights logic (for new widgets)
+  // ---------------------------------------------------------------------------
+
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  List<DateTime> _calendarWeekDays({DateTime? anchor}) {
+    final a = _dateOnly(anchor ?? DateTime.now());
+    final start = a.subtract(Duration(days: a.weekday - DateTime.monday)); // Пн
+    return List.generate(7, (i) => start.add(Duration(days: i)));
+  }
+
+  String _weekdayShort(DateTime d) {
+    const names = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    return names[d.weekday % 7];
+  }
+
+  int _emojiToScore(String e) {
+    switch (e) {
+      case '😫':
+      case '😭':
+      case '😡':
+      case '😞':
+      case '😢':
+        return 1;
+      case '😕':
+      case '😐':
+      case '😟':
+        return 2;
+      case '🙂':
+      case '😊':
+        return 3;
+      case '😄':
+      case '😁':
+        return 4;
+      case '🤩':
+      case '😍':
+      case '🥳':
+        return 5;
+      default:
+        return 3;
+    }
+  }
+
+  Future<WeekInsights> _loadWeekInsights() async {
+    final days = _calendarWeekDays();
+
+    // habits
+    final habits = await dbRepo.listHabits();
+
+    final habitEntriesByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
+    for (final d in days) {
+      habitEntriesByDay[d] = await dbRepo.getHabitEntriesForDay(d);
+    }
+
+    final habitDoneCount = <String, int>{};
+    for (final h in habits) {
+      habitDoneCount[h.id] = 0;
+    }
+
+    for (final d in days) {
+      final map = habitEntriesByDay[d] ?? {};
+      for (final h in habits) {
+        final e = map[h.id];
+        final done = (e?['done'] as bool?) ?? false;
+        if (done) habitDoneCount[h.id] = (habitDoneCount[h.id] ?? 0) + 1;
+      }
+    }
+
+    final topHabits = habits.toList()
+      ..sort((a, b) {
+        final ca = habitDoneCount[a.id] ?? 0;
+        final cb = habitDoneCount[b.id] ?? 0;
+        return cb.compareTo(ca);
+      });
+
+    // mental questions
+    final questions = await dbRepo.listMentalQuestions(onlyActive: true);
+
+    final answersByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
+    for (final d in days) {
+      answersByDay[d] = await dbRepo.getMentalAnswersForDay(d);
+    }
+
+    // moods from MoodModel
+    final moods = context.read<MoodModel>().moods;
+    final moodByDay = <DateTime, Mood>{};
+    for (final m in moods) {
+      final k = DateUtils.dateOnly(m.date);
+      moodByDay.putIfAbsent(k, () => m);
+    }
+
+    final moodScores = days.map((d) {
+      final m = moodByDay[d];
+      if (m == null) return 0;
+      return _emojiToScore(m.emoji);
+    }).toList();
+
+    final yesNoQuestions = questions
+        .where((q) => q.answerType == 'yes_no')
+        .toList();
+    final scaleQuestions = questions
+        .where((q) => q.answerType == 'scale')
+        .toList();
+
+    final yesNoStats = <String, YesNoStat>{};
+    for (final q in yesNoQuestions) {
+      int yes = 0;
+      int total = 0;
+
+      for (final d in days) {
+        final map = answersByDay[d] ?? {};
+        final a = map[q.id];
+        if (a == null) continue;
+
+        final v = a['value_bool'];
+        if (v is bool) {
+          total++;
+          if (v) yes++;
+        }
+      }
+
+      yesNoStats[q.id] = YesNoStat(question: q, yes: yes, total: total);
+    }
+
+    final scaleStats = <String, ScaleStat>{};
+    for (final q in scaleQuestions) {
+      final series = <int?>[];
+
+      for (final d in days) {
+        final map = answersByDay[d] ?? {};
+        final a = map[q.id];
+        if (a == null) {
+          series.add(null);
+          continue;
+        }
+        final v = a['value_int'];
+        if (v is int) {
+          series.add(v);
+        } else if (v is num) {
+          series.add(v.toInt());
+        } else {
+          series.add(null);
+        }
+      }
+
+      final vals = series.whereType<int>().toList();
+      final avg = vals.isEmpty
+          ? null
+          : (vals.reduce((a, b) => a + b) / vals.length);
+
+      scaleStats[q.id] = ScaleStat(question: q, series: series, avg: avg);
+    }
+
+    return WeekInsights(
+      days: days,
+      moodScores: moodScores,
+      habits: habits,
+      habitEntriesByDay: habitEntriesByDay,
+      habitDoneCount: habitDoneCount,
+      questions: questions,
+      yesNoStats: yesNoStats,
+      scaleStats: scaleStats,
+      topHabits: topHabits,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -180,6 +375,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     final moodModel = context.watch<MoodModel>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final mq = MediaQuery.of(context);
 
     if (reports.period != ReportPeriod.week) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -190,11 +386,36 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
 
     final todayMood = _todayMood(moodModel.moods);
 
-    final heroTasks = reports.loading
+    // ---- metrics (same logic as before, just displayed better) ----
+    final totalTasks = reports.loading ? null : reports.goalsInRange.length;
+    final doneTasks = reports.loading
         ? null
         : reports.goalsInRange.where((g) => g.isCompleted).length;
-    final heroHours = reports.loading ? null : reports.totalHours;
-    final heroEff = reports.loading ? null : reports.efficiency;
+
+    final taskProgress =
+        (reports.loading || totalTasks == null || totalTasks == 0)
+        ? null
+        : (doneTasks! / totalTasks).clamp(0.0, 1.0);
+
+    final daysInRange = reports.loading
+        ? null
+        : (reports.range.end.difference(reports.range.start).inDays).clamp(
+            1,
+            366,
+          );
+
+    final hoursPerDay =
+        (reports.loading || daysInRange == null || daysInRange == 0)
+        ? null
+        : (reports.totalHours / daysInRange);
+
+    final efficiency = reports.loading ? null : reports.efficiency;
+
+    // Responsive layout:
+    // phone -> 2x2 grid
+    // wide  -> 4 in a row
+    final maxWidth = mq.size.width;
+    final isPhone = maxWidth < 600;
 
     return RefreshIndicator.adaptive(
       onRefresh: () => _refreshAll(context),
@@ -202,6 +423,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
         key: const PageStorageKey('home-dashboard-scroll'),
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          // ======= HEADER + CLEAN METRICS GRID =======
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -214,37 +436,59 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Короткий обзор — затем детали ниже',
+                    'Короткий обзор — все ключевые метрики здесь',
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      HomeHeroPill(
+                  _MetricsGrid(
+                    isPhone: isPhone,
+                    items: [
+                      _MetricItem(
+                        title: 'Настроение',
+                        value: todayMood?.emoji ?? '—',
+                        subtitle: todayMood == null
+                            ? 'нет записи'
+                            : (todayMood.note.trim().isEmpty
+                                  ? 'без заметки'
+                                  : 'есть заметка'),
                         icon: Icons.mood_rounded,
-                        label: todayMood?.emoji ?? '—',
-                        sublabel: 'Настроение',
+                        progress: todayMood == null ? 0.0 : 1.0,
                       ),
-                      HomeHeroPill(
+                      _MetricItem(
+                        title: 'Задачи',
+                        value: reports.loading
+                            ? '…'
+                            : (totalTasks == null || totalTasks == 0
+                                  ? '0%'
+                                  : '${((taskProgress ?? 0) * 100).round()}%'),
+                        subtitle: reports.loading
+                            ? 'загрузка…'
+                            : '${doneTasks ?? 0}/${totalTasks ?? 0}',
                         icon: Icons.check_circle_rounded,
-                        label: heroTasks == null ? '…' : heroTasks.toString(),
-                        sublabel: 'Выполнено',
+                        progress:
+                            taskProgress ?? (reports.loading ? null : 0.0),
                       ),
-                      HomeHeroPill(
+                      _MetricItem(
+                        title: 'Часов/день',
+                        value: hoursPerDay == null
+                            ? '…'
+                            : hoursPerDay.toStringAsFixed(1),
+                        subtitle: reports.loading
+                            ? 'загрузка…'
+                            : _rangeLabelShort(reports, context),
                         icon: Icons.timer_outlined,
-                        label: heroHours == null
-                            ? '…'
-                            : heroHours.toStringAsFixed(1),
-                        sublabel: 'Часов',
+                        progress: reports.loading ? null : 1.0,
                       ),
-                      HomeHeroPill(
-                        icon: Icons.speed_rounded,
-                        label: heroEff == null
+                      _MetricItem(
+                        title: 'Эффективность',
+                        value: efficiency == null
                             ? '…'
-                            : '${(heroEff * 100).round()}%',
-                        sublabel: 'Эффект.',
+                            : '${(efficiency * 100).round()}%',
+                        subtitle: reports.loading
+                            ? 'загрузка…'
+                            : 'план ${reports.plannedHours.toStringAsFixed(0)}ч',
+                        icon: Icons.speed_rounded,
+                        progress: efficiency,
                       ),
                     ],
                   ),
@@ -253,7 +497,53 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // Настроение сегодня
+          // ✅ NEW: WEEK INSIGHTS (3 cards)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+              child: FutureBuilder<WeekInsights>(
+                future: _weekFuture,
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const _WeekLoadingCard();
+                  }
+                  if (!snap.hasData) {
+                    return _WeekErrorCard(
+                      onRetry: () =>
+                          setState(() => _weekFuture = _loadWeekInsights()),
+                    );
+                  }
+
+                  final data = snap.data!;
+                  return Column(
+                    children: [
+                      MoodWeekCard(
+                        days: data.days,
+                        scores: data.moodScores,
+                        weekdayLabel: _weekdayShort,
+                      ),
+                      const SizedBox(height: 10),
+                      HabitsWeekCard(
+                        days: data.days,
+                        habits: data.topHabits.take(3).toList(),
+                        entriesByDay: data.habitEntriesByDay,
+                        doneCount: data.habitDoneCount,
+                        weekdayLabel: _weekdayShort,
+                      ),
+                      const SizedBox(height: 10),
+                      MentalWeekCard(
+                        days: data.days,
+                        weekdayLabel: _weekdayShort,
+                        maxItems: 2,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+
+          // Настроение сегодня (редактор) — логика сохранена
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -463,7 +753,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // Сводка недели
+          // Сводка недели — без дублирования метрик (оставляем диапазон + CTA)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -486,38 +776,6 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              ReportStatCard(
-                                title: 'Выполнено задач',
-                                value: reports.goalsInRange
-                                    .where((g) => g.isCompleted)
-                                    .length
-                                    .toString(),
-                                icon: Icons.check_circle,
-                              ),
-                              ReportStatCard(
-                                title: 'Часы (факт)',
-                                value: reports.totalHours.toStringAsFixed(1),
-                                icon: Icons.timer_outlined,
-                              ),
-                              ReportStatCard(
-                                title: 'Эффективность',
-                                value: '${(reports.efficiency * 100).round()}%',
-                                icon: Icons.speed,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'План: ${reports.plannedHours.toStringAsFixed(1)} ч • Факт: ${reports.totalHours.toStringAsFixed(1)} ч',
-                            style: tt.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant.withOpacity(0.95),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
                           _cta(
                             context,
                             icon: Icons.insights_rounded,
@@ -530,7 +788,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // Расходы недели
+          // Расходы недели — без изменений
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
@@ -667,6 +925,226 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
+        ],
+      ),
+    );
+  }
+}
+
+// ===================== WEEK helper cards (loading/error) =====================
+
+class _WeekLoadingCard extends StatelessWidget {
+  const _WeekLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ReportSectionCard(
+      title: 'Неделя',
+      child: SizedBox(
+        height: 140,
+        child: Center(child: CircularProgressIndicator.adaptive()),
+      ),
+    );
+  }
+}
+
+class _WeekErrorCard extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _WeekErrorCard({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return ReportSectionCard(
+      title: 'Неделя',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Не удалось загрузить статистику',
+            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Проверь интернет или повтори позже.',
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Повторить'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===================== UI: compact, mobile-friendly grid =====================
+
+class _MetricItem {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final double? progress;
+
+  const _MetricItem({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    required this.progress,
+  });
+}
+
+class _MetricsGrid extends StatelessWidget {
+  final bool isPhone;
+  final List<_MetricItem> items;
+
+  const _MetricsGrid({required this.isPhone, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    final columns = isPhone ? 2 : 4;
+
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        final gap = 12.0;
+        final totalGap = gap * (columns - 1);
+        final w = (c.maxWidth - totalGap) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final it in items)
+              SizedBox(
+                width: w,
+                child: _MetricTile(item: it),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  final _MetricItem item;
+  const _MetricTile({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surface.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+      ),
+      child: Row(
+        children: [
+          _MiniRing(progress: item.progress, icon: item.icon),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurfaceVariant.withOpacity(0.95),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniRing extends StatelessWidget {
+  final double? progress; // 0..1, null -> loading
+  final IconData icon;
+
+  const _MiniRing({required this.progress, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final p = progress;
+
+    const size = 44.0;
+    const stroke = 5.0;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircularProgressIndicator(
+            value: 1,
+            strokeWidth: stroke,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              cs.outlineVariant.withOpacity(0.30),
+            ),
+          ),
+          if (p == null)
+            CircularProgressIndicator.adaptive(strokeWidth: stroke)
+          else
+            CircularProgressIndicator(
+              value: p.clamp(0.0, 1.0),
+              strokeWidth: stroke,
+              valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+              backgroundColor: Colors.transparent,
+            ),
+          Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withOpacity(0.65),
+              shape: BoxShape.circle,
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+            ),
+            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          ),
         ],
       ),
     );

@@ -4,13 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../widgets/mood_selector.dart';
-import '../widgets/report_section_card.dart';
 
 import '../models/mood_model.dart';
 import '../models/mood.dart';
-
-import '../models/habit.dart';
-import '../models/mental_question.dart';
 
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
@@ -44,34 +40,10 @@ class _MoodViewState extends State<_MoodView> {
 
   static const int _maxLen = 200;
 
-  Future<_WeekInsights>? _weekFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _weekFuture = _loadWeekInsights();
-  }
-
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Date helpers
-  // ---------------------------------------------------------------------------
-
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  List<DateTime> _last7Days() {
-    final today = _dateOnly(DateTime.now());
-    return List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
-  }
-
-  String _weekdayShort(DateTime d) {
-    const names = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    return names[d.weekday % 7];
   }
 
   // ---------------------------------------------------------------------------
@@ -94,7 +66,8 @@ class _MoodViewState extends State<_MoodView> {
       final key = DateUtils.dateOnly(m.date);
       map.putIfAbsent(key, () => []).add(m);
     }
-    final entries = map.entries.toList()..sort((a, b) => b.key.compareTo(a.key));
+    final entries = map.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
     return {for (final e in entries) e.key: e.value};
   }
 
@@ -134,10 +107,10 @@ class _MoodViewState extends State<_MoodView> {
     setState(() => _saving = true);
 
     final err = await context.read<MoodModel>().saveMoodForDate(
-          date: _selectedDate,
-          emoji: _selectedEmoji,
-          note: note,
-        );
+      date: _selectedDate,
+      emoji: _selectedEmoji,
+      note: note,
+    );
 
     if (!mounted) return;
     setState(() => _saving = false);
@@ -155,8 +128,6 @@ class _MoodViewState extends State<_MoodView> {
       _selectedDate = DateUtils.dateOnly(DateTime.now());
     });
 
-    setState(() => _weekFuture = _loadWeekInsights());
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Настроение сохранено'),
@@ -167,7 +138,6 @@ class _MoodViewState extends State<_MoodView> {
 
   Future<void> _refresh() async {
     await context.read<MoodModel>().load();
-    setState(() => _weekFuture = _loadWeekInsights());
   }
 
   Future<void> _editMood(BuildContext context, Mood mood) async {
@@ -186,7 +156,6 @@ class _MoodViewState extends State<_MoodView> {
           SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
         );
       }
-      setState(() => _weekFuture = _loadWeekInsights());
       return;
     }
 
@@ -201,153 +170,6 @@ class _MoodViewState extends State<_MoodView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
       );
-    }
-
-    setState(() => _weekFuture = _loadWeekInsights());
-  }
-
-  // ---------------------------------------------------------------------------
-  // Week insights
-  // ---------------------------------------------------------------------------
-
-  Future<_WeekInsights> _loadWeekInsights() async {
-    final days = _last7Days();
-
-    final habits = await dbRepo.listHabits();
-
-    final habitEntriesByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
-    for (final d in days) {
-      habitEntriesByDay[d] = await dbRepo.getHabitEntriesForDay(d);
-    }
-
-    final habitDoneCount = <String, int>{};
-    for (final h in habits) {
-      habitDoneCount[h.id] = 0;
-    }
-
-    for (final d in days) {
-      final map = habitEntriesByDay[d] ?? {};
-      for (final h in habits) {
-        final e = map[h.id];
-        final done = (e?['done'] as bool?) ?? false;
-        if (done) habitDoneCount[h.id] = (habitDoneCount[h.id] ?? 0) + 1;
-      }
-    }
-
-    final topHabits = habits.toList()
-      ..sort((a, b) {
-        final ca = habitDoneCount[a.id] ?? 0;
-        final cb = habitDoneCount[b.id] ?? 0;
-        return cb.compareTo(ca);
-      });
-
-    final questions = await dbRepo.listMentalQuestions(onlyActive: true);
-
-    final answersByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
-    for (final d in days) {
-      answersByDay[d] = await dbRepo.getMentalAnswersForDay(d);
-    }
-
-    final moods = context.read<MoodModel>().moods;
-    final moodByDay = <DateTime, Mood>{};
-    for (final m in moods) {
-      final k = DateUtils.dateOnly(m.date);
-      moodByDay.putIfAbsent(k, () => m);
-    }
-
-    final moodScores = days.map((d) {
-      final m = moodByDay[d];
-      if (m == null) return 0;
-      return _emojiToScore(m.emoji);
-    }).toList();
-
-    final yesNoQuestions = questions.where((q) => q.answerType == 'yes_no').toList();
-    final scaleQuestions = questions.where((q) => q.answerType == 'scale').toList();
-
-    final yesNoStats = <String, _YesNoStat>{};
-    for (final q in yesNoQuestions) {
-      int yes = 0;
-      int total = 0;
-
-      for (final d in days) {
-        final map = answersByDay[d] ?? {};
-        final a = map[q.id];
-        if (a == null) continue;
-
-        final v = a['value_bool'];
-        if (v is bool) {
-          total++;
-          if (v) yes++;
-        }
-      }
-
-      yesNoStats[q.id] = _YesNoStat(question: q, yes: yes, total: total);
-    }
-
-    final scaleStats = <String, _ScaleStat>{};
-    for (final q in scaleQuestions) {
-      final series = <int?>[];
-
-      for (final d in days) {
-        final map = answersByDay[d] ?? {};
-        final a = map[q.id];
-        if (a == null) {
-          series.add(null);
-          continue;
-        }
-        final v = a['value_int'];
-        if (v is int) {
-          series.add(v);
-        } else if (v is num) {
-          series.add(v.toInt());
-        } else {
-          series.add(null);
-        }
-      }
-
-      final vals = series.whereType<int>().toList();
-      final avg = vals.isEmpty ? null : (vals.reduce((a, b) => a + b) / vals.length);
-
-      scaleStats[q.id] = _ScaleStat(question: q, series: series, avg: avg);
-    }
-
-    return _WeekInsights(
-      days: days,
-      moodScores: moodScores,
-      habits: habits,
-      habitEntriesByDay: habitEntriesByDay,
-      habitDoneCount: habitDoneCount,
-      questions: questions,
-      yesNoStats: yesNoStats,
-      scaleStats: scaleStats,
-      topHabits: topHabits,
-    );
-  }
-
-  int _emojiToScore(String e) {
-    switch (e) {
-      case '😫':
-      case '😭':
-      case '😡':
-      case '😞':
-      case '😢':
-        return 1;
-      case '😕':
-      case '😐':
-      case '😟':
-        return 2;
-      case '🙂':
-      case '😊':
-        return 3;
-      case '😄':
-      case '😁':
-        return 4;
-      case '🤩':
-      case '😍':
-      case '🥳':
-        return 5;
-      default:
-        return 3;
     }
   }
 
@@ -416,18 +238,23 @@ class _MoodViewState extends State<_MoodView> {
                           const SizedBox(height: 14),
                           Text(
                             'Как ты себя чувствуешь?',
-                            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            style: tt.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                           const SizedBox(height: 10),
 
-                          // Mood selector container (Nest glass)
                           _NestInset(
                             radius: 18,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 10,
+                              ),
                               child: MoodSelector(
                                 selectedEmoji: _selectedEmoji,
-                                onSelect: (emoji) => setState(() => _selectedEmoji = emoji),
+                                onSelect: (emoji) =>
+                                    setState(() => _selectedEmoji = emoji),
                               ),
                             ),
                           ),
@@ -455,67 +282,26 @@ class _MoodViewState extends State<_MoodView> {
                                       height: 18,
                                       child: CircularProgressIndicator.adaptive(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(cs.onPrimary),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              cs.onPrimary,
+                                            ),
                                       ),
                                     )
                                   : const Icon(Icons.check_rounded),
-                              label: Text(_saving ? 'Сохранение…' : 'Сохранить'),
+                              label: Text(
+                                _saving ? 'Сохранение…' : 'Сохранить',
+                              ),
                               style: FilledButton.styleFrom(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-              ),
-
-              // -----------------------------------------------------------------
-              // WEEK INSIGHTS
-              // -----------------------------------------------------------------
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: FutureBuilder<_WeekInsights>(
-                    future: _weekFuture,
-                    builder: (context, snap) {
-                      if (snap.connectionState == ConnectionState.waiting) {
-                        return const _WeekLoadingCard();
-                      }
-                      if (!snap.hasData) {
-                        return _WeekErrorCard(
-                          onRetry: () => setState(() => _weekFuture = _loadWeekInsights()),
-                        );
-                      }
-
-                      final data = snap.data!;
-                      return Column(
-                        children: [
-                          _MoodWeekCard(
-                            days: data.days,
-                            scores: data.moodScores,
-                            weekdayLabel: _weekdayShort,
-                          ),
-                          const SizedBox(height: 10),
-                          _HabitsWeekCard(
-                            days: data.days,
-                            habits: data.topHabits.take(3).toList(),
-                            entriesByDay: data.habitEntriesByDay,
-                            doneCount: data.habitDoneCount,
-                            weekdayLabel: _weekdayShort,
-                          ),
-                          const SizedBox(height: 10),
-                          _MentalWeekCard(
-                            days: data.days,
-                            yesNoStats: data.yesNoStats.values.take(2).toList(),
-                            scaleStats: data.scaleStats.values.take(2).toList(),
-                            weekdayLabel: _weekdayShort,
-                          ),
-                        ],
-                      );
-                    },
                   ),
                 ),
               ),
@@ -530,13 +316,17 @@ class _MoodViewState extends State<_MoodView> {
                     children: [
                       Text(
                         'История настроений',
-                        style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                        style: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       const Spacer(),
                       if (!loading && moods.isNotEmpty)
                         Text(
                           '${moods.length}',
-                          style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
+                          style: tt.labelLarge?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                     ],
                   ),
@@ -554,7 +344,8 @@ class _MoodViewState extends State<_MoodView> {
                   child: _EmptyState(
                     emoji: '📝',
                     title: 'Пока нет записей',
-                    subtitle: 'Выбери дату, отметь настроение и сохрани запись.',
+                    subtitle:
+                        'Выбери дату, отметь настроение и сохрани запись.',
                   ),
                 )
               else
@@ -597,7 +388,9 @@ class _MoodViewState extends State<_MoodView> {
                                       context: context,
                                       builder: (_) => AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(22),
+                                          borderRadius: BorderRadius.circular(
+                                            22,
+                                          ),
                                         ),
                                         title: const Text('Удалить запись?'),
                                         content: Text(
@@ -607,11 +400,13 @@ class _MoodViewState extends State<_MoodView> {
                                         ),
                                         actions: [
                                           TextButton(
-                                            onPressed: () => Navigator.pop(context, false),
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
                                             child: const Text('Отмена'),
                                           ),
                                           FilledButton.tonal(
-                                            onPressed: () => Navigator.pop(context, true),
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
                                             child: const Text('Удалить'),
                                           ),
                                         ],
@@ -621,14 +416,18 @@ class _MoodViewState extends State<_MoodView> {
 
                                 if (!ok) return;
 
-                                final err = await context.read<MoodModel>().deleteMoodByDate(mood.date);
+                                final err = await context
+                                    .read<MoodModel>()
+                                    .deleteMoodByDate(mood.date);
+
                                 if (err != null && mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
+                                    SnackBar(
+                                      content: Text(err),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
                                   );
                                 }
-
-                                setState(() => _weekFuture = _loadWeekInsights());
                               },
                             ),
                           );
@@ -639,7 +438,10 @@ class _MoodViewState extends State<_MoodView> {
 
                       return const SizedBox.shrink();
                     },
-                    childCount: grouped.entries.fold<int>(0, (sum, e) => sum + 1 + e.value.length),
+                    childCount: grouped.entries.fold<int>(
+                      0,
+                      (sum, e) => sum + 1 + e.value.length,
+                    ),
                   ),
                 ),
 
@@ -653,624 +455,7 @@ class _MoodViewState extends State<_MoodView> {
 }
 
 // ============================================================================
-// Week insight models
-// ============================================================================
-
-class _WeekInsights {
-  final List<DateTime> days;
-  final List<int> moodScores;
-
-  final List<Habit> habits;
-  final List<Habit> topHabits;
-  final Map<DateTime, Map<String, Map<String, dynamic>>> habitEntriesByDay;
-  final Map<String, int> habitDoneCount;
-
-  final List<MentalQuestion> questions;
-  final Map<String, _YesNoStat> yesNoStats;
-  final Map<String, _ScaleStat> scaleStats;
-
-  _WeekInsights({
-    required this.days,
-    required this.moodScores,
-    required this.habits,
-    required this.topHabits,
-    required this.habitEntriesByDay,
-    required this.habitDoneCount,
-    required this.questions,
-    required this.yesNoStats,
-    required this.scaleStats,
-  });
-}
-
-class _YesNoStat {
-  final MentalQuestion question;
-  final int yes;
-  final int total;
-
-  _YesNoStat({required this.question, required this.yes, required this.total});
-
-  double get ratio => total <= 0 ? 0 : yes / total;
-}
-
-class _ScaleStat {
-  final MentalQuestion question;
-  final List<int?> series;
-  final double? avg;
-
-  _ScaleStat({required this.question, required this.series, required this.avg});
-}
-
-// ============================================================================
-// Week insight cards (оставил как есть, но “внутренние” контейнеры = Nest)
-// ============================================================================
-
-class _WeekLoadingCard extends StatelessWidget {
-  const _WeekLoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ReportSectionCard(
-      title: 'Неделя',
-      child: SizedBox(
-        height: 140,
-        child: Center(child: CircularProgressIndicator.adaptive()),
-      ),
-    );
-  }
-}
-
-class _WeekErrorCard extends StatelessWidget {
-  final VoidCallback onRetry;
-  const _WeekErrorCard({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return ReportSectionCard(
-      title: 'Неделя',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Не удалось загрузить статистику', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 6),
-          Text('Проверь интернет или повтори позже.', style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Повторить'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MoodWeekCard extends StatelessWidget {
-  final List<DateTime> days;
-  final List<int> scores;
-  final String Function(DateTime d) weekdayLabel;
-
-  const _MoodWeekCard({
-    required this.days,
-    required this.scores,
-    required this.weekdayLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final filled = scores.where((v) => v > 0).length;
-    final valid = scores.where((v) => v > 0).toList();
-    final avg = valid.isEmpty ? null : valid.reduce((a, b) => a + b) / valid.length;
-
-    return ReportSectionCard(
-      title: 'Состояние недели',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _MoodBars(days: days, scores: scores, weekdayLabel: weekdayLabel),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _NestMiniPill(icon: Icons.check_circle_rounded, label: 'Отмечено: $filled/7'),
-              _NestMiniPill(
-                icon: Icons.auto_graph_rounded,
-                label: avg == null ? 'Среднее: —' : 'Среднее: ${avg.toStringAsFixed(1)}/5',
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Это быстрый обзор. Детали ниже — в истории.',
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HabitsWeekCard extends StatelessWidget {
-  final List<DateTime> days;
-  final List<Habit> habits;
-  final Map<DateTime, Map<String, Map<String, dynamic>>> entriesByDay;
-  final Map<String, int> doneCount;
-  final String Function(DateTime d) weekdayLabel;
-
-  const _HabitsWeekCard({
-    required this.days,
-    required this.habits,
-    required this.entriesByDay,
-    required this.doneCount,
-    required this.weekdayLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    if (habits.isEmpty) {
-      return ReportSectionCard(
-        title: 'Привычки',
-        child: Text(
-          'Добавь хотя бы одну привычку — и тут появится прогресс.',
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-        ),
-      );
-    }
-
-    return ReportSectionCard(
-      title: 'Привычки (топ недели)',
-      child: Column(
-        children: [
-          for (final h in habits) ...[
-            _HabitHeatmapRow(
-              habit: h,
-              days: days,
-              entriesByDay: entriesByDay,
-              doneCount: doneCount[h.id] ?? 0,
-              weekdayLabel: weekdayLabel,
-            ),
-            if (h != habits.last) const SizedBox(height: 12),
-          ],
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Показываем самые активные привычки за 7 дней.',
-              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Скоро: экран привычек'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              icon: const Icon(Icons.open_in_new_rounded),
-              label: const Text('Открыть привычки'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MentalWeekCard extends StatelessWidget {
-  final List<DateTime> days;
-  final List<_YesNoStat> yesNoStats;
-  final List<_ScaleStat> scaleStats;
-  final String Function(DateTime d) weekdayLabel;
-
-  const _MentalWeekCard({
-    required this.days,
-    required this.yesNoStats,
-    required this.scaleStats,
-    required this.weekdayLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    if (yesNoStats.isEmpty && scaleStats.isEmpty) {
-      return ReportSectionCard(
-        title: 'Ментальное здоровье',
-        child: Text(
-          'Добавь вопросы (или ответы) — и тут появится статистика.',
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-        ),
-      );
-    }
-
-    return ReportSectionCard(
-      title: 'Ментальное здоровье',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (yesNoStats.isNotEmpty) ...[
-            Text('Да/Нет (неделя)', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 10),
-            for (final s in yesNoStats) ...[
-              _YesNoBar(stat: s),
-              const SizedBox(height: 10),
-            ],
-          ],
-          if (scaleStats.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text('Шкалы (тренд)', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 10),
-            for (final s in scaleStats) ...[
-              _ScaleSparkline(stat: s, days: days, weekdayLabel: weekdayLabel),
-              const SizedBox(height: 12),
-            ],
-          ],
-          Text(
-            'Показываем только несколько вопросов, чтобы не перегружать экран.',
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Charts (Nest containers)
-// ============================================================================
-
-class _MoodBars extends StatelessWidget {
-  final List<DateTime> days;
-  final List<int> scores;
-  final String Function(DateTime d) weekdayLabel;
-
-  const _MoodBars({
-    required this.days,
-    required this.scores,
-    required this.weekdayLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _NestInset(
-      radius: 18,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(days.length, (i) {
-            final cs = Theme.of(context).colorScheme;
-            final v = scores[i].clamp(0, 5);
-            final h = 10 + (v * 10);
-
-            return Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    height: v == 0 ? 8 : h.toDouble(),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: v == 0
-                          ? cs.surfaceContainerHighest.withOpacity(0.30)
-                          : cs.primary.withOpacity(0.75),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    weekdayLabel(days[i]),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-class _HabitHeatmapRow extends StatelessWidget {
-  final Habit habit;
-  final List<DateTime> days;
-  final Map<DateTime, Map<String, Map<String, dynamic>>> entriesByDay;
-  final int doneCount;
-  final String Function(DateTime d) weekdayLabel;
-
-  const _HabitHeatmapRow({
-    required this.habit,
-    required this.days,
-    required this.entriesByDay,
-    required this.doneCount,
-    required this.weekdayLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                habit.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text('$doneCount/7', style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: List.generate(days.length, (i) {
-            final d = days[i];
-            final map = entriesByDay[d] ?? {};
-            final e = map[habit.id];
-            final done = (e?['done'] as bool?) ?? false;
-
-            return Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    height: 22,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(7),
-                      color: done ? cs.tertiary.withOpacity(0.80) : cs.surfaceContainerHighest.withOpacity(0.30),
-                      border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    weekdayLabel(d),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-}
-
-class _YesNoBar extends StatelessWidget {
-  final _YesNoStat stat;
-  const _YesNoBar({required this.stat});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final label = stat.question.text;
-    final ratio = stat.ratio;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-        const SizedBox(height: 6),
-        _NestInset(
-          radius: 999,
-          child: SizedBox(
-            height: 12,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: ratio.clamp(0, 1),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          color: cs.secondary.withOpacity(0.80),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          stat.total == 0 ? 'Нет данных' : 'Да: ${stat.yes}/${stat.total}',
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-        ),
-      ],
-    );
-  }
-}
-
-class _ScaleSparkline extends StatelessWidget {
-  final _ScaleStat stat;
-  final List<DateTime> days;
-  final String Function(DateTime d) weekdayLabel;
-
-  const _ScaleSparkline({
-    required this.stat,
-    required this.days,
-    required this.weekdayLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final label = stat.question.text;
-    final avg = stat.avg;
-
-    final minV = stat.question.minValue ?? 1;
-    final maxV = stat.question.maxValue ?? 5;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-            ),
-            const SizedBox(width: 10),
-            Text(avg == null ? '—' : avg.toStringAsFixed(1), style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        _NestInset(
-          radius: 16,
-          child: SizedBox(
-            height: 54,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: CustomPaint(
-                painter: _SparklinePainter(
-                  values: stat.series,
-                  min: minV,
-                  max: maxV,
-                  color: cs.primary.withOpacity(0.9),
-                  bgColor: cs.onSurfaceVariant.withOpacity(0.06),
-                ),
-                child: const SizedBox.expand(),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          children: List.generate(days.length, (i) {
-            return Expanded(
-              child: Text(
-                weekdayLabel(days[i]),
-                textAlign: TextAlign.center,
-                style: tt.bodySmall?.copyWith(fontSize: 11, color: cs.onSurfaceVariant),
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-}
-
-class _SparklinePainter extends CustomPainter {
-  final List<int?> values;
-  final int min;
-  final int max;
-  final Color color;
-  final Color bgColor;
-
-  _SparklinePainter({
-    required this.values,
-    required this.min,
-    required this.max,
-    required this.color,
-    required this.bgColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paintBg = Paint()..color = bgColor..style = PaintingStyle.fill;
-
-    final paintLine = Paint()
-      ..color = color
-      ..strokeWidth = 2.2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final paintDot = Paint()..color = color..style = PaintingStyle.fill;
-
-    final r = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      const Radius.circular(14),
-    );
-    canvas.drawRRect(r, paintBg);
-
-    final n = values.length;
-    if (n < 2) return;
-
-    double norm(int v) {
-      if (max == min) return 0.5;
-      return (v - min) / (max - min);
-    }
-
-    final points = <Offset>[];
-    for (int i = 0; i < n; i++) {
-      final v = values[i];
-      if (v == null) continue;
-
-      final x = (i / (n - 1)) * size.width;
-      final y = size.height - (norm(v).clamp(0, 1) * size.height);
-      points.add(Offset(x, y));
-    }
-
-    if (points.length < 2) return;
-
-    final path = Path()..moveTo(points.first.dx, points.first.dy);
-    for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
-    }
-
-    canvas.drawPath(path, paintLine);
-    for (final p in points) {
-      canvas.drawCircle(p, 2.8, paintDot);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
-    return oldDelegate.values != values ||
-        oldDelegate.min != min ||
-        oldDelegate.max != max ||
-        oldDelegate.color != color;
-  }
-}
-
-// ============================================================================
-// Nest small UI helpers
+// Nest small UI helpers (оставлены как были)
 // ============================================================================
 
 class _NestInset extends StatelessWidget {
@@ -1350,7 +535,10 @@ class _NestChipButton extends StatelessWidget {
               children: [
                 Icon(icon, size: 18, color: cs.onSurfaceVariant),
                 const SizedBox(width: 8),
-                Text(label, style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+                Text(
+                  label,
+                  style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
               ],
             ),
           ),
@@ -1380,35 +568,13 @@ class _NestChipInfo extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: cs.onSurfaceVariant),
             const SizedBox(width: 8),
-            Text(label, style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NestMiniPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _NestMiniPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return _NestInset(
-      radius: 999,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: cs.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Text(label, style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+              label,
+              style: tt.labelLarge?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),
@@ -1466,7 +632,7 @@ class _NestTextField extends StatelessWidget {
 }
 
 // ============================================================================
-// History tile (NestBlurCard вместо _GlassCard)
+// History tile
 // ============================================================================
 
 class _MoodHistoryTile extends StatelessWidget {
@@ -1506,7 +672,10 @@ class _MoodHistoryTile extends StatelessWidget {
       ),
       child: NestBlurCard(
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 10,
+          ),
           leading: _NestInset(
             radius: 999,
             child: SizedBox(
@@ -1536,7 +705,7 @@ class _MoodHistoryTile extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// Dialog (чуть округлил и добавил Nest-поле)
+// Dialog
 // -----------------------------------------------------------------------------
 
 class _EditMoodResult {
@@ -1627,7 +796,9 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
               labelText: 'Заметка',
               filled: true,
               fillColor: cs.surfaceContainerHighest.withOpacity(0.30),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
             ),
           ),
         ],
@@ -1636,7 +807,12 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
         TextButton.icon(
           onPressed: () => Navigator.pop(
             context,
-            _EditMoodResult(delete: true, date: _date, emoji: _emoji, note: _note.text.trim()),
+            _EditMoodResult(
+              delete: true,
+              date: _date,
+              emoji: _emoji,
+              note: _note.text.trim(),
+            ),
           ),
           icon: Icon(Icons.delete_outline_rounded, color: cs.error),
           label: Text('Удалить', style: TextStyle(color: cs.error)),
@@ -1648,7 +824,12 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
         FilledButton(
           onPressed: () => Navigator.pop(
             context,
-            _EditMoodResult(delete: false, date: _date, emoji: _emoji, note: _note.text.trim()),
+            _EditMoodResult(
+              delete: false,
+              date: _date,
+              emoji: _emoji,
+              note: _note.text.trim(),
+            ),
           ),
           child: const Text('Сохранить'),
         ),
@@ -1658,7 +839,7 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
 }
 
 // -----------------------------------------------------------------------------
-// Empty state (Nest)
+// Empty state
 // -----------------------------------------------------------------------------
 
 class _EmptyState extends StatelessWidget {
@@ -1683,15 +864,21 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _NestInset(
-              radius: 999,
-              child: const SizedBox(width: 72, height: 72),
-            ),
-            Positioned.fill(
-              child: Container(),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                width: 72,
+                height: 72,
+                color: cs.surfaceContainerHighest.withOpacity(0.30),
+                alignment: Alignment.center,
+                child: Text(emoji, style: const TextStyle(fontSize: 28)),
+              ),
             ),
             const SizedBox(height: 14),
-            Text(title, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+            Text(
+              title,
+              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
             Text(
               subtitle,
@@ -1706,7 +893,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXTENSIONS НА МОДЕЛЬ — твой стиль (оставил как было)
+// EXTENSIONS (как было)
 // ─────────────────────────────────────────────────────────────────────────────
 
 extension MoodModelOps on MoodModel {

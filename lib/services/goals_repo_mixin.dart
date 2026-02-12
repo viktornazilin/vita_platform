@@ -3,10 +3,15 @@ import '../models/goal.dart';
 import '../models/xp.dart';
 
 mixin GoalsRepoMixin on BaseRepo {
+  // =========================
+  // Goals CRUD
+  // =========================
+
   Future<List<Goal>> fetchGoals({String? lifeBlock}) async {
-    var query = client.from('goals').select().eq('user_id', uid);
-    if (lifeBlock != null) query = query.eq('life_block', lifeBlock);
-    final res = await query.order('created_at', ascending: false);
+    var q = client.from('goals').select().eq('user_id', uid);
+    if (lifeBlock != null) q = q.eq('life_block', lifeBlock);
+
+    final res = await q.order('created_at', ascending: false);
     return (res as List)
         .map((m) => Goal.fromMap(m as Map<String, dynamic>))
         .toList();
@@ -14,12 +19,12 @@ mixin GoalsRepoMixin on BaseRepo {
 
   Future<Goal> createGoal({
     required String title,
-    required String description,
+    String description = '',
     required DateTime deadline,
     required String lifeBlock,
     int importance = 1,
     String emotion = '',
-    double spentHours = 0,
+    double spentHours = 1.0, // как было в GoalService
     required DateTime startTime,
   }) async {
     final insert = {
@@ -34,6 +39,7 @@ mixin GoalsRepoMixin on BaseRepo {
       'spent_hours': spentHours,
       'start_time': startTime.toIso8601String(),
     };
+
     final res = await client.from('goals').insert(insert).select().single();
     return Goal.fromMap(res);
   }
@@ -57,18 +63,48 @@ mixin GoalsRepoMixin on BaseRepo {
   }
 
   Future<void> deleteGoal(String id) async {
-    await client.from('goals').delete().eq('id', id).eq('user_id', uid);
+    // если id в БД bigint/int, а у тебя в модели строка "123"
+    final dynamic idValue = int.tryParse(id) ?? id;
+
+    final res = await client
+        .from('goals')
+        .delete()
+        .eq('id', idValue)
+        .eq('user_id', uid)
+        .select('id');
+
+    final deleted = (res as List).cast<Map<String, dynamic>>();
+    if (deleted.isEmpty) {
+      final still = await client
+          .from('goals')
+          .select('id,user_id')
+          .eq('id', idValue)
+          .maybeSingle();
+
+      throw Exception(
+        'Delete matched 0 rows. uid=$uid id=$idValue stillExists=${still != null} row=$still',
+      );
+    }
   }
 
-  Future<List<Goal>> getGoalsByDate(DateTime date) async {
+  /// Совмещённая логика из repo + GoalService:
+  /// - берём цели на дату
+  /// - если lifeBlock задан — фильтруем СРАЗУ в запросе
+  Future<List<Goal>> getGoalsByDate(DateTime date, {String? lifeBlock}) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
-    final res = await client
+
+    var q = client
         .from('goals')
         .select()
         .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
+
+    if (lifeBlock != null) q = q.eq('life_block', lifeBlock);
+
+    final res = await q;
+
     return (res as List)
         .map((m) => Goal.fromMap(m as Map<String, dynamic>))
         .toList();
@@ -95,22 +131,14 @@ mixin GoalsRepoMixin on BaseRepo {
       await addXP(10);
       final total = await getTotalHoursSpentOnDate(DateTime.now());
       final target = await getTargetHours();
-      if (total >= target) {
-        await addXP(20);
-      }
+      if (total >= target) await addXP(20);
     }
   }
 
-  // =========================================================
-  // AUTOCOMPLETE: динамические подсказки по истории задач
-  // (используется в MassDailyEntrySheet во время ввода)
-  // =========================================================
+  // =========================
+  // Autocomplete / Suggestions
+  // =========================
 
-  /// Возвращает список названий задач, которые пользователь вводил ранее,
-  /// подходящих под [query]. Результат отсортирован по "самым свежим".
-  ///
-  /// Реализация: берем последние записи по фильтру ilike и дедуплим локально,
-  /// чтобы вернуть уникальные варианты.
   Future<List<String>> searchGoalTitles({
     required String query,
     int limit = 8,
@@ -120,14 +148,12 @@ mixin GoalsRepoMixin on BaseRepo {
 
     final pattern = '%$q%';
 
-    // Берём побольше, чтобы после дедупа всё равно было из чего выбрать.
     final rows = await client
         .from('goals')
         .select('title, created_at, deadline')
         .eq('user_id', uid)
         .ilike('title', pattern)
         .neq('title', '')
-        // created_at может быть null в некоторых схемах, но у тебя он используется в fetchGoals.
         .order('created_at', ascending: false)
         .limit(200);
 
@@ -139,8 +165,7 @@ mixin GoalsRepoMixin on BaseRepo {
       if (title.isEmpty) continue;
 
       final norm = title.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
-      if (norm.isEmpty) continue;
-      if (seen.contains(norm)) continue;
+      if (norm.isEmpty || seen.contains(norm)) continue;
 
       seen.add(norm);
       out.add(title);
@@ -151,12 +176,6 @@ mixin GoalsRepoMixin on BaseRepo {
     return out;
   }
 
-  // =========================================================
-  // HISTORY: сырой список (если где-то ещё нужен)
-  // =========================================================
-
-  /// Возвращает историю задач (title + deadline) за период.
-  /// Оставляем метод, но теперь MassDailyEntrySheet может жить без него.
   Future<List<Map<String, dynamic>>> listGoalTitleHistory({
     required DateTime start,
     required DateTime end,
@@ -172,10 +191,6 @@ mixin GoalsRepoMixin on BaseRepo {
         .map((e) => (e as Map).cast<String, dynamic>())
         .toList();
   }
-
-  // =========================================================
-  // SUGGESTIONS: топ повторяющихся задач (оставляем, может пригодиться)
-  // =========================================================
 
   Future<List<String>> suggestRecurringGoalTitles({
     int lookbackDays = 30,
@@ -218,16 +233,13 @@ mixin GoalsRepoMixin on BaseRepo {
 
     final candidates = daysByTitle.entries
         .where((e) => e.value.length >= 2)
-        .map((e) {
-          final title = e.key;
-          final daysCount = e.value.length;
-          final totalCount = totalByTitle[title] ?? daysCount;
-          return _TitleStat(
-            title: title,
-            daysCount: daysCount,
-            totalCount: totalCount,
-          );
-        })
+        .map(
+          (e) => _TitleStat(
+            title: e.key,
+            daysCount: e.value.length,
+            totalCount: totalByTitle[e.key] ?? e.value.length,
+          ),
+        )
         .toList();
 
     candidates.sort((a, b) {
@@ -241,13 +253,17 @@ mixin GoalsRepoMixin on BaseRepo {
     return candidates.take(5).map((e) => e.title).toList();
   }
 
-  // ==== XP “тонкие” ====
+  // =========================
+  // XP
+  // =========================
+
   Future<XP> getXP() async {
     final res = await client
         .from('user_xp')
         .select()
         .eq('user_id', uid)
         .maybeSingle();
+
     if (res == null) {
       final created = await client
           .from('user_xp')
@@ -266,7 +282,10 @@ mixin GoalsRepoMixin on BaseRepo {
     return updated;
   }
 
-  // ==== вспомогательные ====
+  // =========================
+  // Reports helpers
+  // =========================
+
   Future<double> getTargetHours() async {
     final res = await client
         .from('users')
@@ -297,6 +316,7 @@ mixin GoalsRepoMixin on BaseRepo {
   Future<double> getTotalHoursSpentOnDate(DateTime date) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
+
     final res = await client
         .from('goals')
         .select('spent_hours')

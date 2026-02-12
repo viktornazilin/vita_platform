@@ -1,15 +1,22 @@
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/day_goals_model.dart';
-import 'add_day_goal_sheet.dart'; // для AddGoalResult
+import 'add_day_goal_sheet.dart'; // AddGoalResult
 
 /// Запускает импорт из фото страницы ежедневника.
-/// Внутри: выбор фото → (опц.) загрузка в Supabase Storage → Google Vision OCR → парсинг → обзор и массовое добавление.
+/// Внутри:
+/// 1) выбор фото
+/// 2) (опц.) загрузка в Supabase Storage
+/// 3) Google Vision OCR
+/// 4) ChatGPT-анализ OCR-текста (через Supabase Edge Function `journal-analyze`)
+/// 5) обзор/редактирование/выбор задач
+/// 6) массовое добавление
 Future<void> importFromJournal(
   BuildContext context,
   DayGoalsModel vm, {
@@ -44,7 +51,7 @@ Future<void> importFromJournal(
           fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
         );
 
-    // краткий лоадер
+    // Лоадер
     if (context.mounted) {
       showDialog(
         context: context,
@@ -58,8 +65,60 @@ Future<void> importFromJournal(
 
     if (context.mounted) Navigator.of(context).pop(); // закрыть лоадер
 
-    // парсим в черновики задач
-    final parsed = _visionParse(ocrText);
+    if (ocrText.trim().isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Текст не распознан. Попробуй другое фото.'),
+        ),
+      );
+      return;
+    }
+
+    // ✅ AI-анализ OCR-текста (нормализация + задачи)
+    JournalAiResult? ai;
+    try {
+      ai = await _analyzeJournalWithAI(ocrText);
+    } catch (_) {
+      // молча падаем на fallback парсер
+      ai = null;
+    }
+
+    // ✅ Перед показом шторки — показываем пользователю, что распознали (AI-cleanedText)
+    final cleaned = (ai?.cleanedText ?? '').trim();
+    if (context.mounted) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Распознанный текст'),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Text(cleaned.isNotEmpty ? cleaned : ocrText),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Продолжить'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ✅ Берём задачи от AI, иначе fallback к простому парсеру
+    final parsed = (ai?.tasks != null && ai!.tasks!.isNotEmpty)
+        ? ai!.tasks!
+        : _visionParse(ocrText);
+
+    if (parsed.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось выделить задачи из текста.')),
+      );
+      return;
+    }
 
     // обзор/редактирование/выбор
     final accepted = await showModalBottomSheet<List<AddGoalResult>>(
@@ -104,7 +163,9 @@ Future<void> importFromJournal(
   }
 }
 
-/// Вызов Google Cloud Vision (DOCUMENT_TEXT_DETECTION).
+/// ─────────────────────────────────────────────────────────────
+/// OCR: Google Cloud Vision (DOCUMENT_TEXT_DETECTION)
+/// ─────────────────────────────────────────────────────────────
 Future<String> _googleVisionOcr(
   Uint8List bytes, {
   required String visionApiKey,
@@ -112,6 +173,7 @@ Future<String> _googleVisionOcr(
   if (visionApiKey.isEmpty) {
     throw 'VISION_API_KEY не задан. Запусти с --dart-define=VISION_API_KEY=...';
   }
+
   final uri = Uri.parse(
     'https://vision.googleapis.com/v1/images:annotate?key=$visionApiKey',
   );
@@ -146,7 +208,96 @@ Future<String> _googleVisionOcr(
   return (responses.first['fullTextAnnotation']?['text'] as String?) ?? '';
 }
 
-/// Простой парсер строк → AddGoalResult.
+/// ─────────────────────────────────────────────────────────────
+/// AI (ChatGPT) анализ: вызываем Supabase Edge Function `journal-analyze`
+/// Ожидаемый ответ:
+/// {
+///   "cleanedText": "...",
+///   "tasks": [
+///     {"title":"...", "description":"", "startTime":"HH:MM|"" , "hours":1, "lifeBlock":"general", "importance":2, "emotion":""}
+///   ]
+/// }
+/// ─────────────────────────────────────────────────────────────
+class JournalAiResult {
+  final String? cleanedText;
+  final List<AddGoalResult>? tasks;
+
+  JournalAiResult({this.cleanedText, this.tasks});
+
+  factory JournalAiResult.fromMap(Map<String, dynamic> m) {
+    final cleanedText = (m['cleanedText'] as String?) ?? '';
+    final rawTasks = (m['tasks'] as List?) ?? const [];
+
+    final tasks = rawTasks
+        .where((e) => e is Map)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .map((t) {
+          final title = (t['title'] ?? '').toString().trim();
+          final st = (t['startTime'] ?? '').toString().trim();
+
+          return AddGoalResult(
+            title: title.isEmpty ? 'Без названия' : title,
+            description: (t['description'] ?? '').toString(),
+            lifeBlock: (t['lifeBlock'] ?? 'general').toString(),
+            importance: _toIntOr(t['importance'], 2).clamp(1, 3),
+            emotion: (t['emotion'] ?? '').toString(),
+            hours: _toDoubleOr(t['hours'], 1.0).clamp(0.5, 24.0),
+            startTime: st.isNotEmpty ? _parseTimeOfDay(st) : TimeOfDay.now(),
+          );
+        })
+        .toList();
+
+    return JournalAiResult(cleanedText: cleanedText, tasks: tasks);
+  }
+}
+
+int _toIntOr(dynamic v, int fallback) {
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  return int.tryParse(v?.toString() ?? '') ?? fallback;
+}
+
+double _toDoubleOr(dynamic v, double fallback) {
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v?.toString() ?? '') ?? fallback;
+}
+
+TimeOfDay _parseTimeOfDay(String s) {
+  final m = RegExp(r'^\s*(\d{1,2}):(\d{2})\s*$').firstMatch(s);
+  if (m == null) return TimeOfDay.now();
+  final h = int.tryParse(m.group(1)!) ?? TimeOfDay.now().hour;
+  final min = int.tryParse(m.group(2)!) ?? TimeOfDay.now().minute;
+  return TimeOfDay(hour: h.clamp(0, 23), minute: min.clamp(0, 59));
+}
+
+Future<JournalAiResult> _analyzeJournalWithAI(String ocrText) async {
+  final txt = ocrText.trim();
+  if (txt.isEmpty) return JournalAiResult(cleanedText: '', tasks: const []);
+
+  final client = Supabase.instance.client;
+
+  final res = await client.functions.invoke(
+    'journal-analyze',
+    body: {'text': txt, 'locale': 'ru'},
+  );
+
+  // supabase_flutter возвращает FunctionsResponse
+  if (res.status != 200) {
+    return JournalAiResult(cleanedText: txt, tasks: const []);
+  }
+
+  final data = res.data;
+  if (data is Map<String, dynamic>) return JournalAiResult.fromMap(data);
+  if (data is Map)
+    return JournalAiResult.fromMap(Map<String, dynamic>.from(data));
+
+  return JournalAiResult(cleanedText: txt, tasks: const []);
+}
+
+/// ─────────────────────────────────────────────────────────────
+/// Fallback парсер строк → AddGoalResult.
+/// ─────────────────────────────────────────────────────────────
 List<AddGoalResult> _visionParse(String fullText) {
   if (fullText.trim().isEmpty) return const [];
 
@@ -188,7 +339,9 @@ List<AddGoalResult> _visionParse(String fullText) {
   }).toList();
 }
 
+/// ─────────────────────────────────────────────────────────────
 /// Шторка «просмотр найденных задач»
+/// ─────────────────────────────────────────────────────────────
 class _ReviewParsedGoalsSheet extends StatefulWidget {
   final List<AddGoalResult> initial;
   final String? fixedLifeBlock;

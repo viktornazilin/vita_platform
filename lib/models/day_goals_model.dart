@@ -1,19 +1,17 @@
-import 'package:flutter/material.dart'; // TimeOfDay
-import '../models/goal.dart';
-import '../services/goal_service.dart';
+import 'package:flutter/material.dart';
+import '../main.dart'; // dbRepo
+import 'goal.dart';
 
 class DayGoalsModel extends ChangeNotifier {
-  final GoalService _service;
   final DateTime date;
   final String? lifeBlock;
   final List<String> availableBlocks;
 
   DayGoalsModel({
-    GoalService? service,
     required this.date,
     required this.lifeBlock,
     this.availableBlocks = const [],
-  }) : _service = service ?? GoalService();
+  });
 
   List<Goal> _goals = [];
   List<Goal> get goals => _goals;
@@ -21,35 +19,51 @@ class DayGoalsModel extends ChangeNotifier {
   bool _loading = false;
   bool get loading => _loading;
 
+  // Защита от "гонок"
+  int _rev = 0;
+
   String get formattedDate =>
       '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
 
-  /// Загружаем цели на день и сортируем по времени начала
+  DateTime _dayStartUtc() => DateTime.utc(date.year, date.month, date.day);
+  DateTime _dayEndUtc() => _dayStartUtc().add(const Duration(days: 1));
+
   Future<void> load() async {
+    final myRev = ++_rev;
+
     _loading = true;
     notifyListeners();
 
-    final allDay = await _service.getGoalsByDate(date);
+    try {
+      // GoalService убран — идём напрямую в dbRepo
+      // Передаём "чистый день" в UTC, как у тебя было
+      final allDay = await dbRepo.getGoalsByDate(
+        DateTime.utc(date.year, date.month, date.day),
+        lifeBlock: lifeBlock,
+      );
 
-    final filtered = lifeBlock == null
-        ? allDay
-        : allDay.where((g) => g.lifeBlock == lifeBlock).toList();
+      if (myRev != _rev) return;
 
-    // Сортировка по времени начала (возрастание), независимо от выполнения
-    filtered.sort((a, b) => a.startTime.compareTo(b.startTime));
+      // lifeBlock уже отфильтрован на уровне запроса, но оставим защиту
+      final filtered = lifeBlock == null
+          ? allDay
+          : allDay.where((g) => g.lifeBlock == lifeBlock).toList();
 
-    _goals = filtered;
-    _loading = false;
-    notifyListeners();
+      filtered.sort((a, b) => a.startTime.compareTo(b.startTime));
+      _goals = filtered;
+    } finally {
+      if (myRev == _rev) {
+        _loading = false;
+        notifyListeners();
+      }
+    }
   }
 
-  /// Переключить выполнение (в обе стороны)
   Future<void> toggleComplete(Goal g) async {
-    await _service.toggleCompleted(g.id, value: !g.isCompleted);
+    await dbRepo.toggleGoalCompleted(g.id, value: !g.isCompleted);
     await load();
   }
 
-  /// Создать новую цель (конвертируем TimeOfDay -> DateTime)
   Future<void> createGoal({
     required String title,
     required String description,
@@ -59,7 +73,7 @@ class DayGoalsModel extends ChangeNotifier {
     required double hours,
     required TimeOfDay startTime,
   }) async {
-    final startDateTime = DateTime(
+    final startDateTimeUtc = DateTime.utc(
       date.year,
       date.month,
       date.day,
@@ -67,20 +81,20 @@ class DayGoalsModel extends ChangeNotifier {
       startTime.minute,
     );
 
-    await _service.createGoal(
+    await dbRepo.createGoal(
       title: title.trim(),
       description: description.trim(),
-      deadline: DateTime(date.year, date.month, date.day),
+      deadline: _dayStartUtc(), // "день" в UTC
       lifeBlock: lifeBlockValue,
       importance: importance,
       emotion: emotion,
       spentHours: hours,
-      startTime: startDateTime,
+      startTime: startDateTimeUtc,
     );
+
     await load();
   }
 
-  /// Обновить существующую цель (конвертируем TimeOfDay -> DateTime)
   Future<void> updateGoal({
     required String id,
     required String title,
@@ -100,22 +114,22 @@ class DayGoalsModel extends ChangeNotifier {
       importance: importance,
       emotion: emotion,
       spentHours: hours,
-      startTime: DateTime(
+      startTime: DateTime.utc(
         date.year,
         date.month,
         date.day,
         startTime.hour,
         startTime.minute,
       ),
+      deadline: _dayStartUtc(),
     );
 
-    await _service.updateGoal(updated);
+    await dbRepo.updateGoal(updated);
     await load();
   }
 
-  /// Удалить цель
-  Future<void> deleteGoal(Goal goal) async {
-    await _service.deleteGoal(goal.id);
+  Future<void> deleteGoal(String id) async {
+    await dbRepo.deleteGoal(id);
     await load();
   }
 }

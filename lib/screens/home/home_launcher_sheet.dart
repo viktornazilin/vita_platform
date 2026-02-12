@@ -343,7 +343,7 @@ void showHomeLauncherSheet({
                                 top: Radius.circular(20),
                               ),
                             ),
-                            builder: (_) => const AiPlanSheet(),
+                            builder: (_) => AiPlanSheet(date: DateTime.now()),
                           );
 
                           if (created != null && context.mounted) {

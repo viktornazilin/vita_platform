@@ -1,38 +1,76 @@
+// lib/screens/register_screen.dart
 import 'dart:async';
-import 'dart:ui';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/register_model.dart';
 import '../services/user_service.dart';
 
-class RegisterScreen extends StatefulWidget {
+/// ─── Палитра Nest (как в LoginScreen) ─────────────────────────────────────────
+const _kOffWhite = Color(0xFFFAF8F5);
+const _kCloud = Color(0xFFEFF6FB);
+const _kSky = Color(0xFF3FA7D6);
+const _kSkyDeep = Color(0xFF2C7FB2);
+const _kInk = Color(0xFF163043);
+const _kInkSoft = Color(0x99163043);
+// ──────────────────────────────────────────────────────────────────────────────
+
+class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => RegisterModel(),
+      child: const _RegisterView(),
+    );
+  }
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterView extends StatefulWidget {
+  const _RegisterView();
+
+  @override
+  State<_RegisterView> createState() => _RegisterViewState();
+}
+
+class _RegisterViewState extends State<_RegisterView> {
   final _formKey = GlobalKey<FormState>();
+
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  final _confirmPasswordCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _pass2Ctrl = TextEditingController();
+
+  final _nameFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _passFocus = FocusNode();
+  final _pass2Focus = FocusNode();
+
   bool _obscure1 = true;
   bool _obscure2 = true;
 
   StreamSubscription<AuthState>? _authSub;
+  bool _busy = false;
+
+  bool get _isApplePlatform {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+  }
 
   @override
   void initState() {
     super.initState();
+
     _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
     ) async {
-      final event = data.event;
-      final session = data.session;
-      if (event == AuthChangeEvent.signedIn && session != null && mounted) {
+      if (!mounted) return;
+      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         await _routeAfterAuth();
       }
     });
@@ -43,8 +81,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _authSub?.cancel();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    _confirmPasswordCtrl.dispose();
+    _passCtrl.dispose();
+    _pass2Ctrl.dispose();
+    _nameFocus.dispose();
+    _emailFocus.dispose();
+    _passFocus.dispose();
+    _pass2Focus.dispose();
     super.dispose();
   }
 
@@ -81,31 +123,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  String? _validatePass(String? v) {
-    if (v == null || v.isEmpty) return 'Введите пароль';
-    if (v.length < 6) return 'Минимум 6 символов';
+  /// ✅ Strong password:
+  /// - минимум 8 символов
+  /// - 1 строчная
+  /// - 1 заглавная
+  /// - 1 цифра
+  /// - (опционально) 1 спецсимвол
+  String? _validateStrongPassword(String? v) {
+    final s = v ?? '';
+    if (s.isEmpty) return 'Введите пароль';
+    if (s.length < 8) return 'Минимум 8 символов';
+    if (!RegExp(r'[a-z]').hasMatch(s)) return 'Добавьте строчную букву (a-z)';
+    if (!RegExp(r'[A-Z]').hasMatch(s)) return 'Добавьте заглавную букву (A-Z)';
+    if (!RegExp(r'\d').hasMatch(s)) return 'Добавьте цифру (0-9)';
+    // Если хочешь строго требовать спецсимвол — раскомментируй:
+    // if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\[\]\\\/]').hasMatch(s)) {
+    //   return 'Добавьте спецсимвол (!@#...)';
+    // }
     return null;
   }
 
   String? _validateConfirm(String? v) {
-    if (v == null || v.isEmpty) return 'Повторите пароль';
-    if (v != _passwordCtrl.text) return 'Пароли не совпадают';
+    final s = v ?? '';
+    if (s.isEmpty) return 'Повторите пароль';
+    if (s != _passCtrl.text) return 'Пароли не совпадают';
     return null;
   }
 
   Future<void> _onRegister() async {
+    if (_busy) return;
     if (!_formKey.currentState!.validate()) return;
 
     final model = context.read<RegisterModel>();
-    final success = await model.register(
+
+    if (!model.termsAccepted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Нужно принять Условия и Privacy Policy')),
+      );
+      return;
+    }
+
+    setState(() => _busy = true);
+
+    final ok = await model.register(
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
-      password: _passwordCtrl.text.trim(),
-      confirmPassword: _confirmPasswordCtrl.text.trim(),
+      password: _passCtrl.text,
+      confirmPassword: _pass2Ctrl.text,
     );
-    if (success && mounted) {
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (ok) {
       await _routeAfterAuth();
-    } else if (model.error != null && mounted) {
+    } else if (model.error != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(model.error!)));
@@ -113,278 +185,497 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _registerWithGoogle() async {
-    await context.read<RegisterModel>().registerWithGoogle();
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    final model = context.read<RegisterModel>();
+    await model.registerWithGoogle();
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (model.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(model.error!)));
+    }
+  }
+
+  Future<void> _registerWithApple() async {
+    if (!_isApplePlatform) {
+      // На Web/Android просто объясняем, почему не работает
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Apple ID доступен на iPhone/iPad (iOS)')),
+      );
+      return;
+    }
+
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    final model = context.read<RegisterModel>();
+    await model.registerWithApple();
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (model.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(model.error!)));
+    }
+  }
+
+  void _openTerms() => Navigator.pushNamed(context, '/terms');
+  void _openPrivacy() => Navigator.pushNamed(context, '/privacy');
+
+  InputDecoration _dec(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
+      ),
+      filled: true,
+      fillColor: Colors.white,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final model = context.watch<RegisterModel>();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final isLoading = model.loading || _busy;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: BoxDecoration(
+      backgroundColor: _kOffWhite,
+      body: Container(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              cs.primaryContainer.withOpacity(0.35),
-              cs.tertiaryContainer.withOpacity(0.35),
-            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_kOffWhite, _kCloud],
           ),
         ),
-        child: Center(
-          child: LayoutBuilder(
-            builder: (_, c) {
-              final maxW = c.maxWidth;
-              final pad = maxW < 480 ? 16.0 : 24.0;
-              return Padding(
-                padding: EdgeInsets.all(pad),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 460),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: cs.surface.withOpacity(0.85),
-                          border: Border.all(
-                            color: cs.outlineVariant.withOpacity(0.7),
+        child: SafeArea(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Center(
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding: EdgeInsets.only(
+                  bottom: bottomInset > 0 ? bottomInset + 12 : 20,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.80),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: _kSky.withOpacity(0.18)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _kSkyDeep.withOpacity(0.08),
+                            blurRadius: 26,
+                            offset: const Offset(0, 10),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 24,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 28,
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 28,
-                          ),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset(
-                                      'assets/images/logo.png',
-                                      height: 36,
-                                    ),
-                                  ],
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _LogoPlate(
+                                assetPath: 'assets/images/logo.png',
+                                height: 120,
+                                borderRadius: 22,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 14,
                                 ),
-                                const SizedBox(height: 16),
+                              ),
+                              const SizedBox(height: 18),
+
+                              Text(
+                                'Создайте аккаунт',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: _kInk,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 18),
+
+                              TextFormField(
+                                controller: _nameCtrl,
+                                focusNode: _nameFocus,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.name],
+                                decoration: _dec('Имя', Icons.person_outline),
+                                validator: (v) => (v ?? '').trim().isEmpty
+                                    ? 'Введите имя'
+                                    : null,
+                                onFieldSubmitted: (_) =>
+                                    _emailFocus.requestFocus(),
+                              ),
+                              const SizedBox(height: 12),
+
+                              TextFormField(
+                                controller: _emailCtrl,
+                                focusNode: _emailFocus,
+                                keyboardType: TextInputType.emailAddress,
+                                autofillHints: const [AutofillHints.email],
+                                textInputAction: TextInputAction.next,
+                                validator: _validateEmail,
+                                decoration: _dec(
+                                  'Email',
+                                  Icons.alternate_email,
+                                ),
+                                onFieldSubmitted: (_) =>
+                                    _passFocus.requestFocus(),
+                              ),
+                              const SizedBox(height: 12),
+
+                              TextFormField(
+                                controller: _passCtrl,
+                                focusNode: _passFocus,
+                                obscureText: _obscure1,
+                                textInputAction: TextInputAction.next,
+                                validator: _validateStrongPassword,
+                                onFieldSubmitted: (_) =>
+                                    _pass2Focus.requestFocus(),
+                                decoration: _dec('Пароль', Icons.lock_outline)
+                                    .copyWith(
+                                      suffixIcon: IconButton(
+                                        onPressed: () => setState(
+                                          () => _obscure1 = !_obscure1,
+                                        ),
+                                        icon: Icon(
+                                          _obscure1
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                        ),
+                                        tooltip: _obscure1
+                                            ? 'Показать пароль'
+                                            : 'Скрыть пароль',
+                                      ),
+                                    ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              TextFormField(
+                                controller: _pass2Ctrl,
+                                focusNode: _pass2Focus,
+                                obscureText: _obscure2,
+                                textInputAction: TextInputAction.done,
+                                validator: _validateConfirm,
+                                onFieldSubmitted: (_) => _onRegister(),
+                                decoration:
+                                    _dec(
+                                      'Подтвердите пароль',
+                                      Icons.lock,
+                                    ).copyWith(
+                                      suffixIcon: IconButton(
+                                        onPressed: () => setState(
+                                          () => _obscure2 = !_obscure2,
+                                        ),
+                                        icon: Icon(
+                                          _obscure2
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                        ),
+                                        tooltip: _obscure2
+                                            ? 'Показать пароль'
+                                            : 'Скрыть пароль',
+                                      ),
+                                    ),
+                              ),
+
+                              const SizedBox(height: 14),
+
+                              _LegalRow(
+                                value: model.termsAccepted,
+                                enabled: !isLoading,
+                                onChanged: (v) => model.setTerms(v),
+                                onOpenTerms: _openTerms,
+                                onOpenPrivacy: _openPrivacy,
+                              ),
+
+                              if (model.error != null) ...[
+                                const SizedBox(height: 10),
                                 Text(
-                                  'Создайте аккаунт',
-                                  style: tt.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  model.error!,
+                                  style: const TextStyle(color: Colors.red),
                                 ),
-                                const SizedBox(height: 18),
+                              ],
 
-                                TextFormField(
-                                  controller: _nameCtrl,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: InputDecoration(
-                                    labelText: 'Имя',
-                                    prefixIcon: const Icon(
-                                      Icons.person_outline,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  validator: (v) =>
-                                      v!.trim().isEmpty ? 'Введите имя' : null,
-                                ),
-                                const SizedBox(height: 12),
+                              const SizedBox(height: 16),
 
-                                TextFormField(
-                                  controller: _emailCtrl,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  validator: _validateEmail,
-                                  decoration: InputDecoration(
-                                    labelText: 'Email',
-                                    prefixIcon: const Icon(
-                                      Icons.alternate_email,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    filled: true,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                TextFormField(
-                                  controller: _passwordCtrl,
-                                  obscureText: _obscure1,
-                                  textInputAction: TextInputAction.next,
-                                  validator: _validatePass,
-                                  decoration: InputDecoration(
-                                    labelText: 'Пароль',
-                                    prefixIcon: const Icon(Icons.lock_outline),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscure1
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                      ),
-                                      onPressed: () => setState(
-                                        () => _obscure1 = !_obscure1,
-                                      ),
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    filled: true,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                TextFormField(
-                                  controller: _confirmPasswordCtrl,
-                                  obscureText: _obscure2,
-                                  textInputAction: TextInputAction.done,
-                                  validator: _validateConfirm,
-                                  onFieldSubmitted: (_) => _onRegister(),
-                                  decoration: InputDecoration(
-                                    labelText: 'Подтвердите пароль',
-                                    prefixIcon: const Icon(Icons.lock),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscure2
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                      ),
-                                      onPressed: () => setState(
-                                        () => _obscure2 = !_obscure2,
-                                      ),
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    filled: true,
-                                  ),
-                                ),
-
-                                if (model.error != null) ...[
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    model.error!,
-                                    style: TextStyle(color: cs.error),
-                                  ),
-                                ],
-                                const SizedBox(height: 16),
-
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    child: model.loading
-                                        ? const Padding(
-                                            key: ValueKey('loader'),
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            child: Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
-                                          )
-                                        : FilledButton.icon(
-                                            key: const ValueKey('regbtn'),
-                                            onPressed: _onRegister,
-                                            icon: const Icon(
-                                              Icons.person_add_alt_1_outlined,
-                                            ),
-                                            label: const Text(
-                                              'Зарегистрироваться',
-                                            ),
-                                            style: FilledButton.styleFrom(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 14,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(14),
-                                              ),
+                              SizedBox(
+                                width: double.infinity,
+                                child: isLoading
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : FilledButton.icon(
+                                        onPressed: _onRegister,
+                                        icon: const Icon(
+                                          Icons.person_add_alt_1_outlined,
+                                        ),
+                                        label: const Text('Зарегистрироваться'),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: _kSky,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
                                             ),
                                           ),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    const Expanded(child: Divider()),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(
-                                        'или',
-                                        style: tt.labelMedium?.copyWith(
-                                          color: cs.onSurfaceVariant,
+                                          shadowColor: _kSky.withOpacity(0.25),
+                                          elevation: 2,
                                         ),
                                       ),
-                                    ),
-                                    const Expanded(child: Divider()),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
+                              ),
 
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    onPressed: model.loading
-                                        ? null
-                                        : _registerWithGoogle,
-                                    icon: const Icon(Icons.g_mobiledata),
-                                    label: const Text(
-                                      'Регистрация через Google',
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
                                     ),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
+                                    child: Text(
+                                      'или',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(color: _kInkSoft),
+                                    ),
+                                  ),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: isLoading
+                                      ? null
+                                      : _registerWithGoogle,
+                                  icon: const Icon(Icons.g_mobiledata),
+                                  label: const Text('Продолжить с Google'),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: _kSkyDeep.withOpacity(0.35),
+                                    ),
+                                    foregroundColor: _kSkyDeep,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
                                 ),
+                              ),
 
-                                const SizedBox(height: 12),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pushReplacementNamed(
+                              const SizedBox(height: 10),
+
+                              // ✅ Apple всегда видна (чтобы ты её видел на Web),
+                              // но на Web/Android она заблокирована и объясняет почему.
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: isLoading
+                                      ? null
+                                      : _registerWithApple,
+                                  icon: const Icon(Icons.apple),
+                                  label: Text(
+                                    _isApplePlatform
+                                        ? 'Продолжить с Apple ID'
+                                        : 'Продолжить с Apple ID (iOS)',
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: _kSkyDeep.withOpacity(0.35),
+                                    ),
+                                    foregroundColor: _kSkyDeep,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () => Navigator.pushReplacementNamed(
                                         context,
                                         '/login',
                                       ),
-                                  child: const Text('Уже есть аккаунт? Войти'),
-                                ),
-                              ],
-                            ),
+                                child: const Text('Уже есть аккаунт? Войти'),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalRow extends StatelessWidget {
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onOpenTerms;
+  final VoidCallback onOpenPrivacy;
+
+  const _LegalRow({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+    required this.onOpenTerms,
+    required this.onOpenPrivacy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: _kInk);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Checkbox(
+            value: value,
+            onChanged: enabled ? (v) => onChanged(v ?? false) : null,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              children: [
+                Text('Я принимаю ', style: textStyle),
+                InkWell(
+                  onTap: enabled ? onOpenTerms : null,
+                  child: Text(
+                    'Условия',
+                    style: textStyle?.copyWith(
+                      color: _kSkyDeep,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(' и ознакомился(ась) с ', style: textStyle),
+                InkWell(
+                  onTap: enabled ? onOpenPrivacy : null,
+                  child: Text(
+                    'Privacy Policy',
+                    style: textStyle?.copyWith(
+                      color: _kSkyDeep,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text('.', style: textStyle),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LogoPlate extends StatelessWidget {
+  final String assetPath;
+  final double height;
+  final double borderRadius;
+  final EdgeInsetsGeometry padding;
+
+  const _LogoPlate({
+    required this.assetPath,
+    required this.height,
+    this.borderRadius = 24,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_kOffWhite, _kCloud],
+        ),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: _kSky.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: _kSkyDeep.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: padding,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius - 6),
+        child: Image.asset(
+          assetPath,
+          height: height,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
         ),
       ),
     );

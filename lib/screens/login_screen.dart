@@ -1,8 +1,10 @@
+// lib/screens/login_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 import '../models/login_model.dart';
 
@@ -44,6 +46,12 @@ class _LoginViewState extends State<_LoginView> {
 
   StreamSubscription<AuthState>? _authSub;
   bool _busy = false; // локальная блокировка для reset/login
+
+  bool get _showAppleButton {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+  }
 
   @override
   void initState() {
@@ -120,6 +128,18 @@ class _LoginViewState extends State<_LoginView> {
     await context.read<LoginModel>().loginWithGoogle();
     if (!mounted) return;
     setState(() => _busy = false);
+  }
+
+  /// ✅ NEW: Apple ID (на этом экране это и логин, и регистрация — один OAuth поток)
+  /// Важно: в LoginModel должен быть метод loginWithApple().
+  Future<void> _loginWithApple() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await context.read<LoginModel>().loginWithApple();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _startPasswordReset() async {
@@ -215,8 +235,7 @@ class _LoginViewState extends State<_LoginView> {
         child: SafeArea(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () =>
-                FocusScope.of(context).unfocus(), // скрыть клавиатуру по тапу
+            onTap: () => FocusScope.of(context).unfocus(),
             child: Center(
               child: AnimatedPadding(
                 duration: const Duration(milliseconds: 200),
@@ -251,7 +270,6 @@ class _LoginViewState extends State<_LoginView> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // ─── Лого на «родной» плашке (ещё больше) ───
                               _LogoPlate(
                                 assetPath: 'assets/images/logo.png',
                                 height: 196,
@@ -460,6 +478,33 @@ class _LoginViewState extends State<_LoginView> {
                                   ),
                                 ),
                               ),
+
+                              // ✅ NEW: Apple ID (на iOS/macOS). На других платформах не показываем.
+                              if (_showAppleButton) ...[
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: isLoading
+                                        ? null
+                                        : _loginWithApple,
+                                    icon: const Icon(Icons.apple),
+                                    label: const Text('Продолжить с Apple ID'),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(
+                                        color: _kSkyDeep.withOpacity(0.35),
+                                      ),
+                                      foregroundColor: _kSkyDeep,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),

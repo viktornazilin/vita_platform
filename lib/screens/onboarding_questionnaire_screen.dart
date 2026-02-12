@@ -1,4 +1,5 @@
 import 'dart:ui';
+import '../main.dart'; // dbRepo
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -35,7 +36,10 @@ class OnboardingQuestionnaireScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => OnboardingQuestionnaireModel(service: userService),
+      create: (_) => OnboardingQuestionnaireModel(
+        service: userService,
+        goalsRepo: dbRepo, // ✅ добавили
+      ),
       child: _QuestionnaireScaffold(onCompleted: onCompleted),
     );
   }
@@ -103,8 +107,10 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
       if (widget.onCompleted != null) {
         widget.onCompleted!.call();
       } else {
-        Navigator.of(context, rootNavigator: true)
-            .pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } else {
       final msg = m.errorText ?? 'Не удалось сохранить ответы';
@@ -154,9 +160,8 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                         child: Text(
                           'Инициация героя',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                       ),
                       const SizedBox(width: 44), // баланс для центрирования
@@ -205,8 +210,10 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline_rounded,
-                                color: Theme.of(context).colorScheme.error),
+                            Icon(
+                              Icons.error_outline_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -236,11 +243,13 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                         children: [
                           Expanded(
                             child: OutlinedButton(
-                              onPressed:
-                                  m.currentStep == 0 ? null : () => _goPrev(m),
+                              onPressed: m.currentStep == 0
+                                  ? null
+                                  : () => _goPrev(m),
                               style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),
                                 ),
@@ -255,8 +264,9 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                                   ? null
                                   : () => _goNext(m, stepsLen),
                               style: FilledButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),
                                 ),
@@ -265,12 +275,13 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                                   ? const SizedBox(
                                       width: 18,
                                       height: 18,
-                                      child: CircularProgressIndicator
-                                          .adaptive(strokeWidth: 2),
+                                      child: CircularProgressIndicator.adaptive(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : (m.currentStep == stepsLen - 1
-                                      ? const Text('Готово')
-                                      : const Text('Далее')),
+                                        ? const Text('Готово')
+                                        : const Text('Далее')),
                             ),
                           ),
                         ],
@@ -418,10 +429,9 @@ class _StepProfileBasicsState extends State<_StepProfileBasics> {
             opacity: .75,
             child: Text(
               'Имя можно менять позже в профиле.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -576,10 +586,9 @@ class _StepBlockGoalsState extends State<_StepBlockGoals> {
             opacity: .75,
             child: Text(
               'Можно оставить пустым и нажать «Далее».',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -700,10 +709,10 @@ class _NestSelectChip extends StatelessWidget {
               child: Text(
                 label,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: fg,
-                      letterSpacing: 0.15,
-                    ),
+                  fontWeight: FontWeight.w800,
+                  color: fg,
+                  letterSpacing: 0.15,
+                ),
               ),
             ),
           ),

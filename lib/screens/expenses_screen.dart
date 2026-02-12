@@ -137,9 +137,9 @@ class _ExpensesView extends StatelessWidget {
                           tooltip: m.monthCommitted
                               ? 'Отменить фиксацию'
                               : 'Зафиксировать распределение по копилкам',
-                          onPressed: (m.jars.isNotEmpty &&
-                                  (m.monthCommitted ||
-                                      m.freeCashFlowMonth > 0))
+                          onPressed:
+                              (m.jars.isNotEmpty &&
+                                  (m.monthCommitted || m.freeCashFlowMonth > 0))
                               ? () => _toggleCommit(context)
                               : null,
                         ),
@@ -199,8 +199,9 @@ class _ExpensesView extends StatelessWidget {
                       SliverFillRemaining(
                         hasScrollBody: false,
                         child: Padding(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 16 + sidePad),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16 + sidePad,
+                          ),
                           child: Center(
                             child: Text(
                               'Нет операций за этот день',
@@ -217,7 +218,8 @@ class _ExpensesView extends StatelessWidget {
                         padding: EdgeInsets.symmetric(horizontal: 16 + sidePad),
                         sliver: SliverList.separated(
                           itemCount: m.dayTx.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (context, i) {
                             final t = m.dayTx[i];
                             final catList = t.kind == 'expense'
@@ -239,8 +241,9 @@ class _ExpensesView extends StatelessWidget {
                               direction: DismissDirection.endToStart,
                               background: Container(
                                 alignment: Alignment.centerRight,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 decoration: BoxDecoration(
                                   color: cs.errorContainer.withOpacity(0.55),
                                   borderRadius: BorderRadius.circular(18),
@@ -255,11 +258,11 @@ class _ExpensesView extends StatelessWidget {
                                       context: context,
                                       builder: (_) => AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(22),
+                                          borderRadius: BorderRadius.circular(
+                                            22,
+                                          ),
                                         ),
-                                        title:
-                                            const Text('Удалить операцию?'),
+                                        title: const Text('Удалить операцию?'),
                                         content: Text(
                                           "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
                                         ),
@@ -295,44 +298,47 @@ class _ExpensesView extends StatelessWidget {
                                 onTap: () async {
                                   final action =
                                       await showModalBottomSheet<String>(
-                                    context: context,
-                                    showDragHandle: true,
-                                    builder: (ctx) => SafeArea(
-                                      top: false,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          ListTile(
-                                            leading: const Icon(Icons.edit),
-                                            title:
-                                                const Text('Редактировать'),
-                                            onTap: () =>
-                                                Navigator.pop(ctx, 'edit'),
+                                        context: context,
+                                        showDragHandle: true,
+                                        builder: (ctx) => SafeArea(
+                                          top: false,
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                leading: const Icon(Icons.edit),
+                                                title: const Text(
+                                                  'Редактировать',
+                                                ),
+                                                onTap: () =>
+                                                    Navigator.pop(ctx, 'edit'),
+                                              ),
+                                              ListTile(
+                                                leading: const Icon(
+                                                  Icons.delete_rounded,
+                                                ),
+                                                title: const Text('Удалить'),
+                                                onTap: () => Navigator.pop(
+                                                  ctx,
+                                                  'delete',
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                            ],
                                           ),
-                                          ListTile(
-                                            leading:
-                                                const Icon(Icons.delete_rounded),
-                                            title: const Text('Удалить'),
-                                            onTap: () =>
-                                                Navigator.pop(ctx, 'delete'),
-                                          ),
-                                          const SizedBox(height: 8),
-                                        ],
-                                      ),
-                                    ),
-                                  );
+                                        ),
+                                      );
 
                                   if (action == 'delete') {
-                                    final confirm =
-                                        await showDialog<bool>(
+                                    final confirm = await showDialog<bool>(
                                       context: context,
                                       builder: (_) => AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(22),
+                                          borderRadius: BorderRadius.circular(
+                                            22,
+                                          ),
                                         ),
-                                        title:
-                                            const Text('Удалить операцию?'),
+                                        title: const Text('Удалить операцию?'),
                                         content: Text(
                                           "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
                                         ),
@@ -360,19 +366,19 @@ class _ExpensesView extends StatelessWidget {
                                     if (t.kind == 'expense') {
                                       final res =
                                           await showDialog<AddExpenseResult>(
-                                        context: context,
-                                        builder: (_) => AddExpenseDialog(
-                                          categories: m.expenseCategories,
-                                          initialAmount: t.amount,
-                                          initialCategoryId: t.categoryId,
-                                          initialNote: t.note,
-                                          onCreateCategory: (name) =>
-                                              m.createCategory(
-                                            name,
-                                            'expense',
-                                          ),
-                                        ),
-                                      );
+                                            context: context,
+                                            builder: (_) => AddExpenseDialog(
+                                              categories: m.expenseCategories,
+                                              initialAmount: t.amount,
+                                              initialCategoryId: t.categoryId,
+                                              initialNote: t.note,
+                                              onCreateCategory: (name) =>
+                                                  m.createCategory(
+                                                    name,
+                                                    'expense',
+                                                  ),
+                                            ),
+                                          );
                                       if (res != null) {
                                         await m.deleteTransaction(t.id);
                                         await m.addExpense(
@@ -384,19 +390,19 @@ class _ExpensesView extends StatelessWidget {
                                     } else {
                                       final res =
                                           await showDialog<AddIncomeResult>(
-                                        context: context,
-                                        builder: (_) => AddIncomeDialog(
-                                          categories: m.incomeCategories,
-                                          initialAmount: t.amount,
-                                          initialCategoryId: t.categoryId,
-                                          initialNote: t.note,
-                                          onCreateCategory: (name) =>
-                                              m.createCategory(
-                                            name,
-                                            'income',
-                                          ),
-                                        ),
-                                      );
+                                            context: context,
+                                            builder: (_) => AddIncomeDialog(
+                                              categories: m.incomeCategories,
+                                              initialAmount: t.amount,
+                                              initialCategoryId: t.categoryId,
+                                              initialNote: t.note,
+                                              onCreateCategory: (name) =>
+                                                  m.createCategory(
+                                                    name,
+                                                    'income',
+                                                  ),
+                                            ),
+                                          );
                                       if (res != null) {
                                         await m.deleteTransaction(t.id);
                                         await m.addIncome(
@@ -462,7 +468,8 @@ class _ExpensesView extends StatelessWidget {
                                 icon: const Icon(Icons.undo),
                                 label: const Text('Отменить фиксацию'),
                               )
-                            else if (m.jars.isNotEmpty && m.freeCashFlowMonth > 0)
+                            else if (m.jars.isNotEmpty &&
+                                m.freeCashFlowMonth > 0)
                               TextButton(
                                 onPressed: () => _toggleCommit(context),
                                 child: const Text('Зафиксировать'),
@@ -534,8 +541,9 @@ class _TxTileNest extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: cs.surfaceContainerHighest.withOpacity(0.35),
                     shape: BoxShape.circle,
-                    border:
-                        Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+                    border: Border.all(
+                      color: cs.outlineVariant.withOpacity(0.6),
+                    ),
                   ),
                   child: Icon(icon, color: iconColor, size: 26),
                 ),
@@ -548,8 +556,9 @@ class _TxTileNest extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                        style: tt.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       if (subtitle.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -575,8 +584,7 @@ class _TxTileNest extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Icon(Icons.chevron_right_rounded,
-                    color: cs.onSurfaceVariant),
+                Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
               ],
             ),
           ),
@@ -648,10 +656,11 @@ class _BudgetTopCard extends StatelessWidget {
                       child: Container(color: cs.primary.withOpacity(0.75)),
                     ),
                     Expanded(
-                      flex: (1000 -
-                              (expenseW * 1000).round() -
-                              (freeW * 1000).round())
-                          .clamp(0, 1000),
+                      flex:
+                          (1000 -
+                                  (expenseW * 1000).round() -
+                                  (freeW * 1000).round())
+                              .clamp(0, 1000),
                       child: Container(
                         color: cs.surfaceContainerHighest.withOpacity(0.35),
                       ),
@@ -706,9 +715,9 @@ class _CategoryJarsGrid extends StatelessWidget {
         child: Text(
           'Пока нет данных по категориям',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       );
     }
@@ -782,7 +791,9 @@ class _JarTileNest extends StatelessWidget {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+                      border: Border.all(
+                        color: cs.outlineVariant.withOpacity(0.6),
+                      ),
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
@@ -847,9 +858,9 @@ class _SavingsJarsGrid extends StatelessWidget {
         child: Text(
           'Копилок пока нет',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       );
     }
@@ -871,7 +882,8 @@ class _SavingsJarsGrid extends StatelessWidget {
           runSpacing: 10,
           children: jars.map<Widget>((j) {
             final target =
-                j.targetAmount ?? (j.currentAmount == 0 ? 1 : j.currentAmount * 2);
+                j.targetAmount ??
+                (j.currentAmount == 0 ? 1 : j.currentAmount * 2);
             final p = (j.currentAmount / target).clamp(0.0, 1.0);
 
             final subtitle = [

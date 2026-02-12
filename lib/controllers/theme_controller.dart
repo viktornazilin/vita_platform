@@ -5,7 +5,11 @@ class ThemeController extends ChangeNotifier {
   static const _kSeedKey = 'app_seed_color';
   static const _kModeKey = 'app_theme_mode';
 
-  Color _seed = const Color(0x83DDF9);
+  // ✅ В Dart формат: 0xAARRGGBB
+  // Поставил дефолтный "Nest-blue"
+  Color _seed = const Color(0xFF2F80FF);
+
+  // Можешь оставить system, но тогда light должен быть красивым (мы это сделали)
   ThemeMode _mode = ThemeMode.system;
 
   Color get seedColor => _seed;
@@ -15,10 +19,9 @@ class ThemeController extends ChangeNotifier {
   ThemeData get darkTheme => _buildTheme(brightness: Brightness.dark);
 
   ThemeData _buildTheme({required Brightness brightness}) {
-    // базовая схема от seed
     var scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: brightness);
 
-    // premium dark surfaces
+    // ✅ Премиальные поверхности для DARK
     if (brightness == Brightness.dark) {
       scheme = scheme.copyWith(
         surface: const Color(0xFF0F111A),
@@ -30,23 +33,34 @@ class ThemeController extends ChangeNotifier {
         outline: const Color(0xFF2A2F45),
         outlineVariant: const Color(0xFF1F2436),
       );
+    } else {
+      // ✅ Премиальные поверхности для LIGHT (главный фикс белой темы)
+      scheme = scheme.copyWith(
+        // мягкий фон вместо белого
+        surface: const Color(0xFFF4F8FF),
+        surfaceContainerHighest: const Color(0xFFEAF3FF),
+        surfaceContainerHigh: const Color(0xFFF0F6FF),
+        surfaceContainer: const Color(0xFFF6FAFF),
+        surfaceContainerLow: const Color(0xFFFBFDFF),
+        surfaceContainerLowest: const Color(0xFFFFFFFF),
+        outline: const Color(0xFFCBD8EA),
+        outlineVariant: const Color(0xFFDFE9F7),
+      );
     }
 
     final radius = 18.0;
 
-    // ⚠️ ВАЖНО:
-    // НЕ используем Typography.material2021().black.apply(...)
-    // иначе на Web будут TextStyle inherit conflicts при lerp()
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
+
+      // ✅ ВАЖНО: фон берём из нашей surface (которая в light теперь НЕ белая)
       scaffoldBackgroundColor: scheme.surface,
     );
 
     return base.copyWith(
-      // ✅ Web-fix: полностью отключаем Ink (splash/highlight/hover/focus),
-      // чтобы не создавать _InkFeatures и избежать GlobalKey ink renderer бага.
+      // ✅ Web-fix: отключаем Ink (splash/highlight/hover/focus)
       splashFactory: NoSplash.splashFactory,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
@@ -82,7 +96,8 @@ class ThemeController extends ChangeNotifier {
         filled: true,
         fillColor: (brightness == Brightness.dark)
             ? const Color(0x6611121A)
-            : scheme.primary.withOpacity(0.06),
+            : scheme
+                  .surfaceContainerHighest, // ✅ вместо primary.withOpacity(...)
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(color: scheme.outline.withOpacity(0.18)),
@@ -94,7 +109,7 @@ class ThemeController extends ChangeNotifier {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(
-            color: scheme.primary.withOpacity(0.60),
+            color: scheme.primary.withOpacity(0.70),
             width: 1.4,
           ),
         ),
@@ -106,7 +121,7 @@ class ThemeController extends ChangeNotifier {
         hintStyle: TextStyle(color: scheme.onSurface.withOpacity(0.45)),
       ),
 
-      // Buttons (без Ink)
+      // Buttons
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(
@@ -141,7 +156,6 @@ class ThemeController extends ChangeNotifier {
         ),
       ),
 
-      // BottomSheet
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -152,14 +166,12 @@ class ThemeController extends ChangeNotifier {
         ),
       ),
 
-      // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: scheme.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
 
-      // Menu / Dropdown (без Ink)
       menuTheme: MenuThemeData(
         style: MenuStyle(
           backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHigh),
@@ -173,7 +185,6 @@ class ThemeController extends ChangeNotifier {
         ),
       ),
 
-      // Slider
       sliderTheme: const SliderThemeData(
         trackHeight: 3.5,
         overlayShape: RoundSliderOverlayShape(overlayRadius: 18),
@@ -189,8 +200,12 @@ class ThemeController extends ChangeNotifier {
 
   Future<void> load() async {
     final sp = await SharedPreferences.getInstance();
+
     final hex = sp.getInt(_kSeedKey);
-    if (hex != null) _seed = Color(hex);
+    if (hex != null) {
+      // ✅ гарантируем, что это валидный Color int (AARRGGBB)
+      _seed = Color(hex);
+    }
 
     final modeIndex = sp.getInt(_kModeKey);
     if (modeIndex != null && modeIndex >= 0 && modeIndex <= 2) {

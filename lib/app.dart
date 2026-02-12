@@ -38,21 +38,31 @@ class _VitaAppState extends State<VitaApp> {
     if (mounted) setState(() => _isReady = true);
   }
 
+  /// Патчим тему аккуратно:
+  /// - НЕ перезатираем полностью ColorScheme через fromSeed (иначе "light" станет почти белым)
+  /// - но при этом фиксируем единый "Nest-blue" и базовые компоненты
   ThemeData _patchNestTheme(ThemeData base, {required bool isDark}) {
-    // ✅ Единый "Nest-blue" вместо зелёно-бирюзового
-    // Поменяй на свой фирменный цвет при желании.
+    // Твой фирменный цвет
     const seed = Color(0xFF2F80FF);
 
-    final cs = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: isDark ? Brightness.dark : Brightness.light,
-    );
+    final cs0 = base.colorScheme;
+    final cs = cs0.copyWith(primary: seed, onPrimary: Colors.white);
+
+    // Лёгкий фирменный фон, чтобы светлая тема не была «больнично белой»
+    final scaffoldBg = isDark
+        ? (cs.surface) // в dark обычно норм
+        : const Color(0xFFF4F8FF); // мягкий голубоватый вместо белого
+
+    final surfaceTint = isDark
+        ? cs.primary.withOpacity(0.08)
+        : cs.primary.withOpacity(0.06);
 
     return base.copyWith(
       useMaterial3: true,
       colorScheme: cs,
 
-      // ✅ чтобы все AppBar были одинаковыми
+      scaffoldBackgroundColor: scaffoldBg,
+
       appBarTheme: base.appBarTheme.copyWith(
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -61,14 +71,67 @@ class _VitaAppState extends State<VitaApp> {
         surfaceTintColor: Colors.transparent,
       ),
 
-      // ✅ фикс: чтобы FAB/кнопки не уходили в "старый" primary
+      // Чтобы карточки/контейнеры не уходили в "зелень" и выглядели консистентно
+      cardTheme: base.cardTheme.copyWith(
+        color: cs.surface,
+        surfaceTintColor: surfaceTint,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: cs.outlineVariant.withOpacity(isDark ? 0.35 : 0.55),
+          ),
+        ),
+      ),
+
+      dialogTheme: base.dialogTheme.copyWith(
+        backgroundColor: cs.surface,
+        surfaceTintColor: surfaceTint,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      ),
+
+      bottomSheetTheme: base.bottomSheetTheme.copyWith(
+        backgroundColor: cs.surface,
+        surfaceTintColor: surfaceTint,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+
       floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(
         backgroundColor: cs.primary,
         foregroundColor: cs.onPrimary,
       ),
 
-      // ✅ нормальный tinted "surface" без зелени
-      scaffoldBackgroundColor: cs.surface,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+
+      inputDecorationTheme: base.inputDecorationTheme.copyWith(
+        filled: true,
+        fillColor: isDark ? cs.surface.withOpacity(0.55) : Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: cs.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: cs.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+      ),
+
+      dividerColor: cs.outlineVariant.withOpacity(isDark ? 0.35 : 0.65),
     );
   }
 
@@ -96,20 +159,21 @@ class _VitaAppState extends State<VitaApp> {
         '/home': (_) => const HomeScreen(),
 
         '/register': (_) => ChangeNotifierProvider(
-              create: (_) => RegisterModel(),
-              child: const RegisterScreen(),
-            ),
+          create: (_) => RegisterModel(),
+          child: const RegisterScreen(),
+        ),
 
         '/login': (_) => const LoginScreen(),
 
         '/onboarding': (ctx) => OnboardingQuestionnaireScreen(
-              userService: _userService,
-              onCompleted: () {
-                final loggedIn = _userService.currentUser != null;
-                Navigator.of(ctx)
-                    .pushReplacementNamed(loggedIn ? '/home' : '/login');
-              },
-            ),
+          userService: _userService,
+          onCompleted: () {
+            final loggedIn = _userService.currentUser != null;
+            Navigator.of(
+              ctx,
+            ).pushReplacementNamed(loggedIn ? '/home' : '/login');
+          },
+        ),
 
         '/settings': (_) => const screens.SettingsScreen(),
         '/expenses': (_) => const ExpensesScreen(),

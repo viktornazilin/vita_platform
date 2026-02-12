@@ -71,93 +71,100 @@ class _SetupViewState extends State<_SetupView> {
         final hPad = w >= 1200 ? 24.0 : 16.0;
 
         Widget nestWrap(Widget child) => NestBlurCard(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: child,
-              ),
-            );
+          child: Padding(padding: const EdgeInsets.all(12), child: child),
+        );
 
         // ——— Секции
         Widget incomeSection() => nestWrap(
-              SectionCard(
-                title: 'Доходные категории',
-                subtitle: 'Используются при добавлении доходов',
-                child: ChipsWrap(
-                  color: cs.primaryContainer,
-                  items: m.incomeCategories
-                      .map(
-                        (c) => ChipItem(
-                          label: c.name,
-                          onTap: () {},
-                          menuBuilder: (ctx) => [
-                            PopupMenuItem(
-                              child: const Text('Удалить'),
-                              onTap: () async {
-                                await Future.delayed(Duration.zero);
-                                final ok =
-                                    await showDialog<bool>(
-                                          context: context,
-                                          builder: (_) => AlertDialog(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(22),
-                                            ),
-                                            title:
-                                                const Text('Удалить категорию?'),
-                                            content: Text('Категория: ${c.name}'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  false,
-                                                ),
-                                                child: const Text('Отмена'),
-                                              ),
-                                              FilledButton.tonal(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  true,
-                                                ),
-                                                child: const Text('Удалить'),
-                                              ),
-                                            ],
-                                          ),
-                                        ) ??
-                                        false;
-                                if (ok) await m.deleteCategory(c.id);
-                              },
-                            ),
-                          ],
+          SectionCard(
+            title: 'Доходные категории',
+            subtitle: 'Используются при добавлении доходов',
+            child: ChipsWrap(
+              color: cs.primaryContainer,
+              items: m.incomeCategories
+                  .map(
+                    (c) => ChipItem(
+                      label: c.name,
+                      onTap: () {},
+                      menuBuilder: (ctx) => [
+                        PopupMenuItem(
+                          child: const Text('Удалить'),
+                          onTap: () async {
+                            await Future.delayed(Duration.zero);
+                            final ok =
+                                await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                    ),
+                                    title: const Text('Удалить категорию?'),
+                                    content: Text('Категория: ${c.name}'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('Отмена'),
+                                      ),
+                                      FilledButton.tonal(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text('Удалить'),
+                                      ),
+                                    ],
+                                  ),
+                                ) ??
+                                false;
+                            if (ok) await m.deleteCategory(c.id);
+                          },
                         ),
-                      )
-                      .toList(),
-                  trailing: ActionChip(
-                    label: const Text('Добавить'),
-                    avatar: const Icon(Icons.add),
-                    onPressed: () async {
-                      final name =
-                          await showAddCategorySheet(context, income: true);
-                      if (name != null && name.isNotEmpty) {
-                        await m.createCategory(name, 'income');
-                        await m.load();
-                      }
-                    },
-                  ),
-                ),
+                      ],
+                    ),
+                  )
+                  .toList(),
+              trailing: ActionChip(
+                label: const Text('Добавить'),
+                avatar: const Icon(Icons.add),
+                onPressed: () async {
+                  final name = await showAddCategorySheet(
+                    context,
+                    income: true,
+                  );
+                  if (name != null && name.isNotEmpty) {
+                    await m.createCategory(name, 'income');
+                    await m.load();
+                  }
+                },
               ),
-            );
+            ),
+          ),
+        );
 
         Widget expenseSection() => nestWrap(
-              SectionCard(
-                title: 'Расходные категории',
-                subtitle: 'Лимиты помогают держать траты под контролем',
-                child: ChipsWrap(
-                  color: cs.secondaryContainer,
-                  items: m.expenseCategories
-                      .map(
-                        (c) => ChipItem(
-                          label: c.name,
+          SectionCard(
+            title: 'Расходные категории',
+            subtitle: 'Лимиты помогают держать траты под контролем',
+            child: ChipsWrap(
+              color: cs.secondaryContainer,
+              items: m.expenseCategories
+                  .map(
+                    (c) => ChipItem(
+                      label: c.name,
+                      onTap: () async {
+                        final limit = await showLimitSheet(
+                          context,
+                          categoryName: c.name,
+                        );
+                        await m.setExpenseLimit(
+                          categoryId: c.id,
+                          limitRub: limit,
+                        );
+                      },
+                      menuBuilder: (ctx) => [
+                        PopupMenuItem(
+                          child: const Text('Задать/изменить лимит'),
                           onTap: () async {
+                            await Future.delayed(Duration.zero);
                             final limit = await showLimitSheet(
                               context,
                               categoryName: c.name,
@@ -167,297 +174,275 @@ class _SetupViewState extends State<_SetupView> {
                               limitRub: limit,
                             );
                           },
-                          menuBuilder: (ctx) => [
-                            PopupMenuItem(
-                              child: const Text('Задать/изменить лимит'),
-                              onTap: () async {
-                                await Future.delayed(Duration.zero);
-                                final limit = await showLimitSheet(
-                                  context,
-                                  categoryName: c.name,
-                                );
-                                await m.setExpenseLimit(
-                                  categoryId: c.id,
-                                  limitRub: limit,
-                                );
-                              },
-                            ),
-                            PopupMenuItem(
-                              child: const Text('Удалить'),
-                              onTap: () async {
-                                await Future.delayed(Duration.zero);
-                                final ok =
-                                    await showDialog<bool>(
-                                          context: context,
-                                          builder: (_) => AlertDialog(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(22),
-                                            ),
-                                            title:
-                                                const Text('Удалить категорию?'),
-                                            content: Text('Категория: ${c.name}'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  false,
-                                                ),
-                                                child: const Text('Отмена'),
-                                              ),
-                                              FilledButton.tonal(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  true,
-                                                ),
-                                                child: const Text('Удалить'),
-                                              ),
-                                            ],
-                                          ),
-                                        ) ??
-                                        false;
-                                if (ok) await m.deleteCategory(c.id);
-                              },
-                            ),
-                          ],
                         ),
-                      )
-                      .toList(),
-                  trailing: ActionChip(
-                    label: const Text('Добавить'),
-                    avatar: const Icon(Icons.add),
-                    onPressed: () async {
-                      final name =
-                          await showAddCategorySheet(context, income: false);
-                      if (name != null && name.isNotEmpty) {
-                        await m.createCategory(name, 'expense');
-                        await m.load();
-                      }
-                    },
-                  ),
-                ),
-              ),
-            );
-
-        Widget jarsSection() => nestWrap(
-              SectionCard(
-                title: 'Копилки',
-                subtitle:
-                    'Процент — доля от свободных средств, автоматически пополняемая',
-                child: Column(
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          final res = await showDialog<NewJarData>(
-                            context: context,
-                            builder: (_) => const AddJarDialog(),
-                          );
-                          if (res == null) return;
-                          try {
-                            await m.createJar(
-                              title: res.title,
-                              targetAmount: res.target,
-                              percent: res.percent,
-                            );
-                            await m.load();
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                behavior: SnackBarBehavior.floating,
-                                content: Text('Копилка добавлена'),
-                              ),
-                            );
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                behavior: SnackBarBehavior.floating,
-                                content: Text('Не удалось добавить: $e'),
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Добавить копилку'),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    if (m.jars.isEmpty)
-                      const EmptyState(
-                        icon: Icons.savings_outlined,
-                        title: 'Копилок пока нет',
-                        subtitle:
-                            'Создай первую цель накопления — мы поможем двигаться к ней.',
-                      )
-                    else
-                      ...m.jars.map((j) {
-                        final target = j.targetAmount;
-                        final progress = (target == null || target <= 0)
-                            ? null
-                            : (j.currentAmount / target).clamp(0.0, 1.0);
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () {}, // если захочешь — сделаем редактирование
-                              child: NestBlurCard(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: cs.surfaceContainerHighest
-                                              .withOpacity(0.35),
-                                          border: Border.all(
-                                            color: cs.outlineVariant
-                                                .withOpacity(0.6),
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.savings_outlined,
-                                          color: cs.primary,
-                                        ),
+                        PopupMenuItem(
+                          child: const Text('Удалить'),
+                          onTap: () async {
+                            await Future.delayed(Duration.zero);
+                            final ok =
+                                await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                    ),
+                                    title: const Text('Удалить категорию?'),
+                                    content: Text('Категория: ${c.name}'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('Отмена'),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              j.title,
-                                              style: tt.titleSmall?.copyWith(
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'Накоплено: ${j.currentAmount.toStringAsFixed(0)} ₽'
-                                              ' • Процент: ${j.percentOfFree.toStringAsFixed(0)}%'
-                                              '${target != null ? ' • Цель: ${target.toStringAsFixed(0)} ₽' : ''}',
-                                              style: tt.bodySmall?.copyWith(
-                                                color: cs.onSurfaceVariant,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            if (progress != null) ...[
-                                              const SizedBox(height: 10),
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                                child: LinearProgressIndicator(
-                                                  value: progress,
-                                                  minHeight: 10,
-                                                  backgroundColor:
-                                                      cs.surfaceContainerHighest
-                                                          .withOpacity(0.35),
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Удалить',
-                                        icon: const Icon(
-                                          Icons.delete_outline_rounded,
-                                        ),
-                                        onPressed: () async {
-                                          final confirm =
-                                              await showDialog<bool>(
-                                                    context: context,
-                                                    builder: (_) => AlertDialog(
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                          22,
-                                                        ),
-                                                      ),
-                                                      title: const Text(
-                                                        'Удалить копилку?',
-                                                      ),
-                                                      content: Text(
-                                                        'Копилка: ${j.title}',
-                                                      ),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () =>
-                                                              Navigator.pop(
-                                                            context,
-                                                            false,
-                                                          ),
-                                                          child: const Text(
-                                                            'Отмена',
-                                                          ),
-                                                        ),
-                                                        FilledButton.tonal(
-                                                          onPressed: () =>
-                                                              Navigator.pop(
-                                                            context,
-                                                            true,
-                                                          ),
-                                                          child: const Text(
-                                                            'Удалить',
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ) ??
-                                                  false;
-                                          if (!confirm) return;
-                                          try {
-                                            await m.deleteJar(j.id);
-                                            await m.load();
-                                            if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                behavior:
-                                                    SnackBarBehavior.floating,
-                                                content: Text('Копилка удалена'),
-                                              ),
-                                            );
-                                          } catch (e) {
-                                            if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                behavior:
-                                                    SnackBarBehavior.floating,
-                                                content:
-                                                    Text('Не удалось удалить: $e'),
-                                              ),
-                                            );
-                                          }
-                                        },
+                                      FilledButton.tonal(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text('Удалить'),
                                       ),
                                     ],
                                   ),
-                                ),
+                                ) ??
+                                false;
+                            if (ok) await m.deleteCategory(c.id);
+                          },
+                        ),
+                      ],
+                    ),
+                  )
+                  .toList(),
+              trailing: ActionChip(
+                label: const Text('Добавить'),
+                avatar: const Icon(Icons.add),
+                onPressed: () async {
+                  final name = await showAddCategorySheet(
+                    context,
+                    income: false,
+                  );
+                  if (name != null && name.isNotEmpty) {
+                    await m.createCategory(name, 'expense');
+                    await m.load();
+                  }
+                },
+              ),
+            ),
+          ),
+        );
+
+        Widget jarsSection() => nestWrap(
+          SectionCard(
+            title: 'Копилки',
+            subtitle:
+                'Процент — доля от свободных средств, автоматически пополняемая',
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      final res = await showDialog<NewJarData>(
+                        context: context,
+                        builder: (_) => const AddJarDialog(),
+                      );
+                      if (res == null) return;
+                      try {
+                        await m.createJar(
+                          title: res.title,
+                          targetAmount: res.target,
+                          percent: res.percent,
+                        );
+                        await m.load();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            behavior: SnackBarBehavior.floating,
+                            content: Text('Копилка добавлена'),
+                          ),
+                        );
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            behavior: SnackBarBehavior.floating,
+                            content: Text('Не удалось добавить: $e'),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Добавить копилку'),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                if (m.jars.isEmpty)
+                  const EmptyState(
+                    icon: Icons.savings_outlined,
+                    title: 'Копилок пока нет',
+                    subtitle:
+                        'Создай первую цель накопления — мы поможем двигаться к ней.',
+                  )
+                else
+                  ...m.jars.map((j) {
+                    final target = j.targetAmount;
+                    final progress = (target == null || target <= 0)
+                        ? null
+                        : (j.currentAmount / target).clamp(0.0, 1.0);
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap:
+                              () {}, // если захочешь — сделаем редактирование
+                          child: NestBlurCard(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: cs.surfaceContainerHighest
+                                          .withOpacity(0.35),
+                                      border: Border.all(
+                                        color: cs.outlineVariant.withOpacity(
+                                          0.6,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.savings_outlined,
+                                      color: cs.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          j.title,
+                                          style: tt.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Накоплено: ${j.currentAmount.toStringAsFixed(0)} ₽'
+                                          ' • Процент: ${j.percentOfFree.toStringAsFixed(0)}%'
+                                          '${target != null ? ' • Цель: ${target.toStringAsFixed(0)} ₽' : ''}',
+                                          style: tt.bodySmall?.copyWith(
+                                            color: cs.onSurfaceVariant,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (progress != null) ...[
+                                          const SizedBox(height: 10),
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
+                                            child: LinearProgressIndicator(
+                                              value: progress,
+                                              minHeight: 10,
+                                              backgroundColor: cs
+                                                  .surfaceContainerHighest
+                                                  .withOpacity(0.35),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Удалить',
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                    ),
+                                    onPressed: () async {
+                                      final confirm =
+                                          await showDialog<bool>(
+                                            context: context,
+                                            builder: (_) => AlertDialog(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(22),
+                                              ),
+                                              title: const Text(
+                                                'Удалить копилку?',
+                                              ),
+                                              content: Text(
+                                                'Копилка: ${j.title}',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(
+                                                        context,
+                                                        false,
+                                                      ),
+                                                  child: const Text('Отмена'),
+                                                ),
+                                                FilledButton.tonal(
+                                                  onPressed: () =>
+                                                      Navigator.pop(
+                                                        context,
+                                                        true,
+                                                      ),
+                                                  child: const Text('Удалить'),
+                                                ),
+                                              ],
+                                            ),
+                                          ) ??
+                                          false;
+                                      if (!confirm) return;
+                                      try {
+                                        await m.deleteJar(j.id);
+                                        await m.load();
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            behavior: SnackBarBehavior.floating,
+                                            content: Text('Копилка удалена'),
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            behavior: SnackBarBehavior.floating,
+                                            content: Text(
+                                              'Не удалось удалить: $e',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      }),
-                  ],
-                ),
-              ),
-            );
+                        ),
+                      ),
+                    );
+                  }),
+              ],
+            ),
+          ),
+        );
 
         // Компактный: список
         if (crossAxisCount == 1) {
@@ -470,8 +455,10 @@ class _SetupViewState extends State<_SetupView> {
                     title: Text('Бюджет и копилки'),
                   ),
                   SliverPadding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: hPad, vertical: 12),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: hPad,
+                      vertical: 12,
+                    ),
                     sliver: SliverList.list(
                       children: [
                         incomeSection(),
@@ -520,10 +507,7 @@ class _SetupViewState extends State<_SetupView> {
               ],
             ),
           ),
-          bottomNavigationBar: SaveBar(
-            saving: _saving,
-            onSave: () => _save(m),
-          ),
+          bottomNavigationBar: SaveBar(saving: _saving, onSave: () => _save(m)),
         );
       },
     );

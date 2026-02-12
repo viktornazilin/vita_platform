@@ -53,7 +53,8 @@ class AiSuggestionTile extends StatelessWidget {
                   child: Checkbox(
                     value: item.selected,
                     activeColor: cs.primary,
-                    onChanged: (v) => onToggle(v ?? true),
+                    // ✅ фикс: null не превращаем в true
+                    onChanged: (v) => onToggle(v ?? item.selected),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),

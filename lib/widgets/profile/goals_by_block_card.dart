@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/profile_model.dart';
 import '../../models/user_goals_model.dart';
 import '../../models/goal.dart';
 import '../../services/user_goals_repo_mixin.dart';
 
 import 'profile_ui_helpers.dart';
 
-// Nest UI (проверь пути/имена)
 import '../../widgets/nest/nest_card.dart';
 import '../../widgets/nest/nest_sheet.dart';
 
 class GoalsByBlockCard extends StatefulWidget {
   final void Function(String text) onSnack;
-  const GoalsByBlockCard({super.key, required this.onSnack});
+  final List<String> allowedBlocks; // ✅ приходит снаружи
+
+  /// ✅ фильтр сверху (all / career / education / ...)
+  /// если null — считаем 'all'
+  final String? selectedBlock;
+
+  const GoalsByBlockCard({
+    super.key,
+    required this.onSnack,
+    required this.allowedBlocks,
+    this.selectedBlock,
+  });
 
   @override
   State<GoalsByBlockCard> createState() => _GoalsByBlockCardState();
@@ -111,7 +120,6 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Block
                   Text(
                     'Сфера',
                     style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
@@ -167,7 +175,6 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
                   const SizedBox(height: 14),
 
-                  // Horizon pills
                   Text(
                     'Горизонт',
                     style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
@@ -204,7 +211,6 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
                   const SizedBox(height: 14),
 
-                  // Title
                   TextField(
                     controller: titleCtrl,
                     maxLength: 80,
@@ -215,7 +221,6 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Desc
                   TextField(
                     controller: descCtrl,
                     maxLines: 3,
@@ -227,7 +232,6 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
                   const SizedBox(height: 12),
 
-                  // Deadline row
                   NestCard(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -375,23 +379,39 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
         ),
       ),
     );
-
     return ok == true;
   }
 
   @override
   Widget build(BuildContext context) {
-    final profile = context.watch<ProfileModel>();
     final goalsModel = context.watch<UserGoalsModel>();
 
-    final allowedBlocks = profile.lifeBlocks;
+    final allowedBlocks = widget.allowedBlocks;
 
-    // если сферы пустые — всё равно показываем, но как минимум general
-    final blocksToShow = goalsModel.grouped.keys.toList()..sort();
+    // ✅ фильтр сверху: all / конкретная сфера
+    final selected = (widget.selectedBlock ?? 'all').trim().toLowerCase();
+
+    // 1) базовый список блоков из модели
+    final allBlocks = goalsModel.grouped.keys.toList()..sort();
+
+    // 2) ограничиваем на allowedBlocks профиля (если он не пуст)
+    final blocksAllowedByProfile = allBlocks.where((b) {
+      if (allowedBlocks.isEmpty) return true;
+      return allowedBlocks.contains(b);
+    }).toList();
+
+    // 3) применяем фильтр выбранного блока (если не all)
+    final List<String> blocksToShow = selected == 'all'
+        ? blocksAllowedByProfile
+        : blocksAllowedByProfile
+              .where((b) => b.toLowerCase() == selected)
+              .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // ⚠️ Если ты уже рисуешь заголовок "Цели по сферам" СНАРУЖИ (в goals_screen),
+        // можешь удалить этот Row целиком, чтобы не было дубля.
         Row(
           children: [
             Expanded(
@@ -412,6 +432,8 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                         context,
                         allowedBlocks: allowedBlocks,
                         initialHorizon: _selectedH,
+                        // ✅ если сверху выбрана сфера — ставим её как initialBlock
+                        initialBlock: selected == 'all' ? null : selected,
                       );
                       if (dto == null) return;
                       final err = await context.read<UserGoalsModel>().upsert(
@@ -425,7 +447,6 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
         ),
         const SizedBox(height: 10),
 
-        // Horizon filter
         NestCard(
           padding: const EdgeInsets.all(8),
           child: SegmentedButton<GoalHorizon>(
@@ -472,13 +493,21 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
               ),
             ),
           )
+        else if (blocksToShow.isEmpty)
+          NestCard(
+            padding: const EdgeInsets.all(14),
+            child: Text(
+              selected == 'all'
+                  ? 'Нет доступных сфер для отображения.'
+                  : 'Нет целей для выбранной сферы.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF2E4B5A).withOpacity(0.7),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          )
         else
           ...blocksToShow.map((block) {
-            // не показываем, если сфера не разрешена профилем
-            if (allowedBlocks.isNotEmpty && !allowedBlocks.contains(block)) {
-              return const SizedBox.shrink();
-            }
-
             final meta = ProfileUi.blockMeta(block);
             final byH = goalsModel.grouped[block] ?? {};
             final list = byH[_selectedH] ?? const <UserGoal>[];

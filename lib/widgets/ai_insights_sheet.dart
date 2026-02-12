@@ -1,3 +1,4 @@
+// ai_insights_sheet.dart
 import 'dart:convert';
 import 'dart:ui';
 
@@ -16,12 +17,26 @@ class AiInsightsSheet extends StatefulWidget {
 
 class _AiInsightsSheetState extends State<AiInsightsSheet> {
   bool _loading = false;
+  bool _confirmed = false; // ✅ запуск только после подтверждения
   String? _error;
+
   List<AiInsight> _insights = [];
 
+  // опционально: можно показать информацию о последнем запуске
+  Map<String, dynamic>? _runMeta; // {id, created_at} или всё что вернёт функция
   String _period = 'last_30_days';
 
-  Future<void> _load() async {
+  Future<void> _load({bool requireConfirm = true}) async {
+    if (_loading) return;
+
+    // если пользователь ещё не подтвердил запуск — просим подтверждение
+    if (requireConfirm && !_confirmed) {
+      final ok = await _confirmRunDialog();
+      if (ok != true) return;
+      if (!mounted) return;
+      setState(() => _confirmed = true);
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -30,22 +45,31 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
     try {
       final res = await Supabase.instance.client.functions.invoke(
         'ai-insights',
-        body: {'period': _period},
+        body: {
+          'period': _period,
+          // если хочешь отключать LLM-полировку:
+          // 'polish_with_llm': true,
+        },
       );
 
       final raw = res.data is String
           ? jsonDecode(res.data as String)
           : res.data;
-
-      // Edge Function возвращает { insights: [...] }
       final map = (raw as Map).cast<String, dynamic>();
-      final list = (map['insights'] as List?) ?? const [];
 
+      // ✅ новая функция возвращает { run, snapshot, stats, insights }
+      final list = (map['insights'] as List?) ?? const [];
       final items = list
-          .map((e) => AiInsight.fromJson((e as Map).cast<String, dynamic>()))
+          .whereType<Map>()
+          .map((e) => AiInsight.fromJson(e.cast<String, dynamic>()))
           .toList();
 
-      setState(() => _insights = items);
+      setState(() {
+        _insights = items;
+        _runMeta = (map['run'] is Map)
+            ? (map['run'] as Map).cast<String, dynamic>()
+            : null;
+      });
     } catch (e) {
       setState(() => _error = 'Ошибка AI: $e');
     } finally {
@@ -53,10 +77,40 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
     }
   }
 
+  // ❌ УБРАЛИ авто-запуск в initState
   @override
   void initState() {
     super.initState();
-    _load();
+  }
+
+  Future<bool?> _confirmRunDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final tt = Theme.of(ctx).textTheme;
+        return AlertDialog(
+          title: Text(
+            'Запустить AI-анализ?',
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          content: Text(
+            'AI проанализирует задачи, привычки и самочувствие за выбранный период и сохранит инсайты. '
+            'Это может занять несколько секунд.',
+            style: tt.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Запустить'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String _periodLabel(String v) => switch (v) {
@@ -121,8 +175,16 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                                           _PeriodPickerSheet(current: _period),
                                     );
                                 if (picked == null || picked == _period) return;
-                                setState(() => _period = picked);
-                                _load();
+
+                                // ✅ НЕ запускаем сразу. Просто меняем период и просим нажать запуск.
+                                setState(() {
+                                  _period = picked;
+                                  _error = null;
+                                  _insights = [];
+                                  _runMeta = null;
+                                  // сохраняем факт подтверждения, но всё равно запуск руками
+                                  // _confirmed оставляем как есть
+                                });
                               },
                             ),
 
@@ -130,11 +192,26 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
 
                             _ActionButton(
                               loading: _loading,
-                              onTap: _loading ? null : _load,
+                              confirmed: _confirmed,
+                              onTap: _loading
+                                  ? null
+                                  : () => _load(requireConfirm: true),
                             ),
                           ],
                         ),
                       ),
+
+                      if (_runMeta != null) ...[
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: _InfoPill(
+                            text:
+                                'Последний запуск: ${_runMeta!['created_at'] ?? ''}'
+                                    .trim(),
+                          ),
+                        ),
+                      ],
 
                       if (_error != null) ...[
                         const SizedBox(height: 10),
@@ -147,7 +224,18 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                       const SizedBox(height: 10),
 
                       Expanded(
-                        child: _loading && _insights.isEmpty
+                        child: !_confirmed && _insights.isEmpty && !_loading
+                            ? Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: _EmptyHint(
+                                  title: 'AI ещё не запускался',
+                                  subtitle:
+                                      'Выбери период и нажми «Запустить». Инсайты сохранятся и будут доступны в приложении.',
+                                  ctaLabel: 'Запустить анализ',
+                                  onCta: () => _load(requireConfirm: true),
+                                ),
+                              )
+                            : _loading && _insights.isEmpty
                             ? const Center(child: CircularProgressIndicator())
                             : _insights.isEmpty
                             ? Padding(
@@ -155,7 +243,9 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                                 child: _EmptyHint(
                                   title: 'Инсайтов пока нет',
                                   subtitle:
-                                      'Добавь данных (цели, настроение, привычки, расходы) и нажми «Обновить».',
+                                      'Добавь больше данных (задачи, привычки, ответы на вопросы) и запусти анализ.',
+                                  ctaLabel: 'Запустить снова',
+                                  onCta: () => _load(requireConfirm: true),
                                 ),
                               )
                             : ListView.separated(
@@ -285,12 +375,19 @@ class _PeriodPill extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   final bool loading;
+  final bool confirmed;
   final VoidCallback? onTap;
 
-  const _ActionButton({required this.loading, required this.onTap});
+  const _ActionButton({
+    required this.loading,
+    required this.confirmed,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final icon = confirmed ? Icons.refresh_rounded : Icons.play_arrow_rounded;
+
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
@@ -309,11 +406,7 @@ class _ActionButton extends StatelessWidget {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(
-                  Icons.refresh_rounded,
-                  size: 20,
-                  color: Color(0xFF3AA8E6),
-                ),
+              : Icon(icon, size: 20, color: const Color(0xFF3AA8E6)),
         ),
       ),
     );
@@ -346,10 +439,44 @@ class _ErrorPill extends StatelessWidget {
   }
 }
 
+class _InfoPill extends StatelessWidget {
+  final String text;
+  const _InfoPill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: cs.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.primary.withOpacity(0.14)),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: const Color(0xFF2E4B5A),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyHint extends StatelessWidget {
   final String title;
   final String subtitle;
-  const _EmptyHint({required this.title, required this.subtitle});
+  final String? ctaLabel;
+  final VoidCallback? onCta;
+
+  const _EmptyHint({
+    required this.title,
+    required this.subtitle,
+    this.ctaLabel,
+    this.onCta,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -362,33 +489,49 @@ class _EmptyHint extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFD6E6F5)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.auto_awesome_rounded, color: Color(0xFF3AA8E6)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: tt.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF2E4B5A),
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.auto_awesome_rounded, color: Color(0xFF3AA8E6)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF2E4B5A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: tt.bodyMedium?.copyWith(
+                        height: 1.25,
+                        color: const Color(0xFF2E4B5A).withOpacity(0.70),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: tt.bodyMedium?.copyWith(
-                    height: 1.25,
-                    color: const Color(0xFF2E4B5A).withOpacity(0.70),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (ctaLabel != null && onCta != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onCta,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(ctaLabel!),
+              ),
+            ),
+          ],
         ],
       ),
     );

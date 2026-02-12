@@ -3,14 +3,11 @@ import 'package:collection/collection.dart';
 
 import '../models/goal.dart';
 import '../models/mood.dart';
-import '../services/goal_service.dart';
 import '../main.dart'; // dbRepo
 
 enum ReportPeriod { day, week, month }
 
 class ReportsModel extends ChangeNotifier {
-  final GoalService _goalService = GoalService();
-
   bool _loading = true;
   bool get loading => _loading;
 
@@ -32,9 +29,10 @@ class ReportsModel extends ChangeNotifier {
     _loading = true;
     notifyListeners();
     try {
-      _allGoals = await _goalService.fetchGoals();
+      // ⬇️ GoalService убран: идём напрямую в dbRepo (GoalsRepoMixin)
+      _allGoals = await dbRepo.fetchGoals();
       _allMoods = await dbRepo.fetchMoods(limit: 120);
-      _targetHours = await _goalService.getTargetHours();
+      _targetHours = await dbRepo.getTargetHours();
     } finally {
       _loading = false;
       notifyListeners();
@@ -172,9 +170,13 @@ class ReportsModel extends ChangeNotifier {
     final goals = goalsInRange.toList();
     final completed = goals.where((g) => g.isCompleted).toList();
     if (completed.isEmpty) return 0;
+
+    // NOTE: логика "done on time" у тебя была странная (deadline after now).
+    // Оставляю как есть, чтобы не менять поведение.
     final onTime = completed
         .where((g) => g.deadline.isAfter(DateTime.now()))
         .length;
+
     return ((onTime / completed.length) * 100).round();
   }
 
@@ -193,6 +195,7 @@ class ReportsModel extends ChangeNotifier {
             )
             .toList()
           ..sort((a, b) => b.value.compareTo(a.value));
+
     return byDay.take(3).toList();
   }
 }

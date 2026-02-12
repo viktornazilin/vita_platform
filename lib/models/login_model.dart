@@ -44,19 +44,49 @@ class LoginModel extends ChangeNotifier {
     }
   }
 
-  // ➕ НОВОЕ: вход/регистрация через Google
+  // ➕ вход/регистрация через Google (OAuth)
   Future<void> loginWithGoogle() async {
     _isLoading = true;
     _errorText = null;
     notifyListeners();
 
     try {
-      await _userService.signInWithGoogle();
+      await _userService.signInWithGoogle(
+        // сейчас у тебя нет аккаунта/юридических страниц — оставляем дефолт
+        // позже можешь передавать сюда consents (terms/analytics/marketing)
+        termsAccepted: false,
+        analyticsAccepted: false,
+        marketingAccepted: false,
+      );
       // Дальнейшую смену экрана делаем по событию auth state в UI
     } on AuthException catch (e) {
       _errorText = e.message;
     } catch (e) {
       _errorText = 'Ошибка Google входа: ${e.toString()}';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ✅ NEW: вход/регистрация через Apple ID (OAuth)
+  Future<void> loginWithApple() async {
+    _isLoading = true;
+    _errorText = null;
+    notifyListeners();
+
+    try {
+      await _userService.signInWithApple(
+        // сейчас у тебя нет аккаунта/юридических страниц — оставляем дефолт
+        termsAccepted: false,
+        analyticsAccepted: false,
+        marketingAccepted: false,
+      );
+      // Дальнейшую смену экрана делаем по событию auth state в UI
+    } on AuthException catch (e) {
+      _errorText = e.message;
+    } catch (e) {
+      _errorText = 'Ошибка Apple ID входа: ${e.toString()}';
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -1,5 +1,7 @@
 // lib/screens/reports_screen.dart
-import 'dart:math' as math;
+// ✅ fixed: убран trailing (ReportSectionCard его не поддерживает)
+// ✅ добавлен виджет последних инсайтов без trailing
+// ✅ убран дубль _CompareRow (оставлена одна версия)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -128,13 +130,6 @@ class _ReportsBody extends StatelessWidget {
     return 0;
   }
 
-  static String _bucketLabel(int b) => switch (b) {
-    1 => 'Хорошее',
-    0 => 'Нейтр.',
-    -1 => 'Плохое',
-    _ => 'Нейтр.',
-  };
-
   // ----------------------------------------------------------------------------
   // Data models for "Связи"
   // ----------------------------------------------------------------------------
@@ -149,8 +144,6 @@ class _ReportsBody extends StatelessWidget {
   ) async {
     final client = Supabase.instance.client;
 
-    // предполагаем таблицу moods (или mood_entries) с DATE-колонкой day.
-    // если у тебя другое имя/колонки — поменяй здесь один раз.
     final res = await client
         .from('moods')
         .select('day, emoji')
@@ -175,17 +168,15 @@ class _ReportsBody extends StatelessWidget {
     DateTime start,
     DateTime endExclusive,
   ) async {
-    // 1) все активные привычки
     final habits = await dbRepo.listHabits();
     final total = habits.length;
     if (total <= 0) return {};
 
     final out = <DateTime, double>{};
 
-    // 2) отмеченность по дням
     for (final day in _daysInRange(start, endExclusive)) {
       final entries = await dbRepo.getHabitEntriesForDay(day);
-      // считаем "done" по всем привычкам (если привычка не отмечена — считаем done=false)
+
       int done = 0;
       for (final h in habits) {
         final row = entries[h.id];
@@ -202,7 +193,6 @@ class _ReportsBody extends StatelessWidget {
     DateTime start,
     DateTime endExclusive,
   ) async {
-    // score v1: усреднённый нормализованный результат по всем активным вопросам
     final qs = await dbRepo.listMentalQuestions(onlyActive: true);
     if (qs.isEmpty) return {};
 
@@ -218,10 +208,9 @@ class _ReportsBody extends StatelessWidget {
         final row = a[q.id];
         if (row == null) continue;
 
-        // types: yes/no OR scale OR text
         final vb = row['value_bool'];
         final vi = row['value_int'];
-        // text пока не скорим
+
         if (vb is bool) {
           sum += vb ? 1.0 : 0.0;
           n++;
@@ -245,7 +234,7 @@ class _ReportsBody extends StatelessWidget {
   }
 
   // ----------------------------------------------------------------------------
-  // Correlation computations (simple, readable for user)
+  // Correlation computations
   // ----------------------------------------------------------------------------
   static double _avg(Iterable<double> xs) {
     final list = xs.where((e) => e.isFinite).toList();
@@ -259,7 +248,6 @@ class _ReportsBody extends StatelessWidget {
   static bool _isHighHabits(double completion) =>
       completion >= _habitHighThreshold;
 
-  static String _fmtPct(double v) => '${(v * 100).round()}%';
   static String _fmtHours(double v) => '${v.toStringAsFixed(1)} ч';
   static String _fmtEuro(double v) => '${v.toStringAsFixed(0)} €';
 
@@ -268,7 +256,6 @@ class _ReportsBody extends StatelessWidget {
     final model = context.watch<ReportsModel>();
     final cs = Theme.of(context).colorScheme;
 
-    // данные из модели
     final goals = model.goalsInRange.toList();
     final doneByBlock = model.doneByBlock;
     final byDayHours = model.hoursByDay;
@@ -279,7 +266,6 @@ class _ReportsBody extends StatelessWidget {
 
     final completedGoals = goals.where((g) => g.isCompleted).length;
 
-    // Mobile-first: максимум ширины, чтобы на web не растягивалось как сайт
     Widget centered(Widget child) {
       return Center(
         child: ConstrainedBox(
@@ -290,10 +276,10 @@ class _ReportsBody extends StatelessWidget {
     }
 
     final rangeStart = _dateOnly(model.range.start);
-    final rangeEnd = _dateOnly(model.range.end); // end exclusive в модели
+    final rangeEnd = _dateOnly(model.range.end); // end exclusive
 
     return DefaultTabController(
-      length: 4, // ✅ добавили “Связи”
+      length: 4,
       child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar.large(
@@ -304,15 +290,13 @@ class _ReportsBody extends StatelessWidget {
             elevation: 0,
             scrolledUnderElevation: 0,
           ),
-
-          // фиксированная панель: период + навигация
           SliverPersistentHeader(
             pinned: true,
             delegate: StickyHeader(
               minExtent: 76,
               maxExtent: 84,
               child: Container(
-                color: Colors.transparent, // ✅ было scaffoldBackgroundColor
+                color: Colors.transparent,
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
                 child: centered(
                   _PeriodBar(
@@ -326,13 +310,11 @@ class _ReportsBody extends StatelessWidget {
               ),
             ),
           ),
-
-          // табы
           SliverPersistentHeader(
             pinned: true,
             delegate: _TabHeaderDelegate(
               child: Container(
-                color: Colors.transparent, // ✅ было scaffoldBackgroundColor
+                color: Colors.transparent,
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 child: centered(
                   Container(
@@ -343,11 +325,11 @@ class _ReportsBody extends StatelessWidget {
                         color: cs.outlineVariant.withOpacity(0.6),
                       ),
                     ),
-                    child: TabBar(
+                    child: const TabBar(
                       indicatorSize: TabBarIndicatorSize.tab,
                       dividerColor: Colors.transparent,
-                      labelStyle: const TextStyle(fontWeight: FontWeight.w700),
-                      tabs: const [
+                      labelStyle: TextStyle(fontWeight: FontWeight.w700),
+                      tabs: [
                         Tab(text: 'Сводка'),
                         Tab(text: 'Связи'),
                         Tab(text: 'Продуктивность'),
@@ -362,9 +344,7 @@ class _ReportsBody extends StatelessWidget {
         ],
         body: TabBarView(
           children: [
-            // =========================================================================
-            // TAB 1: СВОДКА (оставляем компактно, без перегруза)
-            // =========================================================================
+            // TAB 1: СВОДКА
             CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
@@ -437,13 +417,25 @@ class _ReportsBody extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                // ✅ Новый блок: последние инсайты
+                SliverToBoxAdapter(
+                  child: centered(
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                      child: _LatestAiInsightsCard(
+                        limit: 5,
+                        onOpenAll: null, // подключишь позже
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SliverToBoxAdapter(child: SizedBox(height: 8)),
               ],
             ),
 
-            // =========================================================================
-            // TAB 2: СВЯЗИ (корреляции v1) — главное, но без “перегруза”
-            // =========================================================================
+            // TAB 2: СВЯЗИ
             CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
@@ -466,7 +458,7 @@ class _ReportsBody extends StatelessWidget {
                   ),
                 ),
 
-                // --- 1) Mood -> Productivity (avg hours by mood bucket)
+                // --- 1) Mood -> Productivity
                 SliverToBoxAdapter(
                   child: centered(
                     Padding(
@@ -621,7 +613,7 @@ class _ReportsBody extends StatelessWidget {
                   ),
                 ),
 
-                // --- 2) Habits -> Mood + 3) Habits -> Productivity
+                // --- 2) Habits -> Mood / Productivity
                 SliverToBoxAdapter(
                   child: centered(
                     Padding(
@@ -637,7 +629,6 @@ class _ReportsBody extends StatelessWidget {
                             rangeEnd,
                           );
 
-                          // mood score per day (good=1 neutral=0 bad=-1)
                           final moodScore = <DateTime, int>{};
                           for (final e in moodsByDay.entries) {
                             moodScore[e.key] = _moodBucket(e.value);
@@ -645,7 +636,6 @@ class _ReportsBody extends StatelessWidget {
 
                           final highMood = <double>[];
                           final lowMood = <double>[];
-
                           final highHours = <double>[];
                           final lowHours = <double>[];
 
@@ -863,98 +853,87 @@ class _ReportsBody extends StatelessWidget {
                               ),
                             );
                           }
+
                           return ReportSectionCard(
                             title: 'Ментальное состояние → Настроение',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  height: 220,
-                                  child: LineChart(
-                                    LineChartData(
-                                      minY: 0,
-                                      maxY: 100,
-                                      gridData: FlGridData(
-                                        show: true,
-                                        drawVerticalLine: false,
-                                        getDrawingHorizontalLine: (v) => FlLine(
-                                          strokeWidth: 0.6,
-                                          color: cs.outlineVariant,
-                                        ),
-                                      ),
-                                      titlesData: FlTitlesData(
-                                        rightTitles: const AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: false,
-                                          ),
-                                        ),
-                                        topTitles: const AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: false,
-                                          ),
-                                        ),
-                                        leftTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 34,
-                                            getTitlesWidget: (v, _) => Text(
-                                              v.toInt().toString(),
-                                              style: TextStyle(
-                                                color: cs.onSurfaceVariant,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 28,
-                                            interval: 1,
-                                            getTitlesWidget: (v, _) {
-                                              final idx = v.toInt();
-                                              if (idx < 0 ||
-                                                  idx >= keys.length) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              // чтобы не слипалось
-                                              if (keys.length > 14 &&
-                                                  idx % 2 == 1) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              final d = keys[idx];
-                                              final emoji = p.moods[d] ?? '';
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 6,
-                                                ),
-                                                child: Text(
-                                                  emoji.isEmpty
-                                                      ? '${d.day}.${d.month}'
-                                                      : emoji,
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: cs.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      borderData: FlBorderData(show: false),
-                                      lineBarsData: [
-                                        LineChartBarData(
-                                          spots: spots,
-                                          isCurved: true,
-                                          barWidth: 3,
-                                          dotData: FlDotData(show: true),
-                                        ),
-                                      ],
+                            child: SizedBox(
+                              height: 220,
+                              child: LineChart(
+                                LineChartData(
+                                  minY: 0,
+                                  maxY: 100,
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    getDrawingHorizontalLine: (v) => FlLine(
+                                      strokeWidth: 0.6,
+                                      color: cs.outlineVariant,
                                     ),
                                   ),
+                                  titlesData: FlTitlesData(
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 34,
+                                        getTitlesWidget: (v, _) => Text(
+                                          v.toInt().toString(),
+                                          style: TextStyle(
+                                            color: cs.onSurfaceVariant,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 28,
+                                        interval: 1,
+                                        getTitlesWidget: (v, _) {
+                                          final idx = v.toInt();
+                                          if (idx < 0 || idx >= keys.length) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          if (keys.length > 14 && idx.isOdd) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          final d = keys[idx];
+                                          final emoji = p.moods[d] ?? '';
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 6,
+                                            ),
+                                            child: Text(
+                                              emoji.isEmpty
+                                                  ? '${d.day}.${d.month}'
+                                                  : emoji,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: cs.onSurfaceVariant,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: spots,
+                                      isCurved: true,
+                                      barWidth: 3,
+                                      dotData: FlDotData(show: true),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           );
                         },
@@ -963,7 +942,7 @@ class _ReportsBody extends StatelessWidget {
                   ),
                 ),
 
-                // --- 5) Expenses -> Mood (avg expenses good vs bad)
+                // --- 5) Expenses -> Mood
                 SliverToBoxAdapter(
                   child: centered(
                     Padding(
@@ -1124,12 +1103,9 @@ class _ReportsBody extends StatelessWidget {
               ],
             ),
 
-            // =========================================================================
-            // TAB 3: ПРОДУКТИВНОСТЬ (оставили 2 ключевых графика)
-            // =========================================================================
+            // TAB 3: ПРОДУКТИВНОСТЬ
             CustomScrollView(
               slivers: [
-                // Выполнено по блокам
                 SliverToBoxAdapter(
                   child: centered(
                     Padding(
@@ -1176,7 +1152,6 @@ class _ReportsBody extends StatelessWidget {
                   ),
                 ),
 
-                // Часы по дням
                 SliverToBoxAdapter(
                   child: centered(
                     Padding(
@@ -1263,8 +1238,7 @@ class _ReportsBody extends StatelessWidget {
                                               return const SizedBox.shrink();
                                             }
                                             final d = keys[idx];
-                                            if (keys.length > 14 &&
-                                                idx % 2 == 1) {
+                                            if (keys.length > 14 && idx.isOdd) {
                                               return const SizedBox.shrink();
                                             }
                                             return Padding(
@@ -1298,9 +1272,7 @@ class _ReportsBody extends StatelessWidget {
               ],
             ),
 
-            // =========================================================================
-            // TAB 4: РАСХОДЫ (оставили как было)
-            // =========================================================================
+            // TAB 4: РАСХОДЫ
             CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
@@ -1358,8 +1330,6 @@ class _ReportsBody extends StatelessWidget {
                                       ?.copyWith(color: cs.onSurfaceVariant),
                                 ),
                                 const SizedBox(height: 12),
-
-                                // Pie по категориям
                                 SizedBox(
                                   height: 220,
                                   child: PieChart(
@@ -1391,8 +1361,6 @@ class _ReportsBody extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 14),
-
-                                // Bar по дням
                                 SizedBox(
                                   height: 260,
                                   child: BarChart(
@@ -1444,7 +1412,7 @@ class _ReportsBody extends StatelessWidget {
                                               }
                                               final d = keys[idx];
                                               if (keys.length > 14 &&
-                                                  idx % 2 == 1) {
+                                                  idx.isOdd) {
                                                 return const SizedBox.shrink();
                                               }
                                               return Padding(
@@ -1595,7 +1563,7 @@ class _KpiStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 116, // под твои ReportStatCard
+      height: 116,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -1607,7 +1575,7 @@ class _KpiStrip extends StatelessWidget {
   }
 }
 
-/// ======= Collapsible legend (to reduce overload) =======
+/// ======= Collapsible legend =======
 class _LegendCollapse extends StatefulWidget {
   const _LegendCollapse({required this.title, required this.child});
 
@@ -1658,12 +1626,10 @@ class _LegendCollapseState extends State<_LegendCollapse> {
 /// ======= Tab header delegate =======
 class _TabHeaderDelegate extends SliverPersistentHeaderDelegate {
   _TabHeaderDelegate({required this.child});
-
   final Widget child;
 
   @override
   double get minExtent => 56;
-
   @override
   double get maxExtent => 56;
 
@@ -1679,7 +1645,7 @@ class _TabHeaderDelegate extends SliverPersistentHeaderDelegate {
 }
 
 // ----------------------------------------------------------------------------
-// Small UI helpers for "Связи"
+// Small UI helpers
 // ----------------------------------------------------------------------------
 
 class _HintPill extends StatelessWidget {
@@ -1758,6 +1724,308 @@ class _CompareRow extends StatelessWidget {
         const SizedBox(width: 10),
         cell(rightLabel, rightValue),
       ],
+    );
+  }
+}
+
+// ----------------------------------------------------------------------------
+// ✅ Latest AI Insights Card (без trailing)
+// ----------------------------------------------------------------------------
+
+class _LatestAiInsightsCard extends StatefulWidget {
+  final int limit;
+  final VoidCallback? onOpenAll;
+
+  const _LatestAiInsightsCard({required this.limit, this.onOpenAll});
+
+  @override
+  State<_LatestAiInsightsCard> createState() => _LatestAiInsightsCardState();
+}
+
+class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
+  bool _loading = true;
+  String? _error;
+  List<_AiInsightLite> _items = [];
+  DateTime? _createdAt;
+  String? _period;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _items = [];
+      _createdAt = null;
+      _period = null;
+    });
+
+    try {
+      final client = Supabase.instance.client;
+
+      // ✅ адаптируй под свою схему (название таблицы/полей)
+      final row = await client
+          .from('ai_insights')
+          .select('created_at, period, insights')
+          .eq('user_id', dbRepo.uid)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (row == null) {
+        if (!mounted) return;
+        setState(() => _loading = false);
+        return;
+      }
+
+      final createdAtRaw = row['created_at']?.toString();
+      final periodRaw = row['period']?.toString();
+      final createdAt = createdAtRaw != null
+          ? DateTime.tryParse(createdAtRaw)
+          : null;
+
+      final rawInsights = row['insights'];
+      final list = (rawInsights is List) ? rawInsights : const <dynamic>[];
+
+      final parsed = list
+          .whereType<Map>()
+          .map((m) => _AiInsightLite.fromMap(m.cast<String, dynamic>()))
+          .where(
+            (x) => x.title.trim().isNotEmpty && x.insight.trim().isNotEmpty,
+          )
+          .take(widget.limit)
+          .toList();
+
+      if (!mounted) return;
+      setState(() {
+        _createdAt = createdAt;
+        _period = periodRaw;
+        _items = parsed;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  String _periodLabel(String? v) => switch ((v ?? '').toLowerCase()) {
+    'last_7_days' => 'за 7 дней',
+    'last_30_days' => 'за 30 дней',
+    'last_90_days' => 'за 90 дней',
+    _ => '',
+  };
+
+  String _fmtDateTime(BuildContext context, DateTime? dt) {
+    if (dt == null) return '';
+    final loc = MaterialLocalizations.of(context);
+    return '${loc.formatShortDate(dt)} • ${loc.formatTimeOfDay(TimeOfDay.fromDateTime(dt))}';
+  }
+
+  IconData _iconForType(String t) {
+    switch (t) {
+      case 'risk':
+        return Icons.warning_amber_rounded;
+      case 'emotional':
+        return Icons.mood_rounded;
+      case 'habit':
+        return Icons.autorenew_rounded;
+      case 'goal':
+        return Icons.flag_rounded;
+      default:
+        return Icons.insights_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return ReportSectionCard(
+      title: 'Последние AI-инсайты',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✅ действия (вместо trailing)
+          Row(
+            children: [
+              Text(
+                _createdAt == null ? '' : _fmtDateTime(context, _createdAt),
+                style: tt.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                tooltip: 'Обновить',
+                onPressed: _loading ? null : _load,
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+              if (widget.onOpenAll != null)
+                IconButton(
+                  tooltip: 'Открыть все',
+                  onPressed: widget.onOpenAll,
+                  icon: const Icon(Icons.open_in_new_rounded),
+                ),
+            ],
+          ),
+          if ((_period ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: cs.outlineVariant),
+                ),
+                child: Text(
+                  _periodLabel(_period),
+                  style: tt.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+
+          if (_loading)
+            const SizedBox(
+              height: 90,
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            )
+          else if (_error != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.errorContainer.withOpacity(0.45),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: cs.error.withOpacity(0.35)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Не удалось загрузить инсайты',
+                    style: tt.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: cs.onErrorContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _error!,
+                    style: tt.bodySmall?.copyWith(color: cs.onErrorContainer),
+                  ),
+                ],
+              ),
+            )
+          else if (_items.isEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Пока нет сохранённых инсайтов.',
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Открой «AI-инсайты» и запусти анализ — после этого они появятся здесь.',
+                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            )
+          else ...[
+            ..._items.map((it) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: cs.outlineVariant.withOpacity(0.8),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: cs.surface.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cs.outlineVariant),
+                        ),
+                        child: Icon(_iconForType(it.type), size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              it.title,
+                              style: tt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              it.insight,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: tt.bodyMedium?.copyWith(
+                                height: 1.25,
+                                color: cs.onSurface.withOpacity(0.88),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AiInsightLite {
+  final String type;
+  final String title;
+  final String insight;
+
+  _AiInsightLite({
+    required this.type,
+    required this.title,
+    required this.insight,
+  });
+
+  factory _AiInsightLite.fromMap(Map<String, dynamic> m) {
+    return _AiInsightLite(
+      type: (m['type'] ?? '').toString(),
+      title: (m['title'] ?? '').toString(),
+      insight: (m['insight'] ?? '').toString(),
     );
   }
 }
