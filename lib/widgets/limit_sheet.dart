@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 Future<double?> showLimitSheet(
   BuildContext context, {
   required String categoryName,
@@ -16,6 +18,7 @@ Future<double?> showLimitSheet(
       final theme = Theme.of(ctx);
       final cs = theme.colorScheme;
       final bottom = MediaQuery.of(ctx).viewInsets.bottom;
+      final t = AppLocalizations.of(ctx)!;
 
       final inputTheme = theme.inputDecorationTheme.copyWith(
         filled: true,
@@ -77,7 +80,7 @@ Future<double?> showLimitSheet(
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Лимит для «$categoryName»',
+                                t.limitSheetTitle(categoryName),
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   height: 1.05,
@@ -91,7 +94,7 @@ Future<double?> showLimitSheet(
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Пусто — без лимита',
+                            t.limitSheetHintNoLimit,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant,
                             ),
@@ -104,10 +107,12 @@ Future<double?> showLimitSheet(
                           child: TextField(
                             controller: ctrl,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Максимум ₽ в месяц',
-                              hintText: 'Например: 15000',
-                              prefixIcon: Icon(Icons.currency_ruble_rounded),
+                            decoration: InputDecoration(
+                              labelText: t.limitSheetFieldLabel,
+                              hintText: t.limitSheetFieldHint,
+                              prefixIcon: const Icon(
+                                Icons.currency_ruble_rounded,
+                              ),
                             ),
                           ),
                         ),
@@ -118,7 +123,7 @@ Future<double?> showLimitSheet(
                           children: [
                             Expanded(
                               child: _SoftButton(
-                                label: 'Без лимита',
+                                label: t.limitSheetCtaNoLimit,
                                 kind: _SoftButtonKind.secondary,
                                 onTap: () => Navigator.pop(ctx, null),
                               ),
@@ -126,7 +131,7 @@ Future<double?> showLimitSheet(
                             const SizedBox(width: 12),
                             Expanded(
                               child: _SoftButton(
-                                label: 'Сохранить',
+                                label: t.commonSave,
                                 kind: _SoftButtonKind.primary,
                                 onTap: () {
                                   final s = ctrl.text.trim().replaceAll(

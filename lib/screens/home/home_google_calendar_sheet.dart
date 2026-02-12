@@ -4,6 +4,7 @@ import 'package:googleapis/calendar/v3.dart' as gcal;
 import '../../main.dart'; // dbRepo
 import '../../models/goals_calendar_model.dart';
 import '../../services/google_calendar_service.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 enum _SyncMode { import, export }
 
@@ -258,9 +259,10 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Импортировано целей: $created')));
+      final l = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.gcalImportedGoalsCount(created))),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
@@ -308,8 +310,9 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
       }
 
       if (!mounted) return;
+      final l = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Экспортировано целей: $exported')),
+        SnackBar(content: Text(l.gcalExportedGoalsCount(exported))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -351,21 +354,26 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
   }
 
   Widget _rangeDropdown() {
+    final l = AppLocalizations.of(context)!;
+
     return DropdownButtonFormField<_RangePreset>(
       value: _preset,
-      items: const [
-        DropdownMenuItem(value: _RangePreset.today, child: Text('Сегодня')),
+      items: [
+        DropdownMenuItem(
+          value: _RangePreset.today,
+          child: Text(l.gcalRangeToday),
+        ),
         DropdownMenuItem(
           value: _RangePreset.next7,
-          child: Text('Следующие 7 дней'),
+          child: Text(l.gcalRangeNext7),
         ),
         DropdownMenuItem(
           value: _RangePreset.next30,
-          child: Text('Следующие 30 дней'),
+          child: Text(l.gcalRangeNext30),
         ),
         DropdownMenuItem(
           value: _RangePreset.custom,
-          child: Text('Выбрать период...'),
+          child: Text(l.gcalRangeCustom),
         ),
       ],
       onChanged: _loading
@@ -401,18 +409,20 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                 _preset = v;
               });
             },
-      decoration: const InputDecoration(
-        labelText: 'Период',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: l.gcalPeriodLabel,
+        border: const OutlineInputBorder(),
       ),
     );
   }
 
   Widget _modeToggle() {
+    final l = AppLocalizations.of(context)!;
+
     return SegmentedButton<_SyncMode>(
-      segments: const [
-        ButtonSegment(value: _SyncMode.import, label: Text('Импорт')),
-        ButtonSegment(value: _SyncMode.export, label: Text('Экспорт')),
+      segments: [
+        ButtonSegment(value: _SyncMode.import, label: Text(l.gcalModeImport)),
+        ButtonSegment(value: _SyncMode.export, label: Text(l.gcalModeExport)),
       ],
       selected: {_mode},
       onSelectionChanged: _loading
@@ -426,6 +436,8 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     final cs = Theme.of(context).colorScheme;
     final showImportList = _mode == _SyncMode.import;
 
@@ -437,9 +449,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
         return Padding(
           padding: const EdgeInsets.only(top: 10, bottom: 10),
           child: Text(
-            _connected
-                ? 'События не загружены'
-                : 'Подключи аккаунт, чтобы загрузить события',
+            _connected ? l.gcalEventsNotLoaded : l.gcalConnectToLoadEvents,
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -505,7 +515,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                (e.summary ?? 'Без названия').trim(),
+                                (e.summary ?? l.gcalNoTitle).trim(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.titleSmall
@@ -528,7 +538,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                     _lifeBlockDropdown(
                       value: blockValue,
                       dense: true,
-                      label: 'Life block для этой цели',
+                      label: l.gcalLifeBlockForGoalLabel,
                       onChanged: (v) {
                         if (v == null) return;
                         setState(() => _lifeBlockByEventId[id] = v);
@@ -552,7 +562,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
           border: Border.all(color: const Color(0xFFD6E6F5)),
         ),
         child: Text(
-          'Экспорт создаст события в выбранном календаре за выбранный период.',
+          l.gcalExportHint,
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
@@ -570,7 +580,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Google Calendar',
+                l.gcalTitle,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -578,9 +588,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                showImportList
-                    ? 'Найди события в календаре и импортируй их как цели.'
-                    : 'Выбери период и экспортируй цели из приложения в Google Calendar.',
+                showImportList ? l.gcalHeaderImport : l.gcalHeaderExport,
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
@@ -614,9 +622,9 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                             child: DropdownButtonFormField<String>(
                               value: _calendarId,
                               items: [
-                                const DropdownMenuItem(
+                                DropdownMenuItem(
                                   value: 'primary',
-                                  child: Text('Primary (по умолчанию)'),
+                                  child: Text(l.gcalPrimaryCalendar),
                                 ),
                                 ..._calendars
                                     .where((c) => (c.id?.isNotEmpty ?? false))
@@ -636,9 +644,9 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                                   : (v) => setState(
                                       () => _calendarId = v ?? 'primary',
                                     ),
-                              decoration: const InputDecoration(
-                                labelText: 'Календарь',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: l.gcalCalendarLabel,
+                                border: const OutlineInputBorder(),
                               ),
                             ),
                           ),
@@ -650,7 +658,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                       if (showImportList) ...[
                         _lifeBlockDropdown(
                           value: _defaultLifeBlock,
-                          label: 'Default life block (для импорта)',
+                          label: l.gcalDefaultLifeBlockLabel,
                           onChanged: (v) {
                             if (v == null) return;
                             setState(() {
@@ -666,7 +674,6 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                         const SizedBox(height: 12),
                       ],
                     ],
-
                     if (showImportList) importList() else exportHint(),
                   ],
                 ),
@@ -681,8 +688,8 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                     onPressed: _loading ? null : _connect,
                     child: Text(
                       _loading
-                          ? '...'
-                          : (_connected ? 'Подключено' : 'Подключить'),
+                          ? l.commonDots
+                          : (_connected ? l.gcalConnected : l.gcalConnect),
                     ),
                   ),
                 ),
@@ -691,7 +698,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _loading || !_connected ? null : _findEvents,
-                      child: Text(_loading ? '...' : 'Найти события'),
+                      child: Text(_loading ? l.commonDots : l.gcalFindEvents),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -700,7 +707,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                       onPressed: _loading || _selectedEventIds.isEmpty
                           ? null
                           : _importSelected,
-                      child: Text(_loading ? '...' : 'Импортировать'),
+                      child: Text(_loading ? l.commonDots : l.gcalImport),
                     ),
                   ),
                 ] else ...[
@@ -709,7 +716,7 @@ class _HomeGoogleCalendarSheetState extends State<HomeGoogleCalendarSheet> {
                       onPressed: _loading || !_connected
                           ? null
                           : _exportGoalsToCalendar,
-                      child: Text(_loading ? '...' : 'Экспортировать'),
+                      child: Text(_loading ? l.commonDots : l.gcalExport),
                     ),
                   ),
                 ],

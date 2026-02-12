@@ -7,6 +7,7 @@ import 'secrets.dart';
 import 'app.dart';
 import 'services/db_repo.dart';
 import 'controllers/theme_controller.dart';
+import 'controllers/locale_controller.dart';
 
 // Делаем репозиторий доступным по всему приложению
 late final DbRepo dbRepo;
@@ -23,6 +24,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeController()..load()),
+        ChangeNotifierProvider(create: (_) => LocaleController()..init()),
       ],
       child: const VitaApp(),
     ),

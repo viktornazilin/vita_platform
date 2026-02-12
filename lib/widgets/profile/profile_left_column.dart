@@ -1,18 +1,22 @@
+// lib/screens/profile/profile_left_column.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/profile_model.dart';
 import 'profile_ui_helpers.dart';
 
 // Nest UI
-import '../../widgets/nest/nest_card.dart'; // <-- проверь путь/имя
-import '../../widgets/nest/nest_section_title.dart'; // <-- если нет, скажи — дам без него
+import '../../widgets/nest/nest_card.dart';
+import '../../widgets/nest/nest_section_title.dart'; // если файла нет — скажи, дам версию без него
 
 class ProfileLeftColumn extends StatelessWidget {
   const ProfileLeftColumn({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final model = context.watch<ProfileModel>();
 
     return Column(
@@ -28,18 +32,22 @@ class ProfileLeftColumn extends StatelessWidget {
 
               ProfileUi.editableRow(
                 context: context,
-                label: 'Имя',
-                value: model.name?.isNotEmpty == true ? model.name! : '—',
+                label: l.profileNameLabel,
+                value: model.name?.isNotEmpty == true
+                    ? model.name!
+                    : l.commonDash,
                 onEdit: () async {
                   final v = await ProfileUi.promptText(
                     context,
-                    title: 'Имя',
-                    label: 'Как тебя называть?',
+                    title: l.profileNameTitle,
+                    label: l.profileNamePrompt,
                     initial: model.name ?? '',
                     maxLen: 40,
                   );
                   if (v == null) return;
-                  final err = await model.setName(v.isEmpty ? null : v);
+                  final err = await model.setName(
+                    v.trim().isEmpty ? null : v.trim(),
+                  );
                   if (err != null && context.mounted) {
                     ProfileUi.snack(context, err);
                   }
@@ -48,13 +56,13 @@ class ProfileLeftColumn extends StatelessWidget {
 
               ProfileUi.editableRow(
                 context: context,
-                label: 'Возраст',
-                value: model.age?.toString() ?? '—',
+                label: l.profileAgeLabel,
+                value: model.age?.toString() ?? l.commonDash,
                 onEdit: () async {
                   final v = await ProfileUi.promptInt(
                     context,
-                    title: 'Возраст',
-                    label: 'Введите возраст',
+                    title: l.profileAgeTitle,
+                    label: l.profileAgePrompt,
                     initial: model.age,
                     min: 10,
                     max: 120,
@@ -72,15 +80,15 @@ class ProfileLeftColumn extends StatelessWidget {
         const SizedBox(height: 16),
 
         // ====== ACCOUNT ======
-        const NestSectionTitle('Аккаунт'),
+        NestSectionTitle(l.profileAccountSection),
         const SizedBox(height: 10),
 
         NestCard(
           padding: EdgeInsets.zero,
           child: SwitchListTile(
             dense: true,
-            title: const Text('Пролог пройден'),
-            subtitle: const Text('Можно изменить вручную'),
+            title: Text(l.profileSeenPrologueTitle),
+            subtitle: Text(l.profileSeenPrologueSubtitle),
             value: model.hasSeenIntro,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(22)),
@@ -97,18 +105,20 @@ class ProfileLeftColumn extends StatelessWidget {
         const SizedBox(height: 16),
 
         // ====== TARGET HOURS ======
-        const NestSectionTitle('Фокус'),
+        NestSectionTitle(l.profileFocusSection),
         const SizedBox(height: 10),
 
         ProfileUi.editableRow(
           context: context,
-          label: 'Целевая норма часов/день',
-          value: '${model.targetHours.toStringAsFixed(1)} ч',
+          label: l.profileTargetHoursLabel,
+          value: l.profileTargetHoursValue(
+            model.targetHours.toStringAsFixed(1),
+          ),
           onEdit: () async {
             final v = await ProfileUi.promptDouble(
               context,
-              title: 'Цель по часам в день',
-              label: 'Часы',
+              title: l.profileTargetHoursTitle,
+              label: l.profileTargetHoursFieldLabel,
               initial: model.targetHours,
               min: 1,
               max: 24,
@@ -131,7 +141,6 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // нежный “стеклянный” аватар как в Nest
     return Container(
       width: 86,
       height: 86,

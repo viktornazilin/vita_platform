@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/goal.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../widgets/nest_card.dart';
 import '../widgets/nest_pill.dart';
@@ -21,6 +22,7 @@ class GoalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final t = AppLocalizations.of(context)!;
 
     final done = goal.isCompleted;
 
@@ -37,7 +39,7 @@ class GoalCard extends StatelessWidget {
       height: 1.25,
     );
 
-    final statusText = done ? 'Готово' : 'В процессе';
+    final statusText = done ? t.goalStatusDone : t.goalStatusInProgress;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -61,7 +63,7 @@ class GoalCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       _IconPillButton(
                         icon: Icons.delete_outline_rounded,
-                        tooltip: 'Удалить',
+                        tooltip: t.actionDelete,
                         onTap: onDelete,
                       ),
                     ],

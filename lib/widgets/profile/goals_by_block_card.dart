@@ -1,5 +1,8 @@
+// lib/screens/profile/goals_by_block_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/user_goals_model.dart';
 import '../../models/goal.dart';
@@ -32,25 +35,27 @@ class GoalsByBlockCard extends StatefulWidget {
 class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
   GoalHorizon _selectedH = GoalHorizon.mid;
 
-  String _hLabelShort(GoalHorizon h) {
+  String _hLabelShort(BuildContext context, GoalHorizon h) {
+    final l = AppLocalizations.of(context)!;
     switch (h) {
       case GoalHorizon.tactical:
-        return 'Тактика';
+        return l.goalsHorizonTacticalShort;
       case GoalHorizon.mid:
-        return 'Средние';
+        return l.goalsHorizonMidShort;
       case GoalHorizon.long:
-        return 'Долгие';
+        return l.goalsHorizonLongShort;
     }
   }
 
-  String _hLabelLong(GoalHorizon h) {
+  String _hLabelLong(BuildContext context, GoalHorizon h) {
+    final l = AppLocalizations.of(context)!;
     switch (h) {
       case GoalHorizon.tactical:
-        return '2–6 недель';
+        return l.goalsHorizonTacticalLong;
       case GoalHorizon.mid:
-        return '3–6 месяцев';
+        return l.goalsHorizonMidLong;
       case GoalHorizon.long:
-        return '1+ год';
+        return l.goalsHorizonLongLong;
     }
   }
 
@@ -65,8 +70,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
     }
   }
 
-  String _fmtDate(DateTime? d) {
-    if (d == null) return '—';
+  String _fmtDate(BuildContext context, DateTime? d) {
+    final l = AppLocalizations.of(context)!;
+    if (d == null) return l.commonDash;
     final dd = d.day.toString().padLeft(2, '0');
     final mm = d.month.toString().padLeft(2, '0');
     final yy = d.year.toString();
@@ -80,6 +86,8 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
     String? initialBlock,
     GoalHorizon? initialHorizon,
   }) async {
+    final l = AppLocalizations.of(context)!;
+
     final titleCtrl = TextEditingController(text: existing?.title ?? '');
     final descCtrl = TextEditingController(text: existing?.description ?? '');
 
@@ -115,13 +123,13 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                 children: [
                   _SheetHeader(
                     title: existing == null
-                        ? 'Новая цель'
-                        : 'Редактировать цель',
+                        ? l.goalsEditorNewTitle
+                        : l.goalsEditorEditTitle,
                   ),
                   const SizedBox(height: 12),
 
                   Text(
-                    'Сфера',
+                    l.goalsEditorLifeBlockLabel,
                     style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF2E4B5A),
@@ -176,7 +184,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   const SizedBox(height: 14),
 
                   Text(
-                    'Горизонт',
+                    l.goalsEditorHorizonLabel,
                     style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF2E4B5A),
@@ -190,7 +198,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                           .map(
                             (h) => ButtonSegment(
                               value: h,
-                              label: Text(_hLabelShort(h)),
+                              label: Text(_hLabelShort(context, h)),
                               icon: Icon(_hIcon(h)),
                             ),
                           )
@@ -202,7 +210,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _hLabelLong(horizon),
+                    _hLabelLong(context, horizon),
                     style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                       color: const Color(0xFF2E4B5A).withOpacity(0.65),
                       fontWeight: FontWeight.w600,
@@ -214,9 +222,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   TextField(
                     controller: titleCtrl,
                     maxLength: 80,
-                    decoration: const InputDecoration(
-                      labelText: 'Название',
-                      hintText: 'Например: Подтянуть английский до B2',
+                    decoration: InputDecoration(
+                      labelText: l.goalsEditorTitleLabel,
+                      hintText: l.goalsEditorTitleHint,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -224,9 +232,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   TextField(
                     controller: descCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Описание (опционально)',
-                      hintText: 'Коротко: что именно и как измерим результат',
+                    decoration: InputDecoration(
+                      labelText: l.goalsEditorDescLabel,
+                      hintText: l.goalsEditorDescHint,
                     ),
                   ),
 
@@ -243,7 +251,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Дедлайн: ${_fmtDate(targetDate)}',
+                            l.goalsEditorDeadlineLabel(
+                              _fmtDate(context, targetDate),
+                            ),
                             style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF2E4B5A),
@@ -269,11 +279,11 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                               );
                             }
                           },
-                          child: const Text('Выбрать'),
+                          child: Text(l.commonPick),
                         ),
                         if (targetDate != null)
                           IconButton(
-                            tooltip: 'Убрать',
+                            tooltip: l.commonRemove,
                             onPressed: () => setSt(() => targetDate = null),
                             icon: const Icon(Icons.clear_rounded),
                           ),
@@ -288,7 +298,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Отмена'),
+                          child: Text(l.commonCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -310,7 +320,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                               ),
                             );
                           },
-                          child: const Text('Сохранить'),
+                          child: Text(l.commonSave),
                         ),
                       ),
                     ],
@@ -332,6 +342,8 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
     BuildContext context, {
     required String title,
   }) async {
+    final l = AppLocalizations.of(context)!;
+
     final ok = await showModalBottomSheet<bool>(
       context: context,
       useSafeArea: true,
@@ -343,10 +355,10 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _SheetHeader(title: 'Удалить цель?'),
+              _SheetHeader(title: l.goalsDeleteConfirmTitle),
               const SizedBox(height: 10),
               Text(
-                '«$title» будет удалена без возможности восстановления.',
+                l.goalsDeleteConfirmBody(title),
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF2E4B5A).withOpacity(0.8),
                   fontWeight: FontWeight.w600,
@@ -358,7 +370,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Отмена'),
+                      child: Text(l.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -369,7 +381,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Удалить'),
+                      child: Text(l.commonDelete),
                     ),
                   ),
                 ],
@@ -384,6 +396,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final goalsModel = context.watch<UserGoalsModel>();
 
     final allowedBlocks = widget.allowedBlocks;
@@ -410,13 +423,13 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ⚠️ Если ты уже рисуешь заголовок "Цели по сферам" СНАРУЖИ (в goals_screen),
+        // ⚠️ Если ты уже рисуешь заголовок СНАРУЖИ (в goals_screen),
         // можешь удалить этот Row целиком, чтобы не было дубля.
         Row(
           children: [
             Expanded(
               child: Text(
-                'Цели по сферам',
+                l.goalsByBlockTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: const Color(0xFF2E4B5A),
@@ -424,7 +437,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
               ),
             ),
             IconButton(
-              tooltip: 'Добавить цель',
+              tooltip: l.goalsAddTooltip,
               onPressed: goalsModel.loading
                   ? null
                   : () async {
@@ -454,7 +467,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                 .map(
                   (h) => ButtonSegment(
                     value: h,
-                    label: Text(_hLabelShort(h)),
+                    label: Text(_hLabelShort(context, h)),
                     icon: Icon(_hIcon(h)),
                   ),
                 )
@@ -486,7 +499,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
           NestCard(
             padding: const EdgeInsets.all(14),
             child: Text(
-              'Пока нет целей. Добавь первую цель для выбранных сфер.',
+              l.goalsEmptyAllHint,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF2E4B5A).withOpacity(0.7),
                 fontWeight: FontWeight.w700,
@@ -498,8 +511,8 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
             padding: const EdgeInsets.all(14),
             child: Text(
               selected == 'all'
-                  ? 'Нет доступных сфер для отображения.'
-                  : 'Нет целей для выбранной сферы.',
+                  ? l.goalsNoBlocksToShow
+                  : l.goalsNoGoalsForBlock,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF2E4B5A).withOpacity(0.7),
                 fontWeight: FontWeight.w700,
@@ -553,16 +566,17 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                                   final err = await context
                                       .read<UserGoalsModel>()
                                       .upsert(dto);
-                                  if (err != null && context.mounted)
+                                  if (err != null && context.mounted) {
                                     widget.onSnack(err);
+                                  }
                                 },
-                          child: const Text('Добавить'),
+                          child: Text(l.commonAdd),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${_hLabelShort(_selectedH)} • ${_hLabelLong(_selectedH)}',
+                      '${_hLabelShort(context, _selectedH)} • ${_hLabelLong(context, _selectedH)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: const Color(0xFF2E4B5A).withOpacity(0.60),
                         fontWeight: FontWeight.w700,
@@ -572,7 +586,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
                     if (list.isEmpty)
                       Text(
-                        '—',
+                        l.commonDash,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF2E4B5A).withOpacity(0.55),
                           fontWeight: FontWeight.w700,
@@ -584,7 +598,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                           if (g.description.trim().isNotEmpty)
                             g.description.trim(),
                           if (g.targetDate != null)
-                            'Дедлайн: ${_fmtDate(g.targetDate)}',
+                            l.goalsDeadlineInline(
+                              _fmtDate(context, g.targetDate),
+                            ),
                         ];
 
                         return Padding(
@@ -606,8 +622,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                               final err = await context
                                   .read<UserGoalsModel>()
                                   .upsert(dto);
-                              if (err != null && context.mounted)
+                              if (err != null && context.mounted) {
                                 widget.onSnack(err);
+                              }
                             },
                             onDelete: () async {
                               final ok = await _confirmDelete(
@@ -618,8 +635,9 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                               final err = await context
                                   .read<UserGoalsModel>()
                                   .delete(g.id);
-                              if (err != null && context.mounted)
+                              if (err != null && context.mounted) {
                                 widget.onSnack(err);
+                              }
                             },
                           ),
                         );
@@ -649,6 +667,8 @@ class _GoalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     final tTitle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       fontWeight: FontWeight.w900,
       color: const Color(0xFF2E4B5A),
@@ -684,7 +704,7 @@ class _GoalRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             IconButton(
-              tooltip: 'Удалить',
+              tooltip: l.commonDelete,
               onPressed: onDelete,
               icon: Icon(
                 Icons.delete_outline_rounded,

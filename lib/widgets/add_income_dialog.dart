@@ -1,5 +1,9 @@
+// lib/widgets/add_income_dialog.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../domain/category.dart' as dm;
 
 class AddIncomeResult {
@@ -18,7 +22,7 @@ class AddIncomeDialog extends StatefulWidget {
   final List<dm.Category> categories;
   final Future<String> Function(String name) onCreateCategory;
 
-  // редактирование
+  // edit
   final double? initialAmount;
   final String? initialCategoryId;
   final String? initialNote;
@@ -67,13 +71,20 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
     super.dispose();
   }
 
+  String? _validateAmount(String? v) {
+    final l = AppLocalizations.of(context)!;
+    final d = double.tryParse((v ?? '').trim().replaceAll(',', '.'));
+    if (d == null || d <= 0) return l.addIncomeAmountInvalid;
+    return null;
+  }
+
   Future<void> _createCategory() async {
     if (_creatingCat) return;
 
     final name = await showDialog<String>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => const _CreateCategoryDialog(),
+      builder: (_) => const _CreateIncomeCategoryDialog(),
     );
 
     final n = (name ?? '').trim();
@@ -82,7 +93,8 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
     setState(() => _creatingCat = true);
     try {
       final id = await widget.onCreateCategory(n);
-      if (mounted) setState(() => _catId = id);
+      if (!mounted) return;
+      setState(() => _catId = id);
     } finally {
       if (mounted) setState(() => _creatingCat = false);
     }
@@ -103,6 +115,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -133,7 +146,9 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isEdit ? 'Редактировать доход' : 'Новый доход',
+                              isEdit
+                                  ? l.addIncomeEditTitle
+                                  : l.addIncomeNewTitle,
                               style: tt.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: const Color(0xFF2E4B5A),
@@ -141,7 +156,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Сумма, категория и комментарий',
+                              l.addIncomeSubtitle,
                               style: tt.bodySmall?.copyWith(
                                 color: cs.onSurfaceVariant,
                               ),
@@ -150,7 +165,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Закрыть',
+                        tooltip: l.commonCloseTooltip,
                         onPressed: () => Navigator.pop(context),
                         icon: Icon(
                           Icons.close_rounded,
@@ -173,19 +188,14 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                             decimal: true,
                           ),
                           textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Сумма',
-                            hintText: 'Например: 1200.50',
-                            prefixIcon: Icon(Icons.currency_ruble_rounded),
+                          decoration: InputDecoration(
+                            labelText: l.addIncomeAmountLabel,
+                            hintText: l.addIncomeAmountHint,
+                            prefixIcon: const Icon(
+                              Icons.currency_ruble_rounded,
+                            ),
                           ),
-                          validator: (v) {
-                            final d = double.tryParse(
-                              (v ?? '').trim().replaceAll(',', '.'),
-                            );
-                            if (d == null || d <= 0)
-                              return 'Введите корректную сумму';
-                            return null;
-                          },
+                          validator: _validateAmount,
                         ),
                         const SizedBox(height: 10),
 
@@ -203,12 +213,15 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                                     )
                                     .toList(),
                                 onChanged: (v) => setState(() => _catId = v),
-                                decoration: const InputDecoration(
-                                  labelText: 'Категория',
-                                  prefixIcon: Icon(Icons.category_outlined),
+                                decoration: InputDecoration(
+                                  labelText: l.addIncomeCategoryLabel,
+                                  prefixIcon: const Icon(
+                                    Icons.category_outlined,
+                                  ),
                                 ),
-                                validator: (v) =>
-                                    v == null ? 'Выберите категорию' : null,
+                                validator: (v) => v == null
+                                    ? l.addIncomeCategoryRequired
+                                    : null,
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -245,10 +258,10 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                           controller: _noteCtrl,
                           textInputAction: TextInputAction.done,
                           onFieldSubmitted: (_) => _submit(),
-                          decoration: const InputDecoration(
-                            labelText: 'Комментарий',
-                            hintText: 'Опционально',
-                            prefixIcon: Icon(Icons.notes_rounded),
+                          decoration: InputDecoration(
+                            labelText: l.addIncomeNoteLabel,
+                            hintText: l.addIncomeNoteHint,
+                            prefixIcon: const Icon(Icons.notes_rounded),
                           ),
                         ),
                       ],
@@ -264,7 +277,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                         child: OutlinedButton.icon(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.close_rounded),
-                          label: const Text('Отмена'),
+                          label: Text(l.commonCancel),
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -279,7 +292,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                           icon: Icon(
                             isEdit ? Icons.save_rounded : Icons.add_rounded,
                           ),
-                          label: Text(isEdit ? 'Сохранить' : 'Добавить'),
+                          label: Text(isEdit ? l.commonSave : l.commonAdd),
                           style: FilledButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -300,17 +313,19 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
 }
 
 // ============================================================================
-// Create category dialog (в том же дизайне)
+// Create category dialog (same design)
 // ============================================================================
 
-class _CreateCategoryDialog extends StatefulWidget {
-  const _CreateCategoryDialog();
+class _CreateIncomeCategoryDialog extends StatefulWidget {
+  const _CreateIncomeCategoryDialog();
 
   @override
-  State<_CreateCategoryDialog> createState() => _CreateCategoryDialogState();
+  State<_CreateIncomeCategoryDialog> createState() =>
+      _CreateIncomeCategoryDialogState();
 }
 
-class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
+class _CreateIncomeCategoryDialogState
+    extends State<_CreateIncomeCategoryDialog> {
   final _ctrl = TextEditingController();
   String? _err;
 
@@ -321,9 +336,10 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
   }
 
   void _ok() {
+    final l = AppLocalizations.of(context)!;
     final v = _ctrl.text.trim();
     if (v.isEmpty) {
-      setState(() => _err = 'Введите название категории');
+      setState(() => _err = l.addIncomeCategoryNameEmpty);
       return;
     }
     Navigator.pop(context, v);
@@ -331,6 +347,7 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -352,7 +369,7 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Новая категория дохода',
+                          l.addIncomeNewCategoryTitle,
                           style: tt.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                             color: const Color(0xFF2E4B5A),
@@ -360,7 +377,7 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Закрыть',
+                        tooltip: l.commonCloseTooltip,
                         onPressed: () => Navigator.pop(context),
                         icon: Icon(
                           Icons.close_rounded,
@@ -375,10 +392,10 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
                     autofocus: true,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _ok(),
-                    decoration: const InputDecoration(
-                      labelText: 'Название',
-                      hintText: 'Например: Зарплата, Фриланс…',
-                      prefixIcon: Icon(Icons.category_outlined),
+                    decoration: InputDecoration(
+                      labelText: l.addIncomeCategoryNameLabel,
+                      hintText: l.addIncomeCategoryNameHint,
+                      prefixIcon: const Icon(Icons.category_outlined),
                     ),
                   ),
                   if (_err != null) ...[
@@ -392,7 +409,7 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
                         child: OutlinedButton.icon(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.close_rounded),
-                          label: const Text('Отмена'),
+                          label: Text(l.commonCancel),
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -405,7 +422,7 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
                         child: FilledButton.icon(
                           onPressed: _ok,
                           icon: const Icon(Icons.check_rounded),
-                          label: const Text('Создать'),
+                          label: Text(l.commonCreate),
                           style: FilledButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -426,7 +443,7 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
 }
 
 // ============================================================================
-// Shared “Nest” visuals (локально, без импорта файлов)
+// Shared “Nest” visuals (local, no imports)
 // ============================================================================
 
 class _NestDialogCard extends StatelessWidget {

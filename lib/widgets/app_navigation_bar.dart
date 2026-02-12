@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 class AppNavigationBar extends StatelessWidget {
   final int selectedIndex;
@@ -14,6 +15,7 @@ class AppNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final t9n = AppLocalizations.of(context);
 
     return SafeArea(
       top: false,
@@ -44,31 +46,31 @@ class AppNavigationBar extends StatelessWidget {
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
                 indicatorColor: cs.primary.withOpacity(0.16),
-                destinations: const [
+                destinations: [
                   NavigationDestination(
-                    icon: Icon(Icons.flag_outlined),
-                    selectedIcon: Icon(Icons.flag),
-                    label: 'Goals',
+                    icon: const Icon(Icons.flag_outlined),
+                    selectedIcon: const Icon(Icons.flag),
+                    label: t9n.navGoals,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.mood_outlined),
-                    selectedIcon: Icon(Icons.mood),
-                    label: 'Mood',
+                    icon: const Icon(Icons.mood_outlined),
+                    selectedIcon: const Icon(Icons.mood),
+                    label: t9n.navMood,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.person_outline),
-                    selectedIcon: Icon(Icons.person),
-                    label: 'Profile',
+                    icon: const Icon(Icons.person_outline),
+                    selectedIcon: const Icon(Icons.person),
+                    label: t9n.navProfile,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.insights_outlined),
-                    selectedIcon: Icon(Icons.insights),
-                    label: 'Reports',
+                    icon: const Icon(Icons.insights_outlined),
+                    selectedIcon: const Icon(Icons.insights),
+                    label: t9n.navReports,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.account_balance_wallet_outlined),
-                    selectedIcon: Icon(Icons.account_balance_wallet),
-                    label: 'Expenses',
+                    icon: const Icon(Icons.account_balance_wallet_outlined),
+                    selectedIcon: const Icon(Icons.account_balance_wallet),
+                    label: t9n.navExpenses,
                   ),
                 ],
               ),

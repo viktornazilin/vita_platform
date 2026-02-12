@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../../models/home_model.dart';
 import 'dart:ui' show ImageFilter;
 
@@ -49,15 +51,18 @@ class _HomeViewState extends State<_HomeView> {
   static final PageStorageBucket _bucket = PageStorageBucket();
   final ValueNotifier<bool> _fabVisible = ValueNotifier<bool>(true);
 
-  String _titleFor(int idx) => switch (idx) {
-    0 => 'Главная',
-    1 => 'Цели',
-    2 => 'Настроение',
-    3 => 'Профиль',
-    4 => 'Отчёты',
-    5 => 'Расходы',
-    _ => 'MyNEST',
-  };
+  String _titleFor(int idx, BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return switch (idx) {
+      0 => l.homeTitleHome,
+      1 => l.homeTitleGoals,
+      2 => l.homeTitleMood,
+      3 => l.homeTitleProfile,
+      4 => l.homeTitleReports,
+      5 => l.homeTitleExpenses,
+      _ => l.homeTitleApp,
+    };
+  }
 
   void _onDashboardScroll(ScrollDirection dir) {
     if (dir == ScrollDirection.reverse && _fabVisible.value) {
@@ -68,19 +73,21 @@ class _HomeViewState extends State<_HomeView> {
   }
 
   Future<void> _confirmSignOut(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Выйти из аккаунта?'),
-        content: const Text('Текущая сессия будет завершена.'),
+        title: Text(l.homeSignOutTitle),
+        content: Text(l.homeSignOutSubtitle),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Выйти'),
+            child: Text(l.homeSignOutConfirm),
           ),
         ],
       ),
@@ -91,6 +98,8 @@ class _HomeViewState extends State<_HomeView> {
   }
 
   Future<void> _signOut(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
+
     try {
       await Supabase.instance.client.auth.signOut();
       if (!context.mounted) return;
@@ -99,7 +108,7 @@ class _HomeViewState extends State<_HomeView> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Не удалось выйти: $e')));
+      ).showSnackBar(SnackBar(content: Text(l.homeSignOutFailed('$e'))));
     }
   }
 
@@ -168,6 +177,7 @@ class _HomeViewState extends State<_HomeView> {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<HomeModel>();
+    final l = AppLocalizations.of(context)!;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -255,13 +265,13 @@ class _HomeViewState extends State<_HomeView> {
             extendBodyBehindAppBar: true,
             backgroundColor: Colors.transparent,
             appBar: AppBar(
-              title: Text(_titleFor(model.selectedIndex)),
+              title: Text(_titleFor(model.selectedIndex, context)),
               backgroundColor: Colors.transparent,
               elevation: 0,
               scrolledUnderElevation: 0,
               actions: [
                 IconButton(
-                  tooltip: 'Выйти из аккаунта',
+                  tooltip: l.homeSignOutTooltip,
                   icon: const Icon(Icons.logout),
                   onPressed: () => _confirmSignOut(context),
                 ),
@@ -285,13 +295,13 @@ class _HomeViewState extends State<_HomeView> {
           extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: Text(_titleFor(model.selectedIndex)),
+            title: Text(_titleFor(model.selectedIndex, context)),
             backgroundColor: Colors.transparent,
             elevation: 0,
             scrolledUnderElevation: 0,
             actions: [
               IconButton(
-                tooltip: 'Выйти из аккаунта',
+                tooltip: l.homeSignOutTooltip,
                 icon: const Icon(Icons.logout),
                 onPressed: () => _confirmSignOut(context),
               ),
@@ -308,7 +318,7 @@ class _HomeViewState extends State<_HomeView> {
                   leading: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Tooltip(
-                      message: 'Быстрые действия',
+                      message: l.homeQuickActionsTooltip,
                       child: _logoFab(
                         context,
                         heroTag: 'launcher-fab-rail',
@@ -318,36 +328,36 @@ class _HomeViewState extends State<_HomeView> {
                       ),
                     ),
                   ),
-                  destinations: const [
+                  destinations: [
                     NavigationRailDestination(
-                      icon: Icon(Icons.home_outlined),
-                      selectedIcon: Icon(Icons.home),
-                      label: Text('Главная'),
+                      icon: const Icon(Icons.home_outlined),
+                      selectedIcon: const Icon(Icons.home),
+                      label: Text(l.homeTitleHome),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.flag_outlined),
-                      selectedIcon: Icon(Icons.flag),
-                      label: Text('Цели'),
+                      icon: const Icon(Icons.flag_outlined),
+                      selectedIcon: const Icon(Icons.flag),
+                      label: Text(l.homeTitleGoals),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.mood_outlined),
-                      selectedIcon: Icon(Icons.mood),
-                      label: Text('Настроение'),
+                      icon: const Icon(Icons.mood_outlined),
+                      selectedIcon: const Icon(Icons.mood),
+                      label: Text(l.homeTitleMood),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.person_outline),
-                      selectedIcon: Icon(Icons.person),
-                      label: Text('Профиль'),
+                      icon: const Icon(Icons.person_outline),
+                      selectedIcon: const Icon(Icons.person),
+                      label: Text(l.homeTitleProfile),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.insights_outlined),
-                      selectedIcon: Icon(Icons.insights),
-                      label: Text('Отчёты'),
+                      icon: const Icon(Icons.insights_outlined),
+                      selectedIcon: const Icon(Icons.insights),
+                      label: Text(l.homeTitleReports),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.account_balance_wallet_outlined),
-                      selectedIcon: Icon(Icons.account_balance_wallet),
-                      label: Text('Расходы'),
+                      icon: const Icon(Icons.account_balance_wallet_outlined),
+                      selectedIcon: const Icon(Icons.account_balance_wallet),
+                      label: Text(l.homeTitleExpenses),
                     ),
                   ],
                 ),

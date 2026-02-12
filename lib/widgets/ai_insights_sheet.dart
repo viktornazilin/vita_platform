@@ -1,9 +1,10 @@
-// ai_insights_sheet.dart
+// ai_insights_sheet.dart  ✅ i18n: вынесли тексты в t.* ключи
 import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/ai/ai_insight.dart';
 import 'ai_insight_card.dart';
@@ -71,7 +72,10 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
             : null;
       });
     } catch (e) {
-      setState(() => _error = 'Ошибка AI: $e');
+      if (mounted) {
+        final t9n = AppLocalizations.of(context);
+        setState(() => _error = t9n.aiInsightsErrorAi(e.toString()));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -88,24 +92,21 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
       context: context,
       builder: (ctx) {
         final tt = Theme.of(ctx).textTheme;
+        final t9n = AppLocalizations.of(ctx);
         return AlertDialog(
           title: Text(
-            'Запустить AI-анализ?',
+            t9n.aiInsightsConfirmTitle,
             style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
           ),
-          content: Text(
-            'AI проанализирует задачи, привычки и самочувствие за выбранный период и сохранит инсайты. '
-            'Это может занять несколько секунд.',
-            style: tt.bodyMedium,
-          ),
+          content: Text(t9n.aiInsightsConfirmBody, style: tt.bodyMedium),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Отмена'),
+              child: Text(t9n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Запустить'),
+              child: Text(t9n.aiInsightsConfirmRun),
             ),
           ],
         );
@@ -113,16 +114,25 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
     );
   }
 
-  String _periodLabel(String v) => switch (v) {
-    'last_7_days' => '7 дней',
-    'last_30_days' => '30 дней',
-    'last_90_days' => '90 дней',
-    _ => '30 дней',
-  };
+  String _periodLabel(BuildContext context, String v) {
+    final t9n = AppLocalizations.of(context);
+    switch (v) {
+      case 'last_7_days':
+        return t9n.aiInsightsPeriod7;
+      case 'last_30_days':
+        return t9n.aiInsightsPeriod30;
+      case 'last_90_days':
+        return t9n.aiInsightsPeriod90;
+      default:
+        return t9n.aiInsightsPeriod30;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final t9n = AppLocalizations.of(context);
+
     final bottom =
         MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom;
@@ -153,7 +163,7 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                         child: Row(
                           children: [
                             Text(
-                              'AI-инсайты',
+                              t9n.aiInsightsTitle,
                               style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.w900,
@@ -163,7 +173,7 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                             const Spacer(),
 
                             _PeriodPill(
-                              label: _periodLabel(_period),
+                              label: _periodLabel(context, _period),
                               enabled: !_loading,
                               onTap: () async {
                                 final picked =
@@ -182,7 +192,6 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                                   _error = null;
                                   _insights = [];
                                   _runMeta = null;
-                                  // сохраняем факт подтверждения, но всё равно запуск руками
                                   // _confirmed оставляем как есть
                                 });
                               },
@@ -206,9 +215,10 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: _InfoPill(
-                            text:
-                                'Последний запуск: ${_runMeta!['created_at'] ?? ''}'
-                                    .trim(),
+                            text: t9n.aiInsightsLastRun(
+                              ((_runMeta!['created_at'] ?? '').toString())
+                                  .trim(),
+                            ),
                           ),
                         ),
                       ],
@@ -228,10 +238,9 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                             ? Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: _EmptyHint(
-                                  title: 'AI ещё не запускался',
-                                  subtitle:
-                                      'Выбери период и нажми «Запустить». Инсайты сохранятся и будут доступны в приложении.',
-                                  ctaLabel: 'Запустить анализ',
+                                  title: t9n.aiInsightsEmptyNotRunTitle,
+                                  subtitle: t9n.aiInsightsEmptyNotRunSubtitle,
+                                  ctaLabel: t9n.aiInsightsCtaRun,
                                   onCta: () => _load(requireConfirm: true),
                                 ),
                               )
@@ -241,10 +250,10 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                             ? Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: _EmptyHint(
-                                  title: 'Инсайтов пока нет',
+                                  title: t9n.aiInsightsEmptyNoInsightsTitle,
                                   subtitle:
-                                      'Добавь больше данных (задачи, привычки, ответы на вопросы) и запусти анализ.',
-                                  ctaLabel: 'Запустить снова',
+                                      t9n.aiInsightsEmptyNoInsightsSubtitle,
+                                  ctaLabel: t9n.aiInsightsCtaRunAgain,
                                   onCta: () => _load(requireConfirm: true),
                                 ),
                               )
@@ -544,6 +553,8 @@ class _PeriodPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t9n = AppLocalizations.of(context);
+
     Widget item(String value, String label, IconData icon) {
       final selected = value == current;
       return InkWell(
@@ -600,13 +611,21 @@ class _PeriodPickerSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              item('last_7_days', '7 дней', Icons.calendar_view_week_rounded),
+              item(
+                'last_7_days',
+                t9n.aiInsightsPeriod7,
+                Icons.calendar_view_week_rounded,
+              ),
               const SizedBox(height: 10),
-              item('last_30_days', '30 дней', Icons.calendar_month_rounded),
+              item(
+                'last_30_days',
+                t9n.aiInsightsPeriod30,
+                Icons.calendar_month_rounded,
+              ),
               const SizedBox(height: 10),
               item(
                 'last_90_days',
-                '90 дней',
+                t9n.aiInsightsPeriod90,
                 Icons.calendar_view_month_rounded,
               ),
             ],

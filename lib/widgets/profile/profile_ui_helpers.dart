@@ -1,5 +1,8 @@
+// lib/screens/profile/profile_ui_helpers.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 // Nest UI (проверь пути/имена)
 import '../../widgets/nest/nest_card.dart';
@@ -16,16 +19,16 @@ class ProfileUi {
   }
 
   // ======= LifeBlock mapping (label + icon) =======
+  // ВАЖНО: label хранится как l10n-key, а отображение — через локализацию.
   static LifeBlockMeta blockMeta(String raw) {
     final k = raw.trim().toLowerCase();
 
-    // тут можно расширять как хочешь
     switch (k) {
       case 'health':
       case 'здоровье':
         return const LifeBlockMeta(
           key: 'health',
-          label: 'Здоровье',
+          labelKey: 'lifeBlockHealth',
           icon: Icons.favorite_rounded,
         );
 
@@ -34,7 +37,7 @@ class ProfileUi {
       case 'карьера':
         return const LifeBlockMeta(
           key: 'career',
-          label: 'Карьера',
+          labelKey: 'lifeBlockCareer',
           icon: Icons.work_rounded,
         );
 
@@ -42,32 +45,37 @@ class ProfileUi {
       case 'семья':
         return const LifeBlockMeta(
           key: 'family',
-          label: 'Семья',
+          labelKey: 'lifeBlockFamily',
           icon: Icons.home_rounded,
         );
 
       case 'finance':
       case 'финансы':
+      case 'money':
+      case 'деньги':
         return const LifeBlockMeta(
           key: 'finance',
-          label: 'Финансы',
+          labelKey: 'lifeBlockFinance',
           icon: Icons.savings_rounded,
         );
 
       case 'learning':
       case 'education':
+      case 'study':
       case 'учёба':
+      case 'развитие':
         return const LifeBlockMeta(
           key: 'learning',
-          label: 'Развитие',
+          labelKey: 'lifeBlockLearning',
           icon: Icons.auto_stories_rounded,
         );
 
       case 'social':
+      case 'friends':
       case 'друзья':
         return const LifeBlockMeta(
           key: 'social',
-          label: 'Социальное',
+          labelKey: 'lifeBlockSocial',
           icon: Icons.groups_rounded,
         );
 
@@ -76,17 +84,73 @@ class ProfileUi {
       case 'отдых':
         return const LifeBlockMeta(
           key: 'rest',
-          label: 'Отдых',
+          labelKey: 'lifeBlockRest',
           icon: Icons.beach_access_rounded,
+        );
+
+      case 'balance':
+      case 'баланс':
+        return const LifeBlockMeta(
+          key: 'balance',
+          labelKey: 'lifeBlockBalance',
+          icon: Icons.spa_rounded,
+        );
+
+      case 'love':
+      case 'любовь':
+        return const LifeBlockMeta(
+          key: 'love',
+          labelKey: 'lifeBlockLove',
+          icon: Icons.favorite_border_rounded,
+        );
+
+      case 'creativity':
+      case 'творчество':
+        return const LifeBlockMeta(
+          key: 'creativity',
+          labelKey: 'lifeBlockCreativity',
+          icon: Icons.palette_rounded,
         );
 
       case 'general':
       default:
         return const LifeBlockMeta(
           key: 'general',
-          label: 'Общее',
+          labelKey: 'lifeBlockGeneral',
           icon: Icons.bubble_chart_rounded,
         );
+    }
+  }
+
+  static String blockLabel(BuildContext context, String raw) {
+    final l = AppLocalizations.of(context)!;
+    final meta = blockMeta(raw);
+
+    // без рефлексии: обычный switch по labelKey
+    switch (meta.labelKey) {
+      case 'lifeBlockHealth':
+        return l.lifeBlockHealth;
+      case 'lifeBlockCareer':
+        return l.lifeBlockCareer;
+      case 'lifeBlockFamily':
+        return l.lifeBlockFamily;
+      case 'lifeBlockFinance':
+        return l.lifeBlockFinance;
+      case 'lifeBlockLearning':
+        return l.lifeBlockLearning;
+      case 'lifeBlockSocial':
+        return l.lifeBlockSocial;
+      case 'lifeBlockRest':
+        return l.lifeBlockRest;
+      case 'lifeBlockBalance':
+        return l.lifeBlockBalance;
+      case 'lifeBlockLove':
+        return l.lifeBlockLove;
+      case 'lifeBlockCreativity':
+        return l.lifeBlockCreativity;
+      case 'lifeBlockGeneral':
+      default:
+        return l.lifeBlockGeneral;
     }
   }
 
@@ -101,6 +165,7 @@ class ProfileUi {
     int maxLines = 1,
     String? hint,
   }) async {
+    final l = AppLocalizations.of(context)!;
     final ctrl = TextEditingController(text: initial);
 
     final res = await showModalBottomSheet<String>(
@@ -134,14 +199,14 @@ class ProfileUi {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Отмена'),
+                      child: Text(l.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
                       onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-                      child: const Text('Сохранить'),
+                      child: Text(l.commonSave),
                     ),
                   ),
                 ],
@@ -164,6 +229,7 @@ class ProfileUi {
     int min = 0,
     int max = 120,
   }) async {
+    final l = AppLocalizations.of(context)!;
     final ctrl = TextEditingController(text: initial?.toString() ?? '');
 
     final res = await showModalBottomSheet<int?>(
@@ -199,7 +265,7 @@ class ProfileUi {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Отмена'),
+                      child: Text(l.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -212,7 +278,7 @@ class ProfileUi {
                         if (v == null || v < min || v > max) return;
                         Navigator.pop(ctx, v);
                       },
-                      child: const Text('Сохранить'),
+                      child: Text(l.commonSave),
                     ),
                   ),
                 ],
@@ -236,6 +302,8 @@ class ProfileUi {
     double max = 24,
     int decimals = 1,
   }) async {
+    final l = AppLocalizations.of(context)!;
+
     return showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true,
@@ -290,14 +358,14 @@ class ProfileUi {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Отмена'),
+                          child: Text(l.commonCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
                           onPressed: () => Navigator.pop(ctx, value),
-                          child: const Text('Сохранить'),
+                          child: Text(l.commonSave),
                         ),
                       ),
                     ],
@@ -317,6 +385,7 @@ class ProfileUi {
     required List<String> initial,
     String hint = 'Введите через запятую',
   }) async {
+    final l = AppLocalizations.of(context)!;
     final ctrl = TextEditingController(text: initial.join(', '));
 
     final res = await showModalBottomSheet<List<String>>(
@@ -349,7 +418,7 @@ class ProfileUi {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Отмена'),
+                      child: Text(l.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -358,7 +427,7 @@ class ProfileUi {
                       onPressed: () {
                         final raw = ctrl.text.trim();
                         final list =
-                            raw.isEmpty
+                            (raw.isEmpty)
                                   ? <String>[]
                                   : raw
                                         .split(',')
@@ -369,7 +438,7 @@ class ProfileUi {
                               ..sort();
                         Navigator.pop(ctx, list);
                       },
-                      child: const Text('Сохранить'),
+                      child: Text(l.commonSave),
                     ),
                   ),
                 ],
@@ -483,6 +552,7 @@ class ProfileUi {
 
   static Widget nestChip(BuildContext context, String raw) {
     final meta = blockMeta(raw);
+    final label = blockLabel(context, raw);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -504,7 +574,7 @@ class ProfileUi {
           Icon(meta.icon, size: 16, color: const Color(0xFF2E4B5A)),
           const SizedBox(width: 8),
           Text(
-            meta.label,
+            label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w900,
               color: const Color(0xFF2E4B5A),
@@ -518,14 +588,20 @@ class ProfileUi {
 
 class LifeBlockMeta {
   final String key;
-  final String label;
+  final String labelKey;
   final IconData icon;
 
   const LifeBlockMeta({
     required this.key,
-    required this.label,
+    required this.labelKey,
     required this.icon,
   });
+
+  /// ✅ FIX: goals_by_block_card.dart ожидает meta.label
+  /// Тут возвращаем просто ключ локализации — а "человеческий" текст
+  /// получается через ProfileUi.blockLabel(context, raw).
+  /// Но чтобы сборка не падала, label должен существовать.
+  String get label => labelKey;
 }
 
 class _SheetHeader extends StatelessWidget {
@@ -534,7 +610,6 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // маленький “граббер” сверху + заголовок
     return Column(
       children: [
         Center(

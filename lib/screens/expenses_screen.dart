@@ -1,7 +1,9 @@
-import 'dart:ui';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/budget_model.dart';
 import '../domain/category.dart' as dm;
@@ -41,15 +43,18 @@ class _ExpensesView extends StatelessWidget {
   }
 
   Future<void> _toggleCommit(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
     final m = context.read<BudgetModel>();
     final wasCommitted = m.monthCommitted;
+
     await m.toggleJarAllocationForMonth();
     if (!context.mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         content: Text(
-          wasCommitted ? 'Фиксация отменена' : 'Распределение зафиксировано',
+          wasCommitted ? l.expensesCommitUndone : l.expensesCommitDone,
         ),
       ),
     );
@@ -93,6 +98,7 @@ class _ExpensesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final m = context.watch<BudgetModel>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
@@ -121,11 +127,11 @@ class _ExpensesView extends StatelessWidget {
                   slivers: [
                     SliverAppBar(
                       pinned: true,
-                      title: const Text('Расходы'),
+                      title: Text(l.expensesTitle),
                       actions: [
                         IconButton(
                           icon: const Icon(Icons.calendar_month),
-                          tooltip: 'Выбрать дату',
+                          tooltip: l.expensesPickDate,
                           onPressed: () => _pickDate(context),
                         ),
                         IconButton(
@@ -135,8 +141,8 @@ class _ExpensesView extends StatelessWidget {
                                 : Icons.savings_outlined,
                           ),
                           tooltip: m.monthCommitted
-                              ? 'Отменить фиксацию'
-                              : 'Зафиксировать распределение по копилкам',
+                              ? l.expensesCommitUndoTooltip
+                              : l.expensesCommitTooltip,
                           onPressed:
                               (m.jars.isNotEmpty &&
                                   (m.monthCommitted || m.freeCashFlowMonth > 0))
@@ -145,7 +151,7 @@ class _ExpensesView extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.tune),
-                          tooltip: 'Настройки копилок и категорий',
+                          tooltip: l.expensesBudgetSettings,
                           onPressed: () =>
                               Navigator.of(context).pushNamed('/budget'),
                         ),
@@ -165,6 +171,10 @@ class _ExpensesView extends StatelessWidget {
                           income: income,
                           expense: expense,
                           free: free,
+                          label: l.expensesMonthSummary,
+                          incomeLabel: l.expensesIncomeLegend(income),
+                          expenseLabel: l.expensesExpenseLegend(expense),
+                          freeLabel: l.expensesFreeLegend(free),
                         ),
                       ),
                     ),
@@ -183,7 +193,7 @@ class _ExpensesView extends StatelessWidget {
                               vertical: 12,
                             ),
                             child: Text(
-                              "Сумма за день: ${dayExpenseSum().toStringAsFixed(2)} €",
+                              l.expensesDaySum(dayExpenseSum()),
                               textAlign: TextAlign.center,
                               style: tt.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
@@ -204,7 +214,7 @@ class _ExpensesView extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Нет операций за этот день',
+                              l.expensesNoTxForDay,
                               style: tt.bodyMedium?.copyWith(
                                 color: cs.onSurfaceVariant,
                                 fontWeight: FontWeight.w700,
@@ -234,7 +244,7 @@ class _ExpensesView extends StatelessWidget {
                             final isExpense = t.kind == 'expense';
                             final kindColor = isExpense
                                 ? cs.error
-                                : cs.tertiary; // мягче, чем pure green
+                                : cs.tertiary;
 
                             return Dismissible(
                               key: ValueKey(t.id),
@@ -254,33 +264,38 @@ class _ExpensesView extends StatelessWidget {
                                 ),
                               ),
                               confirmDismiss: (_) async {
-                                return await showDialog<bool>(
+                                final confirm =
+                                    await showDialog<bool>(
                                       context: context,
-                                      builder: (_) => AlertDialog(
+                                      builder: (dlgCtx) => AlertDialog(
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             22,
                                           ),
                                         ),
-                                        title: const Text('Удалить операцию?'),
+                                        title: Text(l.expensesDeleteTxTitle),
                                         content: Text(
-                                          "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
+                                          l.expensesDeleteTxBody(
+                                            cat.name,
+                                            t.amount,
+                                          ),
                                         ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text('Отмена'),
+                                                Navigator.pop(dlgCtx, false),
+                                            child: Text(l.commonCancel),
                                           ),
                                           FilledButton.tonal(
                                             onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text('Удалить'),
+                                                Navigator.pop(dlgCtx, true),
+                                            child: Text(l.commonDelete),
                                           ),
                                         ],
                                       ),
                                     ) ??
                                     false;
+                                return confirm;
                               },
                               onDismissed: (_) => context
                                   .read<BudgetModel>()
@@ -307,9 +322,7 @@ class _ExpensesView extends StatelessWidget {
                                             children: [
                                               ListTile(
                                                 leading: const Icon(Icons.edit),
-                                                title: const Text(
-                                                  'Редактировать',
-                                                ),
+                                                title: Text(l.commonEdit),
                                                 onTap: () =>
                                                     Navigator.pop(ctx, 'edit'),
                                               ),
@@ -317,7 +330,7 @@ class _ExpensesView extends StatelessWidget {
                                                 leading: const Icon(
                                                   Icons.delete_rounded,
                                                 ),
-                                                title: const Text('Удалить'),
+                                                title: Text(l.commonDelete),
                                                 onTap: () => Navigator.pop(
                                                   ctx,
                                                   'delete',
@@ -332,26 +345,29 @@ class _ExpensesView extends StatelessWidget {
                                   if (action == 'delete') {
                                     final confirm = await showDialog<bool>(
                                       context: context,
-                                      builder: (_) => AlertDialog(
+                                      builder: (dlgCtx) => AlertDialog(
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             22,
                                           ),
                                         ),
-                                        title: const Text('Удалить операцию?'),
+                                        title: Text(l.expensesDeleteTxTitle),
                                         content: Text(
-                                          "${cat.name} — ${t.amount.toStringAsFixed(2)} €",
+                                          l.expensesDeleteTxBody(
+                                            cat.name,
+                                            t.amount,
+                                          ),
                                         ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text('Отмена'),
+                                                Navigator.pop(dlgCtx, false),
+                                            child: Text(l.commonCancel),
                                           ),
                                           FilledButton.tonal(
                                             onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text('Удалить'),
+                                                Navigator.pop(dlgCtx, true),
+                                            child: Text(l.commonDelete),
                                           ),
                                         ],
                                       ),
@@ -430,7 +446,7 @@ class _ExpensesView extends StatelessWidget {
                       ),
                       sliver: SliverToBoxAdapter(
                         child: Text(
-                          'Категории расходов за месяц',
+                          l.expensesCategoriesMonthTitle,
                           style: tt.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -440,7 +456,10 @@ class _ExpensesView extends StatelessWidget {
                     SliverPadding(
                       padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
                       sliver: SliverToBoxAdapter(
-                        child: _CategoryJarsGrid(data: m.expenseBreakdownMonth),
+                        child: _CategoryJarsGrid(
+                          data: m.expenseBreakdownMonth,
+                          emptyText: l.expensesNoCategoryData,
+                        ),
                       ),
                     ),
 
@@ -457,7 +476,7 @@ class _ExpensesView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Копилки',
+                              l.expensesJarsTitle,
                               style: tt.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                               ),
@@ -466,13 +485,13 @@ class _ExpensesView extends StatelessWidget {
                               TextButton.icon(
                                 onPressed: () => _toggleCommit(context),
                                 icon: const Icon(Icons.undo),
-                                label: const Text('Отменить фиксацию'),
+                                label: Text(l.expensesCommitUndoShort),
                               )
                             else if (m.jars.isNotEmpty &&
                                 m.freeCashFlowMonth > 0)
                               TextButton(
                                 onPressed: () => _toggleCommit(context),
-                                child: const Text('Зафиксировать'),
+                                child: Text(l.expensesCommitShort),
                               ),
                           ],
                         ),
@@ -481,7 +500,10 @@ class _ExpensesView extends StatelessWidget {
                     SliverPadding(
                       padding: EdgeInsets.symmetric(horizontal: 8 + sidePad),
                       sliver: SliverToBoxAdapter(
-                        child: _SavingsJarsGrid(jars: m.jars),
+                        child: _SavingsJarsGrid(
+                          jars: m.jars,
+                          emptyText: l.expensesNoJars,
+                        ),
                       ),
                     ),
 
@@ -490,10 +512,11 @@ class _ExpensesView extends StatelessWidget {
                 ),
               ),
       ),
-
       floatingActionButton: _FabMenuNest(
         onAddExpense: () => _addExpense(context),
         onAddIncome: () => _addIncome(context),
+        addExpenseTooltip: l.expensesAddExpense,
+        addIncomeTooltip: l.expensesAddIncome,
       ),
     );
   }
@@ -597,10 +620,19 @@ class _TxTileNest extends StatelessWidget {
 /// Верхняя карточка со «стековой» полосой (Nest)
 class _BudgetTopCard extends StatelessWidget {
   final double income, expense, free;
+  final String label;
+  final String incomeLabel;
+  final String expenseLabel;
+  final String freeLabel;
+
   const _BudgetTopCard({
     required this.income,
     required this.expense,
     required this.free,
+    required this.label,
+    required this.incomeLabel,
+    required this.expenseLabel,
+    required this.freeLabel,
   });
 
   @override
@@ -626,18 +658,9 @@ class _BudgetTopCard extends StatelessWidget {
               spacing: 12,
               runSpacing: 8,
               children: [
-                _legendDot(
-                  color: cs.tertiary,
-                  text: "Доходы ${income.toStringAsFixed(2)} €",
-                ),
-                _legendDot(
-                  color: cs.error,
-                  text: "Расходы ${expense.toStringAsFixed(2)} €",
-                ),
-                _legendDot(
-                  color: cs.primary,
-                  text: "Свободно ${free.toStringAsFixed(2)} €",
-                ),
+                _legendDot(color: cs.tertiary, text: incomeLabel),
+                _legendDot(color: cs.error, text: expenseLabel),
+                _legendDot(color: cs.primary, text: freeLabel),
               ],
             ),
             const SizedBox(height: 12),
@@ -671,7 +694,7 @@ class _BudgetTopCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Сводка месяца',
+              label,
               textAlign: TextAlign.center,
               style: tt.bodySmall?.copyWith(
                 color: cs.onSurfaceVariant,
@@ -703,7 +726,9 @@ class _BudgetTopCard extends StatelessWidget {
 /// «Банки» категорий расходов за месяц — адаптивная сетка (Nest)
 class _CategoryJarsGrid extends StatelessWidget {
   final Map<dm.Category, double> data;
-  const _CategoryJarsGrid({required this.data});
+  final String emptyText;
+
+  const _CategoryJarsGrid({required this.data, required this.emptyText});
 
   @override
   Widget build(BuildContext context) {
@@ -713,7 +738,7 @@ class _CategoryJarsGrid extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Text(
-          'Пока нет данных по категориям',
+          emptyText,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: cs.onSurfaceVariant,
             fontWeight: FontWeight.w600,
@@ -729,9 +754,9 @@ class _CategoryJarsGrid extends StatelessWidget {
         final maxW = c.maxWidth;
         const minTile = 150.0;
         const maxTile = 220.0;
+
         int cols = (maxW / minTile).floor().clamp(1, 6);
         double tileW = (maxW / cols).clamp(minTile, maxTile);
-
         while (tileW > maxTile && cols < 8) {
           cols += 1;
           tileW = (maxW / cols).clamp(minTile, maxTile);
@@ -748,7 +773,7 @@ class _CategoryJarsGrid extends StatelessWidget {
                 title: e.key.name,
                 subtitle: "${e.value.toStringAsFixed(0)} €",
                 fill: p,
-                color: cs.secondary, // мягкий “янтарный” в теме — если есть
+                color: cs.secondary,
               ),
             );
           }).toList(),
@@ -846,7 +871,9 @@ class _JarTileNest extends StatelessWidget {
 
 class _SavingsJarsGrid extends StatelessWidget {
   final List<Jar> jars;
-  const _SavingsJarsGrid({required this.jars});
+  final String emptyText;
+
+  const _SavingsJarsGrid({required this.jars, required this.emptyText});
 
   @override
   Widget build(BuildContext context) {
@@ -856,7 +883,7 @@ class _SavingsJarsGrid extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Text(
-          'Копилок пока нет',
+          emptyText,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: cs.onSurfaceVariant,
             fontWeight: FontWeight.w600,
@@ -870,6 +897,7 @@ class _SavingsJarsGrid extends StatelessWidget {
         final maxW = c.maxWidth;
         const minTile = 150.0;
         const maxTile = 220.0;
+
         int cols = (maxW / minTile).floor().clamp(1, 6);
         double tileW = (maxW / cols).clamp(minTile, maxTile);
         while (tileW > maxTile && cols < 8) {
@@ -914,8 +942,15 @@ class _SavingsJarsGrid extends StatelessWidget {
 class _FabMenuNest extends StatefulWidget {
   final VoidCallback onAddIncome;
   final VoidCallback onAddExpense;
+  final String addIncomeTooltip;
+  final String addExpenseTooltip;
 
-  const _FabMenuNest({required this.onAddIncome, required this.onAddExpense});
+  const _FabMenuNest({
+    required this.onAddIncome,
+    required this.onAddExpense,
+    required this.addIncomeTooltip,
+    required this.addExpenseTooltip,
+  });
 
   @override
   State<_FabMenuNest> createState() => _FabMenuNestState();
@@ -929,23 +964,25 @@ class _FabMenuNestState extends State<_FabMenuNest> {
     final cs = Theme.of(context).colorScheme;
 
     Widget mini({
-      required String hero,
       required IconData icon,
       required VoidCallback onTap,
       required String tooltip,
     }) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(999),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Material(
-            color: cs.surface.withOpacity(0.70),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(999),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Icon(icon, color: cs.onSurface, size: 20),
+      return Tooltip(
+        message: tooltip,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Material(
+              color: cs.surface.withOpacity(0.70),
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(icon, color: cs.onSurface, size: 20),
+                ),
               ),
             ),
           ),
@@ -963,9 +1000,8 @@ class _FabMenuNestState extends State<_FabMenuNest> {
               : Column(
                   children: [
                     mini(
-                      hero: 'addIncome',
                       icon: Icons.trending_up_rounded,
-                      tooltip: 'Добавить доход',
+                      tooltip: widget.addIncomeTooltip,
                       onTap: () {
                         setState(() => _open = false);
                         widget.onAddIncome();
@@ -973,9 +1009,8 @@ class _FabMenuNestState extends State<_FabMenuNest> {
                     ),
                     const SizedBox(height: 10),
                     mini(
-                      hero: 'addExpense',
                       icon: Icons.trending_down_rounded,
-                      tooltip: 'Добавить расход',
+                      tooltip: widget.addExpenseTooltip,
                       onTap: () {
                         setState(() => _open = false);
                         widget.onAddExpense();
@@ -986,7 +1021,7 @@ class _FabMenuNestState extends State<_FabMenuNest> {
                 ),
         ),
         FloatingActionButton(
-          heroTag: 'mainFab',
+          heroTag: 'expensesFab',
           backgroundColor: cs.primary,
           foregroundColor: cs.onPrimary,
           onPressed: () => setState(() => _open = !_open),

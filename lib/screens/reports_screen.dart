@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/reports_model.dart';
 
@@ -1756,6 +1757,8 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+
     setState(() {
       _loading = true;
       _error = null;
@@ -1767,28 +1770,34 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
     try {
       final client = Supabase.instance.client;
 
-      // ✅ адаптируй под свою схему (название таблицы/полей)
       final row = await client
-          .from('ai_insights')
+          .from('ai_insights_runs')
           .select('created_at, period, insights')
           .eq('user_id', dbRepo.uid)
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
 
+      if (!mounted) return;
+
       if (row == null) {
-        if (!mounted) return;
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _items = [];
+        });
         return;
       }
 
       final createdAtRaw = row['created_at']?.toString();
       final periodRaw = row['period']?.toString();
+
       final createdAt = createdAtRaw != null
-          ? DateTime.tryParse(createdAtRaw)
+          ? DateTime.parse(createdAtRaw).toLocal()
           : null;
 
       final rawInsights = row['insights'];
+
+      // jsonb -> ожидаем List<dynamic>
       final list = (rawInsights is List) ? rawInsights : const <dynamic>[];
 
       final parsed = list
@@ -1800,7 +1809,6 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
           .take(widget.limit)
           .toList();
 
-      if (!mounted) return;
       setState(() {
         _createdAt = createdAt;
         _period = periodRaw;

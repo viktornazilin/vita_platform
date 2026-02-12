@@ -1,4 +1,8 @@
+// lib/widgets/add_expense_dialog.dart
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../domain/category.dart' as dm;
 
 class AddExpenseResult {
@@ -17,7 +21,7 @@ class AddExpenseDialog extends StatefulWidget {
   final List<dm.Category> categories;
   final Future<String> Function(String name) onCreateCategory;
 
-  // новые параметры для редактирования
+  // edit params
   final double? initialAmount;
   final String? initialCategoryId;
   final String? initialNote;
@@ -37,8 +41,8 @@ class AddExpenseDialog extends StatefulWidget {
 
 class _AddExpenseDialogState extends State<AddExpenseDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _amountController;
-  late TextEditingController _noteController;
+  late final TextEditingController _amountController;
+  late final TextEditingController _noteController;
   String? _selectedCategoryId;
 
   @override
@@ -56,40 +60,66 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
         (widget.categories.isNotEmpty ? widget.categories.first.id : null);
   }
 
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
   Future<void> _createCategory() async {
+    final l = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController();
+
     final name = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Новая категория'),
+      builder: (dctx) => AlertDialog(
+        title: Text(l.addExpenseNewCategoryTitle),
         content: TextField(
           controller: nameCtrl,
-          decoration: const InputDecoration(labelText: 'Название'),
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(labelText: l.addExpenseCategoryNameLabel),
+          onSubmitted: (_) => Navigator.pop(dctx, nameCtrl.text.trim()),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
+            onPressed: () => Navigator.pop(dctx),
+            child: Text(l.commonCancel),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, nameCtrl.text.trim()),
-            child: const Text('Создать'),
+            onPressed: () => Navigator.pop(dctx, nameCtrl.text.trim()),
+            child: Text(l.commonCreate),
           ),
         ],
       ),
     );
-    if (name != null && name.isNotEmpty) {
-      final id = await widget.onCreateCategory(name);
+
+    nameCtrl.dispose();
+
+    if (!mounted) return;
+    if (name != null && name.trim().isNotEmpty) {
+      final id = await widget.onCreateCategory(name.trim());
+      if (!mounted) return;
       setState(() => _selectedCategoryId = id);
     }
   }
 
+  String? _validateAmount(String? v) {
+    final l = AppLocalizations.of(context)!;
+    final d = double.tryParse((v ?? '').replaceAll(',', '.'));
+    if (d == null || d <= 0) return l.addExpenseAmountInvalid;
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
+    final isEdit = widget.initialAmount != null;
+
     return AlertDialog(
-      title: Text(
-        widget.initialAmount != null ? 'Редактировать расход' : 'Новый расход',
-      ),
+      title: Text(isEdit ? l.addExpenseEditTitle : l.addExpenseNewTitle),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -101,19 +131,15 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(labelText: 'Сумма'),
-                validator: (v) {
-                  final d = double.tryParse((v ?? '').replaceAll(',', '.'));
-                  if (d == null || d <= 0) return 'Введите корректную сумму';
-                  return null;
-                },
+                decoration: InputDecoration(labelText: l.addExpenseAmountLabel),
+                validator: _validateAmount,
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: _selectedCategoryId,
+                      value: _selectedCategoryId,
                       items: widget.categories
                           .map(
                             (c) => DropdownMenuItem(
@@ -123,21 +149,24 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                           )
                           .toList(),
                       onChanged: (v) => setState(() => _selectedCategoryId = v),
-                      decoration: const InputDecoration(labelText: 'Категория'),
-                      validator: (v) => v == null ? 'Выберите категорию' : null,
+                      decoration: InputDecoration(
+                        labelText: l.addExpenseCategoryLabel,
+                      ),
+                      validator: (v) =>
+                          v == null ? l.addExpenseCategoryRequired : null,
                     ),
                   ),
                   IconButton(
                     onPressed: _createCategory,
                     icon: const Icon(Icons.add),
-                    tooltip: 'Создать категорию',
+                    tooltip: l.addExpenseCreateCategoryTooltip,
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _noteController,
-                decoration: const InputDecoration(labelText: 'Комментарий'),
+                decoration: InputDecoration(labelText: l.addExpenseNoteLabel),
               ),
             ],
           ),
@@ -146,7 +175,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
+          child: Text(l.commonCancel),
         ),
         ElevatedButton(
           onPressed: () {
@@ -166,7 +195,7 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
               ),
             );
           },
-          child: Text(widget.initialAmount != null ? 'Сохранить' : 'Добавить'),
+          child: Text(isEdit ? l.commonSave : l.commonAdd),
         ),
       ],
     );

@@ -1,6 +1,7 @@
 // lib/widgets/day_google_calendar_sync_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../main.dart'; // dbRepo
 import '../models/goals_calendar_model.dart';
@@ -200,7 +201,8 @@ class _DayGoogleCalendarSyncSheetState
         final end = _eventEnd(e) ?? start.add(const Duration(hours: 1));
         final deadline = DateTime(end.year, end.month, end.day, 23, 59);
 
-        final title = (e.summary ?? 'Без названия').trim();
+        final title = (e.summary ?? AppLocalizations.of(context)!.gcNoTitle)
+            .trim();
         final description = (e.description ?? '').trim();
 
         final block = _lifeBlockByEventId[id] ?? _defaultLifeBlock;
@@ -220,9 +222,10 @@ class _DayGoogleCalendarSyncSheetState
       }
 
       if (!mounted) return;
+      final t = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Импортировано целей: $created')));
+      ).showSnackBar(SnackBar(content: Text(t.gcImportedGoals(created))));
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
@@ -268,9 +271,10 @@ class _DayGoogleCalendarSyncSheetState
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Экспортировано целей: $exported')),
-      );
+      final t = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.gcExportedGoals(exported))));
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
@@ -306,11 +310,12 @@ class _DayGoogleCalendarSyncSheetState
     );
   }
 
-  Widget _modeToggle() {
+  Widget _modeToggle(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return SegmentedButton<_DaySyncMode>(
-      segments: const [
-        ButtonSegment(value: _DaySyncMode.import, label: Text('Импорт')),
-        ButtonSegment(value: _DaySyncMode.export, label: Text('Экспорт')),
+      segments: [
+        ButtonSegment(value: _DaySyncMode.import, label: Text(t.gcModeImport)),
+        ButtonSegment(value: _DaySyncMode.export, label: Text(t.gcModeExport)),
       ],
       selected: {_mode},
       onSelectionChanged: _loading
@@ -324,6 +329,7 @@ class _DayGoogleCalendarSyncSheetState
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final showImport = _mode == _DaySyncMode.import;
 
@@ -339,7 +345,7 @@ class _DayGoogleCalendarSyncSheetState
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Google Calendar • синхронизация за день',
+                t.gcTitleDaySync,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -347,9 +353,7 @@ class _DayGoogleCalendarSyncSheetState
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                showImport
-                    ? 'Импортируй события этого дня в цели.'
-                    : 'Экспортируй цели этого дня в календарь.',
+                showImport ? t.gcSubtitleImport : t.gcSubtitleExport,
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
@@ -365,7 +369,7 @@ class _DayGoogleCalendarSyncSheetState
               const SizedBox(height: 10),
             ],
 
-            _modeToggle(),
+            _modeToggle(context),
             const SizedBox(height: 10),
 
             Expanded(
@@ -378,9 +382,9 @@ class _DayGoogleCalendarSyncSheetState
                       DropdownButtonFormField<String>(
                         value: _calendarId,
                         items: [
-                          const DropdownMenuItem(
+                          DropdownMenuItem(
                             value: 'primary',
-                            child: Text('Primary (по умолчанию)'),
+                            child: Text(t.gcCalendarPrimary),
                           ),
                           ..._calendars
                               .where((c) => (c.id?.isNotEmpty ?? false))
@@ -397,9 +401,9 @@ class _DayGoogleCalendarSyncSheetState
                             ? null
                             : (v) =>
                                   setState(() => _calendarId = v ?? 'primary'),
-                        decoration: const InputDecoration(
-                          labelText: 'Календарь',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: t.gcCalendarLabel,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -407,7 +411,7 @@ class _DayGoogleCalendarSyncSheetState
                       if (showImport) ...[
                         _lifeBlockDropdown(
                           value: _defaultLifeBlock,
-                          label: 'Default life block (для импорта)',
+                          label: t.gcDefaultLifeBlockLabel,
                           onChanged: (v) {
                             if (v == null) return;
                             setState(() {
@@ -430,8 +434,8 @@ class _DayGoogleCalendarSyncSheetState
                           padding: const EdgeInsets.only(top: 8, bottom: 8),
                           child: Text(
                             _connected
-                                ? 'События не загружены'
-                                : 'Подключи аккаунт, чтобы загрузить события',
+                                ? t.gcEventsNotLoaded
+                                : t.gcConnectToLoadEvents,
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(color: cs.onSurfaceVariant),
@@ -499,7 +503,7 @@ class _DayGoogleCalendarSyncSheetState
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  (e.summary ?? 'Без названия')
+                                                  (e.summary ?? t.gcNoTitle)
                                                       .trim(),
                                                   maxLines: 1,
                                                   overflow:
@@ -535,7 +539,7 @@ class _DayGoogleCalendarSyncSheetState
                                       _lifeBlockDropdown(
                                         value: blockValue,
                                         dense: true,
-                                        label: 'Life block для этой цели',
+                                        label: t.gcLifeBlockForThisGoalLabel,
                                         onChanged: (v) {
                                           if (v == null) return;
                                           setState(
@@ -559,7 +563,7 @@ class _DayGoogleCalendarSyncSheetState
                           border: Border.all(color: const Color(0xFFD6E6F5)),
                         ),
                         child: Text(
-                          'Экспорт создаст события в выбранном календаре для целей этого дня.',
+                          t.gcExportHint,
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: cs.onSurfaceVariant),
                         ),
@@ -577,8 +581,8 @@ class _DayGoogleCalendarSyncSheetState
                     onPressed: _loading ? null : _connect,
                     child: Text(
                       _loading
-                          ? '...'
-                          : (_connected ? 'Подключено' : 'Подключить'),
+                          ? t.gcLoadingDots
+                          : (_connected ? t.gcConnected : t.gcConnect),
                     ),
                   ),
                 ),
@@ -589,7 +593,7 @@ class _DayGoogleCalendarSyncSheetState
                       onPressed: _loading || !_connected
                           ? null
                           : _findEventsForDay,
-                      child: Text(_loading ? '...' : 'Найти за день'),
+                      child: Text(_loading ? t.gcLoadingDots : t.gcFindForDay),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -598,7 +602,7 @@ class _DayGoogleCalendarSyncSheetState
                       onPressed: _loading || _selectedEventIds.isEmpty
                           ? null
                           : _importSelected,
-                      child: Text(_loading ? '...' : 'Импорт'),
+                      child: Text(_loading ? t.gcLoadingDots : t.gcImport),
                     ),
                   ),
                 ] else ...[
@@ -607,7 +611,7 @@ class _DayGoogleCalendarSyncSheetState
                       onPressed: _loading || !_connected
                           ? null
                           : _exportGoalsForDay,
-                      child: Text(_loading ? '...' : 'Экспорт'),
+                      child: Text(_loading ? t.gcLoadingDots : t.gcExport),
                     ),
                   ),
                 ],

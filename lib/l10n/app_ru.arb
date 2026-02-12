@@ -1,0 +1,969 @@
+{
+  "appTitle": "Nest App",
+  "login": "Вход",
+  "register": "Регистрация",
+  "home": "Главная",
+
+  "budgetSetupTitle": "Бюджет и копилки",
+  "budgetSetupSaved": "Настройки сохранены",
+  "budgetSetupSaveError": "Ошибка сохранения",
+
+  "budgetIncomeCategoriesTitle": "Доходные категории",
+  "budgetIncomeCategoriesSubtitle": "Используются при добавлении доходов",
+
+  "budgetExpenseCategoriesTitle": "Расходные категории",
+  "budgetExpenseCategoriesSubtitle": "Лимиты помогают держать траты под контролем",
+
+  "budgetJarsTitle": "Копилки",
+  "budgetJarsSubtitle": "Процент — доля от свободных средств, автоматически пополняемая",
+
+  "budgetAddJar": "Добавить копилку",
+  "budgetJarAdded": "Копилка добавлена",
+  "budgetJarAddFailed": "Не удалось добавить: {error}",
+  "@budgetJarAddFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "budgetJarDeleted": "Копилка удалена",
+  "budgetJarDeleteFailed": "Не удалось удалить: {error}",
+  "@budgetJarDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "budgetNoJarsTitle": "Копилок пока нет",
+  "budgetNoJarsSubtitle": "Создай первую цель накопления — мы поможем двигаться к ней.",
+
+  "budgetSetOrChangeLimit": "Задать/изменить лимит",
+
+  "budgetDeleteCategoryTitle": "Удалить категорию?",
+  "budgetCategoryLabel": "Категория: {name}",
+  "@budgetCategoryLabel": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+
+  "budgetDeleteJarTitle": "Удалить копилку?",
+  "budgetJarLabel": "Копилка: {title}",
+  "@budgetJarLabel": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+
+  "budgetJarSummary": "Накоплено: {saved} ₽ • Процент: {percent}%{targetPart}",
+  "@budgetJarSummary": {
+    "placeholders": {
+      "saved": {},
+      "percent": {},
+      "targetPart": {}
+    }
+  },
+
+  "budgetNewIncomeCategory": "Новая доходная категория",
+  "budgetNewExpenseCategory": "Новая расходная категория",
+  "budgetCategoryNameHint": "Например: Зарплата / Еда / Транспорт",
+
+  "budgetCategoryNameLabel": "Название",
+
+  "commonAdd": "Добавить",
+  "commonDelete": "Удалить",
+  "commonCancel": "Отмена",
+  "commonLoading": "загрузка…",
+  "commonSaving": "Сохранение…",
+  "commonSave": "Сохранить",
+  "commonRetry": "Повторить",
+  "commonUpdate": "Обновить",
+  "commonCollapse": "Свернуть",
+  "commonDots": "...",
+  "commonEdit": "Редактировать",
+  "commonBack": "Назад",
+  "commonNext": "Далее",
+  "commonDone": "Готово",
+  "commonRefresh": "Обновить",
+  "commonChange": "Изменить",
+  "commonDate": "Дата",
+  "commonRemove": "Убрать",
+  "commonPick": "Выбрать",
+  "commonClose": "Закрыть",
+  "commonCreate": "Создать",
+  "commonTitle": "Название",
+  "commonDash": "—",
+  "commonOr": "или",
+
+  "dayGoalsAllLifeBlocks": "Все сферы",
+  "dayGoalsEmpty": "Целей на этот день нет",
+
+  "dayGoalsAddFailed": "Не удалось добавить цель: {error}",
+  "@dayGoalsAddFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "dayGoalsUpdated": "Цель обновлена",
+
+  "dayGoalsUpdateFailed": "Не удалось обновить цель: {error}",
+  "@dayGoalsUpdateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "dayGoalsDeleted": "Цель удалена",
+
+  "dayGoalsDeleteFailed": "Не удалось удалить: {error}",
+  "@dayGoalsDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "dayGoalsToggleFailed": "Не удалось изменить статус: {error}",
+  "@dayGoalsToggleFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "dayGoalsDeleteConfirmTitle": "Удалить цель?",
+
+  "dayGoalsFabAddTitle": "Добавить цель",
+  "dayGoalsFabAddSubtitle": "Создать вручную",
+  "dayGoalsFabScanTitle": "Скан",
+  "dayGoalsFabScanSubtitle": "Фото ежедневника",
+  "dayGoalsFabCalendarTitle": "Google Calendar",
+  "dayGoalsFabCalendarSubtitle": "Импорт/экспорт целей за сегодня",
+
+  "epicIntroSkip": "Пропустить",
+  "epicIntroSubtitle": "Дом для мыслей. Место, где растут цели,\nмечты и планы — бережно и осознанно.",
+  "epicIntroPrimaryCta": "Начать мой путь",
+  "epicIntroLater": "Позже",
+  "epicIntroSecondaryCta": "Войти в аккаунт",
+  "epicIntroFooter": "Всегда можно вернуться к прологу в настройках.",
+
+  "homeMoodSaved": "Настроение сохранено",
+  "homeMoodSaveFailed": "Не удалось сохранить: {error}",
+  "@homeMoodSaveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "homeTodayAndWeekTitle": "Сегодня и неделя",
+  "homeTodayAndWeekSubtitle": "Короткий обзор — все ключевые метрики здесь",
+
+  "homeMetricMoodTitle": "Настроение",
+  "homeMoodNoEntry": "нет записи",
+  "homeMoodNoNote": "без заметки",
+  "homeMoodHasNote": "есть заметка",
+
+  "homeMetricTasksTitle": "Задачи",
+  "homeMetricHoursPerDayTitle": "Часов/день",
+  "homeMetricEfficiencyTitle": "Эффективность",
+
+  "homeEfficiencyPlannedHours": "план {hours}ч",
+  "@homeEfficiencyPlannedHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+
+  "homeMoodTodayTitle": "Настроение сегодня",
+  "homeMoodNoTodayEntry": "Записи за сегодня нет",
+  "homeMoodEntryNoNote": "Запись есть (без заметки)",
+  "homeMoodQuickHint": "Сделай быструю отметку — это 10 секунд",
+  "homeMoodUpdateHint": "Можно обновить — запись перезапишется за сегодня",
+
+  "homeMoodNoteLabel": "Заметка (необязательно)",
+  "homeMoodNoteHint": "Что повлияло на состояние?",
+
+  "homeOpenMoodHistoryCta": "Открыть историю настроений",
+
+  "homeWeekSummaryTitle": "Сводка недели",
+  "homeOpenReportsCta": "Открыть подробные отчёты",
+
+  "homeWeekExpensesTitle": "Расходы недели",
+  "homeNoExpensesThisWeek": "Нет расходов за неделю",
+  "homeOpenExpensesCta": "Открыть расходы",
+
+  "homeExpensesTotal": "Всего: {total} €",
+  "@homeExpensesTotal": {
+    "placeholders": {
+      "total": {}
+    }
+  },
+
+  "homeExpensesAvgPerDay": "Средний расход/день: {avg} €",
+  "@homeExpensesAvgPerDay": {
+    "placeholders": {
+      "avg": {}
+    }
+  },
+
+  "homeInsightsTitle": "Инсайты",
+  "homeTopCategory": "• Топ категория: {category} — {amount} €",
+  "@homeTopCategory": {
+    "placeholders": {
+      "category": {},
+      "amount": {}
+    }
+  },
+
+  "homePeakExpense": "• Пик расхода: {day} — {amount} €",
+  "@homePeakExpense": {
+    "placeholders": {
+      "day": {},
+      "amount": {}
+    }
+  },
+
+  "homeOpenDetailedExpensesCta": "Открыть подробные расходы",
+
+  "homeWeekCardTitle": "Неделя",
+  "homeWeekLoadFailedTitle": "Не удалось загрузить статистику",
+  "homeWeekLoadFailedSubtitle": "Проверь интернет или повтори позже.",
+
+  "homeTitleHome": "Главная",
+  "homeTitleGoals": "Цели",
+  "homeTitleMood": "Настроение",
+  "homeTitleProfile": "Профиль",
+  "homeTitleReports": "Отчёты",
+  "homeTitleExpenses": "Расходы",
+  "homeTitleApp": "MyNEST",
+
+  "homeSignOutTooltip": "Выйти из аккаунта",
+  "homeSignOutTitle": "Выйти из аккаунта?",
+  "homeSignOutSubtitle": "Текущая сессия будет завершена.",
+  "homeSignOutConfirm": "Выйти",
+  "homeSignOutFailed": "Не удалось выйти: {error}",
+  "@homeSignOutFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "homeQuickActionsTooltip": "Быстрые действия",
+
+  "expensesTitle": "Расходы",
+  "expensesPickDate": "Выбрать дату",
+  "expensesCommitTooltip": "Зафиксировать распределение по копилкам",
+  "expensesCommitUndoTooltip": "Отменить фиксацию",
+  "expensesBudgetSettings": "Настройки копилок и категорий",
+
+  "expensesCommitDone": "Распределение зафиксировано",
+  "expensesCommitUndone": "Фиксация отменена",
+
+  "expensesMonthSummary": "Сводка месяца",
+
+  "expensesIncomeLegend": "Доходы {value} €",
+  "@expensesIncomeLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+
+  "expensesExpenseLegend": "Расходы {value} €",
+  "@expensesExpenseLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+
+  "expensesFreeLegend": "Свободно {value} €",
+  "@expensesFreeLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+
+  "expensesDaySum": "Сумма за день: {value} €",
+  "@expensesDaySum": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+
+  "expensesNoTxForDay": "Нет операций за этот день",
+  "expensesDeleteTxTitle": "Удалить операцию?",
+  "expensesDeleteTxBody": "{category} — {amount} €",
+  "@expensesDeleteTxBody": {
+    "placeholders": {
+      "category": {},
+      "amount": {}
+    }
+  },
+
+  "expensesCategoriesMonthTitle": "Категории расходов за месяц",
+  "expensesNoCategoryData": "Пока нет данных по категориям",
+
+  "expensesJarsTitle": "Копилки",
+  "expensesNoJars": "Копилок пока нет",
+  "expensesCommitShort": "Зафиксировать",
+  "expensesCommitUndoShort": "Отменить фиксацию",
+
+  "expensesAddIncome": "Добавить доход",
+  "expensesAddExpense": "Добавить расход",
+
+  "addExpenseNewTitle": "Новый расход",
+  "addExpenseEditTitle": "Редактировать расход",
+  "addExpenseAmountLabel": "Сумма",
+  "addExpenseAmountInvalid": "Введите корректную сумму",
+  "addExpenseCategoryLabel": "Категория",
+  "addExpenseCategoryRequired": "Выберите категорию",
+  "addExpenseCreateCategoryTooltip": "Создать категорию",
+  "addExpenseNoteLabel": "Комментарий",
+  "addExpenseNewCategoryTitle": "Новая категория",
+  "addExpenseCategoryNameLabel": "Название",
+
+  "addIncomeNewTitle": "Новый доход",
+  "addIncomeEditTitle": "Редактировать доход",
+  "addIncomeSubtitle": "Сумма, категория и комментарий",
+  "addIncomeAmountLabel": "Сумма",
+  "addIncomeAmountHint": "Например: 1200.50",
+  "addIncomeAmountInvalid": "Введите корректную сумму",
+  "addIncomeCategoryLabel": "Категория",
+  "addIncomeCategoryRequired": "Выберите категорию",
+  "addIncomeNoteLabel": "Комментарий",
+  "addIncomeNoteHint": "Опционально",
+  "addIncomeNewCategoryTitle": "Новая категория дохода",
+  "addIncomeCategoryNameHint": "Например: Зарплата, Фриланс…",
+  "addIncomeCategoryNameEmpty": "Введите название категории",
+  "commonCloseTooltip": "Закрыть",
+
+  "addJarNewTitle": "Новая копилка",
+  "addJarEditTitle": "Редактировать копилку",
+  "addJarSubtitle": "Настрой сумму и долю от свободных денег",
+  "addJarNameLabel": "Название",
+  "addJarNameHint": "Например: Поездка, Подушка, Дом",
+  "addJarNameRequired": "Укажите название",
+  "addJarPercentLabel": "Процент от свободных, %",
+  "addJarPercentHint": "0 — если вручную пополняешь",
+  "addJarPercentRange": "Процент должен быть от 0 до 100",
+  "addJarTargetLabel": "Целевая сумма",
+  "addJarTargetHint": "Например: 5000",
+  "addJarTargetHelper": "Обязательно",
+  "addJarTargetRequired": "Укажите цель (положительное число)",
+
+  "loginTitle": "Войдите в аккаунт",
+  "loginEmailLabel": "Email",
+  "loginPasswordLabel": "Пароль",
+  "loginShowPassword": "Показать пароль",
+  "loginHidePassword": "Скрыть пароль",
+  "loginForgotPassword": "Забыли пароль?",
+  "loginCreateAccount": "Создать аккаунт",
+  "loginBtnSignIn": "Войти",
+  "loginOr": "или",
+  "loginContinueGoogle": "Продолжить с Google",
+  "loginContinueApple": "Продолжить с Apple ID",
+  "loginErrEmailRequired": "Введите email",
+  "loginErrEmailInvalid": "Некорректный email",
+  "loginErrPassRequired": "Введите пароль",
+  "loginErrPassMin6": "Минимум 6 символов",
+  "loginResetTitle": "Восстановление пароля",
+  "loginResetSend": "Отправить",
+  "loginResetSent": "Письмо для смены пароля отправлено. Проверьте почту.",
+  "loginResetFailed": "Не удалось отправить письмо: {error}",
+  "@loginResetFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "registerTitle": "Создайте аккаунт",
+  "registerNameLabel": "Имя",
+  "registerEmailLabel": "Email",
+  "registerPasswordLabel": "Пароль",
+  "registerConfirmPasswordLabel": "Подтвердите пароль",
+  "registerShowPassword": "Показать пароль",
+  "registerHidePassword": "Скрыть пароль",
+
+  "registerBtnSignUp": "Зарегистрироваться",
+  "registerContinueGoogle": "Продолжить с Google",
+  "registerContinueApple": "Продолжить с Apple ID",
+  "registerContinueAppleIos": "Продолжить с Apple ID (iOS)",
+  "registerHaveAccountCta": "Уже есть аккаунт? Войти",
+
+  "registerErrNameRequired": "Введите имя",
+  "registerErrEmailRequired": "Введите email",
+  "registerErrEmailInvalid": "Некорректный email",
+  "registerErrPassRequired": "Введите пароль",
+  "registerErrPassMin8": "Минимум 8 символов",
+  "registerErrPassNeedLower": "Добавьте строчную букву (a-z)",
+  "registerErrPassNeedUpper": "Добавьте заглавную букву (A-Z)",
+  "registerErrPassNeedDigit": "Добавьте цифру (0-9)",
+  "registerErrConfirmRequired": "Повторите пароль",
+  "registerErrPasswordsMismatch": "Пароли не совпадают",
+  "registerErrAcceptTerms": "Нужно принять Условия и Privacy Policy",
+
+  "registerAppleOnlyIos": "Apple ID доступен на iPhone/iPad (iOS)",
+
+  "welcomeAppName": "VitaPlatform",
+  "welcomeSubtitle": "Управляй целями, настроением и временем\n— всё в одном месте",
+  "welcomeSignIn": "Войти",
+  "welcomeCreateAccount": "Создать аккаунт",
+
+  "moodTitle": "Настроение",
+  "moodOnePerDay": "1 запись = 1 день",
+  "moodHowDoYouFeel": "Как ты себя чувствуешь?",
+  "moodNoteLabel": "Заметка (необязательно)",
+  "moodNoteHint": "Что повлияло на твоё состояние?",
+  "moodSaved": "Настроение сохранено",
+  "moodUpdated": "Запись обновлена",
+  "moodHistoryTitle": "История настроений",
+  "moodTapToEdit": "Нажми, чтобы редактировать",
+  "moodNoNote": "Без заметки",
+  "moodEditTitle": "Редактировать запись",
+  "moodEmptyTitle": "Пока нет записей",
+  "moodEmptySubtitle": "Выбери дату, отметь настроение и сохрани запись.",
+
+  "moodErrSaveFailed": "Не удалось сохранить настроение: {error}",
+  "@moodErrSaveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "moodErrUpdateFailed": "Не удалось обновить запись: {error}",
+  "@moodErrUpdateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "moodErrDeleteFailed": "Не удалось удалить запись: {error}",
+  "@moodErrDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "commonDeleteConfirmTitle": "Удалить запись?",
+
+  "onbTopTitle": "Инициация героя",
+  "onbErrSaveFailed": "Не удалось сохранить ответы",
+
+  "onbProfileTitle": "Давай познакомимся",
+  "onbProfileSubtitle": "Это нужно для профиля и персонализации",
+  "onbNameLabel": "Имя",
+  "onbNameHint": "Например: Виктор",
+  "onbAgeLabel": "Возраст",
+  "onbAgeHint": "Например: 26",
+  "onbNameNote": "Имя можно менять позже в профиле.",
+
+  "onbBlocksTitle": "Какие сферы жизни ты хочешь отслеживать?",
+  "onbBlocksSubtitle": "Это станет основой твоих целей и квестов",
+
+  "onbPrioritiesTitle": "Что для тебя важнее всего ближайшие 3–6 месяцев?",
+  "onbPrioritiesSubtitle": "Выбери до трёх — это влияет на рекомендации",
+  "onbPriorityHealth": "Здоровье",
+  "onbPriorityCareer": "Карьера",
+  "onbPriorityMoney": "Деньги",
+  "onbPriorityFamily": "Семья",
+  "onbPriorityGrowth": "Развитие",
+  "onbPriorityLove": "Любовь",
+  "onbPriorityCreativity": "Творчество",
+  "onbPriorityBalance": "Баланс",
+
+  "onbGoalsBlockTitle": "Цели в сфере «{block}»",
+  "@onbGoalsBlockTitle": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+
+  "onbGoalsBlockSubtitle": "Фокус: тактика → средний срок → долгий срок",
+
+  "onbGoalLongLabel": "Долгосрочная цель (6–24 месяца)",
+  "onbGoalLongHint": "Например: выучить немецкий до уровня B2",
+  "onbGoalMidLabel": "Среднесрочная цель (2–6 месяцев)",
+  "onbGoalMidHint": "Например: пройти курс A2→B1 и сдать экзамен",
+  "onbGoalTacticalLabel": "Тактическая цель (2–4 недели)",
+  "onbGoalTacticalHint": "Например: 12 занятий по 30 минут + 2 разговорных клуба",
+
+  "onbWhyLabel": "Почему это важно? (опционально)",
+  "onbWhyHint": "Мотивация/смысл — поможет удерживать курс",
+  "onbOptionalNote": "Можно оставить пустым и нажать «Далее».",
+
+  "habitsTitle": "Привычки",
+  "habitsEmptyHint": "Пока нет привычек. Добавь первую.",
+  "habitsEditorNewTitle": "Новая привычка",
+  "habitsEditorEditTitle": "Редактировать привычку",
+  "habitsEditorTitleLabel": "Название",
+  "habitsEditorTitleHint": "Например: Утренняя зарядка",
+  "habitsNegativeLabel": "Негативная привычка",
+  "habitsNegativeHint": "Отмечай, если хочешь отслеживать и сокращать.",
+  "habitsPositiveHint": "Позитивная/нейтральная привычка для укрепления.",
+  "habitsNegativeShort": "Негативная",
+  "habitsPositiveShort": "Позитивная/нейтральная",
+  "habitsDeleteConfirmTitle": "Удалить привычку?",
+  "habitsDeleteConfirmBody": "«{title}» будет удалена без возможности восстановления.",
+  "@habitsDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "habitsFooterHint": "Позже добавим “отсеивание” привычек на главном экране.",
+
+  "habitsWeekTitle": "Привычки",
+  "habitsWeekTopTitle": "Привычки (топ недели)",
+  "habitsWeekEmptyHint": "Добавь хотя бы одну привычку — и тут появится прогресс.",
+  "habitsWeekFooterHint": "Показываем самые активные привычки за 7 дней.",
+
+  "mentalWeekTitle": "Ментальное здоровье",
+  "mentalWeekLoadError": "Ошибка загрузки: {error}",
+  "@mentalWeekLoadError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "mentalWeekNoAnswers": "За эту неделю нет найденных ответов (для текущего user_id).",
+  "mentalWeekYesNoHeader": "Да/Нет (неделя)",
+  "mentalWeekScalesHeader": "Шкалы (тренд)",
+  "mentalWeekFooterHint": "Показываем только несколько вопросов, чтобы не перегружать экран.",
+  "mentalWeekNoData": "Нет данных",
+
+  "mentalWeekYesCount": "Да: {yes}/{total}",
+  "@mentalWeekYesCount": {
+    "placeholders": {
+      "yes": {},
+      "total": {}
+    }
+  },
+
+  "moodWeekTitle": "Состояние недели",
+  "moodWeekMarkedCount": "Отмечено: {filled}/{total}",
+  "@moodWeekMarkedCount": {
+    "placeholders": {
+      "filled": {},
+      "total": {}
+    }
+  },
+
+  "moodWeekAverageDash": "Среднее: —",
+  "moodWeekAverageValue": "Среднее: {avg}/5",
+  "@moodWeekAverageValue": {
+    "placeholders": {
+      "avg": {}
+    }
+  },
+
+  "moodWeekFooterHint": "Это быстрый обзор. Детали ниже — в истории.",
+
+  "goalsByBlockTitle": "Цели по сферам",
+  "goalsAddTooltip": "Добавить цель",
+
+  "goalsHorizonTacticalShort": "Тактика",
+  "goalsHorizonMidShort": "Средние",
+  "goalsHorizonLongShort": "Долгие",
+
+  "goalsHorizonTacticalLong": "2–6 недель",
+  "goalsHorizonMidLong": "3–6 месяцев",
+  "goalsHorizonLongLong": "1+ год",
+
+  "goalsEditorNewTitle": "Новая цель",
+  "goalsEditorEditTitle": "Редактировать цель",
+  "goalsEditorLifeBlockLabel": "Сфера",
+  "goalsEditorHorizonLabel": "Горизонт",
+
+  "goalsEditorTitleLabel": "Название",
+  "goalsEditorTitleHint": "Например: Подтянуть английский до B2",
+
+  "goalsEditorDescLabel": "Описание (опционально)",
+  "goalsEditorDescHint": "Коротко: что именно и как измерим результат",
+
+  "goalsEditorDeadlineLabel": "Дедлайн: {date}",
+  "@goalsEditorDeadlineLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+
+  "goalsDeadlineInline": "Дедлайн: {date}",
+  "@goalsDeadlineInline": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+
+  "goalsEmptyAllHint": "Пока нет целей. Добавь первую цель для выбранных сфер.",
+  "goalsNoBlocksToShow": "Нет доступных сфер для отображения.",
+  "goalsNoGoalsForBlock": "Нет целей для выбранной сферы.",
+
+  "goalsDeleteConfirmTitle": "Удалить цель?",
+  "goalsDeleteConfirmBody": "«{title}» будет удалена без возможности восстановления.",
+  "@goalsDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+
+  "profileTitle": "Профиль",
+
+  "profileNameLabel": "Имя",
+  "profileNameTitle": "Имя",
+  "profileNamePrompt": "Как тебя называть?",
+
+  "profileAgeLabel": "Возраст",
+  "profileAgeTitle": "Возраст",
+  "profileAgePrompt": "Введите возраст",
+
+  "profileAccountSection": "Аккаунт",
+  "profileSeenPrologueTitle": "Пролог пройден",
+  "profileSeenPrologueSubtitle": "Можно изменить вручную",
+
+  "profileFocusSection": "Фокус",
+  "profileTargetHoursLabel": "Целевая норма часов/день",
+  "profileTargetHoursValue": "{hours} ч",
+  "@profileTargetHoursValue": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+
+  "profileTargetHoursTitle": "Цель по часам в день",
+  "profileTargetHoursFieldLabel": "Часы",
+
+  "profileQuestionnaireSection": "Опросник и сферы жизни",
+  "profileQuestionnaireNotDoneTitle": "Вы ещё не прошли опросник.",
+  "profileQuestionnaireCta": "Пройти сейчас",
+
+  "profileLifeBlocksTitle": "Сферы жизни",
+  "profileLifeBlocksHint": "Например: здоровье, карьера, семья",
+
+  "profilePrioritiesTitle": "Приоритеты",
+  "profilePrioritiesHint": "Например: спорт, финансы, чтение",
+
+  "profileDangerZoneTitle": "Опасная зона",
+
+  "profileDeleteAccountTitle": "Удалить аккаунт?",
+  "profileDeleteAccountBody": "Это действие необратимо.\nБудут удалены: цели, привычки, настроение, расходы/доходы, банки, AI-планы, XP и профиль.",
+  "profileDeleteAccountConfirm": "Удалить навсегда",
+  "profileDeleteAccountCta": "Удалить аккаунт и все данные",
+  "profileDeletingAccount": "Удаляем...",
+  "profileDeleteAccountFootnote": "Удаление необратимо. Данные будут полностью удалены из Supabase.",
+  "profileAccountDeletedToast": "Аккаунт удалён",
+
+  "lifeBlockHealth": "Здоровье",
+  "lifeBlockCareer": "Карьера",
+  "lifeBlockFamily": "Семья",
+  "lifeBlockFinance": "Финансы",
+  "lifeBlockLearning": "Развитие",
+  "lifeBlockSocial": "Социальное",
+  "lifeBlockRest": "Отдых",
+  "lifeBlockBalance": "Баланс",
+  "lifeBlockLove": "Любовь",
+  "lifeBlockCreativity": "Творчество",
+  "lifeBlockGeneral": "Общее",
+
+  "aiInsightTypeDataQuality": "Качество данных",
+  "aiInsightTypeRisk": "Риск",
+  "aiInsightTypeEmotional": "Эмоции",
+  "aiInsightTypeHabit": "Привычки",
+  "aiInsightTypeGoal": "Цели",
+  "aiInsightTypeDefault": "Инсайт",
+
+  "aiInsightStrengthStrong": "Сильное влияние",
+  "aiInsightStrengthNoticeable": "Заметное влияние",
+  "aiInsightStrengthWeak": "Слабое влияние",
+  "aiInsightStrengthLowConfidence": "Низкая уверенность",
+
+  "aiInsightStrengthPercent": "{value}%",
+  "@aiInsightStrengthPercent": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+
+  "aiInsightEvidenceTitle": "Доказательства",
+
+  "aiInsightImpactPositive": "Позитив",
+  "aiInsightImpactNegative": "Негатив",
+  "aiInsightImpactMixed": "Смешано",
+
+  "aiInsightsTitle": "AI-инсайты",
+
+  "aiInsightsConfirmTitle": "Запустить AI-анализ?",
+  "aiInsightsConfirmBody": "AI проанализирует задачи, привычки и самочувствие за выбранный период и сохранит инсайты. Это может занять несколько секунд.",
+  "aiInsightsConfirmRun": "Запустить",
+
+  "aiInsightsPeriod7": "7 дней",
+  "aiInsightsPeriod30": "30 дней",
+  "aiInsightsPeriod90": "90 дней",
+
+  "aiInsightsLastRun": "Последний запуск: {date}",
+  "@aiInsightsLastRun": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "aiInsightsEmptyNotRunTitle": "AI ещё не запускался",
+  "aiInsightsEmptyNotRunSubtitle": "Выбери период и нажми «Запустить». Инсайты сохранятся и будут доступны в приложении.",
+  "aiInsightsCtaRun": "Запустить анализ",
+
+  "aiInsightsEmptyNoInsightsTitle": "Инсайтов пока нет",
+  "aiInsightsEmptyNoInsightsSubtitle": "Добавь больше данных (задачи, привычки, ответы на вопросы) и запусти анализ.",
+  "aiInsightsCtaRunAgain": "Запустить снова",
+
+  "aiInsightsErrorAi": "Ошибка AI: {error}",
+  "@aiInsightsErrorAi": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "navGoals": "Цели",
+  "navMood": "Настроение",
+  "navProfile": "Профиль",
+  "navReports": "Отчёты",
+  "navExpenses": "Расходы",
+
+  "gcalTitle": "Google Calendar",
+  "gcalHeaderImport": "Найди события в календаре и импортируй их как цели.",
+  "gcalHeaderExport": "Выбери период и экспортируй цели из приложения в Google Calendar.",
+
+  "gcalModeImport": "Импорт",
+  "gcalModeExport": "Экспорт",
+
+  "gcalCalendarLabel": "Календарь",
+  "gcalPrimaryCalendar": "Primary (по умолчанию)",
+
+  "gcalPeriodLabel": "Период",
+  "gcalRangeToday": "Сегодня",
+  "gcalRangeNext7": "Следующие 7 дней",
+  "gcalRangeNext30": "Следующие 30 дней",
+  "gcalRangeCustom": "Выбрать период...",
+
+  "gcalDefaultLifeBlockLabel": "Сфера по умолчанию (для импорта)",
+  "gcalLifeBlockForGoalLabel": "Сфера для этой цели",
+
+  "gcalEventsNotLoaded": "События не загружены",
+  "gcalConnectToLoadEvents": "Подключи аккаунт, чтобы загрузить события",
+
+  "gcalExportHint": "Экспорт создаст события в выбранном календаре за выбранный период.",
+
+  "gcalConnect": "Подключить",
+  "gcalConnected": "Подключено",
+
+  "gcalFindEvents": "Найти события",
+  "gcalImport": "Импортировать",
+  "gcalExport": "Экспортировать",
+
+  "gcalNoTitle": "Без названия",
+
+  "gcalImportedGoalsCount": "Импортировано целей: {count}",
+  "@gcalImportedGoalsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "gcalExportedGoalsCount": "Экспортировано целей: {count}",
+  "@gcalExportedGoalsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "gcTitleDaySync": "Google Calendar • синхронизация за день",
+  "gcSubtitleImport": "Импортируй события этого дня в цели.",
+  "gcSubtitleExport": "Экспортируй цели этого дня в календарь.",
+
+  "gcModeImport": "Импорт",
+  "gcModeExport": "Экспорт",
+
+  "gcCalendarLabel": "Календарь",
+  "gcCalendarPrimary": "Primary (по умолчанию)",
+
+  "gcDefaultLifeBlockLabel": "Сфера по умолчанию (для импорта)",
+  "gcLifeBlockForThisGoalLabel": "Сфера для этой цели",
+
+  "gcEventsNotLoaded": "События не загружены",
+  "gcConnectToLoadEvents": "Подключи аккаунт, чтобы загрузить события",
+
+  "gcExportHint": "Экспорт создаст события в выбранном календаре для целей этого дня.",
+
+  "gcConnect": "Подключить",
+  "gcConnected": "Подключено",
+  "gcFindForDay": "Найти за день",
+  "gcImport": "Импорт",
+  "gcExport": "Экспорт",
+
+  "gcNoTitle": "Без названия",
+  "gcLoadingDots": "...",
+
+  "gcImportedGoals": "Импортировано целей: {count}",
+  "@gcImportedGoals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "gcExportedGoals": "Экспортировано целей: {count}",
+  "@gcExportedGoals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "launcherQuickFunctionsTitle": "Быстрые функции",
+  "launcherQuickFunctionsSubtitle": "Навигация и действия в один тап",
+
+  "launcherSectionsTitle": "Разделы",
+  "launcherQuickTitle": "Быстро",
+
+  "launcherHome": "Главная",
+  "launcherGoals": "Цели",
+  "launcherMood": "Настроение",
+  "launcherProfile": "Профиль",
+  "launcherInsights": "Инсайты",
+  "launcherReports": "Отчёты",
+
+  "launcherMassAddTitle": "Массовое добавление за день",
+  "launcherMassAddSubtitle": "Расходы + Задачи + Настроение",
+
+  "launcherAiPlanTitle": "AI-план на неделю/месяц",
+  "launcherAiPlanSubtitle": "Анализ целей, опроса и прогресса",
+
+  "launcherAiInsightsTitle": "AI-инсайты",
+  "launcherAiInsightsSubtitle": "Как события влияют на цели и прогресс",
+
+  "launcherRecurringGoalTitle": "Регулярная цель",
+  "launcherRecurringGoalSubtitle": "Планирование на несколько дней вперёд",
+
+  "launcherGoogleCalendarSyncTitle": "Синхронизация с Google Calendar",
+  "launcherGoogleCalendarSyncSubtitle": "Экспорт целей в календарь",
+
+  "launcherNoDatesToCreate": "Нет дат для создания (проверь дедлайн/настройки).",
+
+  "launcherCreateSeriesFailed": "Не удалось создать серию целей: {error}",
+  "@launcherCreateSeriesFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "launcherSaveError": "Ошибка сохранения: {error}",
+  "@launcherSaveError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "launcherCreatedGoalsCount": "Создано целей: {count}",
+  "@launcherCreatedGoalsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "launcherSavedSummary": "Сохранено: {expenses} расход(ов), {incomes} доход(ов), {goals} задач(и), {habits} привыч(ек){moodPart}",
+  "@launcherSavedSummary": {
+    "placeholders": {
+      "expenses": {},
+      "incomes": {},
+      "goals": {},
+      "habits": {},
+      "moodPart": {}
+    }
+  },
+
+  "addDayGoalTitle": "Новая цель на день",
+  "addDayGoalFieldTitle": "Название *",
+  "addDayGoalTitleHint": "Например: Тренировка / Работа / Учёба",
+  "addDayGoalFieldDescription": "Описание",
+  "addDayGoalDescriptionHint": "Коротко: что именно нужно сделать",
+  "addDayGoalStartTime": "Время начала",
+  "addDayGoalLifeBlock": "Сфера жизни",
+  "addDayGoalImportance": "Важность",
+  "addDayGoalEmotion": "Эмоция",
+  "addDayGoalHours": "Часы",
+  "addDayGoalEnterTitle": "Введите название",
+
+  "goalsDeleteConfirmBodyShort": "Будет удалено без возможности восстановления.",
+
+  "editGoalTitle": "Редактировать цель",
+  "editGoalSectionDetails": "Детали",
+  "editGoalSectionLifeBlock": "Сфера",
+  "editGoalSectionParams": "Параметры",
+  "editGoalFieldTitleLabel": "Название",
+  "editGoalFieldTitleHint": "Например: Пробежка 3 км",
+  "editGoalFieldDescLabel": "Описание",
+  "editGoalFieldDescHint": "Что именно нужно сделать?",
+  "editGoalFieldLifeBlockLabel": "Сфера жизни",
+  "editGoalFieldImportanceLabel": "Важность",
+  "editGoalImportanceLow": "Низкая",
+  "editGoalImportanceMedium": "Средняя",
+  "editGoalImportanceHigh": "Высокая",
+  "editGoalFieldEmotionLabel": "Эмоция",
+  "editGoalFieldEmotionHint": "😊",
+  "editGoalDurationHours": "Длительность (ч)",
+  "editGoalStartTime": "Начало",
+  "editGoalUntitled": "Без названия",
+
+  "expenseCategoryOther": "Прочее",
+
+  "goalStatusDone": "Готово",
+  "goalStatusInProgress": "В процессе",
+  "actionDelete": "Удалить",
+
+  "goalImportanceChip": "Важность {value}/5",
+  "@goalImportanceChip": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+
+  "goalHoursChip": "Часы {value}",
+  "@goalHoursChip": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalPathEmpty": "Нет целей в пути",
+
+  "timelineActionEdit": "Редактировать",
+  "timelineActionDelete": "Удалить",
+  "settingsLanguageTitle": "Язык",
+  "settingsLanguageSubtitle": "Выберите язык приложения. «Системный» использует язык устройства.",
+
+  "saveBarSaving": "Сохранение…",
+  "saveBarSave": "Сохранить",
+
+  "reportEmptyChartNotEnoughData": "Недостаточно данных",
+
+  "limitSheetTitle": "Лимит для «{categoryName}»",
+  "@limitSheetTitle": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "limitSheetHintNoLimit": "Пусто — без лимита",
+  "limitSheetFieldLabel": "Максимум ₽ в месяц",
+  "limitSheetFieldHint": "Например: 15000",
+  "limitSheetCtaNoLimit": "Без лимита"
+}

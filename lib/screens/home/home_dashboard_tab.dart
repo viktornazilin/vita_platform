@@ -5,6 +5,7 @@ import '../../models/home_model.dart';
 import '../../models/reports_model.dart';
 import '../../models/mood_model.dart';
 import '../../models/mood.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 // ✅ week insights types
 import '../../models/habit.dart';
@@ -129,18 +130,21 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
         _weekFuture = _loadWeekInsights(); // ✅ refresh week insights after save
       });
 
+      final l = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Настроение сохранено'),
+        SnackBar(
+          content: Text(l.homeMoodSaved),
           behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _savingMood = false);
+
+      final l = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Не удалось сохранить: $e'),
+          content: Text(l.homeMoodSaveFailed(e.toString())),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -371,6 +375,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   Widget build(BuildContext context) {
     super.build(context);
 
+    final l = AppLocalizations.of(context)!;
+
     final reports = context.watch<ReportsModel>();
     final moodModel = context.watch<MoodModel>();
     final cs = Theme.of(context).colorScheme;
@@ -431,12 +437,12 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Сегодня и неделя',
+                    l.homeTodayAndWeekTitle,
                     style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Короткий обзор — все ключевые метрики здесь',
+                    l.homeTodayAndWeekSubtitle,
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   const SizedBox(height: 12),
@@ -444,49 +450,51 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                     isPhone: isPhone,
                     items: [
                       _MetricItem(
-                        title: 'Настроение',
+                        title: l.homeMetricMoodTitle,
                         value: todayMood?.emoji ?? '—',
                         subtitle: todayMood == null
-                            ? 'нет записи'
+                            ? l.homeMoodNoEntry
                             : (todayMood.note.trim().isEmpty
-                                  ? 'без заметки'
-                                  : 'есть заметка'),
+                                  ? l.homeMoodNoNote
+                                  : l.homeMoodHasNote),
                         icon: Icons.mood_rounded,
                         progress: todayMood == null ? 0.0 : 1.0,
                       ),
                       _MetricItem(
-                        title: 'Задачи',
+                        title: l.homeMetricTasksTitle,
                         value: reports.loading
                             ? '…'
                             : (totalTasks == null || totalTasks == 0
                                   ? '0%'
                                   : '${((taskProgress ?? 0) * 100).round()}%'),
                         subtitle: reports.loading
-                            ? 'загрузка…'
+                            ? l.commonLoading
                             : '${doneTasks ?? 0}/${totalTasks ?? 0}',
                         icon: Icons.check_circle_rounded,
                         progress:
                             taskProgress ?? (reports.loading ? null : 0.0),
                       ),
                       _MetricItem(
-                        title: 'Часов/день',
+                        title: l.homeMetricHoursPerDayTitle,
                         value: hoursPerDay == null
                             ? '…'
                             : hoursPerDay.toStringAsFixed(1),
                         subtitle: reports.loading
-                            ? 'загрузка…'
+                            ? l.commonLoading
                             : _rangeLabelShort(reports, context),
                         icon: Icons.timer_outlined,
                         progress: reports.loading ? null : 1.0,
                       ),
                       _MetricItem(
-                        title: 'Эффективность',
+                        title: l.homeMetricEfficiencyTitle,
                         value: efficiency == null
                             ? '…'
                             : '${(efficiency * 100).round()}%',
                         subtitle: reports.loading
-                            ? 'загрузка…'
-                            : 'план ${reports.plannedHours.toStringAsFixed(0)}ч',
+                            ? l.commonLoading
+                            : l.homeEfficiencyPlannedHours(
+                                reports.plannedHours.toStringAsFixed(0),
+                              ),
                         icon: Icons.speed_rounded,
                         progress: efficiency,
                       ),
@@ -548,7 +556,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: ReportSectionCard(
-                title: 'Настроение сегодня',
+                title: l.homeMoodTodayTitle,
                 child: moodModel.loading
                     ? const SizedBox(
                         height: 92,
@@ -586,9 +594,9 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                   children: [
                                     Text(
                                       todayMood == null
-                                          ? 'Записи за сегодня нет'
+                                          ? l.homeMoodNoTodayEntry
                                           : (todayMood.note.trim().isEmpty
-                                                ? 'Запись есть (без заметки)'
+                                                ? l.homeMoodEntryNoNote
                                                 : todayMood.note.trim()),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -599,8 +607,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                     const SizedBox(height: 2),
                                     Text(
                                       todayMood == null
-                                          ? 'Сделай быструю отметку — это 10 секунд'
-                                          : 'Можно обновить — запись перезапишется за сегодня',
+                                          ? l.homeMoodQuickHint
+                                          : l.homeMoodUpdateHint,
                                       style: tt.bodySmall?.copyWith(
                                         color: cs.onSurfaceVariant.withOpacity(
                                           0.95,
@@ -612,7 +620,9 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                               ),
                               const SizedBox(width: 8),
                               IconButton(
-                                tooltip: _editingMood ? 'Свернуть' : 'Обновить',
+                                tooltip: _editingMood
+                                    ? l.commonCollapse
+                                    : l.commonUpdate,
                                 onPressed: () => setState(
                                   () => _editingMood = !_editingMood,
                                 ),
@@ -663,10 +673,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                           maxLines: 2,
                                           textInputAction: TextInputAction.done,
                                           decoration: InputDecoration(
-                                            labelText:
-                                                'Заметка (необязательно)',
-                                            hintText:
-                                                'Что повлияло на состояние?',
+                                            labelText: l.homeMoodNoteLabel,
+                                            hintText: l.homeMoodNoteHint,
                                             prefixIcon: const Icon(
                                               Icons.edit_note_rounded,
                                             ),
@@ -724,8 +732,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                                   ),
                                             label: Text(
                                               _savingMood
-                                                  ? 'Сохранение…'
-                                                  : 'Сохранить',
+                                                  ? l.commonSaving
+                                                  : l.commonSave,
                                             ),
                                             style: FilledButton.styleFrom(
                                               shape: RoundedRectangleBorder(
@@ -744,7 +752,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                           _cta(
                             context,
                             icon: Icons.open_in_new,
-                            label: 'Открыть историю настроений',
+                            label: l.homeOpenMoodHistoryCta,
                             onPressed: () => _go(context, 2),
                           ),
                         ],
@@ -758,7 +766,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: ReportSectionCard(
-                title: 'Сводка недели',
+                title: l.homeWeekSummaryTitle,
                 child: reports.loading
                     ? const SizedBox(
                         height: 92,
@@ -779,7 +787,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                           _cta(
                             context,
                             icon: Icons.insights_rounded,
-                            label: 'Открыть подробные отчёты',
+                            label: l.homeOpenReportsCta,
                             onPressed: () => _go(context, 4),
                           ),
                         ],
@@ -793,7 +801,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
               child: ReportSectionCard(
-                title: 'Расходы недели',
+                title: l.homeWeekExpensesTitle,
                 child: reports.loading
                     ? const SizedBox(
                         height: 92,
@@ -823,7 +831,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Нет расходов за неделю',
+                                  l.homeNoExpensesThisWeek,
                                   style: tt.bodyMedium?.copyWith(
                                     color: cs.onSurfaceVariant,
                                   ),
@@ -832,7 +840,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                 _cta(
                                   context,
                                   icon: Icons.account_balance_wallet_rounded,
-                                  label: 'Открыть расходы',
+                                  label: l.homeOpenExpensesCta,
                                   onPressed: () => _go(context, 5),
                                 ),
                               ],
@@ -853,14 +861,16 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Всего: ${data.total.toStringAsFixed(2)} €',
+                                l.homeExpensesTotal(
+                                  data.total.toStringAsFixed(2),
+                                ),
                                 style: tt.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Средний расход/день: ${avg.toStringAsFixed(2)} €',
+                                l.homeExpensesAvgPerDay(avg.toStringAsFixed(2)),
                                 style: tt.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant.withOpacity(0.95),
                                 ),
@@ -884,7 +894,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Инсайты',
+                                        l.homeInsightsTitle,
                                         style: tt.titleSmall?.copyWith(
                                           fontWeight: FontWeight.w800,
                                         ),
@@ -892,7 +902,10 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                       const SizedBox(height: 6),
                                       if (topCat != null)
                                         Text(
-                                          '• Топ категория: ${topCat.key} — ${topCat.value.toStringAsFixed(2)} €',
+                                          l.homeTopCategory(
+                                            topCat.key,
+                                            topCat.value.toStringAsFixed(2),
+                                          ),
                                           style: tt.bodyMedium?.copyWith(
                                             color: cs.onSurfaceVariant
                                                 .withOpacity(0.98),
@@ -900,7 +913,10 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                         ),
                                       if (peak != null)
                                         Text(
-                                          '• Пик расхода: ${_formatDayShort(context, peak.key)} — ${peak.value.toStringAsFixed(2)} €',
+                                          l.homePeakExpense(
+                                            _formatDayShort(context, peak.key),
+                                            peak.value.toStringAsFixed(2),
+                                          ),
                                           style: tt.bodyMedium?.copyWith(
                                             color: cs.onSurfaceVariant
                                                 .withOpacity(0.98),
@@ -913,7 +929,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                               _cta(
                                 context,
                                 icon: Icons.open_in_new,
-                                label: 'Открыть подробные расходы',
+                                label: l.homeOpenDetailedExpensesCta,
                                 onPressed: () => _go(context, 5),
                               ),
                             ],
@@ -938,9 +954,10 @@ class _WeekLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ReportSectionCard(
-      title: 'Неделя',
-      child: SizedBox(
+    final l = AppLocalizations.of(context)!;
+    return ReportSectionCard(
+      title: l.homeWeekCardTitle,
+      child: const SizedBox(
         height: 140,
         child: Center(child: CircularProgressIndicator.adaptive()),
       ),
@@ -954,21 +971,22 @@ class _WeekErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     return ReportSectionCard(
-      title: 'Неделя',
+      title: l.homeWeekCardTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Не удалось загрузить статистику',
+            l.homeWeekLoadFailedTitle,
             style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
-            'Проверь интернет или повтори позже.',
+            l.homeWeekLoadFailedSubtitle,
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 12),
@@ -977,7 +995,7 @@ class _WeekErrorCard extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Повторить'),
+              label: Text(l.commonRetry),
             ),
           ),
         ],
@@ -1127,7 +1145,7 @@ class _MiniRing extends StatelessWidget {
             ),
           ),
           if (p == null)
-            CircularProgressIndicator.adaptive(strokeWidth: stroke)
+            const CircularProgressIndicator.adaptive(strokeWidth: stroke)
           else
             CircularProgressIndicator(
               value: p.clamp(0.0, 1.0),

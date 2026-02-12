@@ -1,9 +1,12 @@
+// lib/screens/onboarding_questionnaire_screen.dart
 import 'dart:ui';
-import '../main.dart'; // dbRepo
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
+import '../main.dart'; // dbRepo
 import '../models/life_block.dart';
 import '../models/onboarding_questionnaire_model.dart';
 import '../services/user_service.dart';
@@ -21,17 +24,6 @@ class OnboardingQuestionnaireScreen extends StatelessWidget {
     this.onCompleted,
     required this.userService,
   });
-
-  static const prioritiesOptions = [
-    'Здоровье',
-    'Карьера',
-    'Деньги',
-    'Семья',
-    'Развитие',
-    'Любовь',
-    'Творчество',
-    'Баланс',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +54,11 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
     super.dispose();
   }
 
-  List<Widget> _buildSteps(OnboardingQuestionnaireModel m) {
+  List<Widget> _buildSteps(OnboardingQuestionnaireModel m, AppLocalizations l) {
     final steps = <Widget>[
       const _StepProfileBasics(),
       const _StepLifeBlocks(),
-      const _StepPriorities(),
+      _StepPriorities(options: _prioritiesOptions(l)),
     ];
 
     for (final b in m.selectedBlocks) {
@@ -74,6 +66,17 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
     }
     return steps;
   }
+
+  List<String> _prioritiesOptions(AppLocalizations l) => [
+    l.onbPriorityHealth,
+    l.onbPriorityCareer,
+    l.onbPriorityMoney,
+    l.onbPriorityFamily,
+    l.onbPriorityGrowth,
+    l.onbPriorityLove,
+    l.onbPriorityCreativity,
+    l.onbPriorityBalance,
+  ];
 
   void _goNext(OnboardingQuestionnaireModel m, int stepsLen) {
     if (m.currentStep < stepsLen - 1) {
@@ -103,6 +106,8 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
     final ok = await m.submit();
     if (!mounted) return;
 
+    final l = AppLocalizations.of(context)!;
+
     if (ok) {
       if (widget.onCompleted != null) {
         widget.onCompleted!.call();
@@ -113,7 +118,7 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
         ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } else {
-      final msg = m.errorText ?? 'Не удалось сохранить ответы';
+      final msg = m.errorText ?? l.onbErrSaveFailed;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
       );
@@ -122,8 +127,9 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final m = context.watch<OnboardingQuestionnaireModel>();
-    final steps = _buildSteps(m);
+    final steps = _buildSteps(m, l);
     final stepsLen = steps.length;
 
     if (stepsLen > 0 && m.currentStep > stepsLen - 1) {
@@ -151,14 +157,14 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                   child: Row(
                     children: [
                       IconButton(
-                        tooltip: 'Назад',
+                        tooltip: l.commonBack,
                         onPressed: () => Navigator.of(context).maybePop(),
                         icon: const Icon(Icons.arrow_back_rounded),
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'Инициация героя',
+                          l.onbTopTitle,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.w900),
@@ -254,7 +260,7 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                                   borderRadius: BorderRadius.circular(18),
                                 ),
                               ),
-                              child: const Text('Назад'),
+                              child: Text(l.commonBack),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -280,8 +286,8 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                                       ),
                                     )
                                   : (m.currentStep == stepsLen - 1
-                                        ? const Text('Готово')
-                                        : const Text('Далее')),
+                                        ? Text(l.commonDone)
+                                        : Text(l.commonNext)),
                             ),
                           ),
                         ],
@@ -395,26 +401,27 @@ class _StepProfileBasicsState extends State<_StepProfileBasics> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final m = context.watch<OnboardingQuestionnaireModel>();
 
     return _StepScaffold(
-      title: 'Давай познакомимся',
-      subtitle: 'Это нужно для профиля и персонализации',
+      title: l.onbProfileTitle,
+      subtitle: l.onbProfileSubtitle,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _NestTextField(
             controller: _nameCtrl,
-            labelText: 'Имя',
-            hintText: 'Например: Виктор',
+            labelText: l.onbNameLabel,
+            hintText: l.onbNameHint,
             keyboardType: TextInputType.text,
             onChanged: (v) => m.setName(v.trim().isEmpty ? null : v.trim()),
           ),
           const SizedBox(height: 12),
           _NestTextField(
             controller: _ageCtrl,
-            labelText: 'Возраст',
-            hintText: 'Например: 26',
+            labelText: l.onbAgeLabel,
+            hintText: l.onbAgeHint,
             keyboardType: TextInputType.number,
             onChanged: (v) {
               final t = v.trim();
@@ -428,7 +435,7 @@ class _StepProfileBasicsState extends State<_StepProfileBasics> {
           Opacity(
             opacity: .75,
             child: Text(
-              'Имя можно менять позже в профиле.',
+              l.onbNameNote,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
@@ -446,11 +453,12 @@ class _StepLifeBlocks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final m = context.watch<OnboardingQuestionnaireModel>();
 
     return _StepScaffold(
-      title: 'Какие сферы жизни ты хочешь отслеживать?',
-      subtitle: 'Это станет основой твоих целей и квестов',
+      title: l.onbBlocksTitle,
+      subtitle: l.onbBlocksSubtitle,
       child: Wrap(
         alignment: WrapAlignment.center,
         spacing: 10,
@@ -468,22 +476,24 @@ class _StepLifeBlocks extends StatelessWidget {
   }
 }
 
-/// шаг: приоритеты
+/// шаг: приоритеты (options передаём извне, чтобы строки не были “ключами”)
 class _StepPriorities extends StatelessWidget {
-  const _StepPriorities();
+  final List<String> options;
+  const _StepPriorities({required this.options});
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final m = context.watch<OnboardingQuestionnaireModel>();
 
     return _StepScaffold(
-      title: 'Что для тебя важнее всего ближайшие 3–6 месяцев?',
-      subtitle: 'Выбери до трёх — это влияет на рекомендации',
+      title: l.onbPrioritiesTitle,
+      subtitle: l.onbPrioritiesSubtitle,
       child: Wrap(
         alignment: WrapAlignment.center,
         spacing: 10,
         runSpacing: 10,
-        children: OnboardingQuestionnaireScreen.prioritiesOptions.map((p) {
+        children: options.map((p) {
           final selected = m.selectedPriorities.contains(p);
           return _NestSelectChip(
             label: p,
@@ -541,43 +551,44 @@ class _StepBlockGoalsState extends State<_StepBlockGoals> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final m = context.watch<OnboardingQuestionnaireModel>();
     final label = getBlockLabel(widget.block);
 
     return _StepScaffold(
-      title: 'Цели в сфере «$label»',
-      subtitle: 'Фокус: тактика → средний срок → долгий срок',
+      title: l.onbGoalsBlockTitle(label),
+      subtitle: l.onbGoalsBlockSubtitle,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _NestTextField(
             controller: _longCtrl,
-            labelText: 'Долгосрочная цель (6–24 месяца)',
-            hintText: 'Например: выучить немецкий до уровня B2',
+            labelText: l.onbGoalLongLabel,
+            hintText: l.onbGoalLongHint,
             maxLines: 2,
             onChanged: (v) => m.setBlockGoalLong(widget.block, v),
           ),
           const SizedBox(height: 12),
           _NestTextField(
             controller: _midCtrl,
-            labelText: 'Среднесрочная цель (2–6 месяцев)',
-            hintText: 'Например: пройти курс A2→B1 и сдать экзамен',
+            labelText: l.onbGoalMidLabel,
+            hintText: l.onbGoalMidHint,
             maxLines: 2,
             onChanged: (v) => m.setBlockGoalMid(widget.block, v),
           ),
           const SizedBox(height: 12),
           _NestTextField(
             controller: _tacticalCtrl,
-            labelText: 'Тактическая цель (2–4 недели)',
-            hintText: 'Например: 12 занятий по 30 минут + 2 разговорных клуба',
+            labelText: l.onbGoalTacticalLabel,
+            hintText: l.onbGoalTacticalHint,
             maxLines: 2,
             onChanged: (v) => m.setBlockGoalTactical(widget.block, v),
           ),
           const SizedBox(height: 12),
           _NestTextField(
             controller: _whyCtrl,
-            labelText: 'Почему это важно? (опционально)',
-            hintText: 'Мотивация/смысл — поможет удерживать курс',
+            labelText: l.onbWhyLabel,
+            hintText: l.onbWhyHint,
             maxLines: 2,
             onChanged: (v) => m.setBlockWhy(widget.block, v),
           ),
@@ -585,7 +596,7 @@ class _StepBlockGoalsState extends State<_StepBlockGoals> {
           Opacity(
             opacity: .75,
             child: Text(
-              'Можно оставить пустым и нажать «Далее».',
+              l.onbOptionalNote,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),

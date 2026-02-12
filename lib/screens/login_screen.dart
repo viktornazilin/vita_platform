@@ -1,10 +1,13 @@
 // lib/screens/login_screen.dart
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/login_model.dart';
 
@@ -45,7 +48,7 @@ class _LoginViewState extends State<_LoginView> {
   bool _obscure = true;
 
   StreamSubscription<AuthState>? _authSub;
-  bool _busy = false; // локальная блокировка для reset/login
+  bool _busy = false; // локальная блокировка для reset/login/oauth
 
   bool get _showAppleButton {
     if (kIsWeb) return false;
@@ -68,6 +71,7 @@ class _LoginViewState extends State<_LoginView> {
         ).pushNamedAndRemoveUntil('/password-reset', (_) => false);
         return;
       }
+
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
       }
@@ -86,18 +90,20 @@ class _LoginViewState extends State<_LoginView> {
 
   // ───────────── Helpers ─────────────
 
-  String? _validateEmail(String? v) {
+  String? _validateEmail(BuildContext context, String? v) {
+    final l = AppLocalizations.of(context)!;
     final s = (v ?? '').trim();
-    if (s.isEmpty) return 'Введите email';
+    if (s.isEmpty) return l.loginErrEmailRequired;
     final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s);
-    if (!ok) return 'Некорректный email';
+    if (!ok) return l.loginErrEmailInvalid;
     return null;
   }
 
-  String? _validatePass(String? v) {
+  String? _validatePass(BuildContext context, String? v) {
+    final l = AppLocalizations.of(context)!;
     final s = v ?? '';
-    if (s.isEmpty) return 'Введите пароль';
-    if (s.length < 6) return 'Минимум 6 символов';
+    if (s.isEmpty) return l.loginErrPassRequired;
+    if (s.length < 6) return l.loginErrPassMin6;
     return null;
   }
 
@@ -113,9 +119,10 @@ class _LoginViewState extends State<_LoginView> {
     if (!mounted) return;
     setState(() => _busy = false);
 
-    if (ok) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-    } else if (model.errorText != null) {
+    // ✅ ВАЖНО: навигацию НЕ делаем здесь.
+    // Переход в /home выполнит onAuthStateChange (signedIn),
+    // иначе (ошибка) покажем snackbar.
+    if (!ok && model.errorText != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(model.errorText!)));
@@ -125,18 +132,22 @@ class _LoginViewState extends State<_LoginView> {
   Future<void> _loginWithGoogle() async {
     if (_busy) return;
     setState(() => _busy = true);
-    await context.read<LoginModel>().loginWithGoogle();
-    if (!mounted) return;
-    setState(() => _busy = false);
+    try {
+      await context.read<LoginModel>().loginWithGoogle();
+      // ✅ навигация — через onAuthStateChange
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
-  /// ✅ NEW: Apple ID (на этом экране это и логин, и регистрация — один OAuth поток)
+  /// Apple ID (на этом экране это и логин, и регистрация — один OAuth поток)
   /// Важно: в LoginModel должен быть метод loginWithApple().
   Future<void> _loginWithApple() async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       await context.read<LoginModel>().loginWithApple();
+      // ✅ навигация — через onAuthStateChange
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -144,6 +155,7 @@ class _LoginViewState extends State<_LoginView> {
 
   Future<void> _startPasswordReset() async {
     if (_busy) return;
+    final l = AppLocalizations.of(context)!;
 
     final emailController = TextEditingController(text: _emailCtrl.text.trim());
     final formKey = GlobalKey<FormState>();
@@ -151,17 +163,17 @@ class _LoginViewState extends State<_LoginView> {
     final email = await showDialog<String?>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Восстановление пароля'),
+        title: Text(l.loginResetTitle),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
-            validator: _validateEmail,
-            decoration: const InputDecoration(
-              labelText: 'Ваш email',
-              border: OutlineInputBorder(),
+            validator: (v) => _validateEmail(context, v),
+            decoration: InputDecoration(
+              labelText: l.loginEmailLabel,
+              border: const OutlineInputBorder(),
             ),
             onFieldSubmitted: (_) {
               if (formKey.currentState!.validate()) {
@@ -173,7 +185,7 @@ class _LoginViewState extends State<_LoginView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('Отмена'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -181,7 +193,7 @@ class _LoginViewState extends State<_LoginView> {
                 Navigator.pop(ctx, emailController.text.trim());
               }
             },
-            child: const Text('Отправить'),
+            child: Text(l.loginResetSend),
           ),
         ],
       ),
@@ -193,22 +205,20 @@ class _LoginViewState extends State<_LoginView> {
     final client = Supabase.instance.client;
 
     final String redirectTo = kIsWeb
-        ? Uri.base.origin + '/#/password-reset'
+        ? '${Uri.base.origin}/#/password-reset'
         : 'vitaplatform://auth-callback';
 
     try {
       await client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Письмо для смены пароля отправлено. Проверьте почту.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.loginResetSent)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не удалось отправить письмо: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.loginResetFailed('$e'))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -218,6 +228,7 @@ class _LoginViewState extends State<_LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final model = context.watch<LoginModel>();
     final isLoading = model.isLoading || _busy;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -270,11 +281,11 @@ class _LoginViewState extends State<_LoginView> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _LogoPlate(
+                              const _LogoPlate(
                                 assetPath: 'assets/images/logo.png',
                                 height: 196,
                                 borderRadius: 26,
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 22,
                                   vertical: 18,
                                 ),
@@ -282,7 +293,7 @@ class _LoginViewState extends State<_LoginView> {
                               const SizedBox(height: 22),
 
                               Text(
-                                'Войдите в аккаунт',
+                                l.loginTitle,
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
                                       color: _kInk,
@@ -298,9 +309,9 @@ class _LoginViewState extends State<_LoginView> {
                                 keyboardType: TextInputType.emailAddress,
                                 autofillHints: const [AutofillHints.email],
                                 textInputAction: TextInputAction.next,
-                                validator: _validateEmail,
+                                validator: (v) => _validateEmail(context, v),
                                 decoration: InputDecoration(
-                                  labelText: 'Email',
+                                  labelText: l.loginEmailLabel,
                                   prefixIcon: const Icon(Icons.alternate_email),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -332,10 +343,10 @@ class _LoginViewState extends State<_LoginView> {
                                 focusNode: _passFocus,
                                 obscureText: _obscure,
                                 textInputAction: TextInputAction.done,
-                                validator: _validatePass,
+                                validator: (v) => _validatePass(context, v),
                                 onFieldSubmitted: (_) => _login(),
                                 decoration: InputDecoration(
-                                  labelText: 'Пароль',
+                                  labelText: l.loginPasswordLabel,
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   suffixIcon: IconButton(
                                     onPressed: () =>
@@ -346,8 +357,8 @@ class _LoginViewState extends State<_LoginView> {
                                           : Icons.visibility_off,
                                     ),
                                     tooltip: _obscure
-                                        ? 'Показать пароль'
-                                        : 'Скрыть пароль',
+                                        ? l.loginShowPassword
+                                        : l.loginHidePassword,
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -374,7 +385,9 @@ class _LoginViewState extends State<_LoginView> {
                                 const SizedBox(height: 10),
                                 Text(
                                   model.errorText!,
-                                  style: const TextStyle(color: Colors.red),
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
                                 ),
                               ],
 
@@ -385,7 +398,7 @@ class _LoginViewState extends State<_LoginView> {
                                     onPressed: isLoading
                                         ? null
                                         : _startPasswordReset,
-                                    child: const Text('Забыли пароль?'),
+                                    child: Text(l.loginForgotPassword),
                                   ),
                                   const Spacer(),
                                   TextButton(
@@ -395,7 +408,7 @@ class _LoginViewState extends State<_LoginView> {
                                             context,
                                             '/register',
                                           ),
-                                    child: const Text('Создать аккаунт'),
+                                    child: Text(l.loginCreateAccount),
                                   ),
                                 ],
                               ),
@@ -410,13 +423,14 @@ class _LoginViewState extends State<_LoginView> {
                                           padding: EdgeInsets.symmetric(
                                             vertical: 10,
                                           ),
-                                          child: CircularProgressIndicator(),
+                                          child:
+                                              CircularProgressIndicator.adaptive(),
                                         ),
                                       )
                                     : FilledButton.icon(
                                         onPressed: _login,
                                         icon: const Icon(Icons.login),
-                                        label: const Text('Войти'),
+                                        label: Text(l.loginBtnSignIn),
                                         style: FilledButton.styleFrom(
                                           backgroundColor: _kSky,
                                           foregroundColor: Colors.white,
@@ -443,7 +457,7 @@ class _LoginViewState extends State<_LoginView> {
                                       horizontal: 8,
                                     ),
                                     child: Text(
-                                      'или',
+                                      l.loginOr,
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelMedium
@@ -463,7 +477,7 @@ class _LoginViewState extends State<_LoginView> {
                                       ? null
                                       : _loginWithGoogle,
                                   icon: const Icon(Icons.g_mobiledata),
-                                  label: const Text('Продолжить с Google'),
+                                  label: Text(l.loginContinueGoogle),
                                   style: OutlinedButton.styleFrom(
                                     side: BorderSide(
                                       color: _kSkyDeep.withOpacity(0.35),
@@ -479,7 +493,6 @@ class _LoginViewState extends State<_LoginView> {
                                 ),
                               ),
 
-                              // ✅ NEW: Apple ID (на iOS/macOS). На других платформах не показываем.
                               if (_showAppleButton) ...[
                                 const SizedBox(height: 10),
                                 SizedBox(
@@ -489,7 +502,7 @@ class _LoginViewState extends State<_LoginView> {
                                         ? null
                                         : _loginWithApple,
                                     icon: const Icon(Icons.apple),
-                                    label: const Text('Продолжить с Apple ID'),
+                                    label: Text(l.loginContinueApple),
                                     style: OutlinedButton.styleFrom(
                                       side: BorderSide(
                                         color: _kSkyDeep.withOpacity(0.35),

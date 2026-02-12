@@ -1,15 +1,18 @@
-import 'dart:convert';
-
+// lib/widgets/ai_plan_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../main.dart'; // dbRepo
 
 /// Bottom sheet: AI plan suggestions → user accepts/rejects → apply to goals.
 ///
-/// Fixes compilation errors:
-/// - adds missing _PlanItem, _ErrorBox, _HoursField, _RecurringControls
-/// - ensures _items is typed List<_PlanItem> (no Object?)
+/// ✅ Fixed compilation issues:
+/// - adds missing `_planId`
+/// - aligns `_run()` with your DB schema (`ai_plans` + `ai_plan_items`)
+/// - removes invalid `plannedHours` usage (we use `hours`)
+/// - parses `planned_hours` → `hours`, `description`/`reason` → `note`
+/// - keeps `_items` strictly typed List<_PlanItem>
 class AiPlanSheet extends StatefulWidget {
   const AiPlanSheet({super.key, required this.date, this.lifeBlock});
 
@@ -48,6 +51,9 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
   DateTime? _createdAt;
   String? _sourcePeriod;
 
+  // ✅ needed (was missing)
+  String? _planId;
+
   @override
   void initState() {
     super.initState();
@@ -55,82 +61,100 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
   }
 
   Future<void> _run({required bool requireConfirm}) async {
+    if (!mounted) return;
+
     setState(() {
       _loading = true;
       _error = null;
       _items = [];
       _createdAt = null;
-      _sourcePeriod = null;
+      _sourcePeriod = null; // horizon/period from ai_plans
+      _planId = null;
     });
 
     try {
       final client = Supabase.instance.client;
 
-      // ✅ Change these names to your actual table/columns if needed.
-      // Expected: last run row has json array column `suggestions`.
-      final row = await client
-          .from('ai_plan_runs') // <-- change if your table differs
-          .select('created_at, period, suggestions')
+      // 1) Latest plan from ai_plans
+      final planRow = await client
+          .from('ai_plans')
+          .select('id, created_at, horizon')
           .eq('user_id', dbRepo.uid)
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
 
-      if (row == null) {
+      if (!mounted) return;
+
+      if (planRow == null) {
         setState(() {
           _loading = false;
           _items = [];
         });
+
+        if (requireConfirm) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Пока нет AI-планов. Сначала запусти генерацию.'),
+            ),
+          );
+        }
         return;
       }
 
-      _createdAt = DateTime.tryParse((row['created_at'] ?? '').toString());
-      _sourcePeriod = (row['period'] ?? '').toString();
+      final planId = (planRow['id'] ?? '').toString();
+      final createdAt = DateTime.tryParse(
+        (planRow['created_at'] ?? '').toString(),
+      )?.toLocal();
+      final horizon = (planRow['horizon'] ?? '').toString();
 
-      final raw = row['suggestions'];
+      // 2) Suggested items for this plan
+      final rows = await client
+          .from('ai_plan_items')
+          .select(
+            'id, title, description, life_block, importance, start_time, planned_hours, reason, state, created_at',
+          )
+          .eq('user_id', dbRepo.uid)
+          .eq('plan_id', planId)
+          .eq('state', 'suggested')
+          .order('start_time', ascending: true);
 
-      final list = _coerceToList(raw);
+      if (!mounted) return;
+
+      final list = (rows is List) ? rows : const <dynamic>[];
 
       final parsed = list
           .whereType<Map>()
-          .map((e) => _PlanItem.fromMap(e.cast<String, dynamic>()))
+          .map((e) => _PlanItem.fromMap(Map<String, dynamic>.from(e)))
           .toList();
 
-      // normalize
+      // normalize + defaults
       for (final it in parsed) {
         it.lifeBlock = _PlanItem.normalizeLifeBlock(it.lifeBlock);
         it.hours = it.hours.isFinite ? it.hours : 0.0;
+        it.accepted = true;
       }
 
       setState(() {
+        _planId = planId;
+        _createdAt = createdAt;
+        _sourcePeriod = horizon.isEmpty ? null : horizon;
         _items = parsed;
         _loading = false;
       });
 
-      // optional confirm: if requiredConfirm and list empty, show error
       if (requireConfirm && parsed.isEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('План пуст — попробуй ещё раз')),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
       });
     }
-  }
-
-  List<dynamic> _coerceToList(dynamic raw) {
-    if (raw is List) return raw;
-    if (raw is String) {
-      // sometimes stored as json string
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) return decoded;
-      } catch (_) {}
-    }
-    return const <dynamic>[];
   }
 
   String _desc(_PlanItem it) {
@@ -156,11 +180,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
     setState(() => _loading = true);
 
     try {
-      // ✅ Тут самый “безопасный” вариант: создать goals через dbRepo,
-      // если метод есть. Если у тебя другое API — поменяй только этот блок.
       for (final it in accepted) {
-        // Если у тебя другой метод, например dbRepo.createGoal(...) — адаптируй.
-        // Ниже — типичный вызов, который у тебя уже встречался в проекте.
         await dbRepo.createGoal(
           title: it.title,
           description: it.note ?? '',
@@ -502,20 +522,45 @@ class _ErrorBox extends StatelessWidget {
   }
 }
 
-class _HoursField extends StatelessWidget {
+class _HoursField extends StatefulWidget {
   const _HoursField({required this.value, required this.onChanged});
 
   final double value;
   final ValueChanged<double> onChanged;
 
   @override
-  Widget build(BuildContext context) {
-    final ctrl = TextEditingController(
-      text: value == 0 ? '' : value.toStringAsFixed(1),
-    );
+  State<_HoursField> createState() => _HoursFieldState();
+}
 
+class _HoursFieldState extends State<_HoursField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(
+      text: widget.value == 0 ? '' : widget.value.toStringAsFixed(1),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _HoursField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _ctrl.text = widget.value == 0 ? '' : widget.value.toStringAsFixed(1);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return TextFormField(
-      controller: ctrl,
+      controller: _ctrl,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: const InputDecoration(
         labelText: 'Часы',
@@ -524,7 +569,7 @@ class _HoursField extends StatelessWidget {
       ),
       onChanged: (t) {
         final v = double.tryParse(t.replaceAll(',', '.')) ?? 0.0;
-        onChanged(v);
+        widget.onChanged(v);
       },
     );
   }
@@ -540,13 +585,11 @@ class _RecurringControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final values = <String?>[null, 'none', 'daily', 'weekly', 'weekdays'];
+    final values = <String?>[null, 'daily', 'weekly', 'weekdays'];
 
     String label(String? v) {
       switch (v) {
         case null:
-          return 'Без повтора';
-        case 'none':
           return 'Без повтора';
         case 'daily':
           return 'Каждый день';
@@ -555,7 +598,7 @@ class _RecurringControls extends StatelessWidget {
         case 'weekly':
           return 'Раз в неделю';
         default:
-          return v ?? 'Без повтора';
+          return 'Без повтора';
       }
     }
 
@@ -605,7 +648,7 @@ class _RecurringControls extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// Plan item model (missing class restored)
+// Plan item model (aligned with your DB schema ai_plan_items)
 // -----------------------------------------------------------------------------
 
 class _PlanItem {
@@ -623,11 +666,11 @@ class _PlanItem {
   final String id;
   String title;
   String lifeBlock;
-  double hours;
+  double hours; // <- mapped from planned_hours
   int importance;
   bool accepted;
 
-  String? note;
+  String? note; // <- description/reason
   String? recurring;
 
   static const List<String> lifeBlocks = [
@@ -644,7 +687,6 @@ class _PlanItem {
   static String normalizeLifeBlock(String v) {
     final s = v.trim();
     if (s.isEmpty) return '';
-    // Basic normalization: keep as-is if already matches
     final found = lifeBlocks.firstWhere(
       (x) => x.toLowerCase() == s.toLowerCase(),
       orElse: () => '',
@@ -652,20 +694,31 @@ class _PlanItem {
     return found.isEmpty ? s : found;
   }
 
+  static double _asDouble(dynamic v) {
+    if (v is num) return v.toDouble();
+    return double.tryParse('${v ?? ''}'.replaceAll(',', '.')) ?? 0.0;
+  }
+
+  static int _asInt(dynamic v) {
+    if (v is num) return v.toInt();
+    return int.tryParse('${v ?? ''}') ?? 1;
+  }
+
   factory _PlanItem.fromMap(Map<String, dynamic> m) {
+    // DB schema:
+    // title, description, life_block, importance, planned_hours, reason, state
+    final desc = (m['description'] ?? '').toString();
+    final reason = (m['reason'] ?? '').toString();
+    final note = [desc, reason].where((x) => x.trim().isNotEmpty).join('\n');
+
     return _PlanItem(
-      id: (m['id'] ?? m['uid'] ?? UniqueKey().toString()).toString(),
-      title: (m['title'] ?? m['task'] ?? m['name'] ?? '').toString().trim(),
-      lifeBlock: (m['life_block'] ?? m['lifeBlock'] ?? m['block'] ?? '')
-          .toString(),
-      hours: (m['hours'] is num)
-          ? (m['hours'] as num).toDouble()
-          : double.tryParse('${m['hours'] ?? ''}') ?? 0.0,
-      importance: (m['importance'] is num)
-          ? (m['importance'] as num).toInt()
-          : int.tryParse('${m['importance'] ?? ''}') ?? 1,
-      accepted: (m['accepted'] is bool) ? (m['accepted'] as bool) : true,
-      note: (m['note'] ?? m['description'] ?? '').toString(),
+      id: (m['id'] ?? UniqueKey().toString()).toString(),
+      title: (m['title'] ?? '').toString().trim(),
+      lifeBlock: (m['life_block'] ?? m['lifeBlock'] ?? '').toString(),
+      hours: _asDouble(m['planned_hours'] ?? m['hours']),
+      importance: _asInt(m['importance']),
+      accepted: true,
+      note: note.trim().isEmpty ? null : note.trim(),
       recurring: (m['recurring'] ?? m['repeat'] ?? '').toString().trim().isEmpty
           ? null
           : (m['recurring'] ?? m['repeat']).toString().trim(),
@@ -676,7 +729,7 @@ class _PlanItem {
     'id': id,
     'title': title,
     'life_block': lifeBlock,
-    'hours': hours,
+    'planned_hours': hours,
     'importance': importance,
     'accepted': accepted,
     'note': note,
@@ -684,9 +737,7 @@ class _PlanItem {
   };
 }
 
-// -----------------------------------------------------------------------------
-// Optional small helper if you want to save accept/reject back to DB later
-// -----------------------------------------------------------------------------
+// Optional helper if later want to save back
 extension _PlanListX on List<_PlanItem> {
   List<Map<String, dynamic>> toJsonList() => map((e) => e.toMap()).toList();
 }

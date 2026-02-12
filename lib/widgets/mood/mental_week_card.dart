@@ -1,5 +1,8 @@
+// lib/widgets/mood/mental_week_card.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../main.dart'; // dbRepo
 import '../../models/week_insights.dart';
@@ -89,6 +92,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -109,9 +113,9 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
       future: _future,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const ReportSectionCard(
-            title: 'Ментальное здоровье',
-            child: SizedBox(
+          return ReportSectionCard(
+            title: l.mentalWeekTitle,
+            child: const SizedBox(
               height: 110,
               child: Center(child: CircularProgressIndicator.adaptive()),
             ),
@@ -120,12 +124,12 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
 
         if (snap.hasError) {
           return ReportSectionCard(
-            title: 'Ментальное здоровье',
+            title: l.mentalWeekTitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ошибка загрузки: ${snap.error}',
+                  l.mentalWeekLoadError('${snap.error}'),
                   style: tt.bodySmall?.copyWith(color: cs.error),
                 ),
                 const SizedBox(height: 10),
@@ -134,7 +138,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
                   child: OutlinedButton.icon(
                     onPressed: () => setState(() => _future = _load()),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Повторить'),
+                    label: Text(l.commonRetry),
                   ),
                 ),
               ],
@@ -163,12 +167,12 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
 
         if (!hasAny) {
           return ReportSectionCard(
-            title: 'Ментальное здоровье',
+            title: l.mentalWeekTitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'За эту неделю нет найденных ответов (для текущего user_id).',
+                  l.mentalWeekNoAnswers,
                   style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                 ),
                 if (widget.debug) ...[
@@ -188,13 +192,13 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
         }
 
         return ReportSectionCard(
-          title: 'Ментальное здоровье',
+          title: l.mentalWeekTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (yesNoShown.isNotEmpty) ...[
                 Text(
-                  'Да/Нет (неделя)',
+                  l.mentalWeekYesNoHeader,
                   style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 10),
@@ -206,7 +210,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
               if (scaleShown.isNotEmpty) ...[
                 if (yesNoShown.isNotEmpty) const SizedBox(height: 4),
                 Text(
-                  'Шкалы (тренд)',
+                  l.mentalWeekScalesHeader,
                   style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 10),
@@ -220,7 +224,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
                 ],
               ],
               Text(
-                'Показываем только несколько вопросов, чтобы не перегружать экран.',
+                l.mentalWeekFooterHint,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
             ],
@@ -285,6 +289,7 @@ class _YesNoBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -325,7 +330,9 @@ class _YesNoBar extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          stat.total == 0 ? 'Нет данных' : 'Да: ${stat.yes}/${stat.total}',
+          stat.total == 0
+              ? l.mentalWeekNoData
+              : l.mentalWeekYesCount(stat.yes, stat.total),
           style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
         ),
       ],
@@ -346,6 +353,7 @@ class _ScaleSparkline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -370,7 +378,7 @@ class _ScaleSparkline extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Text(
-              avg == null ? '—' : avg.toStringAsFixed(1),
+              avg == null ? l.commonDash : avg.toStringAsFixed(1),
               style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/goal.dart';
 import 'chip_like.dart';
 import '../controllers/life_block_ui.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 class GoalCell extends StatelessWidget {
   final Goal goal;
@@ -13,6 +14,8 @@ class GoalCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context)!;
+
     final lb = lifeBlockUI(goal.lifeBlock);
 
     final titleStyle = theme.textTheme.titleMedium?.copyWith(
@@ -56,9 +59,12 @@ class GoalCell extends StatelessWidget {
               icon: lb.icon,
               accent: lb.accent,
             ),
-            ChipLike(label: 'Важность ${goal.importance}/5', accent: lb.accent),
             ChipLike(
-              label: 'Часы ${goal.spentHours.toStringAsFixed(1)}',
+              label: t.goalImportanceChip(goal.importance),
+              accent: lb.accent,
+            ),
+            ChipLike(
+              label: t.goalHoursChip(goal.spentHours.toStringAsFixed(1)),
               accent: lb.accent,
             ),
           ],

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/goal.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../widgets/nest_card.dart';
 import '../widgets/nest_pill.dart';
@@ -14,6 +15,7 @@ class GoalPath extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final t = AppLocalizations.of(context)!;
 
     // режем по 3 в ряд
     final rows = <List<Goal>>[];
@@ -25,7 +27,7 @@ class GoalPath extends StatelessWidget {
       return Center(
         child: NestPill(
           leading: Icon(Icons.route_rounded, size: 16, color: cs.primary),
-          text: 'Нет целей в пути',
+          text: t.goalPathEmpty,
         ),
       );
     }

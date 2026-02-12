@@ -1,6 +1,7 @@
-// ai_insight_card.dart  ✅ фикс бага с иконкой + защита от null/пустых полей
+// ai_insight_card.dart  ✅ i18n: вынесли тексты в t.* ключи
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/ai/ai_insight.dart';
 import '../widgets/info_chip.dart';
@@ -26,33 +27,46 @@ class AiInsightCard extends StatelessWidget {
     }
   }
 
-  String _labelForType(String t) => switch (t) {
-    'data_quality' => 'Качество данных',
-    'risk' => 'Риск',
-    'emotional' => 'Эмоции',
-    'habit' => 'Привычки',
-    'goal' => 'Цели',
-    _ => 'Инсайт',
-  };
+  String _labelForType(BuildContext context, String t) {
+    final t9n = AppLocalizations.of(context);
+    switch (t) {
+      case 'data_quality':
+        return t9n.aiInsightTypeDataQuality;
+      case 'risk':
+        return t9n.aiInsightTypeRisk;
+      case 'emotional':
+        return t9n.aiInsightTypeEmotional;
+      case 'habit':
+        return t9n.aiInsightTypeHabit;
+      case 'goal':
+        return t9n.aiInsightTypeGoal;
+      default:
+        return t9n.aiInsightTypeDefault;
+    }
+  }
 
-  String _strengthLabel(double v) {
-    if (v >= 0.75) return 'Сильное влияние';
-    if (v >= 0.5) return 'Заметное влияние';
-    if (v >= 0.25) return 'Слабое влияние';
-    return 'Низкая уверенность';
+  String _strengthLabel(BuildContext context, double v) {
+    final t9n = AppLocalizations.of(context);
+    if (v >= 0.75) return t9n.aiInsightStrengthStrong;
+    if (v >= 0.5) return t9n.aiInsightStrengthNoticeable;
+    if (v >= 0.25) return t9n.aiInsightStrengthWeak;
+    return t9n.aiInsightStrengthLowConfidence;
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final t9n = AppLocalizations.of(context);
 
     final type = (item.type).toString();
     final typeIcon = _iconForType(type);
-    final typeLabel = _labelForType(type);
+    final typeLabel = _labelForType(context, type);
 
     // ✅ защита от пустых impact полей
-    final impactGoal = (item.impactGoal.isNotEmpty) ? item.impactGoal : '—';
+    final impactGoal = (item.impactGoal.isNotEmpty)
+        ? item.impactGoal
+        : t9n.commonDash;
     final strength = item.impactStrength.clamp(0.0, 1.0);
     final direction = item.impactDirection.isNotEmpty
         ? item.impactDirection
@@ -68,7 +82,7 @@ class AiInsightCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _IconBadge(icon: typeIcon), // ✅ теперь реально показывает icon
+                _IconBadge(icon: typeIcon),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -121,11 +135,11 @@ class AiInsightCard extends StatelessWidget {
                 InfoChip(icon: Icons.flag_outlined, text: impactGoal),
                 InfoChip(
                   icon: Icons.tune_rounded,
-                  text: _strengthLabel(strength),
+                  text: _strengthLabel(context, strength),
                 ),
                 InfoChip(
                   icon: Icons.speed_rounded,
-                  text: '${(strength * 100).round()}%',
+                  text: t9n.aiInsightStrengthPercent((strength * 100).round()),
                 ),
               ],
             ),
@@ -133,7 +147,7 @@ class AiInsightCard extends StatelessWidget {
             if (item.evidence.isNotEmpty) ...[
               const SizedBox(height: 14),
               Text(
-                'Доказательства',
+                t9n.aiInsightEvidenceTitle,
                 style: tt.labelLarge?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: const Color(0xFF2E4B5A),
@@ -210,11 +224,7 @@ class _IconBadge extends StatelessWidget {
         border: Border.all(color: const Color(0xFFD6E6F5)),
       ),
       child: Center(
-        child: Icon(
-          icon,
-          size: 20,
-          color: const Color(0xFF3AA8E6),
-        ), // ✅ баг фикс
+        child: Icon(icon, size: 20, color: const Color(0xFF3AA8E6)),
       ),
     );
   }
@@ -331,21 +341,23 @@ class _ImpactPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t9n = AppLocalizations.of(context);
+
     IconData icon;
     String label;
 
     switch (direction) {
       case 'positive':
         icon = Icons.trending_up_rounded;
-        label = 'Позитив';
+        label = t9n.aiInsightImpactPositive;
         break;
       case 'negative':
         icon = Icons.trending_down_rounded;
-        label = 'Негатив';
+        label = t9n.aiInsightImpactNegative;
         break;
       default:
         icon = Icons.trending_flat_rounded;
-        label = 'Смешано';
+        label = t9n.aiInsightImpactMixed;
     }
 
     return Container(

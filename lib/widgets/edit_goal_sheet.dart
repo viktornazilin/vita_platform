@@ -1,6 +1,7 @@
 // lib/widgets/edit_goal_sheet.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/goal.dart';
 import 'add_day_goal_sheet.dart'; // AddGoalResult
@@ -118,8 +119,10 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   }
 
   void _submit() {
+    final t = AppLocalizations.of(context)!;
+
     final title = _titleCtrl.text.trim().isEmpty
-        ? 'Без названия'
+        ? t.editGoalUntitled
         : _titleCtrl.text.trim();
 
     Navigator.pop(
@@ -165,6 +168,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final canEditBlock = widget.fixedLifeBlock == null;
@@ -207,11 +211,11 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
               Row(
                 children: [
-                  _IconBubble(icon: Icons.edit_rounded),
+                  const _IconBubble(icon: Icons.edit_rounded),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Редактировать цель',
+                      t.editGoalTitle,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF2E4B5A),
@@ -223,7 +227,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
               ),
 
               const SizedBox(height: 10),
-              const NestSectionTitle('Детали'),
+              NestSectionTitle(t.editGoalSectionDetails),
               NestCard(
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -233,8 +237,8 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                       controller: _titleCtrl,
                       textInputAction: TextInputAction.next,
                       decoration: _nestInput(
-                        label: 'Название',
-                        hint: 'Например: Пробежка 3 км',
+                        label: t.editGoalFieldTitleLabel,
+                        hint: t.editGoalFieldTitleHint,
                         icon: Icons.flag_outlined,
                       ),
                     ),
@@ -244,8 +248,8 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                       minLines: 2,
                       maxLines: 4,
                       decoration: _nestInput(
-                        label: 'Описание',
-                        hint: 'Что именно нужно сделать?',
+                        label: t.editGoalFieldDescLabel,
+                        hint: t.editGoalFieldDescHint,
                         icon: Icons.notes_outlined,
                       ),
                     ),
@@ -254,13 +258,13 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
               ),
 
               if (canEditBlock) ...[
-                const NestSectionTitle('Сфера'),
+                NestSectionTitle(t.editGoalSectionLifeBlock),
                 NestCard(
                   padding: const EdgeInsets.all(14),
                   child: DropdownButtonFormField<String>(
                     value: dropdownValue,
                     decoration: _nestInput(
-                      label: 'Life block',
+                      label: t.editGoalFieldLifeBlockLabel,
                       icon: Icons.grid_view_rounded,
                     ),
                     items: blocks
@@ -274,7 +278,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                 ),
               ],
 
-              const NestSectionTitle('Параметры'),
+              NestSectionTitle(t.editGoalSectionParams),
               NestCard(
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -285,18 +289,21 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           child: DropdownButtonFormField<int>(
                             value: _importance,
                             decoration: _nestInput(
-                              label: 'Важность',
+                              label: t.editGoalFieldImportanceLabel,
                               icon: Icons.local_fire_department_rounded,
                             ),
-                            items: const [
-                              DropdownMenuItem(value: 1, child: Text('Низкая')),
+                            items: [
+                              DropdownMenuItem(
+                                value: 1,
+                                child: Text(t.editGoalImportanceLow),
+                              ),
                               DropdownMenuItem(
                                 value: 2,
-                                child: Text('Средняя'),
+                                child: Text(t.editGoalImportanceMedium),
                               ),
                               DropdownMenuItem(
                                 value: 3,
-                                child: Text('Высокая'),
+                                child: Text(t.editGoalImportanceHigh),
                               ),
                             ],
                             onChanged: (v) =>
@@ -308,8 +315,8 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           child: TextField(
                             controller: _emotionCtrl,
                             decoration: _nestInput(
-                              label: 'Эмоция',
-                              hint: '😊',
+                              label: t.editGoalFieldEmotionLabel,
+                              hint: t.editGoalFieldEmotionHint,
                               icon: Icons.emoji_emotions_outlined,
                             ),
                           ),
@@ -328,7 +335,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Длительность (ч)',
+                            t.editGoalDurationHours,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF2E4B5A),
@@ -377,7 +384,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Начало',
+                            t.editGoalStartTime,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF2E4B5A),
@@ -400,7 +407,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                 children: [
                   Expanded(
                     child: _SoftButton(
-                      label: 'Отмена',
+                      label: t.commonCancel,
                       kind: _SoftButtonKind.secondary,
                       onTap: () => Navigator.pop(context),
                     ),
@@ -408,7 +415,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _SoftButton(
-                      label: 'Сохранить',
+                      label: t.commonSave,
                       kind: _SoftButtonKind.primary,
                       onTap: _submit,
                     ),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/home_model.dart';
 import '../../models/goals_calendar_model.dart';
 import 'home_google_calendar_sheet.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../services/habits_repo_mixin.dart' show HabitEntryUpsert;
 import '../../services/mental_repo_mixin.dart';
@@ -39,13 +40,17 @@ void showHomeLauncherSheet({
           ),
           child: Column(
             children: [
-              const _NestSheetHeader(
-                title: 'Быстрые функции',
-                subtitle: 'Навигация и действия в один тап',
+              _NestSheetHeader(
+                title: AppLocalizations.of(ctx)!.launcherQuickFunctionsTitle,
+                subtitle: AppLocalizations.of(
+                  ctx,
+                )!.launcherQuickFunctionsSubtitle,
               ),
               const SizedBox(height: 14),
 
-              const _NestSectionTitle('Разделы'),
+              _NestSectionTitle(
+                AppLocalizations.of(ctx)!.launcherSectionsTitle,
+              ),
               const SizedBox(height: 10),
 
               GridView(
@@ -60,7 +65,7 @@ void showHomeLauncherSheet({
                 children: [
                   LauncherTile(
                     icon: Icons.home,
-                    label: 'Главная',
+                    label: AppLocalizations.of(ctx)!.launcherHome,
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(0);
@@ -68,7 +73,7 @@ void showHomeLauncherSheet({
                   ),
                   LauncherTile(
                     icon: Icons.flag,
-                    label: 'Цели',
+                    label: AppLocalizations.of(ctx)!.launcherGoals,
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(1);
@@ -76,7 +81,7 @@ void showHomeLauncherSheet({
                   ),
                   LauncherTile(
                     icon: Icons.mood,
-                    label: 'Настроение',
+                    label: AppLocalizations.of(ctx)!.launcherMood,
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(2);
@@ -84,7 +89,7 @@ void showHomeLauncherSheet({
                   ),
                   LauncherTile(
                     icon: Icons.person,
-                    label: 'Профиль',
+                    label: AppLocalizations.of(ctx)!.launcherProfile,
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(3);
@@ -92,7 +97,7 @@ void showHomeLauncherSheet({
                   ),
                   LauncherTile(
                     icon: Icons.insights,
-                    label: 'Инсайты',
+                    label: AppLocalizations.of(ctx)!.launcherInsights,
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(4);
@@ -100,7 +105,7 @@ void showHomeLauncherSheet({
                   ),
                   LauncherTile(
                     icon: Icons.account_balance_wallet,
-                    label: 'Отчёты',
+                    label: AppLocalizations.of(ctx)!.launcherReports,
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(5);
@@ -110,12 +115,13 @@ void showHomeLauncherSheet({
               ),
 
               const SizedBox(height: 18),
-              const _NestSectionTitle('Быстро'),
+              _NestSectionTitle(AppLocalizations.of(ctx)!.launcherQuickTitle),
               const SizedBox(height: 10),
 
               Builder(
                 builder: (_) {
                   final cs = Theme.of(ctx).colorScheme;
+                  final l = AppLocalizations.of(ctx)!;
 
                   return Column(
                     children: [
@@ -123,8 +129,8 @@ void showHomeLauncherSheet({
                       _NestQuickActionTile(
                         icon: Icons.bolt,
                         color: cs.primary,
-                        title: 'Массовое добавление за день',
-                        subtitle: 'Расходы + Задачи + Настроение',
+                        title: l.launcherMassAddTitle,
+                        subtitle: l.launcherMassAddSubtitle,
                         onTap: () async {
                           final goalsModel = GoalsCalendarModel();
                           await goalsModel.loadBlocks();
@@ -302,12 +308,13 @@ void showHomeLauncherSheet({
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Сохранено: '
-                                    '${result.expenses.length} расход(ов), '
-                                    '${result.incomes.length} доход(ов), '
-                                    '${result.goals.length} задач(и), '
-                                    '${result.habits.length} привыч(ек)'
-                                    '${result.mood != null ? ', настроение' : ''}',
+                                    l.launcherSavedSummary(
+                                      result.expenses.length,
+                                      result.incomes.length,
+                                      result.goals.length,
+                                      result.habits.length,
+                                      result.mood != null,
+                                    ),
                                   ),
                                 ),
                               );
@@ -315,7 +322,7 @@ void showHomeLauncherSheet({
                               if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Ошибка сохранения: $e'),
+                                  content: Text(l.launcherSaveError('$e')),
                                 ),
                               );
                             }
@@ -329,8 +336,8 @@ void showHomeLauncherSheet({
                       _NestQuickActionTile(
                         icon: Icons.auto_awesome,
                         color: cs.tertiary,
-                        title: 'AI-план на неделю/месяц',
-                        subtitle: 'Анализ целей, опроса и прогресса',
+                        title: l.launcherAiPlanTitle,
+                        subtitle: l.launcherAiPlanSubtitle,
                         onTap: () async {
                           final created = await showModalBottomSheet<int>(
                             context: ctx,
@@ -350,7 +357,9 @@ void showHomeLauncherSheet({
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Создано целей: $created'),
+                                content: Text(
+                                  l.launcherCreatedGoalsCount(created),
+                                ),
                               ),
                             );
                           }
@@ -363,8 +372,8 @@ void showHomeLauncherSheet({
                       _NestQuickActionTile(
                         icon: Icons.psychology_alt,
                         color: cs.secondary,
-                        title: 'AI-инсайты',
-                        subtitle: 'Как события влияют на цели и прогресс',
+                        title: l.launcherAiInsightsTitle,
+                        subtitle: l.launcherAiInsightsSubtitle,
                         onTap: () async {
                           await showModalBottomSheet<void>(
                             context: ctx,
@@ -387,8 +396,8 @@ void showHomeLauncherSheet({
                       _NestQuickActionTile(
                         icon: Icons.event_repeat_rounded,
                         color: cs.primaryContainer,
-                        title: 'Регулярная цель',
-                        subtitle: 'Планирование на несколько дней вперёд',
+                        title: l.launcherRecurringGoalTitle,
+                        subtitle: l.launcherRecurringGoalSubtitle,
                         onTap: () async {
                           final plan =
                               await showModalBottomSheet<RecurringGoalPlan>(
@@ -459,10 +468,8 @@ void showHomeLauncherSheet({
                           if (occurrences.isEmpty) {
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Нет дат для создания (проверь дедлайн/настройки).',
-                                ),
+                              SnackBar(
+                                content: Text(l.launcherNoDatesToCreate),
                               ),
                             );
                             return;
@@ -500,7 +507,9 @@ void showHomeLauncherSheet({
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Создано целей: ${occurrences.length}',
+                                  l.launcherCreatedGoalsCount(
+                                    occurrences.length,
+                                  ),
                                 ),
                               ),
                             );
@@ -509,7 +518,7 @@ void showHomeLauncherSheet({
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Не удалось создать серию целей: $e',
+                                  l.launcherCreateSeriesFailed('$e'),
                                 ),
                               ),
                             );
@@ -519,12 +528,12 @@ void showHomeLauncherSheet({
 
                       const SizedBox(height: 10),
 
-                      // ✅ Google Calendar (теперь КЛИКАБЕЛЬНО)
+                      // ✅ Google Calendar (кликабельно)
                       _NestQuickActionTile(
                         icon: Icons.calendar_month_rounded,
                         color: cs.primary,
-                        title: 'Синхронизация с Google Calendar',
-                        subtitle: 'Экспорт целей в календарь',
+                        title: l.launcherGoogleCalendarSyncTitle,
+                        subtitle: l.launcherGoogleCalendarSyncSubtitle,
                         onTap: () async {
                           Navigator.pop(ctx); // закрываем launcher sheet
 
@@ -544,9 +553,6 @@ void showHomeLauncherSheet({
                           );
                         },
                       ),
-
-                      // Если хочешь оставить disabled-заготовку — оставь эту строку вместо плитки выше:
-                      // _NestQuickActionTileDisabled(...),
                     ],
                   );
                 },

@@ -1,10 +1,13 @@
 // lib/screens/register_screen.dart
 import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/register_model.dart';
 import '../services/user_service.dart';
@@ -115,51 +118,61 @@ class _RegisterViewState extends State<_RegisterView> {
     }
   }
 
-  String? _validateEmail(String? v) {
+  // ───────────── Validators (localized) ─────────────
+
+  String? _validateName(BuildContext context, String? v) {
+    final l = AppLocalizations.of(context)!;
     final s = (v ?? '').trim();
-    if (s.isEmpty) return 'Введите email';
+    if (s.isEmpty) return l.registerErrNameRequired;
+    return null;
+  }
+
+  String? _validateEmail(BuildContext context, String? v) {
+    final l = AppLocalizations.of(context)!;
+    final s = (v ?? '').trim();
+    if (s.isEmpty) return l.registerErrEmailRequired;
     final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s);
-    if (!ok) return 'Некорректный email';
+    if (!ok) return l.registerErrEmailInvalid;
     return null;
   }
 
   /// ✅ Strong password:
-  /// - минимум 8 символов
-  /// - 1 строчная
-  /// - 1 заглавная
-  /// - 1 цифра
-  /// - (опционально) 1 спецсимвол
-  String? _validateStrongPassword(String? v) {
+  /// - min 8 chars
+  /// - 1 lower
+  /// - 1 upper
+  /// - 1 digit
+  String? _validateStrongPassword(BuildContext context, String? v) {
+    final l = AppLocalizations.of(context)!;
     final s = v ?? '';
-    if (s.isEmpty) return 'Введите пароль';
-    if (s.length < 8) return 'Минимум 8 символов';
-    if (!RegExp(r'[a-z]').hasMatch(s)) return 'Добавьте строчную букву (a-z)';
-    if (!RegExp(r'[A-Z]').hasMatch(s)) return 'Добавьте заглавную букву (A-Z)';
-    if (!RegExp(r'\d').hasMatch(s)) return 'Добавьте цифру (0-9)';
-    // Если хочешь строго требовать спецсимвол — раскомментируй:
-    // if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\[\]\\\/]').hasMatch(s)) {
-    //   return 'Добавьте спецсимвол (!@#...)';
-    // }
+    if (s.isEmpty) return l.registerErrPassRequired;
+    if (s.length < 8) return l.registerErrPassMin8;
+    if (!RegExp(r'[a-z]').hasMatch(s)) return l.registerErrPassNeedLower;
+    if (!RegExp(r'[A-Z]').hasMatch(s)) return l.registerErrPassNeedUpper;
+    if (!RegExp(r'\d').hasMatch(s)) return l.registerErrPassNeedDigit;
     return null;
   }
 
-  String? _validateConfirm(String? v) {
+  String? _validateConfirm(BuildContext context, String? v) {
+    final l = AppLocalizations.of(context)!;
     final s = v ?? '';
-    if (s.isEmpty) return 'Повторите пароль';
-    if (s != _passCtrl.text) return 'Пароли не совпадают';
+    if (s.isEmpty) return l.registerErrConfirmRequired;
+    if (s != _passCtrl.text) return l.registerErrPasswordsMismatch;
     return null;
   }
+
+  // ───────────── Actions ─────────────
 
   Future<void> _onRegister() async {
     if (_busy) return;
     if (!_formKey.currentState!.validate()) return;
 
+    final l = AppLocalizations.of(context)!;
     final model = context.read<RegisterModel>();
 
     if (!model.termsAccepted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Нужно принять Условия и Privacy Policy')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.registerErrAcceptTerms)));
       return;
     }
 
@@ -202,11 +215,12 @@ class _RegisterViewState extends State<_RegisterView> {
   }
 
   Future<void> _registerWithApple() async {
+    final l = AppLocalizations.of(context)!;
+
     if (!_isApplePlatform) {
-      // На Web/Android просто объясняем, почему не работает
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Apple ID доступен на iPhone/iPad (iOS)')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.registerAppleOnlyIos)));
       return;
     }
 
@@ -229,7 +243,7 @@ class _RegisterViewState extends State<_RegisterView> {
   void _openTerms() => Navigator.pushNamed(context, '/terms');
   void _openPrivacy() => Navigator.pushNamed(context, '/privacy');
 
-  InputDecoration _dec(String label, IconData icon) {
+  InputDecoration _dec(BuildContext context, String label, IconData icon) {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
@@ -249,6 +263,7 @@ class _RegisterViewState extends State<_RegisterView> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final model = context.watch<RegisterModel>();
     final isLoading = model.loading || _busy;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -301,11 +316,11 @@ class _RegisterViewState extends State<_RegisterView> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _LogoPlate(
+                              const _LogoPlate(
                                 assetPath: 'assets/images/logo.png',
                                 height: 120,
                                 borderRadius: 22,
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 18,
                                   vertical: 14,
                                 ),
@@ -313,7 +328,7 @@ class _RegisterViewState extends State<_RegisterView> {
                               const SizedBox(height: 18),
 
                               Text(
-                                'Создайте аккаунт',
+                                l.registerTitle,
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
                                       color: _kInk,
@@ -327,10 +342,12 @@ class _RegisterViewState extends State<_RegisterView> {
                                 focusNode: _nameFocus,
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.name],
-                                decoration: _dec('Имя', Icons.person_outline),
-                                validator: (v) => (v ?? '').trim().isEmpty
-                                    ? 'Введите имя'
-                                    : null,
+                                decoration: _dec(
+                                  context,
+                                  l.registerNameLabel,
+                                  Icons.person_outline,
+                                ),
+                                validator: (v) => _validateName(context, v),
                                 onFieldSubmitted: (_) =>
                                     _emailFocus.requestFocus(),
                               ),
@@ -342,9 +359,10 @@ class _RegisterViewState extends State<_RegisterView> {
                                 keyboardType: TextInputType.emailAddress,
                                 autofillHints: const [AutofillHints.email],
                                 textInputAction: TextInputAction.next,
-                                validator: _validateEmail,
+                                validator: (v) => _validateEmail(context, v),
                                 decoration: _dec(
-                                  'Email',
+                                  context,
+                                  l.registerEmailLabel,
                                   Icons.alternate_email,
                                 ),
                                 onFieldSubmitted: (_) =>
@@ -357,11 +375,16 @@ class _RegisterViewState extends State<_RegisterView> {
                                 focusNode: _passFocus,
                                 obscureText: _obscure1,
                                 textInputAction: TextInputAction.next,
-                                validator: _validateStrongPassword,
+                                validator: (v) =>
+                                    _validateStrongPassword(context, v),
                                 onFieldSubmitted: (_) =>
                                     _pass2Focus.requestFocus(),
-                                decoration: _dec('Пароль', Icons.lock_outline)
-                                    .copyWith(
+                                decoration:
+                                    _dec(
+                                      context,
+                                      l.registerPasswordLabel,
+                                      Icons.lock_outline,
+                                    ).copyWith(
                                       suffixIcon: IconButton(
                                         onPressed: () => setState(
                                           () => _obscure1 = !_obscure1,
@@ -372,8 +395,8 @@ class _RegisterViewState extends State<_RegisterView> {
                                               : Icons.visibility_off,
                                         ),
                                         tooltip: _obscure1
-                                            ? 'Показать пароль'
-                                            : 'Скрыть пароль',
+                                            ? l.registerShowPassword
+                                            : l.registerHidePassword,
                                       ),
                                     ),
                               ),
@@ -384,11 +407,12 @@ class _RegisterViewState extends State<_RegisterView> {
                                 focusNode: _pass2Focus,
                                 obscureText: _obscure2,
                                 textInputAction: TextInputAction.done,
-                                validator: _validateConfirm,
+                                validator: (v) => _validateConfirm(context, v),
                                 onFieldSubmitted: (_) => _onRegister(),
                                 decoration:
                                     _dec(
-                                      'Подтвердите пароль',
+                                      context,
+                                      l.registerConfirmPasswordLabel,
                                       Icons.lock,
                                     ).copyWith(
                                       suffixIcon: IconButton(
@@ -401,8 +425,8 @@ class _RegisterViewState extends State<_RegisterView> {
                                               : Icons.visibility_off,
                                         ),
                                         tooltip: _obscure2
-                                            ? 'Показать пароль'
-                                            : 'Скрыть пароль',
+                                            ? l.registerShowPassword
+                                            : l.registerHidePassword,
                                       ),
                                     ),
                               ),
@@ -421,7 +445,9 @@ class _RegisterViewState extends State<_RegisterView> {
                                 const SizedBox(height: 10),
                                 Text(
                                   model.error!,
-                                  style: const TextStyle(color: Colors.red),
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
                                 ),
                               ],
 
@@ -435,7 +461,8 @@ class _RegisterViewState extends State<_RegisterView> {
                                           padding: EdgeInsets.symmetric(
                                             vertical: 10,
                                           ),
-                                          child: CircularProgressIndicator(),
+                                          child:
+                                              CircularProgressIndicator.adaptive(),
                                         ),
                                       )
                                     : FilledButton.icon(
@@ -443,7 +470,7 @@ class _RegisterViewState extends State<_RegisterView> {
                                         icon: const Icon(
                                           Icons.person_add_alt_1_outlined,
                                         ),
-                                        label: const Text('Зарегистрироваться'),
+                                        label: Text(l.registerBtnSignUp),
                                         style: FilledButton.styleFrom(
                                           backgroundColor: _kSky,
                                           foregroundColor: Colors.white,
@@ -470,7 +497,7 @@ class _RegisterViewState extends State<_RegisterView> {
                                       horizontal: 8,
                                     ),
                                     child: Text(
-                                      'или',
+                                      l.commonOr,
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelMedium
@@ -489,7 +516,7 @@ class _RegisterViewState extends State<_RegisterView> {
                                       ? null
                                       : _registerWithGoogle,
                                   icon: const Icon(Icons.g_mobiledata),
-                                  label: const Text('Продолжить с Google'),
+                                  label: Text(l.registerContinueGoogle),
                                   style: OutlinedButton.styleFrom(
                                     side: BorderSide(
                                       color: _kSkyDeep.withOpacity(0.35),
@@ -507,8 +534,7 @@ class _RegisterViewState extends State<_RegisterView> {
 
                               const SizedBox(height: 10),
 
-                              // ✅ Apple всегда видна (чтобы ты её видел на Web),
-                              // но на Web/Android она заблокирована и объясняет почему.
+                              // Apple: видна всегда, но на Web/Android покажет подсказку
                               SizedBox(
                                 width: double.infinity,
                                 child: OutlinedButton.icon(
@@ -518,8 +544,8 @@ class _RegisterViewState extends State<_RegisterView> {
                                   icon: const Icon(Icons.apple),
                                   label: Text(
                                     _isApplePlatform
-                                        ? 'Продолжить с Apple ID'
-                                        : 'Продолжить с Apple ID (iOS)',
+                                        ? l.registerContinueApple
+                                        : l.registerContinueAppleIos,
                                   ),
                                   style: OutlinedButton.styleFrom(
                                     side: BorderSide(
@@ -544,7 +570,7 @@ class _RegisterViewState extends State<_RegisterView> {
                                         context,
                                         '/login',
                                       ),
-                                child: const Text('Уже есть аккаунт? Войти'),
+                                child: Text(l.registerHaveAccountCta),
                               ),
                             ],
                           ),
@@ -579,6 +605,7 @@ class _LegalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final textStyle = Theme.of(
       context,
     ).textTheme.bodyMedium?.copyWith(color: _kInk);
@@ -604,29 +631,29 @@ class _LegalRow extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Wrap(
               children: [
-                Text('Я принимаю ', style: textStyle),
+                Text(l.registerLegalPrefix, style: textStyle),
                 InkWell(
                   onTap: enabled ? onOpenTerms : null,
                   child: Text(
-                    'Условия',
+                    l.registerLegalTerms,
                     style: textStyle?.copyWith(
                       color: _kSkyDeep,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                Text(' и ознакомился(ась) с ', style: textStyle),
+                Text(l.registerLegalMiddle, style: textStyle),
                 InkWell(
                   onTap: enabled ? onOpenPrivacy : null,
                   child: Text(
-                    'Privacy Policy',
+                    l.registerLegalPrivacy,
                     style: textStyle?.copyWith(
                       color: _kSkyDeep,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                Text('.', style: textStyle),
+                Text(l.registerLegalSuffix, style: textStyle),
               ],
             ),
           ),

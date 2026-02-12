@@ -1,4 +1,7 @@
+// lib/widgets/goals/add_day_goal_sheet.dart
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 class AddGoalResult {
   final String title;
@@ -72,10 +75,16 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   }
 
   void _submit() {
+    final l = AppLocalizations.of(context)!;
+
     if (_titleCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Введите название')));
+      final sm = ScaffoldMessenger.maybeOf(context);
+      sm?.showSnackBar(
+        SnackBar(
+          content: Text(l.addDayGoalEnterTitle),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -95,6 +104,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
@@ -156,7 +166,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Новая цель на день',
+                          l.addDayGoalTitle,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w900,
@@ -174,15 +184,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       children: [
                         _PrettyField(
                           controller: _titleCtrl,
-                          label: 'Название *',
-                          hint: 'Например: Тренировка / Работа / Учёба',
+                          label: l.addDayGoalFieldTitle,
+                          hint: l.addDayGoalTitleHint,
                           icon: Icons.flag_rounded,
                         ),
                         const SizedBox(height: 10),
                         _PrettyField(
                           controller: _descCtrl,
-                          label: 'Описание',
-                          hint: 'Коротко: что именно нужно сделать',
+                          label: l.addDayGoalFieldDescription,
+                          hint: l.addDayGoalDescriptionHint,
                           icon: Icons.notes_rounded,
                           minLines: 2,
                           maxLines: 4,
@@ -201,10 +211,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           color: Color(0xFF3AA8E6),
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Время начала',
-                            style: TextStyle(
+                            l.addDayGoalStartTime,
+                            style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF2E4B5A),
                             ),
@@ -229,10 +239,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             color: Color(0xFF3AA8E6),
                           ),
                           const SizedBox(width: 10),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Сфера жизни',
-                              style: TextStyle(
+                              l.addDayGoalLifeBlock,
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFF2E4B5A),
                               ),
@@ -266,9 +276,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Важность',
-                          style: TextStyle(
+                        Text(
+                          l.addDayGoalImportance,
+                          style: const TextStyle(
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF2E4B5A),
                           ),
@@ -312,9 +322,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Эмоция',
-                          style: TextStyle(
+                        Text(
+                          l.addDayGoalEmotion,
+                          style: const TextStyle(
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF2E4B5A),
                           ),
@@ -355,10 +365,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       children: [
                         Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'Часы',
-                                style: TextStyle(
+                                l.addDayGoalHours,
+                                style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                   color: Color(0xFF2E4B5A),
                                 ),
@@ -393,9 +403,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             side: const BorderSide(color: Color(0xFFD6E6F5)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text(
-                            'Отмена',
-                            style: TextStyle(
+                          child: Text(
+                            l.commonCancel,
+                            style: const TextStyle(
                               fontWeight: FontWeight.w900,
                               color: Color(0xFF2E4B5A),
                             ),
@@ -416,9 +426,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text(
-                            'Добавить',
-                            style: TextStyle(fontWeight: FontWeight.w900),
+                          child: Text(
+                            l.commonAdd,
+                            style: const TextStyle(fontWeight: FontWeight.w900),
                           ),
                         ),
                       ),

@@ -1,4 +1,7 @@
+// lib/widgets/mood/habits_week_card.dart
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/habit.dart';
 import '../../models/week_insights.dart';
@@ -22,21 +25,22 @@ class HabitsWeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     if (habits.isEmpty) {
       return ReportSectionCard(
-        title: 'Привычки',
+        title: l.habitsWeekTitle,
         child: Text(
-          'Добавь хотя бы одну привычку — и тут появится прогресс.',
+          l.habitsWeekEmptyHint,
           style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
         ),
       );
     }
 
     return ReportSectionCard(
-      title: 'Привычки (топ недели)',
+      title: l.habitsWeekTopTitle,
       child: Column(
         children: [
           for (final h in habits) ...[
@@ -53,7 +57,7 @@ class HabitsWeekCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Показываем самые активные привычки за 7 дней.',
+              l.habitsWeekFooterHint,
               style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
           ),

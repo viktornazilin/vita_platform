@@ -2,6 +2,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../models/goal.dart';
 import 'goal_cell.dart';
 import 'dashed_line.dart';
@@ -176,6 +178,7 @@ class TimelineRow extends StatelessWidget {
 
   void _showGoalActions(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context)!;
 
     showModalBottomSheet<void>(
       context: context,
@@ -194,7 +197,7 @@ class TimelineRow extends StatelessWidget {
                 const SizedBox(height: 10),
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Редактировать'),
+                  title: Text(t.timelineActionEdit),
                   onTap: () {
                     Navigator.pop(ctx);
                     onEdit();
@@ -205,7 +208,7 @@ class TimelineRow extends StatelessWidget {
                     Icons.delete_outline,
                     color: theme.colorScheme.error,
                   ),
-                  title: const Text('Удалить'),
+                  title: Text(t.timelineActionDelete),
                   textColor: theme.colorScheme.error,
                   iconColor: theme.colorScheme.error,
                   onTap: () {

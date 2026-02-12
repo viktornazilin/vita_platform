@@ -1,5 +1,6 @@
 // lib/widgets/save_bar.dart
 import 'dart:ui';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,7 @@ class SaveBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final t = AppLocalizations.of(context)!;
 
     return SafeArea(
       top: false,
@@ -91,7 +93,7 @@ class SaveBar extends StatelessWidget {
                         ],
                         const SizedBox(width: 10),
                         Text(
-                          saving ? 'Сохранение…' : 'Сохранить',
+                          saving ? t.saveBarSaving : t.saveBarSave,
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.w900,

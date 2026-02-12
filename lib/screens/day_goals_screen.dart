@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../models/goal.dart';
 import '../models/day_goals_model.dart';
 import '../widgets/add_day_goal_sheet.dart';
@@ -118,7 +120,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           );
         }
       } catch (e) {
-        _snack('Не удалось добавить цель: $e');
+        final l = AppLocalizations.of(context)!;
+        _snack(l.dayGoalsAddFailed(e.toString()));
       }
     });
   }
@@ -158,27 +161,31 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
         // ✅ гарантированно подтянем свежие данные
         await vm.load();
 
-        _snack('Цель обновлена');
+        final l = AppLocalizations.of(context)!;
+        _snack(l.dayGoalsUpdated);
       } catch (e) {
-        _snack('Не удалось обновить цель: $e');
+        final l = AppLocalizations.of(context)!;
+        _snack(l.dayGoalsUpdateFailed(e.toString()));
       }
     });
   }
 
   Future<void> _confirmAndDelete(Goal g) async {
+    final l = AppLocalizations.of(context)!;
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Удалить цель?'),
+        title: Text(l.dayGoalsDeleteConfirmTitle),
         content: Text('“${g.title}”'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Удалить'),
+            child: Text(l.commonDelete),
           ),
         ],
       ),
@@ -192,9 +199,11 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       try {
         // ✅ новый миксин/репо удаляет по id
         await vm.deleteGoal(g.id);
-        _snack('Цель удалена');
+        final l = AppLocalizations.of(context)!;
+        _snack(l.dayGoalsDeleted);
       } catch (e) {
-        _snack('Не удалось удалить: $e');
+        final l = AppLocalizations.of(context)!;
+        _snack(l.dayGoalsDeleteFailed(e.toString()));
       }
     });
   }
@@ -206,7 +215,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
         await vm.toggleComplete(g);
         await vm.load();
       } catch (e) {
-        _snack('Не удалось изменить статус: $e');
+        final l = AppLocalizations.of(context)!;
+        _snack(l.dayGoalsToggleFailed(e.toString()));
       }
     });
   }
@@ -239,9 +249,10 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final vm = context.watch<DayGoalsModel>();
     final goals = vm.goals;
-    final title = vm.lifeBlock ?? 'Все сферы';
+    final title = vm.lifeBlock ?? l.dayGoalsAllLifeBlocks;
 
     return Stack(
       children: [
@@ -374,6 +385,8 @@ class _NestEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 420),
@@ -391,7 +404,7 @@ class _NestEmptyState extends StatelessWidget {
           ],
         ),
         child: Text(
-          'Целей на этот день нет',
+          l.dayGoalsEmpty,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w800,
@@ -487,6 +500,8 @@ class _FabMenuSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
       child: ClipRRect(
@@ -521,22 +536,22 @@ class _FabMenuSheet extends StatelessWidget {
                   const SizedBox(height: 14),
                   _FabMenuButton(
                     icon: Icons.edit_rounded,
-                    title: 'Добавить цель',
-                    subtitle: 'Создать вручную',
+                    title: l.dayGoalsFabAddTitle,
+                    subtitle: l.dayGoalsFabAddSubtitle,
                     onTap: () => Navigator.pop(context, _FabAction.add),
                   ),
                   const SizedBox(height: 10),
                   _FabMenuButton(
                     icon: Icons.document_scanner_rounded,
-                    title: 'Скан',
-                    subtitle: 'Фото ежедневника',
+                    title: l.dayGoalsFabScanTitle,
+                    subtitle: l.dayGoalsFabScanSubtitle,
                     onTap: () => Navigator.pop(context, _FabAction.scan),
                   ),
                   const SizedBox(height: 10),
                   _FabMenuButton(
                     icon: Icons.calendar_month_rounded,
-                    title: 'Google Calendar',
-                    subtitle: 'Импорт/экспорт целей за сегодня',
+                    title: l.dayGoalsFabCalendarTitle,
+                    subtitle: l.dayGoalsFabCalendarSubtitle,
                     onTap: () => Navigator.pop(context, _FabAction.calendar),
                   ),
                 ],

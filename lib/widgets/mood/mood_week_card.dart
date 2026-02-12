@@ -1,4 +1,7 @@
+// lib/widgets/mood/mood_week_card.dart
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../widgets/report_section_card.dart';
 import '../../models/week_insights.dart';
@@ -17,6 +20,7 @@ class MoodWeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -27,7 +31,7 @@ class MoodWeekCard extends StatelessWidget {
         : valid.reduce((a, b) => a + b) / valid.length;
 
     return ReportSectionCard(
-      title: 'Состояние недели',
+      title: l.moodWeekTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -39,19 +43,19 @@ class MoodWeekCard extends StatelessWidget {
             children: [
               _MiniPill(
                 icon: Icons.check_circle_rounded,
-                label: 'Отмечено: $filled/7',
+                label: l.moodWeekMarkedCount(filled, 7),
               ),
               _MiniPill(
                 icon: Icons.auto_graph_rounded,
                 label: avg == null
-                    ? 'Среднее: —'
-                    : 'Среднее: ${avg.toStringAsFixed(1)}/5',
+                    ? l.moodWeekAverageDash
+                    : l.moodWeekAverageValue(avg.toStringAsFixed(1)),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            'Это быстрый обзор. Детали ниже — в истории.',
+            l.moodWeekFooterHint,
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
         ],

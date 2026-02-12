@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../widgets/mood_selector.dart';
 
 import '../models/mood_model.dart';
@@ -71,6 +73,12 @@ class _MoodViewState extends State<_MoodView> {
     return {for (final e in entries) e.key: e.value};
   }
 
+  void _snack(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
@@ -97,16 +105,79 @@ class _MoodViewState extends State<_MoodView> {
       },
     );
 
-    if (d != null) setState(() => _selectedDate = DateUtils.dateOnly(d));
+    if (d != null) {
+      setState(() => _selectedDate = DateUtils.dateOnly(d));
+    }
   }
 
-  Future<void> _save(BuildContext context) async {
+  Future<void> _refresh() async {
+    await context.read<MoodModel>().load();
+  }
+
+  Future<String?> _saveMood({
+    required DateTime date,
+    required String emoji,
+    required String note,
+  }) async {
+    try {
+      // ✅ через repo (как у тебя было), но это лучше перенести в MoodModel
+      final model = context.read<MoodModel>();
+      await model.repo.upsertMood(
+        date: DateUtils.dateOnly(date),
+        emoji: emoji,
+        note: note,
+      );
+      await model.load();
+      return null;
+    } catch (e) {
+      final l = AppLocalizations.of(context)!;
+      return l.moodErrSaveFailed('$e');
+    }
+  }
+
+  Future<String?> _updateMood({
+    required DateTime originalDate,
+    required DateTime newDate,
+    required String emoji,
+    required String note,
+  }) async {
+    try {
+      final model = context.read<MoodModel>();
+      final orig = DateUtils.dateOnly(originalDate);
+      final next = DateUtils.dateOnly(newDate);
+
+      await model.repo.upsertMood(date: next, emoji: emoji, note: note);
+      if (orig != next) {
+        await model.repo.deleteMoodByDate(orig);
+      }
+      await model.load();
+      return null;
+    } catch (e) {
+      final l = AppLocalizations.of(context)!;
+      return l.moodErrUpdateFailed('$e');
+    }
+  }
+
+  Future<String?> _deleteMood(DateTime date) async {
+    try {
+      final model = context.read<MoodModel>();
+      await model.repo.deleteMoodByDate(DateUtils.dateOnly(date));
+      await model.load();
+      return null;
+    } catch (e) {
+      final l = AppLocalizations.of(context)!;
+      return l.moodErrDeleteFailed('$e');
+    }
+  }
+
+  Future<void> _save() async {
     if (_saving) return;
+
+    final l = AppLocalizations.of(context)!;
     final note = _noteController.text.trim();
 
     setState(() => _saving = true);
-
-    final err = await context.read<MoodModel>().saveMoodForDate(
+    final err = await _saveMood(
       date: _selectedDate,
       emoji: _selectedEmoji,
       note: note,
@@ -116,9 +187,7 @@ class _MoodViewState extends State<_MoodView> {
     setState(() => _saving = false);
 
     if (err != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
-      );
+      _snack(err);
       return;
     }
 
@@ -128,38 +197,25 @@ class _MoodViewState extends State<_MoodView> {
       _selectedDate = DateUtils.dateOnly(DateTime.now());
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Настроение сохранено'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    _snack(l.moodSaved);
   }
 
-  Future<void> _refresh() async {
-    await context.read<MoodModel>().load();
-  }
-
-  Future<void> _editMood(BuildContext context, Mood mood) async {
+  Future<void> _editMood(Mood mood) async {
     final res = await showDialog<_EditMoodResult>(
       context: context,
       builder: (_) => _EditMoodDialog(initial: mood),
     );
     if (res == null) return;
 
-    final m = context.read<MoodModel>();
+    final l = AppLocalizations.of(context)!;
 
     if (res.delete) {
-      final err = await m.deleteMoodByDate(mood.date);
-      if (err != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
-        );
-      }
+      final err = await _deleteMood(mood.date);
+      if (err != null && mounted) _snack(err);
       return;
     }
 
-    final err = await m.updateMoodByDate(
+    final err = await _updateMood(
       originalDate: mood.date,
       newDate: res.date,
       emoji: res.emoji,
@@ -167,9 +223,9 @@ class _MoodViewState extends State<_MoodView> {
     );
 
     if (err != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err), behavior: SnackBarBehavior.floating),
-      );
+      _snack(err);
+    } else if (mounted) {
+      _snack(l.moodUpdated);
     }
   }
 
@@ -179,6 +235,7 @@ class _MoodViewState extends State<_MoodView> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final model = context.watch<MoodModel>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
@@ -196,11 +253,11 @@ class _MoodViewState extends State<_MoodView> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverAppBar.large(
-                title: const Text('Настроение'),
+                title: Text(l.moodTitle),
                 centerTitle: false,
                 actions: [
                   IconButton(
-                    tooltip: 'Обновить',
+                    tooltip: l.commonRefresh,
                     onPressed: _refresh,
                     icon: const Icon(Icons.refresh_rounded),
                   ),
@@ -229,15 +286,15 @@ class _MoodViewState extends State<_MoodView> {
                                 label: _formatDateShort(context, _selectedDate),
                                 onTap: _pickDate,
                               ),
-                              const _NestChipInfo(
+                              _NestChipInfo(
                                 icon: Icons.auto_awesome_rounded,
-                                label: '1 запись = 1 день',
+                                label: l.moodOnePerDay,
                               ),
                             ],
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Как ты себя чувствуешь?',
+                            l.moodHowDoYouFeel,
                             style: tt.titleMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
@@ -265,8 +322,8 @@ class _MoodViewState extends State<_MoodView> {
                             controller: _noteController,
                             maxLines: 3,
                             maxLength: _maxLen,
-                            labelText: 'Заметка (необязательно)',
-                            hintText: 'Что повлияло на твоё состояние?',
+                            labelText: l.moodNoteLabel,
+                            hintText: l.moodNoteHint,
                             prefixIcon: Icons.edit_note_rounded,
                           ),
 
@@ -275,7 +332,7 @@ class _MoodViewState extends State<_MoodView> {
                           SizedBox(
                             height: 52,
                             child: FilledButton.icon(
-                              onPressed: _saving ? null : () => _save(context),
+                              onPressed: _saving ? null : _save,
                               icon: _saving
                                   ? SizedBox(
                                       width: 18,
@@ -290,7 +347,7 @@ class _MoodViewState extends State<_MoodView> {
                                     )
                                   : const Icon(Icons.check_rounded),
                               label: Text(
-                                _saving ? 'Сохранение…' : 'Сохранить',
+                                _saving ? l.commonSaving : l.commonSave,
                               ),
                               style: FilledButton.styleFrom(
                                 shape: RoundedRectangleBorder(
@@ -315,7 +372,7 @@ class _MoodViewState extends State<_MoodView> {
                   child: Row(
                     children: [
                       Text(
-                        'История настроений',
+                        l.moodHistoryTitle,
                         style: tt.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
@@ -343,9 +400,8 @@ class _MoodViewState extends State<_MoodView> {
                   hasScrollBody: false,
                   child: _EmptyState(
                     emoji: '📝',
-                    title: 'Пока нет записей',
-                    subtitle:
-                        'Выбери дату, отметь настроение и сохрани запись.',
+                    title: null, // берем из l10n
+                    subtitle: null, // берем из l10n
                   ),
                 )
               else
@@ -381,7 +437,7 @@ class _MoodViewState extends State<_MoodView> {
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                             child: _MoodHistoryTile(
                               mood: mood,
-                              onEdit: () => _editMood(context, mood),
+                              onEdit: () => _editMood(mood),
                               onDelete: () async {
                                 final ok =
                                     await showDialog<bool>(
@@ -392,22 +448,22 @@ class _MoodViewState extends State<_MoodView> {
                                             22,
                                           ),
                                         ),
-                                        title: const Text('Удалить запись?'),
+                                        title: Text(l.commonDeleteConfirmTitle),
                                         content: Text(
                                           '${_formatDateShort(context, DateUtils.dateOnly(mood.date))}: '
                                           '${mood.emoji}'
-                                          '${mood.note.isEmpty ? '' : '\n\n${mood.note}'}',
+                                          '${mood.note.trim().isEmpty ? '' : '\n\n${mood.note.trim()}'}',
                                         ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(context, false),
-                                            child: const Text('Отмена'),
+                                            child: Text(l.commonCancel),
                                           ),
                                           FilledButton.tonal(
                                             onPressed: () =>
                                                 Navigator.pop(context, true),
-                                            child: const Text('Удалить'),
+                                            child: Text(l.commonDelete),
                                           ),
                                         ],
                                       ),
@@ -416,19 +472,11 @@ class _MoodViewState extends State<_MoodView> {
 
                                 if (!ok) return;
 
-                                final err = await context
-                                    .read<MoodModel>()
-                                    .deleteMoodByDate(mood.date);
-
-                                if (err != null && mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(err),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
+                                final err = await _deleteMood(mood.date);
+                                if (err != null && mounted) _snack(err);
                               },
+                              subtitleText: l.moodTapToEdit,
+                              noNoteText: l.moodNoNote,
                             ),
                           );
                         }
@@ -455,7 +503,7 @@ class _MoodViewState extends State<_MoodView> {
 }
 
 // ============================================================================
-// Nest small UI helpers (оставлены как были)
+// Nest small UI helpers
 // ============================================================================
 
 class _NestInset extends StatelessWidget {
@@ -640,10 +688,15 @@ class _MoodHistoryTile extends StatelessWidget {
   final VoidCallback onEdit;
   final Future<void> Function() onDelete;
 
+  final String subtitleText;
+  final String noNoteText;
+
   const _MoodHistoryTile({
     required this.mood,
     required this.onEdit,
     required this.onDelete,
+    required this.subtitleText,
+    required this.noNoteText,
   });
 
   @override
@@ -652,7 +705,7 @@ class _MoodHistoryTile extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     final note = mood.note.trim();
-    final title = note.isEmpty ? 'Без заметки' : note;
+    final title = note.isEmpty ? noNoteText : note;
 
     return Dismissible(
       key: ValueKey('mood_${DateUtils.dateOnly(mood.date).toIso8601String()}'),
@@ -693,7 +746,7 @@ class _MoodHistoryTile extends StatelessWidget {
             style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
           ),
           subtitle: Text(
-            'Нажми, чтобы редактировать',
+            subtitleText,
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
           trailing: Icon(Icons.edit_rounded, color: cs.onSurfaceVariant),
@@ -765,21 +818,24 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      title: const Text('Редактировать запись'),
+      title: Text(l.moodEditTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Expanded(child: Text('Дата: ${_format(context, _date)}')),
+              Expanded(
+                child: Text('${l.commonDate}: ${_format(context, _date)}'),
+              ),
               TextButton.icon(
                 onPressed: _pickDate,
                 icon: const Icon(Icons.calendar_month_rounded),
-                label: const Text('Изменить'),
+                label: Text(l.commonChange),
               ),
             ],
           ),
@@ -793,7 +849,7 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
             controller: _note,
             maxLines: 3,
             decoration: InputDecoration(
-              labelText: 'Заметка',
+              labelText: l.moodNoteLabel,
               filled: true,
               fillColor: cs.surfaceContainerHighest.withOpacity(0.30),
               border: OutlineInputBorder(
@@ -815,11 +871,11 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
             ),
           ),
           icon: Icon(Icons.delete_outline_rounded, color: cs.error),
-          label: Text('Удалить', style: TextStyle(color: cs.error)),
+          label: Text(l.commonDelete, style: TextStyle(color: cs.error)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
+          child: Text(l.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(
@@ -831,7 +887,7 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
               note: _note.text.trim(),
             ),
           ),
-          child: const Text('Сохранить'),
+          child: Text(l.commonSave),
         ),
       ],
     );
@@ -844,17 +900,14 @@ class _EditMoodDialogState extends State<_EditMoodDialog> {
 
 class _EmptyState extends StatelessWidget {
   final String emoji;
-  final String title;
-  final String subtitle;
+  final String? title;
+  final String? subtitle;
 
-  const _EmptyState({
-    required this.emoji,
-    required this.title,
-    required this.subtitle,
-  });
+  const _EmptyState({required this.emoji, this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
@@ -876,12 +929,12 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              title,
+              title ?? l.moodEmptyTitle,
               style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             Text(
-              subtitle,
+              subtitle ?? l.moodEmptySubtitle,
               textAlign: TextAlign.center,
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
@@ -889,60 +942,5 @@ class _EmptyState extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EXTENSIONS (как было)
-// ─────────────────────────────────────────────────────────────────────────────
-
-extension MoodModelOps on MoodModel {
-  Future<String?> saveMoodForDate({
-    required DateTime date,
-    required String emoji,
-    required String note,
-  }) async {
-    try {
-      await repo.upsertMood(
-        date: DateUtils.dateOnly(date),
-        emoji: emoji,
-        note: note,
-      );
-      await load();
-      return null;
-    } catch (e) {
-      return 'Не удалось сохранить настроение: $e';
-    }
-  }
-
-  Future<String?> updateMoodByDate({
-    required DateTime originalDate,
-    required DateTime newDate,
-    required String emoji,
-    required String note,
-  }) async {
-    try {
-      final orig = DateUtils.dateOnly(originalDate);
-      final next = DateUtils.dateOnly(newDate);
-
-      await repo.upsertMood(date: next, emoji: emoji, note: note);
-      if (orig != next) {
-        await repo.deleteMoodByDate(orig);
-      }
-      await load();
-      return null;
-    } catch (e) {
-      return 'Не удалось обновить запись: $e';
-    }
-  }
-
-  Future<String?> deleteMoodByDate(DateTime date) async {
-    try {
-      await repo.deleteMoodByDate(DateUtils.dateOnly(date));
-      await load();
-      return null;
-    } catch (e) {
-      return 'Не удалось удалить запись: $e';
-    }
   }
 }

@@ -12,6 +12,8 @@ import '../widgets/limit_sheet.dart';
 import '../widgets/add_jar_dialog.dart';
 import '../widgets/empty_state.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 // ✅ Nest
 import '../../../widgets/nest/nest_background.dart';
 import '../../../widgets/nest/nest_blur_card.dart';
@@ -41,19 +43,25 @@ class _SetupViewState extends State<_SetupView> {
   Future<void> _save(BudgetModel m) async {
     if (_saving) return;
     setState(() => _saving = true);
+
     final ok = await m.save();
+
     if (!mounted) return;
     setState(() => _saving = false);
+
+    final l = AppLocalizations.of(context)!;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text(ok ? 'Настройки сохранены' : 'Ошибка сохранения'),
+        content: Text(ok ? l.budgetSetupSaved : l.budgetSetupSaveError),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final m = context.watch<BudgetModel>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
@@ -77,8 +85,8 @@ class _SetupViewState extends State<_SetupView> {
         // ——— Секции
         Widget incomeSection() => nestWrap(
           SectionCard(
-            title: 'Доходные категории',
-            subtitle: 'Используются при добавлении доходов',
+            title: l.budgetIncomeCategoriesTitle,
+            subtitle: l.budgetIncomeCategoriesSubtitle,
             child: ChipsWrap(
               color: cs.primaryContainer,
               items: m.incomeCategories
@@ -88,8 +96,9 @@ class _SetupViewState extends State<_SetupView> {
                       onTap: () {},
                       menuBuilder: (ctx) => [
                         PopupMenuItem(
-                          child: const Text('Удалить'),
+                          child: Text(l.commonDelete),
                           onTap: () async {
+                            // важно: дать закрыться меню перед showDialog
                             await Future.delayed(Duration.zero);
                             final ok =
                                 await showDialog<bool>(
@@ -98,24 +107,30 @@ class _SetupViewState extends State<_SetupView> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(22),
                                     ),
-                                    title: const Text('Удалить категорию?'),
-                                    content: Text('Категория: ${c.name}'),
+                                    title: Text(l.budgetDeleteCategoryTitle),
+                                    content: Text(
+                                      l.budgetCategoryLabel(c.name),
+                                    ),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.pop(context, false),
-                                        child: const Text('Отмена'),
+                                        child: Text(l.commonCancel),
                                       ),
                                       FilledButton.tonal(
                                         onPressed: () =>
                                             Navigator.pop(context, true),
-                                        child: const Text('Удалить'),
+                                        child: Text(l.commonDelete),
                                       ),
                                     ],
                                   ),
                                 ) ??
                                 false;
-                            if (ok) await m.deleteCategory(c.id);
+
+                            if (ok) {
+                              await m.deleteCategory(c.id);
+                              await m.load();
+                            }
                           },
                         ),
                       ],
@@ -123,7 +138,7 @@ class _SetupViewState extends State<_SetupView> {
                   )
                   .toList(),
               trailing: ActionChip(
-                label: const Text('Добавить'),
+                label: Text(l.commonAdd),
                 avatar: const Icon(Icons.add),
                 onPressed: () async {
                   final name = await showAddCategorySheet(
@@ -142,8 +157,8 @@ class _SetupViewState extends State<_SetupView> {
 
         Widget expenseSection() => nestWrap(
           SectionCard(
-            title: 'Расходные категории',
-            subtitle: 'Лимиты помогают держать траты под контролем',
+            title: l.budgetExpenseCategoriesTitle,
+            subtitle: l.budgetExpenseCategoriesSubtitle,
             child: ChipsWrap(
               color: cs.secondaryContainer,
               items: m.expenseCategories
@@ -162,7 +177,7 @@ class _SetupViewState extends State<_SetupView> {
                       },
                       menuBuilder: (ctx) => [
                         PopupMenuItem(
-                          child: const Text('Задать/изменить лимит'),
+                          child: Text(l.budgetSetOrChangeLimit),
                           onTap: () async {
                             await Future.delayed(Duration.zero);
                             final limit = await showLimitSheet(
@@ -176,7 +191,7 @@ class _SetupViewState extends State<_SetupView> {
                           },
                         ),
                         PopupMenuItem(
-                          child: const Text('Удалить'),
+                          child: Text(l.commonDelete),
                           onTap: () async {
                             await Future.delayed(Duration.zero);
                             final ok =
@@ -186,24 +201,30 @@ class _SetupViewState extends State<_SetupView> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(22),
                                     ),
-                                    title: const Text('Удалить категорию?'),
-                                    content: Text('Категория: ${c.name}'),
+                                    title: Text(l.budgetDeleteCategoryTitle),
+                                    content: Text(
+                                      l.budgetCategoryLabel(c.name),
+                                    ),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.pop(context, false),
-                                        child: const Text('Отмена'),
+                                        child: Text(l.commonCancel),
                                       ),
                                       FilledButton.tonal(
                                         onPressed: () =>
                                             Navigator.pop(context, true),
-                                        child: const Text('Удалить'),
+                                        child: Text(l.commonDelete),
                                       ),
                                     ],
                                   ),
                                 ) ??
                                 false;
-                            if (ok) await m.deleteCategory(c.id);
+
+                            if (ok) {
+                              await m.deleteCategory(c.id);
+                              await m.load();
+                            }
                           },
                         ),
                       ],
@@ -211,7 +232,7 @@ class _SetupViewState extends State<_SetupView> {
                   )
                   .toList(),
               trailing: ActionChip(
-                label: const Text('Добавить'),
+                label: Text(l.commonAdd),
                 avatar: const Icon(Icons.add),
                 onPressed: () async {
                   final name = await showAddCategorySheet(
@@ -230,9 +251,8 @@ class _SetupViewState extends State<_SetupView> {
 
         Widget jarsSection() => nestWrap(
           SectionCard(
-            title: 'Копилки',
-            subtitle:
-                'Процент — доля от свободных средств, автоматически пополняемая',
+            title: l.budgetJarsTitle,
+            subtitle: l.budgetJarsSubtitle,
             child: Column(
               children: [
                 Align(
@@ -244,6 +264,7 @@ class _SetupViewState extends State<_SetupView> {
                         builder: (_) => const AddJarDialog(),
                       );
                       if (res == null) return;
+
                       try {
                         await m.createJar(
                           title: res.title,
@@ -251,11 +272,12 @@ class _SetupViewState extends State<_SetupView> {
                           percent: res.percent,
                         );
                         await m.load();
+
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             behavior: SnackBarBehavior.floating,
-                            content: Text('Копилка добавлена'),
+                            content: Text(l.budgetJarAdded),
                           ),
                         );
                       } catch (e) {
@@ -263,22 +285,21 @@ class _SetupViewState extends State<_SetupView> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             behavior: SnackBarBehavior.floating,
-                            content: Text('Не удалось добавить: $e'),
+                            content: Text(l.budgetJarAddFailed(e.toString())),
                           ),
                         );
                       }
                     },
                     icon: const Icon(Icons.add),
-                    label: const Text('Добавить копилку'),
+                    label: Text(l.budgetAddJar),
                   ),
                 ),
                 const SizedBox(height: 6),
                 if (m.jars.isEmpty)
-                  const EmptyState(
+                  EmptyState(
                     icon: Icons.savings_outlined,
-                    title: 'Копилок пока нет',
-                    subtitle:
-                        'Создай первую цель накопления — мы поможем двигаться к ней.',
+                    title: l.budgetNoJarsTitle,
+                    subtitle: l.budgetNoJarsSubtitle,
                   )
                 else
                   ...m.jars.map((j) {
@@ -287,14 +308,18 @@ class _SetupViewState extends State<_SetupView> {
                         ? null
                         : (j.currentAmount / target).clamp(0.0, 1.0);
 
+                    // ✅ FIX: Text() и локализациям нельзя передавать null
+                    final targetStr = (target != null)
+                        ? target.toStringAsFixed(0)
+                        : '—';
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap:
-                              () {}, // если захочешь — сделаем редактирование
+                          onTap: () {},
                           child: NestBlurCard(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -336,9 +361,11 @@ class _SetupViewState extends State<_SetupView> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Накоплено: ${j.currentAmount.toStringAsFixed(0)} ₽'
-                                          ' • Процент: ${j.percentOfFree.toStringAsFixed(0)}%'
-                                          '${target != null ? ' • Цель: ${target.toStringAsFixed(0)} ₽' : ''}',
+                                          l.budgetJarSummary(
+                                            j.currentAmount.toStringAsFixed(0),
+                                            j.percentOfFree.toStringAsFixed(0),
+                                            targetStr, // ✅ всегда String
+                                          ),
                                           style: tt.bodySmall?.copyWith(
                                             color: cs.onSurfaceVariant,
                                             fontWeight: FontWeight.w600,
@@ -363,7 +390,7 @@ class _SetupViewState extends State<_SetupView> {
                                     ),
                                   ),
                                   IconButton(
-                                    tooltip: 'Удалить',
+                                    tooltip: l.commonDelete,
                                     icon: const Icon(
                                       Icons.delete_outline_rounded,
                                     ),
@@ -376,11 +403,11 @@ class _SetupViewState extends State<_SetupView> {
                                                 borderRadius:
                                                     BorderRadius.circular(22),
                                               ),
-                                              title: const Text(
-                                                'Удалить копилку?',
+                                              title: Text(
+                                                l.budgetDeleteJarTitle,
                                               ),
                                               content: Text(
-                                                'Копилка: ${j.title}',
+                                                l.budgetJarLabel(j.title),
                                               ),
                                               actions: [
                                                 TextButton(
@@ -389,7 +416,7 @@ class _SetupViewState extends State<_SetupView> {
                                                         context,
                                                         false,
                                                       ),
-                                                  child: const Text('Отмена'),
+                                                  child: Text(l.commonCancel),
                                                 ),
                                                 FilledButton.tonal(
                                                   onPressed: () =>
@@ -397,13 +424,15 @@ class _SetupViewState extends State<_SetupView> {
                                                         context,
                                                         true,
                                                       ),
-                                                  child: const Text('Удалить'),
+                                                  child: Text(l.commonDelete),
                                                 ),
                                               ],
                                             ),
                                           ) ??
                                           false;
+
                                       if (!confirm) return;
+
                                       try {
                                         await m.deleteJar(j.id);
                                         await m.load();
@@ -411,9 +440,9 @@ class _SetupViewState extends State<_SetupView> {
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
-                                          const SnackBar(
+                                          SnackBar(
                                             behavior: SnackBarBehavior.floating,
-                                            content: Text('Копилка удалена'),
+                                            content: Text(l.budgetJarDeleted),
                                           ),
                                         );
                                       } catch (e) {
@@ -424,7 +453,9 @@ class _SetupViewState extends State<_SetupView> {
                                           SnackBar(
                                             behavior: SnackBarBehavior.floating,
                                             content: Text(
-                                              'Не удалось удалить: $e',
+                                              l.budgetJarDeleteFailed(
+                                                e.toString(),
+                                              ),
                                             ),
                                           ),
                                         );
@@ -450,10 +481,7 @@ class _SetupViewState extends State<_SetupView> {
             body: NestBackground(
               child: CustomScrollView(
                 slivers: [
-                  const SliverAppBar(
-                    pinned: true,
-                    title: Text('Бюджет и копилки'),
-                  ),
+                  SliverAppBar(pinned: true, title: Text(l.budgetSetupTitle)),
                   SliverPadding(
                     padding: EdgeInsets.symmetric(
                       horizontal: hPad,
@@ -491,7 +519,7 @@ class _SetupViewState extends State<_SetupView> {
           body: NestBackground(
             child: CustomScrollView(
               slivers: [
-                const SliverAppBar.large(title: Text('Бюджет и копилки')),
+                SliverAppBar.large(title: Text(l.budgetSetupTitle)),
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 96),
                   sliver: SliverGrid(

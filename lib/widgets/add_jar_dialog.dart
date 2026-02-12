@@ -1,5 +1,8 @@
+// lib/widgets/add_jar_dialog.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 class NewJarData {
   final String title;
@@ -9,17 +12,42 @@ class NewJarData {
 }
 
 class AddJarDialog extends StatefulWidget {
-  const AddJarDialog({super.key});
+  // ✅ для редактирования (если нужно)
+  final String? initialTitle;
+  final double? initialTarget;
+  final double? initialPercent;
+
+  const AddJarDialog({
+    super.key,
+    this.initialTitle,
+    this.initialTarget,
+    this.initialPercent,
+  });
 
   @override
   State<AddJarDialog> createState() => _AddJarDialogState();
 }
 
 class _AddJarDialogState extends State<AddJarDialog> {
-  final _title = TextEditingController();
-  final _target = TextEditingController();
-  final _percent = TextEditingController(text: '0');
+  late final TextEditingController _title;
+  late final TextEditingController _target;
+  late final TextEditingController _percent;
+
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = TextEditingController(text: widget.initialTitle ?? '');
+    _target = TextEditingController(
+      text: widget.initialTarget != null
+          ? widget.initialTarget!.toString()
+          : '',
+    );
+    _percent = TextEditingController(
+      text: (widget.initialPercent ?? 0).toString(),
+    );
+  }
 
   @override
   void dispose() {
@@ -30,26 +58,31 @@ class _AddJarDialogState extends State<AddJarDialog> {
   }
 
   double? _parseDouble(String s) {
-    if (s.trim().isEmpty) return null;
-    return double.tryParse(s.replaceAll(',', '.'));
+    final t = s.trim();
+    if (t.isEmpty) return null;
+    return double.tryParse(t.replaceAll(',', '.'));
   }
 
+  void _setErr(String msg) => setState(() => _error = msg);
+
   void _submit() {
+    final l = AppLocalizations.of(context)!;
+
     final title = _title.text.trim();
     if (title.isEmpty) {
-      setState(() => _error = 'Укажите название');
+      _setErr(l.addJarNameRequired);
       return;
     }
 
     final percent = _parseDouble(_percent.text) ?? 0;
     if (percent < 0 || percent > 100) {
-      setState(() => _error = 'Процент должен быть от 0 до 100');
+      _setErr(l.addJarPercentRange);
       return;
     }
 
     final target = _parseDouble(_target.text);
     if (target == null || target <= 0) {
-      setState(() => _error = 'Укажите цель (положительное число)');
+      _setErr(l.addJarTargetRequired);
       return;
     }
 
@@ -58,8 +91,14 @@ class _AddJarDialogState extends State<AddJarDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+
+    final isEdit =
+        widget.initialTitle != null ||
+        widget.initialTarget != null ||
+        widget.initialPercent != null;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -83,7 +122,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Новая копилка',
+                              isEdit ? l.addJarEditTitle : l.addJarNewTitle,
                               style: tt.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: const Color(0xFF2E4B5A),
@@ -91,7 +130,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Настрой сумму и долю от свободных денег',
+                              l.addJarSubtitle,
                               style: tt.bodySmall?.copyWith(
                                 color: cs.onSurfaceVariant,
                               ),
@@ -100,7 +139,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Закрыть',
+                        tooltip: l.commonCloseTooltip,
                         onPressed: () => Navigator.pop(context),
                         icon: Icon(
                           Icons.close_rounded,
@@ -116,11 +155,14 @@ class _AddJarDialogState extends State<AddJarDialog> {
                   TextField(
                     controller: _title,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Название',
-                      hintText: 'Например: Поездка, Подушка, Дом',
-                      prefixIcon: Icon(Icons.title_rounded),
+                    decoration: InputDecoration(
+                      labelText: l.addJarNameLabel,
+                      hintText: l.addJarNameHint,
+                      prefixIcon: const Icon(Icons.title_rounded),
                     ),
+                    onChanged: (_) {
+                      if (_error != null) setState(() => _error = null);
+                    },
                   ),
                   const SizedBox(height: 10),
 
@@ -130,11 +172,14 @@ class _AddJarDialogState extends State<AddJarDialog> {
                       decimal: true,
                     ),
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Процент от свободных, %',
-                      hintText: '0 — если вручную пополняешь',
-                      prefixIcon: Icon(Icons.percent_rounded),
+                    decoration: InputDecoration(
+                      labelText: l.addJarPercentLabel,
+                      hintText: l.addJarPercentHint,
+                      prefixIcon: const Icon(Icons.percent_rounded),
                     ),
+                    onChanged: (_) {
+                      if (_error != null) setState(() => _error = null);
+                    },
                   ),
                   const SizedBox(height: 10),
 
@@ -145,12 +190,17 @@ class _AddJarDialogState extends State<AddJarDialog> {
                     ),
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _submit(),
-                    decoration: const InputDecoration(
-                      labelText: 'Целевая сумма',
-                      hintText: 'Например: 5000',
-                      helperText: 'Обязательно',
-                      prefixIcon: Icon(Icons.account_balance_wallet_rounded),
+                    decoration: InputDecoration(
+                      labelText: l.addJarTargetLabel,
+                      hintText: l.addJarTargetHint,
+                      helperText: l.addJarTargetHelper,
+                      prefixIcon: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                      ),
                     ),
+                    onChanged: (_) {
+                      if (_error != null) setState(() => _error = null);
+                    },
                   ),
 
                   if (_error != null) ...[
@@ -167,7 +217,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
                         child: OutlinedButton.icon(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.close_rounded),
-                          label: const Text('Отмена'),
+                          label: Text(l.commonCancel),
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -179,8 +229,10 @@ class _AddJarDialogState extends State<AddJarDialog> {
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: _submit,
-                          icon: const Icon(Icons.add_rounded),
-                          label: const Text('Создать'),
+                          icon: Icon(
+                            isEdit ? Icons.save_rounded : Icons.add_rounded,
+                          ),
+                          label: Text(isEdit ? l.commonSave : l.commonCreate),
                           style: FilledButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),

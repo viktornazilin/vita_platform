@@ -1,5 +1,8 @@
+// lib/widgets/budget/add_category_sheet.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 Future<String?> showAddCategorySheet(
   BuildContext context, {
@@ -10,23 +13,30 @@ Future<String?> showAddCategorySheet(
   return showModalBottomSheet<String?>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: false, // мы рисуем свой хендл
-    backgroundColor: Colors.transparent, // чтобы был “glass” поверх
+    showDragHandle: false, // рисуем свой handle
+    backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withOpacity(0.35),
     elevation: 0,
     builder: (ctx) {
+      final l = AppLocalizations.of(ctx)!;
       final cs = Theme.of(ctx).colorScheme;
       final tt = Theme.of(ctx).textTheme;
+
       final bottom =
           MediaQuery.of(ctx).viewInsets.bottom +
           MediaQuery.of(ctx).padding.bottom;
 
       final title = income
-          ? 'Новая доходная категория'
-          : 'Новая расходная категория';
+          ? l.budgetNewIncomeCategory
+          : l.budgetNewExpenseCategory;
       final icon = income
           ? Icons.trending_up_rounded
           : Icons.trending_down_rounded;
+
+      void submit() {
+        final v = ctrl.text.trim();
+        Navigator.pop(ctx, v.isEmpty ? null : v);
+      }
 
       return SafeArea(
         top: false,
@@ -67,7 +77,7 @@ Future<String?> showAddCategorySheet(
                             ),
                           ),
                           IconButton(
-                            tooltip: 'Закрыть',
+                            tooltip: l.commonClose,
                             onPressed: () => Navigator.pop(ctx, null),
                             icon: Icon(
                               Icons.close_rounded,
@@ -83,13 +93,12 @@ Future<String?> showAddCategorySheet(
                         controller: ctrl,
                         autofocus: true,
                         textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(
-                          labelText: 'Название',
-                          hintText: 'Например: Зарплата / Еда / Транспорт',
-                          prefixIcon: Icon(Icons.label_outline_rounded),
+                        decoration: InputDecoration(
+                          labelText: l.commonTitle,
+                          hintText: l.budgetCategoryNameHint,
+                          prefixIcon: const Icon(Icons.label_outline_rounded),
                         ),
-                        onSubmitted: (_) =>
-                            Navigator.pop(ctx, ctrl.text.trim()),
+                        onSubmitted: (_) => submit(),
                       ),
 
                       const SizedBox(height: 12),
@@ -98,9 +107,9 @@ Future<String?> showAddCategorySheet(
                         width: double.infinity,
                         height: 52,
                         child: FilledButton.icon(
-                          onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+                          onPressed: submit,
                           icon: const Icon(Icons.add_rounded),
-                          label: const Text('Создать'),
+                          label: Text(l.commonCreate),
                           style: FilledButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -117,7 +126,7 @@ Future<String?> showAddCategorySheet(
         ),
       );
     },
-  );
+  ).whenComplete(() => ctrl.dispose());
 }
 
 // ============================================================================

@@ -1,4 +1,7 @@
+// lib/screens/welcome_screen.dart
 import 'dart:ui';
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -6,6 +9,7 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -44,7 +48,7 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'VitaPlatform',
+                          l.welcomeAppName,
                           style: tt.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: cs.onSurface,
@@ -52,7 +56,7 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Управляй целями, настроением и временем\n— всё в одном месте',
+                          l.welcomeSubtitle,
                           textAlign: TextAlign.center,
                           style: tt.bodyMedium?.copyWith(
                             color: cs.onSurfaceVariant,
@@ -92,7 +96,7 @@ class WelcomeScreen extends StatelessWidget {
                                   onPressed: () =>
                                       Navigator.pushNamed(context, '/login'),
                                   icon: const Icon(Icons.login),
-                                  label: const Text('Войти'),
+                                  label: Text(l.welcomeSignIn),
                                   style: FilledButton.styleFrom(
                                     minimumSize: const Size.fromHeight(54),
                                     shape: RoundedRectangleBorder(
@@ -110,7 +114,7 @@ class WelcomeScreen extends StatelessWidget {
                                   icon: const Icon(
                                     Icons.person_add_alt_1_outlined,
                                   ),
-                                  label: const Text('Создать аккаунт'),
+                                  label: Text(l.welcomeCreateAccount),
                                   style: OutlinedButton.styleFrom(
                                     minimumSize: const Size.fromHeight(54),
                                     shape: RoundedRectangleBorder(

@@ -1,11 +1,14 @@
+// lib/screens/profile/habits_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/habits_model.dart';
 import '../../models/habit.dart';
 import 'profile_ui_helpers.dart';
 
-// Nest UI (проверь пути/имена)
+// Nest UI
 import '../../widgets/nest/nest_card.dart';
 import '../../widgets/nest/nest_sheet.dart';
 
@@ -16,6 +19,8 @@ class HabitsCard extends StatelessWidget {
     BuildContext context, {
     Habit? existing,
   }) async {
+    final l = AppLocalizations.of(context)!;
+
     final titleCtrl = TextEditingController(text: existing?.title ?? '');
     bool isNeg = existing?.isNegative ?? false;
 
@@ -40,17 +45,17 @@ class HabitsCard extends StatelessWidget {
                 children: [
                   _SheetHeader(
                     title: existing == null
-                        ? 'Новая привычка'
-                        : 'Редактировать привычку',
+                        ? l.habitsEditorNewTitle
+                        : l.habitsEditorEditTitle,
                   ),
                   const SizedBox(height: 12),
 
                   TextField(
                     controller: titleCtrl,
                     maxLength: 60,
-                    decoration: const InputDecoration(
-                      labelText: 'Название',
-                      hintText: 'Например: Утренняя зарядка',
+                    decoration: InputDecoration(
+                      labelText: l.habitsEditorTitleLabel,
+                      hintText: l.habitsEditorTitleHint,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -70,10 +75,10 @@ class HabitsCard extends StatelessWidget {
                           size: 18,
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Негативная привычка',
-                            style: TextStyle(
+                            l.habitsNegativeLabel,
+                            style: const TextStyle(
                               fontWeight: FontWeight.w900,
                               color: Color(0xFF2E4B5A),
                             ),
@@ -88,9 +93,7 @@ class HabitsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    isNeg
-                        ? 'Отмечай, если хочешь отслеживать и сокращать.'
-                        : 'Позитивная/нейтральная привычка для укрепления.',
+                    isNeg ? l.habitsNegativeHint : l.habitsPositiveHint,
                     style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                       color: const Color(0xFF2E4B5A).withOpacity(0.65),
                       fontWeight: FontWeight.w700,
@@ -104,7 +107,7 @@ class HabitsCard extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Отмена'),
+                          child: Text(l.commonCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -115,7 +118,7 @@ class HabitsCard extends StatelessWidget {
                             if (t.isEmpty) return;
                             Navigator.pop(ctx, (t, isNeg));
                           },
-                          child: const Text('Сохранить'),
+                          child: Text(l.commonSave),
                         ),
                       ),
                     ],
@@ -133,6 +136,8 @@ class HabitsCard extends StatelessWidget {
   }
 
   Future<bool> _confirmDelete(BuildContext context, Habit h) async {
+    final l = AppLocalizations.of(context)!;
+
     final ok = await showModalBottomSheet<bool>(
       context: context,
       useSafeArea: true,
@@ -144,10 +149,10 @@ class HabitsCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _SheetHeader(title: 'Удалить привычку?'),
+              _SheetHeader(title: l.habitsDeleteConfirmTitle),
               const SizedBox(height: 10),
               Text(
-                '«${h.title}» будет удалена без возможности восстановления.',
+                l.habitsDeleteConfirmBody(h.title),
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF2E4B5A).withOpacity(0.8),
                   fontWeight: FontWeight.w700,
@@ -159,7 +164,7 @@ class HabitsCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Отмена'),
+                      child: Text(l.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -170,7 +175,7 @@ class HabitsCard extends StatelessWidget {
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Удалить'),
+                      child: Text(l.commonDelete),
                     ),
                   ),
                 ],
@@ -201,6 +206,7 @@ class HabitsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final habits = context.watch<HabitsModel>();
 
     return NestCard(
@@ -212,7 +218,7 @@ class HabitsCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Привычки',
+                  l.habitsTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF2E4B5A),
@@ -220,7 +226,7 @@ class HabitsCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Добавить',
+                tooltip: l.commonAdd,
                 onPressed: () => _saveHabit(context),
                 icon: const Icon(Icons.add_circle_outline),
               ),
@@ -235,7 +241,7 @@ class HabitsCard extends StatelessWidget {
             )
           else if (habits.items.isEmpty)
             Text(
-              'Пока нет привычек. Добавь первую.',
+              l.habitsEmptyHint,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF2E4B5A).withOpacity(0.7),
                 fontWeight: FontWeight.w700,
@@ -251,15 +257,16 @@ class HabitsCard extends StatelessWidget {
                   final ok = await _confirmDelete(context, h);
                   if (!ok) return;
                   final err = await context.read<HabitsModel>().delete(h.id);
-                  if (err != null && context.mounted)
+                  if (err != null && context.mounted) {
                     ProfileUi.snack(context, err);
+                  }
                 },
               ),
             ),
 
           const SizedBox(height: 10),
           Text(
-            'Позже добавим “отсеивание” привычек на главном экране.',
+            l.habitsFooterHint,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: const Color(0xFF2E4B5A).withOpacity(0.55),
               fontWeight: FontWeight.w700,
@@ -286,6 +293,7 @@ class _HabitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final isNeg = habit.isNegative;
 
     return Padding(
@@ -323,7 +331,7 @@ class _HabitRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isNeg ? 'Негативная' : 'Позитивная/нейтральная',
+                      isNeg ? l.habitsNegativeShort : l.habitsPositiveShort,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF2E4B5A).withOpacity(0.65),
@@ -335,12 +343,12 @@ class _HabitRow extends StatelessWidget {
               const SizedBox(width: 10),
 
               IconButton(
-                tooltip: 'Изменить',
+                tooltip: l.commonEdit,
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined),
               ),
               IconButton(
-                tooltip: 'Удалить',
+                tooltip: l.commonDelete,
                 onPressed: onDelete,
                 icon: Icon(
                   Icons.delete_outline_rounded,

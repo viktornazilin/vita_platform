@@ -1,7 +1,12 @@
+// lib/screens/profile/profile_right_column.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../../models/profile_model.dart';
+
+import '../../controllers/locale_controller.dart'; // ✅ ADD
 
 import 'profile_ui_helpers.dart';
 import 'habits_card.dart';
@@ -15,6 +20,7 @@ class ProfileRightColumn extends StatelessWidget {
   const ProfileRightColumn({super.key});
 
   Future<bool> _confirmDeleteAccount(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
     final res = await showModalBottomSheet<bool>(
@@ -34,11 +40,10 @@ class ProfileRightColumn extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _SheetHeader(title: 'Удалить аккаунт?'),
+              _SheetHeader(title: l.profileDeleteAccountTitle),
               const SizedBox(height: 10),
               Text(
-                'Это действие необратимо.\n'
-                'Будут удалены: цели, привычки, настроение, расходы/доходы, банки, AI-планы, XP и профиль.',
+                l.profileDeleteAccountBody,
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF2E4B5A).withOpacity(0.85),
                   fontWeight: FontWeight.w600,
@@ -50,7 +55,7 @@ class ProfileRightColumn extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Отмена'),
+                      child: Text(l.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -61,7 +66,7 @@ class ProfileRightColumn extends StatelessWidget {
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Удалить навсегда'),
+                      child: Text(l.profileDeleteAccountConfirm),
                     ),
                   ),
                 ],
@@ -79,6 +84,8 @@ class ProfileRightColumn extends StatelessWidget {
     BuildContext context,
     ProfileModel model,
   ) async {
+    final l = AppLocalizations.of(context)!;
+
     final ok = await _confirmDeleteAccount(context);
     if (!ok) return;
 
@@ -98,12 +105,14 @@ class ProfileRightColumn extends StatelessWidget {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Аккаунт удалён')));
+    ).showSnackBar(SnackBar(content: Text(l.profileAccountDeletedToast)));
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final model = context.watch<ProfileModel>();
+    final localeCtl = context.watch<LocaleController>(); // ✅
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,11 +120,11 @@ class ProfileRightColumn extends StatelessWidget {
         // ===== Header =====
         Row(
           children: [
-            const Expanded(child: NestSectionTitle('Опросник и сферы жизни')),
+            Expanded(child: NestSectionTitle(l.profileQuestionnaireSection)),
             if (model.hasCompletedQuestionnaire)
               _NestLinkButton(
                 icon: Icons.edit_outlined,
-                label: 'Изменить',
+                label: l.commonEdit,
                 onTap: () => Navigator.pushNamed(context, '/onboarding'),
               ),
           ],
@@ -130,7 +139,7 @@ class ProfileRightColumn extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Вы ещё не прошли опросник.',
+                  l.profileQuestionnaireNotDoneTitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF2E4B5A).withOpacity(0.75),
                     fontWeight: FontWeight.w600,
@@ -140,7 +149,7 @@ class ProfileRightColumn extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: _NestPrimaryButton(
-                    label: 'Пройти сейчас',
+                    label: l.profileQuestionnaireCta,
                     onTap: () => Navigator.pushNamed(context, '/onboarding'),
                   ),
                 ),
@@ -148,18 +157,19 @@ class ProfileRightColumn extends StatelessWidget {
             ),
           ),
         ] else ...[
+          // ===== Life blocks =====
           NestCard(
             padding: const EdgeInsets.all(12),
             child: ProfileUi.chipsCard(
               context,
-              title: 'Сферы жизни',
+              title: l.profileLifeBlocksTitle,
               items: model.lifeBlocks,
               onEdit: () async {
                 final v = await ProfileUi.editChipsDialog(
                   context,
-                  title: 'Сферы жизни',
+                  title: l.profileLifeBlocksTitle,
                   initial: model.lifeBlocks,
-                  hint: 'Например: здоровье, карьера, семья',
+                  hint: l.profileLifeBlocksHint,
                 );
                 if (v == null) return;
                 final err = await model.setLifeBlocks(v);
@@ -171,18 +181,19 @@ class ProfileRightColumn extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
+          // ===== Priorities =====
           NestCard(
             padding: const EdgeInsets.all(12),
             child: ProfileUi.chipsCard(
               context,
-              title: 'Приоритеты',
+              title: l.profilePrioritiesTitle,
               items: model.priorities,
               onEdit: () async {
                 final v = await ProfileUi.editChipsDialog(
                   context,
-                  title: 'Приоритеты',
+                  title: l.profilePrioritiesTitle,
                   initial: model.priorities,
-                  hint: 'Например: спорт, финансы, чтение',
+                  hint: l.profilePrioritiesHint,
                 );
                 if (v == null) return;
                 final err = await model.setPriorities(v);
@@ -195,8 +206,42 @@ class ProfileRightColumn extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // ✅ Убрали блок целей из профиля
+          // ✅ Habits
           const HabitsCard(),
+
+          const SizedBox(height: 12),
+
+          // ===== Language Switcher (NEW) =====
+          NestCard(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l.settingsLanguageTitle,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF2E4B5A),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _LanguageDropdown(
+                  value: localeCtl.locale,
+                  onChanged: (loc) => localeCtl.setLocale(loc),
+                ),
+                const SizedBox(height: 6),
+                Opacity(
+                  opacity: 0.75,
+                  child: Text(
+                    l.settingsLanguageSubtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
           const SizedBox(height: 12),
 
@@ -207,7 +252,7 @@ class ProfileRightColumn extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Опасная зона',
+                  l.profileDangerZoneTitle,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF2E4B5A),
@@ -231,8 +276,8 @@ class ProfileRightColumn extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
                       model.deletingAccount
-                          ? 'Удаляем...'
-                          : 'Удалить аккаунт и все данные',
+                          ? l.profileDeletingAccount
+                          : l.profileDeleteAccountCta,
                     ),
                   ),
                   style: FilledButton.styleFrom(
@@ -247,7 +292,7 @@ class ProfileRightColumn extends StatelessWidget {
                 Opacity(
                   opacity: 0.75,
                   child: Text(
-                    'Удаление необратимо. Данные будут полностью удалены из Supabase.',
+                    l.profileDeleteAccountFootnote,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -258,6 +303,87 @@ class ProfileRightColumn extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// ✅ Language dropdown (Nest style)
+class _LanguageDropdown extends StatelessWidget {
+  final Locale? value; // null => system
+  final ValueChanged<Locale?> onChanged;
+
+  const _LanguageDropdown({required this.value, required this.onChanged});
+
+  String _label(Locale? l) {
+    if (l == null) return 'System';
+    switch (l.languageCode) {
+      case 'ru':
+        return 'Русский';
+      case 'en':
+        return 'English';
+      case 'de':
+        return 'Deutsch';
+      case 'fr':
+        return 'Français';
+      case 'es':
+        return 'Español';
+      case 'tr':
+        return 'Türkçe';
+      default:
+        return l.languageCode;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final items = <Locale?>[
+      null,
+      const Locale('ru'),
+      const Locale('en'),
+      const Locale('de'),
+      const Locale('fr'),
+      const Locale('es'),
+      const Locale('tr'),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.78),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x142B5B7A),
+            blurRadius: 14,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<Locale?>(
+          value: value,
+          isExpanded: true,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: cs.primary),
+          items: items
+              .map(
+                (loc) => DropdownMenuItem<Locale?>(
+                  value: loc,
+                  child: Text(
+                    _label(loc),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF2E4B5A),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }

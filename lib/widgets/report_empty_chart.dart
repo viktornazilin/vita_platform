@@ -1,5 +1,6 @@
 // lib/widgets/report_empty_chart.dart
 import 'dart:ui';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
 
@@ -9,6 +10,7 @@ class ReportEmptyChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final t = AppLocalizations.of(context)!;
 
     return SizedBox(
       height: 140,
@@ -60,7 +62,7 @@ class ReportEmptyChart extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Недостаточно данных',
+                    t.reportEmptyChartNotEnoughData,
                     style: tt.titleSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF2E4B5A),

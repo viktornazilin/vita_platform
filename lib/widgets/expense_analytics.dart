@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../main.dart'; // dbRepo
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 class ExpenseAnalytics {
   final double total;
   final Map<String, double> byCategory; // имя категории -> сумма
@@ -13,10 +15,18 @@ class ExpenseAnalytics {
   });
 }
 
+/// ✅ FIX: чтобы не ломать существующие вызовы (где передают только 2 аргумента),
+/// делаем context ОПЦИОНАЛЬНЫМ.
+/// Если context не передан — используем запасную строку "Other".
 Future<ExpenseAnalytics> loadExpenseAnalytics(
   DateTime from,
-  DateTime to,
-) async {
+  DateTime to, [
+  BuildContext? context,
+]) async {
+  final otherLabel = (context != null)
+      ? AppLocalizations.of(context)!.expenseCategoryOther
+      : 'Other';
+
   final txs = await dbRepo.listTransactionsBetween(from, to);
   final expenses = txs.where((t) => t.kind == 'expense');
 
@@ -27,14 +37,14 @@ Future<ExpenseAnalytics> loadExpenseAnalytics(
   final Map<String, double> byCategory = {};
   final Map<DateTime, double> byDay = {};
 
-  for (final t in expenses) {
-    total += t.amount;
+  for (final tx in expenses) {
+    total += tx.amount;
 
-    final catName = catNameById[t.categoryId] ?? 'Прочее';
-    byCategory[catName] = (byCategory[catName] ?? 0) + t.amount;
+    final catName = catNameById[tx.categoryId] ?? otherLabel;
+    byCategory[catName] = (byCategory[catName] ?? 0) + tx.amount;
 
-    final d = DateTime(t.ts.year, t.ts.month, t.ts.day);
-    byDay[d] = (byDay[d] ?? 0) + t.amount;
+    final d = DateTime(tx.ts.year, tx.ts.month, tx.ts.day);
+    byDay[d] = (byDay[d] ?? 0) + tx.amount;
   }
 
   return ExpenseAnalytics(total: total, byCategory: byCategory, byDay: byDay);

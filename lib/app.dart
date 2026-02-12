@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// ✅ i18n (Flutter gen-l10n)
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import 'services/user_service.dart';
 import 'models/register_model.dart';
 
@@ -8,12 +12,13 @@ import 'screens/home/home_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_questionnaire_screen.dart';
-import 'screens/settings_screen.dart' as screens;
 import 'screens/expenses_screen.dart';
 import 'screens/budget_setup_screen.dart';
 import 'screens/epic_intro_screen.dart';
 
 import 'controllers/theme_controller.dart';
+// ✅ locale controller (manual language switch)
+import 'controllers/locale_controller.dart';
 
 class VitaApp extends StatefulWidget {
   const VitaApp({super.key});
@@ -60,9 +65,7 @@ class _VitaAppState extends State<VitaApp> {
     return base.copyWith(
       useMaterial3: true,
       colorScheme: cs,
-
       scaffoldBackgroundColor: scaffoldBg,
-
       appBarTheme: base.appBarTheme.copyWith(
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -138,6 +141,7 @@ class _VitaAppState extends State<VitaApp> {
   @override
   Widget build(BuildContext context) {
     final themeCtl = context.watch<ThemeController>();
+    final localeCtl = context.watch<LocaleController>(); // ✅
 
     final ThemeData light = _patchNestTheme(themeCtl.lightTheme, isDark: false);
     final ThemeData dark = _patchNestTheme(themeCtl.darkTheme, isDark: true);
@@ -150,6 +154,12 @@ class _VitaAppState extends State<VitaApp> {
     return MaterialApp(
       title: 'Nest App',
       debugShowCheckedModeBanner: false,
+
+      // ✅ i18n + manual override via settings
+      locale: localeCtl.locale, // null => system language
+      // ✅ gen-l10n delegates (no const!)
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
 
       themeMode: themeCtl.mode,
       theme: light,
@@ -175,7 +185,6 @@ class _VitaAppState extends State<VitaApp> {
           },
         ),
 
-        '/settings': (_) => const screens.SettingsScreen(),
         '/expenses': (_) => const ExpensesScreen(),
         '/budget': (_) => const BudgetSetupScreen(),
 

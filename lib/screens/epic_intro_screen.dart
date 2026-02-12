@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
 import '../services/user_service.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 /// Палитра Nest
 const _kOffWhite = Color(0xFFFAF8F5); // мягкий фон
@@ -65,6 +67,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final tt = Theme.of(context).textTheme;
 
     return LayoutBuilder(
@@ -141,7 +144,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                             foregroundColor: _kInk.withOpacity(0.7),
                           ),
                           onPressed: () => _skip(context),
-                          child: const Text('Пропустить'),
+                          child: Text(l.epicIntroSkip),
                         ),
                       ),
                       const Spacer(flex: 2),
@@ -169,7 +172,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                       _FadeUp(
                         delayMs: 120,
                         child: Text(
-                          'Дом для мыслей. Место, где растут цели,\nмечты и планы — бережно и осознанно.',
+                          l.epicIntroSubtitle,
                           textAlign: TextAlign.center,
                           style: subtitleStyle,
                         ),
@@ -224,7 +227,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                                           ),
                                           onPressed: () => _continue(context),
                                           child: Text(
-                                            'Начать мой путь',
+                                            l.epicIntroPrimaryCta,
                                             style: TextStyle(
                                               fontSize: phone ? 16 : 18,
                                               fontWeight: FontWeight.w700,
@@ -253,7 +256,9 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                                           ),
                                           onPressed: () => _skip(context),
                                           child: Text(
-                                            phone ? 'Позже' : 'Войти в аккаунт',
+                                            phone
+                                                ? l.epicIntroLater
+                                                : l.epicIntroSecondaryCta,
                                           ),
                                         ),
                                       ),
@@ -270,7 +275,7 @@ class _EpicIntroScreenState extends State<EpicIntroScreen>
                       _FadeUp(
                         delayMs: 360,
                         child: Text(
-                          'Всегда можно вернуться к прологу в настройках.',
+                          l.epicIntroFooter,
                           textAlign: TextAlign.center,
                           style: tt.bodySmall?.copyWith(
                             color: _kInk.withOpacity(0.55),
