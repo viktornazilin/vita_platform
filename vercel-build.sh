@@ -20,4 +20,5 @@ flutter config --enable-web
 flutter pub get
 
 flutter build web --release \
-  --dart-define="GOOGLE_WEB_CLIENT_ID=${GOOGLE_WEB_CLIENT_ID}"
+  --dart-define=GOOGLE_WEB_CLIENT_ID=${GOOGLE_WEB_CLIENT_ID} \
+  --dart-define=VISION_API_KEY=${VISION_API_KEY}
