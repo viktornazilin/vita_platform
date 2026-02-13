@@ -1,4 +1,4 @@
-// lib/services/mental_repo_mixin.dart
+  // lib/services/mental_repo_mixin.dart
 
 import 'core/base_repo.dart';
 import '../models/mental_question.dart';
@@ -16,25 +16,25 @@ class MentalAnswerUpsert {
     required this.questionId,
     required this.day,
     required bool value,
-  }) : valueBool = value,
-       valueInt = null,
-       valueText = null;
+  })  : valueBool = value,
+        valueInt = null,
+        valueText = null;
 
   MentalAnswerUpsert.scale({
     required this.questionId,
     required this.day,
     required int value,
-  }) : valueBool = null,
-       valueInt = value,
-       valueText = null;
+  })  : valueBool = null,
+        valueInt = value,
+        valueText = null;
 
   MentalAnswerUpsert.text({
     required this.questionId,
     required this.day,
     required String value,
-  }) : valueBool = null,
-       valueInt = null,
-       valueText = value;
+  })  : valueBool = null,
+        valueInt = null,
+        valueText = value;
 }
 
 /// Интерфейс
@@ -55,13 +55,11 @@ abstract class MentalRepo {
 
   /// ✅ собрать готовые yesNoStats/scaleStats для карточки недели
   Future<
-    ({
-      Map<String, YesNoStat> yesNoStats,
-      Map<String, ScaleStat> scaleStats,
-      List<MentalQuestion> questions,
-    })
-  >
-  buildWeekMentalStats(List<DateTime> days);
+      ({
+        Map<String, YesNoStat> yesNoStats,
+        Map<String, ScaleStat> scaleStats,
+        List<MentalQuestion> questions,
+      })> buildWeekMentalStats(List<DateTime> days);
 }
 
 mixin MentalRepoMixin on BaseRepo implements MentalRepo {
@@ -157,19 +155,76 @@ mixin MentalRepoMixin on BaseRepo implements MentalRepo {
   Future<void> upsertMentalAnswers(List<MentalAnswerUpsert> answers) async {
     if (answers.isEmpty) return;
 
-    final rows = answers.map((a) {
-      final d = _d0(a.day);
-      final txt = (a.valueText ?? '').trim();
+    // ---- локальная нормализация текста (не меняем остальной файл) ----
+    String norm(String? s) => (s ?? '').trim();
+    String? normOrNull(String? s) {
+      final t = norm(s);
+      return t.isEmpty ? null : t;
+    }
 
-      return <String, dynamic>{
+    // 1) нормализуем вход (day -> YYYY-MM-DD, text -> trim/null)
+    final normAnswers = answers.map((a) {
+      final d = _d0(a.day);
+      return (
+        dayKey: _dateOnly(d),
+        questionId: a.questionId,
+        valueBool: a.valueBool,
+        valueInt: a.valueInt,
+        valueText: normOrNull(a.valueText),
+      );
+    }).toList();
+
+    // 2) одним запросом читаем существующие записи для затронутых day+question_id
+    final days = normAnswers.map((e) => e.dayKey).toSet().toList();
+    final qids = normAnswers.map((e) => e.questionId).toSet().toList();
+
+    final existingRes = await client
+        .from('mental_answers')
+        .select('day, question_id, value_bool, value_int, value_text')
+        .eq('user_id', uid)
+        .inFilter('day', days)
+        .inFilter('question_id', qids);
+
+    // key: "$day|$questionId"
+    final existing = <String, Map<String, dynamic>>{};
+    for (final r in (existingRes as List)) {
+      final m = Map<String, dynamic>.from(r as Map);
+      final dayKey = _toDayKey(m['day']); // стабильно "YYYY-MM-DD"
+      final qid = (m['question_id'] ?? '').toString();
+      if (dayKey.isEmpty || qid.isEmpty) continue;
+
+      existing['$dayKey|$qid'] = {
+        'value_bool': m['value_bool'] as bool?,
+        'value_int': (m['value_int'] as num?)?.toInt(),
+        'value_text': normOrNull(m['value_text']?.toString()),
+      };
+    }
+
+    // 3) готовим rows только для новых/изменённых (если без изменений — не пишем)
+    final rows = <Map<String, dynamic>>[];
+
+    for (final a in normAnswers) {
+      final key = '${a.dayKey}|${a.questionId}';
+      final old = existing[key];
+
+      final isSame = old != null &&
+          (old['value_bool'] as bool?) == a.valueBool &&
+          (old['value_int'] as int?) == a.valueInt &&
+          (old['value_text'] as String?) == a.valueText;
+
+      if (isSame) continue; // ✅ ничего не изменилось — пропускаем
+
+      rows.add(<String, dynamic>{
         'user_id': uid,
-        'day': _dateOnly(d),
+        'day': a.dayKey,
         'question_id': a.questionId,
         'value_bool': a.valueBool,
         'value_int': a.valueInt,
-        'value_text': txt.isEmpty ? null : txt,
-      };
-    }).toList();
+        'value_text': a.valueText, // уже null если пусто
+      });
+    }
+
+    if (rows.isEmpty) return; // ✅ нет изменений — нет записи в БД
 
     await client
         .from('mental_answers')
@@ -198,13 +253,11 @@ mixin MentalRepoMixin on BaseRepo implements MentalRepo {
 
   @override
   Future<
-    ({
-      Map<String, YesNoStat> yesNoStats,
-      Map<String, ScaleStat> scaleStats,
-      List<MentalQuestion> questions,
-    })
-  >
-  buildWeekMentalStats(List<DateTime> days) async {
+      ({
+        Map<String, YesNoStat> yesNoStats,
+        Map<String, ScaleStat> scaleStats,
+        List<MentalQuestion> questions,
+      })> buildWeekMentalStats(List<DateTime> days) async {
     // 1) нормализуем дни (date-only) + убираем дубликаты
     final uniq = <DateTime>{};
     for (final d in days) {

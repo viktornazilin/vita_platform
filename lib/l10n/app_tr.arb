@@ -975,7 +975,13 @@
         }
       }
     },
-  
+    "profileWebNotificationsSection": "Bildirimler (Web)",
+    "profileWebNotificationsPermissionTitle": "Bildirimlere izin ver",
+    "profileWebNotificationsPermissionSubtitle": "Web’de çalışır ve yalnızca sekme açıkken.",
+    "profileWebNotificationsEveningTitle": "Akşam check-in",
+    "profileWebNotificationsEveningSubtitle": "Her gün {time} saatinde",
+    "profileWebNotificationsChangeTime": "Saati değiştir",
+    "profileWebNotificationsUnsupported": "Tarayıcı bildirimleri bu derlemede kullanılamıyor. Yalnızca Web sürümünde çalışır (ve sadece sekme açıkken).",
     "limitSheetHintNoLimit": "Boş bırak — limit yok",
     "limitSheetFieldLabel": "Aylık limit",
     "limitSheetFieldHint": "örn. 15000",

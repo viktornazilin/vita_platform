@@ -965,5 +965,12 @@
   "limitSheetHintNoLimit": "Пусто — без лимита",
   "limitSheetFieldLabel": "Максимум ₽ в месяц",
   "limitSheetFieldHint": "Например: 15000",
-  "limitSheetCtaNoLimit": "Без лимита"
+  "limitSheetCtaNoLimit": "Без лимита",
+  "profileWebNotificationsSection": "Уведомления (Web)",
+  "profileWebNotificationsPermissionTitle": "Разрешить уведомления",
+  "profileWebNotificationsPermissionSubtitle": "Работает в Web и только пока вкладка открыта.",
+  "profileWebNotificationsEveningTitle": "Вечерний чек-ин",
+  "profileWebNotificationsEveningSubtitle": "Каждый день в {time}",
+  "profileWebNotificationsChangeTime": "Изменить время",
+  "profileWebNotificationsUnsupported": "Браузерные уведомления недоступны в этой сборке. Они работают только в Web-версии (и только пока вкладка открыта)."
 }

@@ -976,7 +976,13 @@
         }
       }
     },
-  
+    "profileWebNotificationsSection": "Notifications (Web)",
+    "profileWebNotificationsPermissionTitle": "Autoriser les notifications",
+    "profileWebNotificationsPermissionSubtitle": "Fonctionne sur le Web et uniquement tant que l’onglet est ouvert.",
+    "profileWebNotificationsEveningTitle": "Check-in du soir",
+    "profileWebNotificationsEveningSubtitle": "Chaque jour à {time}",
+    "profileWebNotificationsChangeTime": "Modifier l’heure",
+    "profileWebNotificationsUnsupported": "Les notifications du navigateur ne sont pas disponibles dans cette version. Elles fonctionnent uniquement dans la version Web (et seulement tant que l’onglet est ouvert).",
     "limitSheetHintNoLimit": "Laisser vide — aucune limite",
     "limitSheetFieldLabel": "Limite mensuelle",
     "limitSheetFieldHint": "ex. 15000",

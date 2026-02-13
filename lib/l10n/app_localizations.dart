@@ -3273,6 +3273,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No limit'**
   String get limitSheetCtaNoLimit;
+
+  /// No description provided for @profileWebNotificationsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications (Web)'**
+  String get profileWebNotificationsSection;
+
+  /// No description provided for @profileWebNotificationsPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications'**
+  String get profileWebNotificationsPermissionTitle;
+
+  /// No description provided for @profileWebNotificationsPermissionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Works on Web and only while the tab is open.'**
+  String get profileWebNotificationsPermissionSubtitle;
+
+  /// No description provided for @profileWebNotificationsEveningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening check-in'**
+  String get profileWebNotificationsEveningTitle;
+
+  /// No description provided for @profileWebNotificationsEveningSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day at {time}'**
+  String profileWebNotificationsEveningSubtitle(Object time);
+
+  /// No description provided for @profileWebNotificationsChangeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Change time'**
+  String get profileWebNotificationsChangeTime;
+
+  /// No description provided for @profileWebNotificationsUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser notifications are not available in this build. They work only in the Web version (and only while the tab is open).'**
+  String get profileWebNotificationsUnsupported;
 }
 
 class _AppLocalizationsDelegate

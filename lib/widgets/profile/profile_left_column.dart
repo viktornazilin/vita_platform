@@ -1,11 +1,15 @@
 // lib/screens/profile/profile_left_column.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/profile_model.dart';
 import 'profile_ui_helpers.dart';
+
+// ✅ доступ к глобальному webNotifs
+import '../../main.dart';
 
 // Nest UI
 import '../../widgets/nest/nest_card.dart';
@@ -33,9 +37,7 @@ class ProfileLeftColumn extends StatelessWidget {
               ProfileUi.editableRow(
                 context: context,
                 label: l.profileNameLabel,
-                value: model.name?.isNotEmpty == true
-                    ? model.name!
-                    : l.commonDash,
+                value: model.name?.isNotEmpty == true ? model.name! : l.commonDash,
                 onEdit: () async {
                   final v = await ProfileUi.promptText(
                     context,
@@ -111,9 +113,7 @@ class ProfileLeftColumn extends StatelessWidget {
         ProfileUi.editableRow(
           context: context,
           label: l.profileTargetHoursLabel,
-          value: l.profileTargetHoursValue(
-            model.targetHours.toStringAsFixed(1),
-          ),
+          value: l.profileTargetHoursValue(model.targetHours.toStringAsFixed(1)),
           onEdit: () async {
             final v = await ProfileUi.promptDouble(
               context,
@@ -131,7 +131,226 @@ class ProfileLeftColumn extends StatelessWidget {
             }
           },
         ),
+
+        const SizedBox(height: 16),
+
+        // ====== WEB NOTIFICATIONS ======
+        const _WebNotificationsSection(),
       ],
+    );
+  }
+}
+
+class _WebNotificationsSection extends StatelessWidget {
+  const _WebNotificationsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
+    // Если не web/не поддерживается — показываем аккуратную плашку
+    if (!webNotifs.isSupported) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          NestSectionTitle(l.profileWebNotificationsSection),
+          const SizedBox(height: 10),
+          NestCard(
+            padding: const EdgeInsets.all(14),
+            child: Text(
+              l.profileWebNotificationsUnsupported,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NestSectionTitle(l.profileWebNotificationsSection),
+        const SizedBox(height: 10),
+        const _WebNotificationsCard(),
+      ],
+    );
+  }
+}
+
+class _WebNotificationsCard extends StatefulWidget {
+  const _WebNotificationsCard();
+
+  @override
+  State<_WebNotificationsCard> createState() => _WebNotificationsCardState();
+}
+
+class _WebNotificationsCardState extends State<_WebNotificationsCard> {
+  // prefs keys
+  static const _kEnabled = 'vita_webnotif_evening_enabled';
+  static const _kHour = 'vita_webnotif_evening_hour';
+  static const _kMinute = 'vita_webnotif_evening_minute';
+
+  bool _loading = true;
+  bool _enabled = false;
+  int _hour = 21;
+  int _minute = 30;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _enabled = prefs.getBool(_kEnabled) ?? false;
+      _hour = prefs.getInt(_kHour) ?? 21;
+      _minute = prefs.getInt(_kMinute) ?? 30;
+      _loading = false;
+    });
+
+    // На web: если включено — поднимем расписание (permission не спрашиваем)
+    await _apply();
+  }
+
+  String _hhmm() =>
+      '${_hour.toString().padLeft(2, '0')}:${_minute.toString().padLeft(2, '0')}';
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kEnabled, _enabled);
+    await prefs.setInt(_kHour, _hour);
+    await prefs.setInt(_kMinute, _minute);
+  }
+
+  Future<void> _apply() async {
+    final l = AppLocalizations.of(context)!;
+
+    if (!_enabled) {
+      webNotifs.cancel('evening_checkin');
+      return;
+    }
+
+    webNotifs.scheduleDaily(
+      key: 'evening_checkin',
+      hour: _hour,
+      minute: _minute,
+      title: l.profileWebNotificationsEveningTitle,
+      // body пока не вынес в ключи (ты не просил) — оставляю как было
+      body: 'Отметь привычки и подведи итоги дня 👌',
+    );
+  }
+
+  Future<void> _requestPermission() async {
+    final ok = await webNotifs.requestPermission();
+    if (!mounted) return;
+
+    if (!ok) {
+      ProfileUi.snack(
+        context,
+        'Разрешение не выдано. Проверь настройки уведомлений в браузере.',
+      );
+      return;
+    }
+
+    ProfileUi.snack(context, 'Уведомления в браузере разрешены ✅');
+    // если включено — сразу применим (теперь покажется, когда наступит время)
+    await _apply();
+  }
+
+  Future<void> _pickTime() async {
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _hour, minute: _minute),
+    );
+    if (t == null) return;
+
+    setState(() {
+      _hour = t.hour;
+      _minute = t.minute;
+    });
+
+    await _save();
+    await _apply();
+
+    if (!mounted) return;
+    ProfileUi.snack(context, 'Время уведомления: ${_hhmm()}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    if (_loading) {
+      return NestCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: const [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 10),
+            Text('Загрузка настроек...'),
+          ],
+        ),
+      );
+    }
+
+    return NestCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.notifications_outlined),
+            title: Text(l.profileWebNotificationsPermissionTitle),
+            subtitle: Text(l.profileWebNotificationsPermissionSubtitle),
+            onTap: _requestPermission,
+          ),
+          const Divider(height: 1),
+
+          SwitchListTile(
+            dense: true,
+            value: _enabled,
+            title: Text(l.profileWebNotificationsEveningTitle),
+            subtitle: Text(l.profileWebNotificationsEveningSubtitle(_hhmm())),
+            onChanged: (v) async {
+              setState(() => _enabled = v);
+              await _save();
+              await _apply();
+
+              if (!mounted) return;
+              if (v) {
+                ProfileUi.snack(
+                  context,
+                  'Включено. Не забудь разрешить уведомления в браузере.',
+                );
+              } else {
+                ProfileUi.snack(context, 'Выключено.');
+              }
+            },
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _enabled ? _pickTime : null,
+                icon: const Icon(Icons.schedule),
+                label: Text(l.profileWebNotificationsChangeTime),
+                style: TextButton.styleFrom(
+                  textStyle: theme.textTheme.labelLarge,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -980,6 +980,13 @@
     "limitSheetHintNoLimit": "Déjalo vacío — sin límite",
     "limitSheetFieldLabel": "Límite mensual",
     "limitSheetFieldHint": "p. ej. 15000",
-    "limitSheetCtaNoLimit": "Sin límite"
+    "limitSheetCtaNoLimit": "Sin límite",
+    "profileWebNotificationsSection": "Notificaciones (Web)",
+  "profileWebNotificationsPermissionTitle": "Permitir notificaciones",
+  "profileWebNotificationsPermissionSubtitle": "Funciona en Web y solo mientras la pestaña esté abierta.",
+  "profileWebNotificationsEveningTitle": "Check-in nocturno",
+  "profileWebNotificationsEveningSubtitle": "Todos los días a las {time}",
+  "profileWebNotificationsChangeTime": "Cambiar hora",
+  "profileWebNotificationsUnsupported": "Las notificaciones del navegador no están disponibles en esta versión. Funcionan solo en la versión Web (y únicamente mientras la pestaña esté abierta)."
   }
   

@@ -990,6 +990,12 @@
   "limitSheetFieldHint": "z. B. 15000",
   "limitSheetCtaNoLimit": "Kein Limit",
   "settingsLanguageTitle": "Sprache",
-  "settingsLanguageSubtitle": "Wähle die App-Sprache. „System“ nutzt die Gerätesprache."
-
+  "settingsLanguageSubtitle": "Wähle die App-Sprache. „System“ nutzt die Gerätesprache.",
+  "profileWebNotificationsSection": "Benachrichtigungen (Web)",
+  "profileWebNotificationsPermissionTitle": "Benachrichtigungen erlauben",
+  "profileWebNotificationsPermissionSubtitle": "Funktioniert im Web und nur solange der Tab geöffnet ist.",
+  "profileWebNotificationsEveningTitle": "Abend-Check-in",
+  "profileWebNotificationsEveningSubtitle": "Jeden Tag um {time}",
+  "profileWebNotificationsChangeTime": "Zeit ändern",
+  "profileWebNotificationsUnsupported": "Browser-Benachrichtigungen sind in diesem Build nicht verfügbar. Sie funktionieren nur in der Web-Version (und nur solange der Tab geöffnet ist)."
 }

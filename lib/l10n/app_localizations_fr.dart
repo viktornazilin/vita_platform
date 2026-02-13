@@ -1756,4 +1756,30 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get limitSheetCtaNoLimit => 'Aucune limite';
+
+  @override
+  String get profileWebNotificationsSection => 'Notifications (Web)';
+
+  @override
+  String get profileWebNotificationsPermissionTitle =>
+      'Autoriser les notifications';
+
+  @override
+  String get profileWebNotificationsPermissionSubtitle =>
+      'Fonctionne sur le Web et uniquement tant que l’onglet est ouvert.';
+
+  @override
+  String get profileWebNotificationsEveningTitle => 'Check-in du soir';
+
+  @override
+  String profileWebNotificationsEveningSubtitle(Object time) {
+    return 'Chaque jour à $time';
+  }
+
+  @override
+  String get profileWebNotificationsChangeTime => 'Modifier l’heure';
+
+  @override
+  String get profileWebNotificationsUnsupported =>
+      'Les notifications du navigateur ne sont pas disponibles dans cette version. Elles fonctionnent uniquement dans la version Web (et seulement tant que l’onglet est ouvert).';
 }

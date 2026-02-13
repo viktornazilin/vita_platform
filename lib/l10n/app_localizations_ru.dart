@@ -1735,4 +1735,29 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get limitSheetCtaNoLimit => 'Без лимита';
+
+  @override
+  String get profileWebNotificationsSection => 'Уведомления (Web)';
+
+  @override
+  String get profileWebNotificationsPermissionTitle => 'Разрешить уведомления';
+
+  @override
+  String get profileWebNotificationsPermissionSubtitle =>
+      'Работает в Web и только пока вкладка открыта.';
+
+  @override
+  String get profileWebNotificationsEveningTitle => 'Вечерний чек-ин';
+
+  @override
+  String profileWebNotificationsEveningSubtitle(Object time) {
+    return 'Каждый день в $time';
+  }
+
+  @override
+  String get profileWebNotificationsChangeTime => 'Изменить время';
+
+  @override
+  String get profileWebNotificationsUnsupported =>
+      'Браузерные уведомления недоступны в этой сборке. Они работают только в Web-версии (и только пока вкладка открыта).';
 }

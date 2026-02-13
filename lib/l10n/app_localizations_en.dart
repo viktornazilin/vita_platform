@@ -1733,4 +1733,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get limitSheetCtaNoLimit => 'No limit';
+
+  @override
+  String get profileWebNotificationsSection => 'Notifications (Web)';
+
+  @override
+  String get profileWebNotificationsPermissionTitle => 'Allow notifications';
+
+  @override
+  String get profileWebNotificationsPermissionSubtitle =>
+      'Works on Web and only while the tab is open.';
+
+  @override
+  String get profileWebNotificationsEveningTitle => 'Evening check-in';
+
+  @override
+  String profileWebNotificationsEveningSubtitle(Object time) {
+    return 'Every day at $time';
+  }
+
+  @override
+  String get profileWebNotificationsChangeTime => 'Change time';
+
+  @override
+  String get profileWebNotificationsUnsupported =>
+      'Browser notifications are not available in this build. They work only in the Web version (and only while the tab is open).';
 }

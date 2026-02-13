@@ -993,5 +993,13 @@
   "limitSheetHintNoLimit": "Leave empty — no limit",
   "limitSheetFieldLabel": "Monthly limit",
   "limitSheetFieldHint": "e.g. 15000",
-  "limitSheetCtaNoLimit": "No limit"
+  "limitSheetCtaNoLimit": "No limit",
+    "profileWebNotificationsSection": "Notifications (Web)",
+    "profileWebNotificationsPermissionTitle": "Allow notifications",
+    "profileWebNotificationsPermissionSubtitle": "Works on Web and only while the tab is open.",
+    "profileWebNotificationsEveningTitle": "Evening check-in",
+    "profileWebNotificationsEveningSubtitle": "Every day at {time}",
+    "profileWebNotificationsChangeTime": "Change time",
+    "profileWebNotificationsUnsupported": "Browser notifications are not available in this build. They work only in the Web version (and only while the tab is open)."
+  
 }

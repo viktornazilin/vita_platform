@@ -1738,4 +1738,29 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get limitSheetCtaNoLimit => 'Limit yok';
+
+  @override
+  String get profileWebNotificationsSection => 'Bildirimler (Web)';
+
+  @override
+  String get profileWebNotificationsPermissionTitle => 'Bildirimlere izin ver';
+
+  @override
+  String get profileWebNotificationsPermissionSubtitle =>
+      'Web’de çalışır ve yalnızca sekme açıkken.';
+
+  @override
+  String get profileWebNotificationsEveningTitle => 'Akşam check-in';
+
+  @override
+  String profileWebNotificationsEveningSubtitle(Object time) {
+    return 'Her gün $time saatinde';
+  }
+
+  @override
+  String get profileWebNotificationsChangeTime => 'Saati değiştir';
+
+  @override
+  String get profileWebNotificationsUnsupported =>
+      'Tarayıcı bildirimleri bu derlemede kullanılamıyor. Yalnızca Web sürümünde çalışır (ve sadece sekme açıkken).';
 }
