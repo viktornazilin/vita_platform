@@ -1,6 +1,5 @@
 // lib/widgets/goals/add_day_goal_sheet.dart
 import 'package:flutter/material.dart';
-
 import 'package:nest_app/l10n/app_localizations.dart';
 
 class AddGoalResult {
@@ -43,7 +42,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
   final _emotions = const ['😊', '😐', '😢', '😎', '😤', '🤔', '😴', '😇'];
   String _emotion = '😊';
+
+  // ✅ ограничиваем 1..3
   int _importance = 2;
+
   double _hours = 1.0;
   late String _lifeBlock;
 
@@ -79,10 +81,21 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
     if (_titleCtrl.text.trim().isEmpty) {
       final sm = ScaffoldMessenger.maybeOf(context);
+      final scheme = Theme.of(context).colorScheme;
       sm?.showSnackBar(
         SnackBar(
-          content: Text(l.addDayGoalEnterTitle),
+          content: Text(
+            l.addDayGoalEnterTitle,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
           behavior: SnackBarBehavior.floating,
+          backgroundColor: scheme.surfaceContainerHigh.withOpacity(0.92),
+          elevation: 0,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
       return;
@@ -105,7 +118,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+
+    final sheetSurface =
+        (isDark ? scheme.surfaceContainerHigh : scheme.surface)
+            .withOpacity(isDark ? 0.90 : 0.92);
+
+    final borderColor = scheme.outlineVariant.withOpacity(isDark ? 0.65 : 0.55);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -119,15 +140,23 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.94),
-                border: Border.all(color: const Color(0xFFD6E6F5)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x1A2B5B7A),
-                    blurRadius: 30,
-                    offset: Offset(0, -10),
-                  ),
-                ],
+                color: sheetSurface,
+                border: Border.all(color: borderColor),
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.45),
+                          blurRadius: 30,
+                          offset: const Offset(0, -12),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: const Color(0xFF004A98).withOpacity(0.12),
+                          blurRadius: 30,
+                          offset: const Offset(0, -10),
+                        ),
+                      ],
               ),
               child: ListView(
                 controller: controller,
@@ -138,7 +167,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       width: 46,
                       height: 5,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF9BC7E6).withOpacity(0.55),
+                        color: scheme.onSurfaceVariant
+                            .withOpacity(isDark ? 0.28 : 0.20),
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
@@ -152,25 +182,27 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                         height: 40,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
+                            colors: [
+                              scheme.primary.withOpacity(0.95),
+                              scheme.primary.withOpacity(0.55),
+                            ],
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.auto_awesome_rounded,
-                          color: Colors.white,
+                          color: scheme.onPrimary,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           l.addDayGoalTitle,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
-                                color: const Color(0xFF2E4B5A),
+                                color: scheme.onSurface,
                               ),
                         ),
                       ),
@@ -187,6 +219,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           label: l.addDayGoalFieldTitle,
                           hint: l.addDayGoalTitleHint,
                           icon: Icons.flag_rounded,
+                          // ✅ приятнее: 2 строки вместо жёсткого 1
+                          minLines: 1,
+                          maxLines: 2,
+                          maxLen: 60,
                         ),
                         const SizedBox(height: 10),
                         _PrettyField(
@@ -196,6 +232,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           icon: Icons.notes_rounded,
                           minLines: 2,
                           maxLines: 4,
+                          maxLen: 240,
                         ),
                       ],
                     ),
@@ -206,18 +243,16 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                   _Section(
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          color: Color(0xFF3AA8E6),
-                        ),
+                        Icon(Icons.access_time_rounded, color: scheme.primary),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             l.addDayGoalStartTime,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF2E4B5A),
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: scheme.onSurface,
+                                ),
                           ),
                         ),
                         _PillButton(
@@ -234,34 +269,36 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                     _Section(
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.category_rounded,
-                            color: Color(0xFF3AA8E6),
-                          ),
+                          Icon(Icons.category_rounded, color: scheme.primary),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               l.addDayGoalLifeBlock,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF2E4B5A),
-                              ),
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: scheme.onSurface,
+                                  ),
                             ),
                           ),
                           DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _lifeBlock,
-                              items:
-                                  (widget.availableBlocks.isEmpty
-                                          ? const <String>['general']
-                                          : widget.availableBlocks)
-                                      .map(
-                                        (b) => DropdownMenuItem(
-                                          value: b,
-                                          child: Text(b),
-                                        ),
-                                      )
-                                      .toList(),
+                              dropdownColor: scheme.surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(14),
+                              items: (widget.availableBlocks.isEmpty
+                                      ? const <String>['general']
+                                      : widget.availableBlocks)
+                                  .map(
+                                    (b) => DropdownMenuItem(
+                                      value: b,
+                                      child: Text(
+                                        b,
+                                        style: TextStyle(color: scheme.onSurface),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
                               onChanged: (v) =>
                                   setState(() => _lifeBlock = v ?? _lifeBlock),
                             ),
@@ -278,36 +315,35 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       children: [
                         Text(
                           l.addDayGoalImportance,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF2E4B5A),
-                          ),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: scheme.onSurface,
+                              ),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 10,
-                          children: List.generate(5, (i) {
+                          children: List.generate(3, (i) {
                             final v = i + 1;
                             final selected = _importance == v;
+
                             return ChoiceChip(
                               label: Text('$v'),
                               selected: selected,
-                              onSelected: (_) =>
-                                  setState(() => _importance = v),
-                              selectedColor: const Color(
-                                0xFF3AA8E6,
-                              ).withOpacity(0.18),
-                              backgroundColor: const Color(0xFFF4FAFF),
+                              onSelected: (_) => setState(() => _importance = v),
+                              selectedColor: scheme.primary.withOpacity(0.18),
+                              backgroundColor:
+                                  scheme.surfaceContainerHighest.withOpacity(0.75),
                               side: BorderSide(
                                 color: selected
-                                    ? const Color(0xFF3AA8E6).withOpacity(0.35)
-                                    : const Color(0xFFD6E6F5),
+                                    ? scheme.primary.withOpacity(0.35)
+                                    : scheme.outlineVariant.withOpacity(0.65),
                               ),
                               labelStyle: TextStyle(
                                 fontWeight: FontWeight.w900,
-                                color: const Color(
-                                  0xFF2E4B5A,
-                                ).withOpacity(selected ? 1 : 0.75),
+                                color: scheme.onSurface.withOpacity(
+                                  selected ? 1 : 0.80,
+                                ),
                               ),
                             );
                           }),
@@ -324,10 +360,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       children: [
                         Text(
                           l.addDayGoalEmotion,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF2E4B5A),
-                          ),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: scheme.onSurface,
+                              ),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
@@ -335,20 +371,16 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           children: _emotions.map((e) {
                             final selected = _emotion == e;
                             return ChoiceChip(
-                              label: Text(
-                                e,
-                                style: const TextStyle(fontSize: 18),
-                              ),
+                              label: Text(e, style: const TextStyle(fontSize: 18)),
                               selected: selected,
                               onSelected: (_) => setState(() => _emotion = e),
-                              selectedColor: const Color(
-                                0xFF3AA8E6,
-                              ).withOpacity(0.18),
-                              backgroundColor: const Color(0xFFF4FAFF),
+                              selectedColor: scheme.primary.withOpacity(0.18),
+                              backgroundColor:
+                                  scheme.surfaceContainerHighest.withOpacity(0.75),
                               side: BorderSide(
                                 color: selected
-                                    ? const Color(0xFF3AA8E6).withOpacity(0.35)
-                                    : const Color(0xFFD6E6F5),
+                                    ? scheme.primary.withOpacity(0.35)
+                                    : scheme.outlineVariant.withOpacity(0.65),
                               ),
                             );
                           }).toList(),
@@ -368,10 +400,11 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             Expanded(
                               child: Text(
                                 l.addDayGoalHours,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF2E4B5A),
-                                ),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: scheme.onSurface,
+                                    ),
                               ),
                             ),
                             _Pill(text: _hours.toStringAsFixed(1)),
@@ -396,40 +429,14 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            side: const BorderSide(color: Color(0xFFD6E6F5)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: Text(
-                            l.commonCancel,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF2E4B5A),
-                            ),
-                          ),
+                          child: Text(l.commonCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3AA8E6),
-                            foregroundColor: Colors.white,
-                            elevation: 10,
-                            shadowColor: const Color(0x334AAAE6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: Text(
-                            l.commonAdd,
-                            style: const TextStyle(fontWeight: FontWeight.w900),
-                          ),
+                          child: Text(l.commonAdd),
                         ),
                       ),
                     ],
@@ -452,19 +459,38 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark
+        ? scheme.surfaceContainer.withOpacity(0.72)
+        : scheme.surfaceContainerHigh.withOpacity(0.85);
+
+    final border = scheme.outlineVariant.withOpacity(isDark ? 0.55 : 0.50);
+
+    final shadow = isDark
+        ? <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withOpacity(0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ]
+        : <BoxShadow>[
+            BoxShadow(
+              color: const Color(0xFF004A98).withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ];
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFF),
+        color: bg,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F2B5B7A),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: border),
+        boxShadow: shadow,
       ),
       child: child,
     );
@@ -478,6 +504,7 @@ class _PrettyField extends StatelessWidget {
   final IconData icon;
   final int minLines;
   final int maxLines;
+  final int? maxLen;
 
   const _PrettyField({
     required this.controller,
@@ -486,35 +513,24 @@ class _PrettyField extends StatelessWidget {
     required this.icon,
     this.minLines = 1,
     this.maxLines = 1,
+    this.maxLen,
   });
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return TextField(
       controller: controller,
       minLines: minLines,
       maxLines: maxLines,
+      maxLength: maxLen,
+      textInputAction:
+          maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: const Color(0xFF3AA8E6)),
+        prefixIcon: Icon(icon, color: scheme.primary),
         labelText: label,
         hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFFD6E6F5)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFFD6E6F5)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: const Color(0xFF3AA8E6).withOpacity(0.6),
-            width: 1.4,
-          ),
-        ),
       ),
     );
   }
@@ -527,8 +543,11 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white,
+      color: scheme.surfaceContainerHigh.withOpacity(isDark ? 0.90 : 0.95),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -537,14 +556,16 @@ class _PillButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
+            border: Border.all(
+              color: scheme.outlineVariant.withOpacity(isDark ? 0.65 : 0.55),
+            ),
           ),
           child: Text(
             text,
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF2E4B5A),
-            ),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: scheme.onSurface,
+                ),
           ),
         ),
       ),
@@ -558,19 +579,24 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surfaceContainerHigh.withOpacity(isDark ? 0.90 : 0.95),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(
+          color: scheme.outlineVariant.withOpacity(isDark ? 0.65 : 0.55),
+        ),
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          fontWeight: FontWeight.w900,
-          color: Color(0xFF2E4B5A),
-        ),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: scheme.onSurface,
+            ),
       ),
     );
   }

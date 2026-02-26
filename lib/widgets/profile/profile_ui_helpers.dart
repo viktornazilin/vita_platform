@@ -11,12 +11,27 @@ import '../../widgets/nest/nest_sheet.dart';
 class ProfileUi {
   // ======= Toast =======
   static void snack(BuildContext context, String text) {
-    final sm = ScaffoldMessenger.maybeOf(context);
-    if (sm == null) return;
-    sm.showSnackBar(
-      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
-    );
-  }
+  final sm = ScaffoldMessenger.maybeOf(context);
+  if (sm == null) return;
+
+  final scheme = Theme.of(context).colorScheme;
+
+  sm.showSnackBar(
+    SnackBar(
+      content: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: scheme.surfaceContainerHigh.withOpacity(0.92),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+  );
+}
 
   // ======= LifeBlock mapping (label + icon) =======
   // ВАЖНО: label хранится как l10n-key, а отображение — через локализацию.
@@ -333,14 +348,17 @@ class ProfileUi {
                         child: Text(
                           label,
                           style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF2E4B5A),
-                          ),
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(ctx).colorScheme.onSurface,
+                              ),
                         ),
                       ),
                       Text(
                         value.toStringAsFixed(decimals),
-                        style: const TextStyle(fontWeight: FontWeight.w900),
+                        style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: Theme.of(ctx).colorScheme.onSurface,
+                            ),
                       ),
                     ],
                   ),
@@ -462,14 +480,16 @@ class ProfileUi {
     required VoidCallback onEdit,
     IconData icon = Icons.edit_outlined,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+
     final labelStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
-      fontWeight: FontWeight.w900,
-      color: const Color(0xFF2E4B5A),
-    );
+          fontWeight: FontWeight.w900,
+          color: scheme.onSurface,
+        );
     final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: const Color(0xFF2E4B5A).withOpacity(0.75),
-      fontWeight: FontWeight.w600,
-    );
+          color: scheme.onSurfaceVariant.withOpacity(0.92),
+          fontWeight: FontWeight.w600,
+        );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -492,7 +512,7 @@ class ProfileUi {
             Icon(
               icon,
               size: 18,
-              color: const Color(0xFF2E4B5A).withOpacity(0.65),
+              color: scheme.onSurfaceVariant.withOpacity(0.80),
             ),
           ],
         ),
@@ -506,10 +526,12 @@ class ProfileUi {
     required List<String> items,
     required VoidCallback onEdit,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+
     final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w900,
-      color: const Color(0xFF2E4B5A),
-    );
+          fontWeight: FontWeight.w900,
+          color: scheme.onSurface,
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,14 +543,11 @@ class ProfileUi {
               onTap: onEdit,
               borderRadius: BorderRadius.circular(14),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 child: Icon(
                   Icons.edit_outlined,
                   size: 18,
-                  color: const Color(0xFF2E4B5A).withOpacity(0.7),
+                  color: scheme.onSurfaceVariant.withOpacity(0.85),
                 ),
               ),
             ),
@@ -538,7 +557,10 @@ class ProfileUi {
         if (items.isEmpty)
           Text(
             '—',
-            style: TextStyle(color: const Color(0xFF2E4B5A).withOpacity(0.55)),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant.withOpacity(0.55),
+                  fontWeight: FontWeight.w700,
+                ),
           )
         else
           Wrap(
@@ -551,34 +573,55 @@ class ProfileUi {
   }
 
   static Widget nestChip(BuildContext context, String raw) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final meta = blockMeta(raw);
     final label = blockLabel(context, raw);
+
+    final chipBg = isDark
+        ? scheme.surfaceContainerHigh.withOpacity(0.90)
+        : scheme.surfaceContainerHigh.withOpacity(0.92);
+
+    final chipBorder = isDark
+        ? scheme.outlineVariant.withOpacity(0.60)
+        : scheme.outlineVariant.withOpacity(0.50);
+
+    final shadow = isDark
+        ? <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withOpacity(0.28),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ]
+        : <BoxShadow>[
+            BoxShadow(
+              color: const Color(0xFF004A98).withOpacity(0.10),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.78),
+        color: chipBg,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x142B5B7A),
-            blurRadius: 14,
-            offset: Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: chipBorder),
+        boxShadow: shadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(meta.icon, size: 16, color: const Color(0xFF2E4B5A)),
+          Icon(meta.icon, size: 16, color: scheme.primary),
           const SizedBox(width: 8),
           Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
-            ),
+                  fontWeight: FontWeight.w900,
+                  color: scheme.onSurface,
+                ),
           ),
         ],
       ),
@@ -610,6 +653,13 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final handleColor = isDark
+        ? scheme.onSurfaceVariant.withOpacity(0.28)
+        : scheme.onSurfaceVariant.withOpacity(0.20);
+
     return Column(
       children: [
         Center(
@@ -617,7 +667,7 @@ class _SheetHeader extends StatelessWidget {
             width: 44,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFF2E4B5A).withOpacity(0.20),
+              color: handleColor,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -628,9 +678,9 @@ class _SheetHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
-            ),
+                  fontWeight: FontWeight.w900,
+                  color: scheme.onSurface,
+                ),
           ),
         ),
       ],

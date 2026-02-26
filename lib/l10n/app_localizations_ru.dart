@@ -812,7 +812,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get onbTopTitle => 'Инициация героя';
+  String get onbTopTitle => '';
 
   @override
   String get onbErrSaveFailed => 'Не удалось сохранить ответы';

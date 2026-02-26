@@ -814,7 +814,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get onbTopTitle => 'Helden-Initiation';
+  String get onbTopTitle => '';
 
   @override
   String get onbErrSaveFailed => 'Antworten konnten nicht gespeichert werden';

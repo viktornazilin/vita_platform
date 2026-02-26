@@ -818,7 +818,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get onbTopTitle => 'Initiation du héros';
+  String get onbTopTitle => '';
 
   @override
   String get onbErrSaveFailed => 'Impossible d’enregistrer tes réponses';

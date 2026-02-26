@@ -12,15 +12,25 @@ class NestSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // В dark чуть светлее для контраста
+    final titleColor = isDark
+        ? scheme.onSurface
+        : scheme.onSurface;
+
     return Padding(
       padding: padding,
       child: Text(
         text,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF2E4B5A),
-          letterSpacing: 0.2,
-        ),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+              color: titleColor,
+            ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

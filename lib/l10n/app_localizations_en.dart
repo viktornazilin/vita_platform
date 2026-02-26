@@ -807,7 +807,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get onbTopTitle => 'Hero’s Initiation';
+  String get onbTopTitle => '';
 
   @override
   String get onbErrSaveFailed => 'Couldn’t save your answers';

@@ -1543,7 +1543,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbTopTitle.
   ///
   /// In en, this message translates to:
-  /// **'Hero’s Initiation'**
+  /// **''**
   String get onbTopTitle;
 
   /// No description provided for @onbErrSaveFailed.

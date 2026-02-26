@@ -810,7 +810,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get onbTopTitle => 'Kahramanın Başlangıcı';
+  String get onbTopTitle => '';
 
   @override
   String get onbErrSaveFailed => 'Yanıtların kaydedilemedi';

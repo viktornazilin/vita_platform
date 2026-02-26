@@ -35,6 +35,7 @@ class _ProfileViewState extends State<ProfileView> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final model = context.watch<ProfileModel>();
+    final scheme = Theme.of(context).colorScheme;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final err = model.error;
@@ -60,13 +61,22 @@ class _ProfileViewState extends State<ProfileView> {
           children: [
             Image.asset('assets/images/logo.png', height: 28),
             const SizedBox(width: 10),
-            Text(l.profileTitle),
+            Text(
+              l.profileTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: scheme.onSurface,
+                  ),
+            ),
           ],
         );
 
         final Widget content = model.loading
             ? const Center(child: CircularProgressIndicator.adaptive())
             : RefreshIndicator(
+                // ✅ чтобы индикатор выглядел “в твоей палитре” и в dark тоже был ок
+                color: scheme.primary,
+                backgroundColor: scheme.surfaceContainerHighest.withOpacity(0.92),
                 onRefresh: () => _refreshAll(context),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -106,10 +116,9 @@ class _ProfileViewState extends State<ProfileView> {
         return Scaffold(
           extendBodyBehindAppBar: true,
           appBar: AppBar(
+            // ✅ всё остальное (прозрачность, tint, elevation) берём из ThemeController
             title: titleRow,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
+            centerTitle: false,
           ),
           body: NestBackground(child: content),
         );
