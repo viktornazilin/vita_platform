@@ -55,6 +55,7 @@ class _DayGoalsView extends StatefulWidget {
 class _DayGoalsViewState extends State<_DayGoalsView> {
   final _scroll = ScrollController();
   bool _busy = false;
+  bool _hideCompleted = false;
 
   @override
   void dispose() {
@@ -107,7 +108,6 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           startTime: res.startTime,
         );
 
-        // ✅ на всякий случай обновим (если внутри createGoal нет load)
         await vm.load();
 
         if (!mounted) return;
@@ -158,7 +158,6 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           startTime: res.startTime,
         );
 
-        // ✅ гарантированно подтянем свежие данные
         await vm.load();
 
         final l = AppLocalizations.of(context)!;
@@ -197,7 +196,6 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
     await _withBusy(() async {
       try {
-        // ✅ новый миксин/репо удаляет по id
         await vm.deleteGoal(g.id);
         final l = AppLocalizations.of(context)!;
         _snack(l.dayGoalsDeleted);
@@ -233,7 +231,6 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           _NestSheet(child: DayGoogleCalendarSyncSheet(date: vm.date)),
     );
 
-    // на случай импорта/изменений
     await _withBusy(() async {
       try {
         await vm.load();
@@ -251,8 +248,26 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final vm = context.watch<DayGoalsModel>();
-    final goals = vm.goals;
     final title = vm.lifeBlock ?? l.dayGoalsAllLifeBlocks;
+
+    final allGoals = [...vm.goals]..sort(
+        (a, b) => a.startTime.compareTo(b.startTime),
+      );
+
+    final visibleGoals = _hideCompleted
+        ? allGoals.where((g) => !g.isCompleted).toList()
+        : allGoals;
+
+    final grouped = _groupGoalsByTimeOfDay(visibleGoals);
+
+    final totalGoals = allGoals.length;
+    final completedGoals = allGoals.where((g) => g.isCompleted).length;
+    final remainingGoals = totalGoals - completedGoals;
+    final remainingHours = allGoals
+        .where((g) => !g.isCompleted)
+        .fold<double>(0, (sum, g) => sum + g.hours);
+
+    final progress = totalGoals == 0 ? 0.0 : completedGoals / totalGoals;
 
     return Stack(
       children: [
@@ -285,31 +300,39 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
               SafeArea(
                 child: vm.loading
                     ? const Center(child: CircularProgressIndicator())
-                    : goals.isEmpty
-                    ? const _NestEmptyState()
-                    : ListView.builder(
-                        controller: _scroll,
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
-                        itemCount: goals.length,
-                        itemBuilder: (_, i) {
-                          final g = goals[i];
-                          return TimelineRow(
-                            key: ValueKey(g.id),
-                            goal: g,
-                            index: i,
-                            total: goals.length,
-                            onToggle: () => _toggleComplete(g),
-                            onDelete: () => _confirmAndDelete(g),
-                            onEdit: () => _openEdit(g),
-                          );
-                        },
-                      ),
+                    : visibleGoals.isEmpty
+                        ? _NestEmptyState(
+                            message: totalGoals > 0 && _hideCompleted
+                                ? 'Все видимые цели скрыты. Отключи фильтр «Скрыть выполненные».'
+                                : l.dayGoalsEmpty,
+                          )
+                        : ListView(
+                            controller: _scroll,
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
+                            children: [
+                              _DaySummaryCard(
+                                totalGoals: totalGoals,
+                                completedGoals: completedGoals,
+                                remainingGoals: remainingGoals,
+                                remainingHours: remainingHours,
+                                progress: progress,
+                              ),
+                              const SizedBox(height: 12),
+                              _HideCompletedToggle(
+                                value: _hideCompleted,
+                                onChanged: (v) {
+                                  setState(() => _hideCompleted = v);
+                                },
+                              ),
+                              const SizedBox(height: 18),
+                              ..._buildSections(grouped),
+                            ],
+                          ),
               ),
             ],
           ),
         ),
-
         if (_busy)
           Positioned.fill(
             child: IgnorePointer(
@@ -325,6 +348,341 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
             ),
           ),
       ],
+    );
+  }
+
+  List<Widget> _buildSections(Map<_DaySection, List<Goal>> grouped) {
+    final sections = <Widget>[];
+    int runningIndex = 0;
+    final totalVisible = grouped.values.fold<int>(0, (sum, list) => sum + list.length);
+
+    for (final section in _DaySection.values) {
+      final items = grouped[section];
+      if (items == null || items.isEmpty) continue;
+
+      sections.add(_SectionHeader(section: section));
+      sections.add(const SizedBox(height: 8));
+
+      for (final g in items) {
+        sections.add(
+          TimelineRow(
+            key: ValueKey(g.id),
+            goal: g,
+            index: runningIndex,
+            total: totalVisible,
+            onToggle: () => _toggleComplete(g),
+            onDelete: () => _confirmAndDelete(g),
+            onEdit: () => _openEdit(g),
+          ),
+        );
+        runningIndex++;
+      }
+
+      sections.add(const SizedBox(height: 12));
+    }
+
+    return sections;
+  }
+
+  Map<_DaySection, List<Goal>> _groupGoalsByTimeOfDay(List<Goal> goals) {
+    final map = <_DaySection, List<Goal>>{
+      _DaySection.morning: [],
+      _DaySection.day: [],
+      _DaySection.evening: [],
+    };
+
+    for (final g in goals) {
+      final hour = g.startTime.hour;
+      if (hour < 12) {
+        map[_DaySection.morning]!.add(g);
+      } else if (hour < 18) {
+        map[_DaySection.day]!.add(g);
+      } else {
+        map[_DaySection.evening]!.add(g);
+      }
+    }
+
+    return map;
+  }
+}
+
+enum _DaySection { morning, day, evening }
+
+class _SectionHeader extends StatelessWidget {
+  final _DaySection section;
+
+  const _SectionHeader({required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    String title;
+    IconData icon;
+    Color accent;
+
+    switch (section) {
+      case _DaySection.morning:
+        title = 'Утро';
+        icon = Icons.wb_sunny_rounded;
+        accent = const Color(0xFFF59E0B);
+        break;
+      case _DaySection.day:
+        title = 'День';
+        icon = Icons.light_mode_rounded;
+        accent = const Color(0xFF3AA8E6);
+        break;
+      case _DaySection.evening:
+        title = 'Вечер';
+        icon = Icons.nights_stay_rounded;
+        accent = const Color(0xFF7C83FD);
+        break;
+    }
+
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accent.withOpacity(0.18)),
+          ),
+          child: Icon(icon, color: accent, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFF2E4B5A),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DaySummaryCard extends StatelessWidget {
+  final int totalGoals;
+  final int completedGoals;
+  final int remainingGoals;
+  final double remainingHours;
+  final double progress;
+
+  const _DaySummaryCard({
+    required this.totalGoals,
+    required this.completedGoals,
+    required this.remainingGoals,
+    required this.remainingHours,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.72),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: const Color(0xFFD6E6F5)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x142B5B7A),
+                blurRadius: 24,
+                offset: Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Сводка дня',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF2E4B5A),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Держи фокус на главном и не перегружай день.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF587282),
+                ),
+              ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  minHeight: 10,
+                  backgroundColor: const Color(0xFFE8F2FA),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF3AA8E6)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryStat(
+                      label: 'Всего',
+                      value: '$totalGoals',
+                      accent: const Color(0xFF3AA8E6),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SummaryStat(
+                      label: 'Готово',
+                      value: '$completedGoals',
+                      accent: const Color(0xFF22C55E),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SummaryStat(
+                      label: 'Осталось',
+                      value: '$remainingGoals',
+                      accent: const Color(0xFFF59E0B),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _HoursPill(hours: remainingHours),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color accent;
+
+  const _SummaryStat({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withOpacity(0.14)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF2E4B5A),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF587282),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HoursPill extends StatelessWidget {
+  final double hours;
+
+  const _HoursPill({required this.hours});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4FAFF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.schedule_rounded,
+            size: 18,
+            color: Color(0xFF3AA8E6),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Осталось часов: ${hours.toStringAsFixed(1)}',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF385262),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HideCompletedToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _HideCompletedToggle({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.62),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.visibility_off_rounded,
+            color: Color(0xFF5D7B8F),
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Скрыть выполненные',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2E4B5A),
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFF3AA8E6),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -381,12 +739,14 @@ class _SoftBlob extends StatelessWidget {
 }
 
 class _NestEmptyState extends StatelessWidget {
-  const _NestEmptyState();
+  final String message;
+
+  const _NestEmptyState({
+    String? message,
+  }) : message = message ?? 'На этот день пока нет целей';
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 420),
@@ -404,7 +764,7 @@ class _NestEmptyState extends StatelessWidget {
           ],
         ),
         child: Text(
-          l.dayGoalsEmpty,
+          message,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w800,
