@@ -2,17 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/mental_question.dart';
-import '../models/life_block.dart';
-import '../widgets/block_chip.dart'; // тут у тебя getBlockLabel(...)
 
 import '../domain/category.dart' as dm;
-import '../main.dart'; // dbRepo + (LifeBlock, getBlockLabel) должны быть доступны
+import '../main.dart';
+import '../models/life_block.dart';
+import '../models/mental_question.dart';
+import '../widgets/block_chip.dart';
 
 class MassDailyEntrySheet extends StatefulWidget {
-  final List<String> availableBlocks; // как на GoalsScreen
+  final List<String> availableBlocks;
 
-  const MassDailyEntrySheet({super.key, required this.availableBlocks});
+  const MassDailyEntrySheet({
+    super.key,
+    required this.availableBlocks,
+  });
 
   @override
   State<MassDailyEntrySheet> createState() => _MassDailyEntrySheetState();
@@ -21,36 +24,26 @@ class MassDailyEntrySheet extends StatefulWidget {
 class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   DateTime _date = DateUtils.dateOnly(DateTime.now());
 
-  // wizard
   final _pageCtrl = PageController();
   int _step = 0;
   static const int _stepsCount = 4;
 
-  // mood
-  String? _emoji; // null = без настроения
+  String? _emoji;
   final _moodNote = TextEditingController();
 
-  // habits (loaded from DB)
   bool _habitsLoading = false;
   String? _habitsError;
   List<_HabitVm> _habits = [];
 
-  // expenses
   final List<_ExpenseRow> _expenses = [_ExpenseRow()];
-
-  // incomes
   final List<_IncomeRow> _incomes = [_IncomeRow()];
-
-  // goals
   final List<_GoalRow> _goals = [_GoalRow()];
 
-  // mental questions
   bool _mentalLoading = false;
   String? _mentalError;
   List<MentalQuestion> _mentalQuestions = [];
-  final Map<String, _MentalAnswerVm> _mentalVm = {}; // questionId -> vm
+  final Map<String, _MentalAnswerVm> _mentalVm = {};
 
-  // categories
   bool _expenseCatsLoading = false;
   List<dm.Category> _expenseCats = [];
 
@@ -87,7 +80,6 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
     for (final h in _habits) {
       h.dispose();
     }
-
     for (final e in _expenses) {
       e.dispose();
     }
@@ -102,15 +94,21 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   }
 
   List<String> _goalLifeBlocks() {
-    final blocks = <String>{
-      ...widget.availableBlocks.map((e) => e.trim().toLowerCase()),
-      'general', // ✅ обязательно
-    }.toList()..removeWhere((e) => e.isEmpty);
+    final seen = <String>{};
+    final blocks = <String>['general'];
 
-    // general всегда последним
-    blocks.remove('general');
-    blocks.sort();
-    blocks.add('general');
+    for (final raw in widget.availableBlocks) {
+      final value = raw.trim();
+      if (value.isEmpty) continue;
+
+      final key = value.toLowerCase();
+      if (key == 'general') continue;
+
+      if (seen.add(key)) {
+        blocks.add(key);
+      }
+    }
+
     return blocks;
   }
 
@@ -143,7 +141,6 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   }
 
   Future<void> _loadHabitsForDay(DateTime day) async {
-    // перед новой загрузкой — освобождаем старые контроллеры
     for (final h in _habits) {
       h.dispose();
     }
@@ -162,7 +159,11 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
 
       final list = habits.map((h) {
         final e = entriesByHabitId[h.id];
-        final vm = _HabitVm(id: h.id, title: h.title, isNegative: h.isNegative);
+        final vm = _HabitVm(
+          id: h.id,
+          title: h.title,
+          isNegative: h.isNegative,
+        );
 
         final done = (e?['done'] as bool?) ?? false;
         final value = (e?['value'] as int?) ?? 0;
@@ -229,7 +230,19 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       initialDate: _date,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (ctx, child) {
+        final t = Theme.of(ctx);
+        return Theme(
+          data: t.copyWith(
+            colorScheme: t.colorScheme.copyWith(
+              primary: t.colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (d != null) {
       final day = DateUtils.dateOnly(d);
       setState(() => _date = day);
@@ -265,7 +278,10 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   void _submit() {
     final mood = _emoji == null
         ? null
-        : _MoodEntry(emoji: _emoji!, note: _moodNote.text.trim());
+        : _MoodEntry(
+            emoji: _emoji!,
+            note: _moodNote.text.trim(),
+          );
 
     final habitEntries = _habits
         .map((h) => h.toEntry())
@@ -274,13 +290,13 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
 
     final expenses = _expenses
         .map((r) => r.toEntry())
-        .where((e) => e != null && e!.amount > 0 && e!.categoryId.isNotEmpty)
+        .where((e) => e != null && e!.amount > 0 && e.categoryId.isNotEmpty)
         .cast<_ExpenseEntry>()
         .toList();
 
     final incomes = _incomes
         .map((r) => r.toEntry())
-        .where((e) => e != null && e!.amount > 0 && e!.categoryId.isNotEmpty)
+        .where((e) => e != null && e!.amount > 0 && e.categoryId.isNotEmpty)
         .cast<_IncomeEntry>()
         .toList();
 
@@ -296,8 +312,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       final vm = _mentalVm[q.id];
       if (vm == null) continue;
 
-      final has =
-          vm.boolVal != null ||
+      final has = vm.boolVal != null ||
           vm.intVal != null ||
           ((vm.textVal ?? '').trim().isNotEmpty);
 
@@ -339,10 +354,10 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          12,
+          16,
           10,
-          12,
-          10 +
+          16,
+          12 +
               MediaQuery.of(context).viewInsets.bottom +
               MediaQuery.of(context).padding.bottom,
         ),
@@ -352,47 +367,22 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // header
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Массовое добавление за день',
-                        style: tt.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: cs.outlineVariant),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_step + 1}/$_stepsCount',
-                        style: tt.bodySmall,
-                      ),
-                    ),
-                  ],
+                _TopHeader(
+                  title: 'Массовое добавление за день',
+                  step: _step + 1,
+                  totalSteps: _stepsCount,
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: Text('Дата: ${_fmtDate(_date)}')),
-                    TextButton.icon(
-                      onPressed: _pickDate,
-                      icon: const Icon(Icons.calendar_month),
-                      label: const Text('Выбрать'),
-                    ),
-                  ],
+                const SizedBox(height: 10),
+                _SubHeader(
+                  dateLabel: _fmtDate(_date),
+                  onPickDate: _pickDate,
                 ),
-                const SizedBox(height: 8),
-
-                // pages
+                const SizedBox(height: 12),
+                _ProgressRail(
+                  currentStep: _step,
+                  totalSteps: _stepsCount,
+                ),
+                const SizedBox(height: 12),
                 Expanded(
                   child: PageView(
                     controller: _pageCtrl,
@@ -405,10 +395,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 10),
-
-                // bottom nav
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -416,7 +403,11 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                         onPressed: canGoBack
                             ? _goPrev
                             : () => Navigator.pop(context),
-                        icon: Icon(canGoBack ? Icons.arrow_back : Icons.close),
+                        icon: Icon(
+                          canGoBack
+                              ? Icons.arrow_back_rounded
+                              : Icons.close_rounded,
+                        ),
                         label: Text(canGoBack ? 'Назад' : 'Отмена'),
                       ),
                     ),
@@ -424,19 +415,22 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: isLast ? _submit : _goNext,
-                        icon: Icon(isLast ? Icons.check : Icons.arrow_forward),
-                        label: Text(isLast ? 'Сохранить всё' : 'Далее'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        icon: Icon(
+                          isLast
+                              ? Icons.check_rounded
+                              : Icons.arrow_forward_rounded,
                         ),
+                        label: Text(isLast ? 'Сохранить всё' : 'Далее'),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   'Пустые строки игнорируются.',
-                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -455,7 +449,8 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       padding: const EdgeInsets.only(bottom: 6),
       children: [
         _SectionCard(
-          title: 'Настроение (необязательно)',
+          title: 'Настроение',
+          subtitle: 'Необязательная запись о том, как прошёл день.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -464,21 +459,21 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                 onSelect: (e) => setState(() => _emoji = e),
                 onClear: () => setState(() => _emoji = null),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               TextField(
                 controller: _moodNote,
                 maxLines: 2,
                 decoration: const InputDecoration(
                   labelText: 'Заметка',
-                  border: OutlineInputBorder(),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         _SectionCard(
-          title: 'Привычки (отметь да/нет и количество)',
+          title: 'Привычки',
+          subtitle: 'Отметь выполнение и при необходимости укажи количество.',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -491,10 +486,10 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-              IconButton(
+              _InlineIconButton(
                 tooltip: 'Обновить',
-                onPressed: () => _loadHabitsForDay(_date),
-                icon: const Icon(Icons.refresh),
+                onTap: () => _loadHabitsForDay(_date),
+                icon: Icons.refresh_rounded,
               ),
             ],
           ),
@@ -512,10 +507,15 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
               if (_habits.isEmpty && !_habitsLoading)
                 Text(
                   'Пока нет привычек. Добавь их в профиле.',
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
               for (final h in _habits) ...[
-                _HabitTile(vm: h, onChanged: () => setState(() {})),
+                _HabitTile(
+                  vm: h,
+                  onChanged: () => setState(() {}),
+                ),
                 const SizedBox(height: 8),
               ],
             ],
@@ -534,6 +534,8 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       children: [
         _SectionCard(
           title: 'Ментальное здоровье',
+          subtitle:
+              'Короткая ежедневная фиксация состояния для дальнейшей аналитики.',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -546,10 +548,10 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-              IconButton(
+              _InlineIconButton(
                 tooltip: 'Обновить',
-                onPressed: () => _loadMentalForDay(_date),
-                icon: const Icon(Icons.refresh),
+                onTap: () => _loadMentalForDay(_date),
+                icon: Icons.refresh_rounded,
               ),
             ],
           ),
@@ -558,7 +560,9 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
             children: [
               Text(
                 'Ответь на несколько вопросов — это поможет отслеживать состояние.',
-                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                style: tt.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 10),
               if (_mentalError != null)
@@ -572,7 +576,9 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
               if (_mentalQuestions.isEmpty && !_mentalLoading)
                 Text(
                   'Пока нет вопросов. Добавь их в таблицу mental_questions.',
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
               for (final q in _mentalQuestions) ...[
                 _MentalQuestionTile(
@@ -595,6 +601,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       children: [
         _SectionCard(
           title: 'Расходы',
+          subtitle: 'Добавь траты за выбранный день.',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -607,25 +614,29 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-              IconButton(
+              _InlineIconButton(
                 tooltip: 'Добавить строку',
-                onPressed: _addExpenseRow,
-                icon: const Icon(Icons.add),
+                onTap: _addExpenseRow,
+                icon: Icons.add_rounded,
               ),
             ],
           ),
           child: Column(
             children: [
               for (int i = 0; i < _expenses.length; i++) ...[
-                _ExpenseRowView(row: _expenses[i], categories: _expenseCats),
+                _ExpenseRowView(
+                  row: _expenses[i],
+                  categories: _expenseCats,
+                ),
                 if (i != _expenses.length - 1) const SizedBox(height: 8),
               ],
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         _SectionCard(
           title: 'Доходы',
+          subtitle: 'Добавь поступления за выбранный день.',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -638,17 +649,20 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-              IconButton(
+              _InlineIconButton(
                 tooltip: 'Добавить строку',
-                onPressed: _addIncomeRow,
-                icon: const Icon(Icons.add),
+                onTap: _addIncomeRow,
+                icon: Icons.add_rounded,
               ),
             ],
           ),
           child: Column(
             children: [
               for (int i = 0; i < _incomes.length; i++) ...[
-                _IncomeRowView(row: _incomes[i], categories: _incomeCats),
+                _IncomeRowView(
+                  row: _incomes[i],
+                  categories: _incomeCats,
+                ),
                 if (i != _incomes.length - 1) const SizedBox(height: 8),
               ],
             ],
@@ -666,10 +680,12 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       children: [
         _SectionCard(
           title: 'Задачи',
-          trailing: IconButton(
+          subtitle:
+              'Зафиксируй, над чем ты работал в этот день, и сколько времени это заняло.',
+          trailing: _InlineIconButton(
             tooltip: 'Добавить строку',
-            onPressed: _addGoalRow,
-            icon: const Icon(Icons.add),
+            onTap: _addGoalRow,
+            icon: Icons.add_rounded,
           ),
           child: Column(
             children: [
@@ -695,10 +711,9 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   }
 }
 
-/// ————— Small helpers —————
-
 class _Debouncer {
   _Debouncer(this.delay);
+
   final Duration delay;
   Timer? _t;
 
@@ -710,42 +725,254 @@ class _Debouncer {
   void dispose() => _t?.cancel();
 }
 
-/// ————— UI helpers —————
+class _TopHeader extends StatelessWidget {
+  final String title;
+  final int step;
+  final int totalSteps;
+
+  const _TopHeader({
+    required this.title,
+    required this.step,
+    required this.totalSteps,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: tt.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+                height: 1.05,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainer,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cs.outlineVariant),
+            ),
+            child: Text(
+              '$step/$totalSteps',
+              style: tt.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubHeader extends StatelessWidget {
+  final String dateLabel;
+  final VoidCallback onPickDate;
+
+  const _SubHeader({
+    required this.dateLabel,
+    required this.onPickDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: tt.bodyMedium?.copyWith(color: cs.onSurface),
+                children: [
+                  TextSpan(
+                    text: 'Дата: ',
+                    style: tt.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  TextSpan(
+                    text: dateLabel,
+                    style: tt.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: onPickDate,
+            icon: const Icon(Icons.calendar_month_rounded),
+            label: const Text('Выбрать'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressRail extends StatelessWidget {
+  final int currentStep;
+  final int totalSteps;
+
+  const _ProgressRail({
+    required this.currentStep,
+    required this.totalSteps,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Row(
+      children: List.generate(totalSteps, (index) {
+        final active = index <= currentStep;
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(
+              right: index == totalSteps - 1 ? 0 : 8,
+            ),
+            height: 6,
+            decoration: BoxDecoration(
+              color: active ? cs.primary : cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _InlineIconButton extends StatelessWidget {
+  final String tooltip;
+  final VoidCallback onTap;
+  final IconData icon;
+
+  const _InlineIconButton({
+    required this.tooltip,
+    required this.onTap,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainer,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: cs.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _SectionCard extends StatelessWidget {
   final String title;
+  final String? subtitle;
   final Widget child;
   final Widget? trailing;
 
-  const _SectionCard({required this.title, required this.child, this.trailing});
+  const _SectionCard({
+    required this.title,
+    required this.child,
+    this.subtitle,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(14),
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment:
+                  subtitle == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text(
-                    title,
-                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: tt.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                if (trailing != null) trailing!,
+                if (trailing != null) ...[
+                  const SizedBox(width: 12),
+                  trailing!,
+                ],
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             child,
           ],
         ),
@@ -781,18 +1008,26 @@ class _EmojiPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
     return Wrap(
-      spacing: 6,
-      runSpacing: 6,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         for (final e in _emojis)
           ChoiceChip(
-            label: Text(e, style: const TextStyle(fontSize: 18)),
+            label: Text(
+              e,
+              style: const TextStyle(fontSize: 18),
+            ),
             selected: initial == e,
             onSelected: (_) => onSelect(e),
           ),
         ActionChip(
-          avatar: Icon(Icons.close, size: 16, color: cs.onSurfaceVariant),
+          avatar: Icon(
+            Icons.close_rounded,
+            size: 16,
+            color: cs.onSurfaceVariant,
+          ),
           label: const Text('Без настроения'),
           onPressed: onClear,
         ),
@@ -800,8 +1035,6 @@ class _EmojiPicker extends StatelessWidget {
     );
   }
 }
-
-/// ————— Habits VM + UI —————
 
 class _HabitVm {
   final String id;
@@ -811,7 +1044,11 @@ class _HabitVm {
   bool done = false;
   final TextEditingController qtyCtrl = TextEditingController();
 
-  _HabitVm({required this.id, required this.title, required this.isNegative});
+  _HabitVm({
+    required this.id,
+    required this.title,
+    required this.isNegative,
+  });
 
   int _parseQty() {
     final raw = qtyCtrl.text.trim();
@@ -823,7 +1060,11 @@ class _HabitVm {
     final qty = _parseQty();
     if (!done && qty <= 0) return null;
     final value = qty > 0 ? qty : (done ? 1 : 0);
-    return _HabitEntry(habitId: id, done: done, value: value);
+    return _HabitEntry(
+      habitId: id,
+      done: done,
+      value: value,
+    );
   }
 
   void dispose() => qtyCtrl.dispose();
@@ -833,7 +1074,10 @@ class _HabitTile extends StatelessWidget {
   final _HabitVm vm;
   final VoidCallback onChanged;
 
-  const _HabitTile({required this.vm, required this.onChanged});
+  const _HabitTile({
+    required this.vm,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -843,10 +1087,11 @@ class _HabitTile extends StatelessWidget {
     final showQty = vm.isNegative || vm.done;
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        color: cs.surfaceContainer,
         border: Border.all(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         children: [
@@ -855,28 +1100,14 @@ class _HabitTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   vm.title,
-                  style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: (vm.isNegative
-                      ? cs.errorContainer
-                      : cs.tertiaryContainer),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  vm.isNegative ? 'Негативная' : 'Позитивная',
-                  style: tt.labelSmall?.copyWith(
-                    color: vm.isNegative
-                        ? cs.onErrorContainer
-                        : cs.onTertiaryContainer,
-                    fontWeight: FontWeight.w700,
+                  style: tt.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              _TypePill(isNegative: vm.isNegative),
+              const SizedBox(width: 10),
               Switch(
                 value: vm.done,
                 onChanged: (v) {
@@ -887,7 +1118,7 @@ class _HabitTile extends StatelessWidget {
             ],
           ),
           if (showQty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -895,18 +1126,19 @@ class _HabitTile extends StatelessWidget {
                     vm.isNegative
                         ? 'Количество (например, сигареты)'
                         : 'Количество (необязательно)',
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 SizedBox(
-                  width: 110,
+                  width: 116,
                   child: TextField(
                     controller: vm.qtyCtrl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Кол-во',
-                      border: OutlineInputBorder(),
                       isDense: true,
                     ),
                     onChanged: (_) => onChanged(),
@@ -921,7 +1153,36 @@ class _HabitTile extends StatelessWidget {
   }
 }
 
-/// ————— Mental tile —————
+class _TypePill extends StatelessWidget {
+  final bool isNegative;
+
+  const _TypePill({required this.isNegative});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final bg = isNegative ? cs.errorContainer : cs.surfaceContainerHigh;
+    final fg = isNegative ? cs.onErrorContainer : cs.onSurface;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Text(
+        isNegative ? 'Негативная' : 'Позитивная',
+        style: tt.labelSmall?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
 
 class _MentalQuestionTile extends StatelessWidget {
   final MentalQuestion q;
@@ -948,7 +1209,10 @@ class _MentalQuestionTile extends StatelessWidget {
             Expanded(
               child: Text(
                 q.text,
-                style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: tt.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
               ),
             ),
             Switch(
@@ -975,14 +1239,19 @@ class _MentalQuestionTile extends StatelessWidget {
           children: [
             Text(
               q.text,
-              style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Text(
                   '$min',
-                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
                 Expanded(
                   child: Slider(
@@ -999,21 +1268,25 @@ class _MentalQuestionTile extends StatelessWidget {
                 ),
                 Text(
                   '$max',
-                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
+                    color: cs.surfaceContainerHigh,
                     border: Border.all(color: cs.outlineVariant),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     current.toString(),
-                    style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+                    style: tt.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
                   ),
                 ),
               ],
@@ -1028,15 +1301,17 @@ class _MentalQuestionTile extends StatelessWidget {
           children: [
             Text(
               q.text,
-              style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             TextFormField(
               initialValue: vm.textVal ?? '',
               maxLines: 2,
               decoration: const InputDecoration(
                 labelText: 'Ответ',
-                border: OutlineInputBorder(),
               ),
               onChanged: (v) {
                 vm.textVal = v;
@@ -1049,17 +1324,16 @@ class _MentalQuestionTile extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        color: cs.surfaceContainer,
         border: Border.all(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: body,
     );
   }
 }
-
-/// ————— Expense row —————
 
 class _ExpenseRow {
   final _amountCtrl = TextEditingController();
@@ -1071,7 +1345,11 @@ class _ExpenseRow {
     final categoryId = (_categoryId ?? '').trim();
     final note = _noteCtrl.text.trim();
     if (amount <= 0 || categoryId.isEmpty) return null;
-    return _ExpenseEntry(amount: amount, categoryId: categoryId, note: note);
+    return _ExpenseEntry(
+      amount: amount,
+      categoryId: categoryId,
+      note: note,
+    );
   }
 
   void dispose() {
@@ -1084,7 +1362,10 @@ class _ExpenseRowView extends StatefulWidget {
   final _ExpenseRow row;
   final List<dm.Category> categories;
 
-  const _ExpenseRowView({required this.row, required this.categories});
+  const _ExpenseRowView({
+    required this.row,
+    required this.categories,
+  });
 
   @override
   State<_ExpenseRowView> createState() => _ExpenseRowViewState();
@@ -1141,127 +1422,136 @@ class _ExpenseRowViewState extends State<_ExpenseRowView> {
   Widget build(BuildContext context) {
     final cats = widget.categories;
     final hasCats = cats.isNotEmpty;
+    final cs = Theme.of(context).colorScheme;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 640;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 640;
 
-        final amountField = SizedBox(
-          width: 110,
-          child: TextField(
-            controller: widget.row._amountCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Сумма',
-              prefixText: '€',
-              border: OutlineInputBorder(),
-              isDense: true,
+          final amountField = SizedBox(
+            width: 116,
+            child: TextField(
+              controller: widget.row._amountCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Сумма',
+                prefixText: '€',
+                isDense: true,
+              ),
             ),
-          ),
-        );
+          );
 
-        final categoryField = DropdownButtonFormField<String>(
-          value: widget.row._categoryId,
-          isExpanded: true,
-          items: hasCats
-              ? cats
+          final categoryField = DropdownButtonFormField<String>(
+            value: widget.row._categoryId,
+            isExpanded: true,
+            items: hasCats
+                ? cats
                     .map(
                       (c) => DropdownMenuItem(
                         value: c.id,
-                        child: Text(c.name, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          c.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     )
                     .toList()
-              : const [],
-          onChanged: hasCats
-              ? (v) => setState(() => widget.row._categoryId = v)
-              : null,
-          decoration: InputDecoration(
-            labelText: 'Категория',
-            border: const OutlineInputBorder(),
-            isDense: true,
-            hintText: hasCats ? null : 'Нет категорий',
-          ),
-        );
+                : const [],
+            onChanged: hasCats
+                ? (v) => setState(() => widget.row._categoryId = v)
+                : null,
+            decoration: InputDecoration(
+              labelText: 'Категория',
+              isDense: true,
+              hintText: hasCats ? null : 'Нет категорий',
+            ),
+          );
 
-        final noteField = Autocomplete<String>(
-          optionsBuilder: (TextEditingValue v) {
-            final q = v.text.trim();
-            if (q.isEmpty) return const Iterable<String>.empty();
-            return _noteSuggestions.take(8);
-          },
-          onSelected: (val) {
-            widget.row._noteCtrl.text = val;
-            widget.row._noteCtrl.selection = TextSelection.fromPosition(
-              TextPosition(offset: val.length),
-            );
-          },
-          fieldViewBuilder: (context, textCtrl, focusNode, onFieldSubmitted) {
-            if (textCtrl.text != widget.row._noteCtrl.text) {
-              textCtrl.text = widget.row._noteCtrl.text;
-              textCtrl.selection = widget.row._noteCtrl.selection;
-            }
+          final noteField = Autocomplete<String>(
+            optionsBuilder: (TextEditingValue v) {
+              final q = v.text.trim();
+              if (q.isEmpty) return const Iterable<String>.empty();
+              return _noteSuggestions.take(8);
+            },
+            onSelected: (val) {
+              widget.row._noteCtrl.text = val;
+              widget.row._noteCtrl.selection = TextSelection.fromPosition(
+                TextPosition(offset: val.length),
+              );
+            },
+            fieldViewBuilder:
+                (context, textCtrl, focusNode, onFieldSubmitted) {
+              if (textCtrl.text != widget.row._noteCtrl.text) {
+                textCtrl.text = widget.row._noteCtrl.text;
+                textCtrl.selection = widget.row._noteCtrl.selection;
+              }
 
-            return TextField(
-              controller: textCtrl,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                labelText: 'Заметка',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: _noteSugLoading
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : (_noteSuggestions.isNotEmpty
-                          ? const Icon(Icons.history)
+              return TextField(
+                controller: textCtrl,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  labelText: 'Заметка',
+                  isDense: true,
+                  suffixIcon: _noteSugLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : (_noteSuggestions.isNotEmpty
+                          ? const Icon(Icons.history_rounded)
                           : null),
-              ),
-              onChanged: (v) {
-                widget.row._noteCtrl.value = textCtrl.value;
-                _debouncer.run(() => _searchNotes(v));
-              },
-              onSubmitted: (_) => onFieldSubmitted(),
-            );
-          },
-        );
+                ),
+                onChanged: (v) {
+                  widget.row._noteCtrl.value = textCtrl.value;
+                  _debouncer.run(() => _searchNotes(v));
+                },
+                onSubmitted: (_) => onFieldSubmitted(),
+              );
+            },
+          );
 
-        if (narrow) {
-          return Column(
+          if (narrow) {
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    amountField,
+                    const SizedBox(width: 8),
+                    Expanded(child: categoryField),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(width: double.infinity, child: noteField),
+              ],
+            );
+          }
+
+          return Row(
             children: [
-              Row(
-                children: [
-                  amountField,
-                  const SizedBox(width: 8),
-                  Expanded(child: categoryField),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(width: double.infinity, child: noteField),
+              amountField,
+              const SizedBox(width: 8),
+              Expanded(flex: 2, child: categoryField),
+              const SizedBox(width: 8),
+              Expanded(flex: 3, child: noteField),
             ],
           );
-        }
-
-        return Row(
-          children: [
-            amountField,
-            const SizedBox(width: 8),
-            Expanded(flex: 2, child: categoryField),
-            const SizedBox(width: 8),
-            Expanded(flex: 3, child: noteField),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 }
-
-/// ————— Income row —————
 
 class _IncomeRow {
   final _amountCtrl = TextEditingController();
@@ -1273,7 +1563,11 @@ class _IncomeRow {
     final categoryId = (_categoryId ?? '').trim();
     final note = _noteCtrl.text.trim();
     if (amount <= 0 || categoryId.isEmpty) return null;
-    return _IncomeEntry(amount: amount, categoryId: categoryId, note: note);
+    return _IncomeEntry(
+      amount: amount,
+      categoryId: categoryId,
+      note: note,
+    );
   }
 
   void dispose() {
@@ -1286,7 +1580,10 @@ class _IncomeRowView extends StatefulWidget {
   final _IncomeRow row;
   final List<dm.Category> categories;
 
-  const _IncomeRowView({required this.row, required this.categories});
+  const _IncomeRowView({
+    required this.row,
+    required this.categories,
+  });
 
   @override
   State<_IncomeRowView> createState() => _IncomeRowViewState();
@@ -1343,127 +1640,136 @@ class _IncomeRowViewState extends State<_IncomeRowView> {
   Widget build(BuildContext context) {
     final cats = widget.categories;
     final hasCats = cats.isNotEmpty;
+    final cs = Theme.of(context).colorScheme;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 640;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 640;
 
-        final amountField = SizedBox(
-          width: 110,
-          child: TextField(
-            controller: widget.row._amountCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Сумма',
-              prefixText: '€',
-              border: OutlineInputBorder(),
-              isDense: true,
+          final amountField = SizedBox(
+            width: 116,
+            child: TextField(
+              controller: widget.row._amountCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Сумма',
+                prefixText: '€',
+                isDense: true,
+              ),
             ),
-          ),
-        );
+          );
 
-        final categoryField = DropdownButtonFormField<String>(
-          value: widget.row._categoryId,
-          isExpanded: true,
-          items: hasCats
-              ? cats
+          final categoryField = DropdownButtonFormField<String>(
+            value: widget.row._categoryId,
+            isExpanded: true,
+            items: hasCats
+                ? cats
                     .map(
                       (c) => DropdownMenuItem(
                         value: c.id,
-                        child: Text(c.name, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          c.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     )
                     .toList()
-              : const [],
-          onChanged: hasCats
-              ? (v) => setState(() => widget.row._categoryId = v)
-              : null,
-          decoration: InputDecoration(
-            labelText: 'Категория',
-            border: const OutlineInputBorder(),
-            isDense: true,
-            hintText: hasCats ? null : 'Нет категорий',
-          ),
-        );
+                : const [],
+            onChanged: hasCats
+                ? (v) => setState(() => widget.row._categoryId = v)
+                : null,
+            decoration: InputDecoration(
+              labelText: 'Категория',
+              isDense: true,
+              hintText: hasCats ? null : 'Нет категорий',
+            ),
+          );
 
-        final noteField = Autocomplete<String>(
-          optionsBuilder: (TextEditingValue v) {
-            final q = v.text.trim();
-            if (q.isEmpty) return const Iterable<String>.empty();
-            return _noteSuggestions.take(8);
-          },
-          onSelected: (val) {
-            widget.row._noteCtrl.text = val;
-            widget.row._noteCtrl.selection = TextSelection.fromPosition(
-              TextPosition(offset: val.length),
-            );
-          },
-          fieldViewBuilder: (context, textCtrl, focusNode, onFieldSubmitted) {
-            if (textCtrl.text != widget.row._noteCtrl.text) {
-              textCtrl.text = widget.row._noteCtrl.text;
-              textCtrl.selection = widget.row._noteCtrl.selection;
-            }
+          final noteField = Autocomplete<String>(
+            optionsBuilder: (TextEditingValue v) {
+              final q = v.text.trim();
+              if (q.isEmpty) return const Iterable<String>.empty();
+              return _noteSuggestions.take(8);
+            },
+            onSelected: (val) {
+              widget.row._noteCtrl.text = val;
+              widget.row._noteCtrl.selection = TextSelection.fromPosition(
+                TextPosition(offset: val.length),
+              );
+            },
+            fieldViewBuilder:
+                (context, textCtrl, focusNode, onFieldSubmitted) {
+              if (textCtrl.text != widget.row._noteCtrl.text) {
+                textCtrl.text = widget.row._noteCtrl.text;
+                textCtrl.selection = widget.row._noteCtrl.selection;
+              }
 
-            return TextField(
-              controller: textCtrl,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                labelText: 'Заметка',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: _noteSugLoading
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : (_noteSuggestions.isNotEmpty
-                          ? const Icon(Icons.history)
+              return TextField(
+                controller: textCtrl,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  labelText: 'Заметка',
+                  isDense: true,
+                  suffixIcon: _noteSugLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : (_noteSuggestions.isNotEmpty
+                          ? const Icon(Icons.history_rounded)
                           : null),
-              ),
-              onChanged: (v) {
-                widget.row._noteCtrl.value = textCtrl.value;
-                _debouncer.run(() => _searchNotes(v));
-              },
-              onSubmitted: (_) => onFieldSubmitted(),
-            );
-          },
-        );
+                ),
+                onChanged: (v) {
+                  widget.row._noteCtrl.value = textCtrl.value;
+                  _debouncer.run(() => _searchNotes(v));
+                },
+                onSubmitted: (_) => onFieldSubmitted(),
+              );
+            },
+          );
 
-        if (narrow) {
-          return Column(
+          if (narrow) {
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    amountField,
+                    const SizedBox(width: 8),
+                    Expanded(child: categoryField),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(width: double.infinity, child: noteField),
+              ],
+            );
+          }
+
+          return Row(
             children: [
-              Row(
-                children: [
-                  amountField,
-                  const SizedBox(width: 8),
-                  Expanded(child: categoryField),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(width: double.infinity, child: noteField),
+              amountField,
+              const SizedBox(width: 8),
+              Expanded(flex: 2, child: categoryField),
+              const SizedBox(width: 8),
+              Expanded(flex: 3, child: noteField),
             ],
           );
-        }
-
-        return Row(
-          children: [
-            amountField,
-            const SizedBox(width: 8),
-            Expanded(flex: 2, child: categoryField),
-            const SizedBox(width: 8),
-            Expanded(flex: 3, child: noteField),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 }
-
-/// ————— Goal row —————
 
 class _GoalRow {
   final _titleCtrl = TextEditingController();
@@ -1557,6 +1863,17 @@ class _GoalRowViewState extends State<_GoalRowView> {
     final t = await showTimePicker(
       context: context,
       initialTime: widget.row._time ?? const TimeOfDay(hour: 9, minute: 0),
+      builder: (ctx, child) {
+        final t = Theme.of(ctx);
+        return Theme(
+          data: t.copyWith(
+            colorScheme: t.colorScheme.copyWith(
+              primary: t.colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (t != null) setState(() => widget.row._time = t);
   }
@@ -1576,12 +1893,15 @@ class _GoalRowViewState extends State<_GoalRowView> {
           children: [
             for (final e in widget.emotions)
               ChoiceChip(
-                label: Text(e, style: const TextStyle(fontSize: 20)),
+                label: Text(
+                  e,
+                  style: const TextStyle(fontSize: 20),
+                ),
                 selected: widget.row._emotion == e,
                 onSelected: (_) => Navigator.pop(ctx, e),
               ),
             ActionChip(
-              avatar: const Icon(Icons.close, size: 18),
+              avatar: const Icon(Icons.close_rounded, size: 18),
               label: const Text('Без эмоции'),
               onPressed: () => Navigator.pop(ctx, ''),
             ),
@@ -1598,7 +1918,6 @@ class _GoalRowViewState extends State<_GoalRowView> {
     final key = b.trim().toLowerCase();
     if (key == 'general') return 'Общее';
 
-    // ⚠️ предполагаем, что LifeBlock enum + getBlockLabel доступны из твоих файлов
     final lb = LifeBlock.values.firstWhere(
       (e) => e.name == key,
       orElse: () => LifeBlock.health,
@@ -1608,140 +1927,167 @@ class _GoalRowViewState extends State<_GoalRowView> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final timeLabel = widget.row._time == null
         ? 'Время'
         : widget.row._time!.format(context);
     final emotionLabel = widget.row._emotion ?? 'Эмоция';
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 720;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 720;
 
-        final titleField = Autocomplete<String>(
-          optionsBuilder: (TextEditingValue v) {
-            final q = v.text.trim();
-            if (q.isEmpty) return const Iterable<String>.empty();
-            return _titleSuggestions.take(8);
-          },
-          onSelected: (val) {
-            widget.row._titleCtrl.text = val;
-            widget.row._titleCtrl.selection = TextSelection.fromPosition(
-              TextPosition(offset: val.length),
-            );
-          },
-          fieldViewBuilder: (context, textCtrl, focusNode, onFieldSubmitted) {
-            if (textCtrl.text != widget.row._titleCtrl.text) {
-              textCtrl.text = widget.row._titleCtrl.text;
-              textCtrl.selection = widget.row._titleCtrl.selection;
-            }
+          final titleField = Autocomplete<String>(
+            optionsBuilder: (TextEditingValue v) {
+              final q = v.text.trim();
+              if (q.isEmpty) return const Iterable<String>.empty();
+              return _titleSuggestions.take(8);
+            },
+            onSelected: (val) {
+              widget.row._titleCtrl.text = val;
+              widget.row._titleCtrl.selection = TextSelection.fromPosition(
+                TextPosition(offset: val.length),
+              );
+            },
+            fieldViewBuilder:
+                (context, textCtrl, focusNode, onFieldSubmitted) {
+              if (textCtrl.text != widget.row._titleCtrl.text) {
+                textCtrl.text = widget.row._titleCtrl.text;
+                textCtrl.selection = widget.row._titleCtrl.selection;
+              }
 
-            return TextField(
-              controller: textCtrl,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                labelText: 'Название задачи',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: _titleSugLoading
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : (_titleSuggestions.isNotEmpty
-                          ? const Icon(Icons.history)
-                          : null),
-              ),
-              onChanged: (v) {
-                widget.row._titleCtrl.value = textCtrl.value;
-                _debouncer.run(() => _searchTitles(v));
-              },
-              onSubmitted: (_) => onFieldSubmitted(),
-            );
-          },
-        );
-
-        final titleHoursTime = Row(
-          children: [
-            Expanded(flex: 2, child: titleField),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 96,
-              child: TextField(
-                controller: widget.row._hoursCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Часы',
-                  border: OutlineInputBorder(),
+              return TextField(
+                controller: textCtrl,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  labelText: 'Название задачи',
                   isDense: true,
+                  suffixIcon: _titleSugLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : (_titleSuggestions.isNotEmpty
+                          ? const Icon(Icons.history_rounded)
+                          : null),
+                ),
+                onChanged: (v) {
+                  widget.row._titleCtrl.value = textCtrl.value;
+                  _debouncer.run(() => _searchTitles(v));
+                },
+                onSubmitted: (_) => onFieldSubmitted(),
+              );
+            },
+          );
+
+          final titleHoursTime = Row(
+            children: [
+              Expanded(flex: 2, child: titleField),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 96,
+                child: TextField(
+                  controller: widget.row._hoursCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Часы',
+                    isDense: true,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 120,
-              child: OutlinedButton.icon(
-                onPressed: _pickTime,
-                icon: const Icon(Icons.access_time),
-                label: Text(timeLabel, overflow: TextOverflow.ellipsis),
-              ),
-            ),
-          ],
-        );
-
-        final categoryField = DropdownButtonFormField<String>(
-          value: widget.row._lifeBlock,
-          isExpanded: true,
-          items: widget.lifeBlocks
-              .map(
-                (b) => DropdownMenuItem(
-                  value: b,
-                  child: Text(
-                    _labelForBlock(b),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 128,
+                child: OutlinedButton.icon(
+                  onPressed: _pickTime,
+                  icon: const Icon(Icons.access_time_rounded),
+                  label: Text(
+                    timeLabel,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              )
-              .toList(),
-          onChanged: (v) =>
-              setState(() => widget.row._lifeBlock = (v ?? 'general')),
-          decoration: const InputDecoration(
-            labelText: 'Категория',
-            border: OutlineInputBorder(),
-            isDense: true,
-          ),
-        );
+              ),
+            ],
+          );
 
-        final emotionBtn = SizedBox(
-          width: narrow ? double.infinity : 140,
-          child: OutlinedButton.icon(
-            onPressed: _pickEmotion,
-            icon: const Icon(Icons.mood),
-            label: Text(emotionLabel, overflow: TextOverflow.ellipsis),
-          ),
-        );
+          final categoryField = DropdownButtonFormField<String>(
+            value: widget.row._lifeBlock,
+            isExpanded: true,
+            items: widget.lifeBlocks
+                .map(
+                  (b) => DropdownMenuItem(
+                    value: b,
+                    child: Text(
+                      _labelForBlock(b),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) =>
+                setState(() => widget.row._lifeBlock = (v ?? 'general')),
+            decoration: const InputDecoration(
+              labelText: 'Категория',
+              isDense: true,
+            ),
+          );
 
-        final importanceField = DropdownButtonFormField<int>(
-          value: widget.row._importance,
-          items: const [
-            DropdownMenuItem(value: 1, child: Text('1')),
-            DropdownMenuItem(value: 2, child: Text('2')),
-            DropdownMenuItem(value: 3, child: Text('3')),
-          ],
-          onChanged: (v) => setState(() => widget.row._importance = v ?? 1),
-          decoration: const InputDecoration(
-            labelText: 'Важность',
-            border: OutlineInputBorder(),
-            isDense: true,
-          ),
-        );
+          final emotionBtn = SizedBox(
+            width: narrow ? double.infinity : 148,
+            child: OutlinedButton.icon(
+              onPressed: _pickEmotion,
+              icon: const Icon(Icons.mood_rounded),
+              label: Text(
+                emotionLabel,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          );
 
-        if (narrow) {
+          final importanceField = DropdownButtonFormField<int>(
+            value: widget.row._importance,
+            items: const [
+              DropdownMenuItem(value: 1, child: Text('1')),
+              DropdownMenuItem(value: 2, child: Text('2')),
+              DropdownMenuItem(value: 3, child: Text('3')),
+            ],
+            onChanged: (v) => setState(() => widget.row._importance = v ?? 1),
+            decoration: const InputDecoration(
+              labelText: 'Важность',
+              isDense: true,
+            ),
+          );
+
+          if (narrow) {
+            return Column(
+              children: [
+                titleHoursTime,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(child: categoryField),
+                    const SizedBox(width: 8),
+                    SizedBox(width: 140, child: importanceField),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                emotionBtn,
+              ],
+            );
+          }
+
           return Column(
             children: [
               titleHoursTime,
@@ -1750,36 +2096,18 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 children: [
                   Expanded(child: categoryField),
                   const SizedBox(width: 8),
-                  SizedBox(width: 140, child: importanceField),
+                  emotionBtn,
+                  const SizedBox(width: 8),
+                  SizedBox(width: 120, child: importanceField),
                 ],
               ),
-              const SizedBox(height: 8),
-              emotionBtn,
             ],
           );
-        }
-
-        return Column(
-          children: [
-            titleHoursTime,
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(child: categoryField),
-                const SizedBox(width: 8),
-                emotionBtn,
-                const SizedBox(width: 8),
-                SizedBox(width: 120, child: importanceField),
-              ],
-            ),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 }
-
-/// ————— Result —————
 
 class MassDailyEntryResult {
   final DateTime date;
@@ -1805,7 +2133,10 @@ class _MoodEntry {
   final String emoji;
   final String note;
 
-  _MoodEntry({required this.emoji, required this.note});
+  _MoodEntry({
+    required this.emoji,
+    required this.note,
+  });
 }
 
 class _HabitEntry {
@@ -1813,7 +2144,11 @@ class _HabitEntry {
   final bool done;
   final int value;
 
-  _HabitEntry({required this.habitId, required this.done, required this.value});
+  _HabitEntry({
+    required this.habitId,
+    required this.done,
+    required this.value,
+  });
 }
 
 class _ExpenseEntry {
@@ -1845,7 +2180,11 @@ class _MentalAnswerVm {
   int? intVal;
   String? textVal;
 
-  _MentalAnswerVm({this.boolVal, this.intVal, this.textVal});
+  _MentalAnswerVm({
+    this.boolVal,
+    this.intVal,
+    this.textVal,
+  });
 }
 
 class _MentalAnswerEntry {
@@ -1866,7 +2205,6 @@ class _GoalEntry {
   final String title;
   final double hours;
   final TimeOfDay? startTime;
-
   final String lifeBlock;
   final String? emotion;
   final int importance;

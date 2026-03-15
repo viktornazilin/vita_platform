@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-
+import '../models/user_goal.dart';
 import '../models/life_block.dart';
 import '../services/user_service.dart';
 

@@ -5,16 +5,13 @@ class ThemeController extends ChangeNotifier {
   static const _kSeedKey = 'app_seed_color';
   static const _kModeKey = 'app_theme_mode';
 
-  /// Brand palette (from your reference)
-  static const Color kBrandDeepBlue = Color(0xFF004A98); // background
-  static const Color kBrandBlue = Color(0xFF005DBF); // primary
-  static const Color kBrandAccent = Color(0xFF42B8FD); // cyan-blue accent
+  /// Core brand palette
+  static const Color kBrandDeepBlue = Color(0xFF004A98);
+  static const Color kBrandBlue = Color(0xFF005DBF);
+  static const Color kBrandAccent = Color(0xFF42B8FD);
   static const Color kWhite = Color(0xFFFFFFFF);
 
-  // Default seed = brand blue
   Color _seed = kBrandBlue;
-
-  // Theme mode
   ThemeMode _mode = ThemeMode.system;
 
   Color get seedColor => _seed;
@@ -24,70 +21,61 @@ class ThemeController extends ChangeNotifier {
   ThemeData get darkTheme => _buildTheme(brightness: Brightness.dark);
 
   ThemeData _buildTheme({required Brightness brightness}) {
-    // Base scheme from seed, then we "lock" premium surfaces for contrast
     var scheme = ColorScheme.fromSeed(
       seedColor: _seed,
       brightness: brightness,
     );
 
     if (brightness == Brightness.dark) {
-      // ✅ Dense navy dark theme (high contrast, premium)
+      // New direction:
+      // not "midnight glass app", but cleaner corporate blue interface.
       scheme = scheme.copyWith(
-        // Brand
-        primary: kBrandAccent, // accent as primary highlight in dark
-        secondary: kBrandAccent,
-        tertiary: kBrandBlue,
+        primary: kBrandAccent,
+        secondary: const Color(0xFF8ED8FF),
+        tertiary: const Color(0xFFB9E7FF),
 
-        // Surfaces (deep navy, not gray)
-        surface: const Color(0xFF06162D),
-        surfaceContainerLowest: const Color(0xFF040F20),
-        surfaceContainerLow: const Color(0xFF071E3E),
-        surfaceContainer: const Color(0xFF082247),
-        surfaceContainerHigh: const Color(0xFF0A2854),
-        surfaceContainerHighest: const Color(0xFF0D2F60),
+        surface: const Color(0xFF0057B8),
+        surfaceContainerLowest: const Color(0xFF004585),
+        surfaceContainerLow: const Color(0xFF004F9E),
+        surfaceContainer: const Color(0xFF0057B8),
+        surfaceContainerHigh: const Color(0xFF0C63C4),
+        surfaceContainerHighest: const Color(0xFF1A6FD0),
 
-        // Text colors (readability)
-        onSurface: const Color(0xFFEAF3FF),
-        onSurfaceVariant: const Color(0xFFB7C8E6),
+        background: const Color(0xFF0057B8),
+        onBackground: const Color(0xFFF7FAFF),
 
-        // Outlines
-        outline: const Color(0xFF1E3B6A),
-        outlineVariant: const Color(0xFF152E55),
+        onSurface: const Color(0xFFF7FAFF),
+        onSurfaceVariant: const Color(0xFFD7E6FA),
 
-        // Background (scaffold uses surface anyway, but keep coherent)
-        background: const Color(0xFF06162D),
-        onBackground: const Color(0xFFEAF3FF),
+        outline: const Color(0x66FFFFFF),
+        outlineVariant: const Color(0x33FFFFFF),
       );
     } else {
-      // ✅ Light theme with slightly blue-tinted surfaces (no pure white glare)
       scheme = scheme.copyWith(
-        // Brand
         primary: kBrandBlue,
         secondary: kBrandAccent,
         tertiary: kBrandDeepBlue,
 
-        // Surfaces (dense but light)
-        surface: const Color(0xFFF2F7FF),
+        surface: const Color(0xFFF5F9FF),
         surfaceContainerLowest: const Color(0xFFFFFFFF),
-        surfaceContainerLow: const Color(0xFFF6FAFF),
-        surfaceContainer: const Color(0xFFEAF2FF),
-        surfaceContainerHigh: const Color(0xFFE2EEFF),
-        surfaceContainerHighest: const Color(0xFFDCE9FF),
+        surfaceContainerLow: const Color(0xFFF0F6FF),
+        surfaceContainer: const Color(0xFFE8F1FF),
+        surfaceContainerHigh: const Color(0xFFDDEAFF),
+        surfaceContainerHighest: const Color(0xFFD2E3FF),
 
-        // Text colors (high contrast)
-        onSurface: const Color(0xFF0A1B33),
-        onSurfaceVariant: const Color(0xFF3A5172),
+        background: const Color(0xFFF5F9FF),
+        onBackground: const Color(0xFF0D2342),
 
-        // Outlines
-        outline: const Color(0xFFC4D7F5),
-        outlineVariant: const Color(0xFFD7E5FA),
+        onSurface: const Color(0xFF0D2342),
+        onSurfaceVariant: const Color(0xFF49627F),
 
-        background: const Color(0xFFF2F7FF),
-        onBackground: const Color(0xFF0A1B33),
+        outline: const Color(0xFFB8CCE9),
+        outlineVariant: const Color(0xFFD3E0F3),
       );
     }
 
-    final radius = 18.0;
+    const fieldRadius = 18.0;
+    const cardRadius = 22.0;
 
     final base = ThemeData(
       useMaterial3: true,
@@ -96,31 +84,100 @@ class ThemeController extends ChangeNotifier {
       scaffoldBackgroundColor: scheme.surface,
     );
 
-    return base.copyWith(
-      // ✅ Readability across the app
-      textTheme: base.textTheme.apply(
-        bodyColor: scheme.onSurface,
-        displayColor: scheme.onSurface,
+    final textTheme = base.textTheme.copyWith(
+      displayLarge: base.textTheme.displayLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.00,
+        color: scheme.onSurface,
+        letterSpacing: -1.2,
       ),
+      displayMedium: base.textTheme.displayMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.02,
+        color: scheme.onSurface,
+        letterSpacing: -0.8,
+      ),
+      headlineLarge: base.textTheme.headlineLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.08,
+        color: scheme.onSurface,
+        letterSpacing: -0.4,
+      ),
+      headlineMedium: base.textTheme.headlineMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.10,
+        color: scheme.onSurface,
+      ),
+      titleLarge: base.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+        height: 1.15,
+        color: scheme.onSurface,
+      ),
+      titleMedium: base.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        height: 1.20,
+        color: scheme.onSurface,
+      ),
+      titleSmall: base.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: scheme.onSurface,
+      ),
+      bodyLarge: base.textTheme.bodyLarge?.copyWith(
+        fontWeight: FontWeight.w400,
+        height: 1.45,
+        color: scheme.onSurface,
+      ),
+      bodyMedium: base.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        color: scheme.onSurface,
+      ),
+      bodySmall: base.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w400,
+        height: 1.45,
+        color: scheme.onSurfaceVariant,
+      ),
+      labelLarge: base.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+        height: 1.15,
+        color: scheme.onSurface,
+      ),
+      labelMedium: base.textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.w500,
+        color: scheme.onSurfaceVariant,
+      ),
+      labelSmall: base.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w500,
+        color: scheme.onSurfaceVariant,
+      ),
+    );
+
+    final filledBg = brightness == Brightness.dark
+        ? scheme.surfaceContainerHigh
+        : scheme.surfaceContainerHighest;
+
+    return base.copyWith(
+      textTheme: textTheme,
+      primaryTextTheme: textTheme,
       iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
 
-      // ✅ Web-fix: disable ink splash/hover highlight (clean premium look)
       splashFactory: NoSplash.splashFactory,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       hoverColor: Colors.transparent,
       focusColor: Colors.transparent,
 
-      // Cards
       cardTheme: CardThemeData(
         elevation: 0,
-        color: scheme.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: scheme.outline.withOpacity(0.22)),
-        ),
+        color: brightness == Brightness.dark
+            ? scheme.surfaceContainerLow
+            : scheme.surfaceContainerLowest,
         margin: EdgeInsets.zero,
         surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(cardRadius),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
       ),
 
       appBarTheme: AppBarTheme(
@@ -129,126 +186,181 @@ class ThemeController extends ChangeNotifier {
         backgroundColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: base.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w800,
+        centerTitle: true,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
           color: scheme.onSurface,
         ),
         iconTheme: IconThemeData(color: scheme.onSurface),
       ),
 
-      // Inputs
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        // subtle transparency but keep contrast
-        fillColor: (brightness == Brightness.dark)
-            ? scheme.surfaceContainerHigh.withOpacity(0.72)
-            : scheme.surfaceContainerHighest.withOpacity(0.95),
+        fillColor: filledBg,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        labelStyle: TextStyle(
+          color: scheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+        ),
+        hintStyle: TextStyle(
+          color: scheme.onSurfaceVariant.withOpacity(0.82),
+          fontWeight: FontWeight.w400,
+        ),
+        prefixIconColor: scheme.onSurfaceVariant,
+        suffixIconColor: scheme.onSurfaceVariant,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: scheme.outline.withOpacity(0.22)),
+          borderRadius: BorderRadius.circular(fieldRadius),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: scheme.outline.withOpacity(0.18)),
+          borderRadius: BorderRadius.circular(fieldRadius),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.circular(fieldRadius),
           borderSide: BorderSide(
-            color: scheme.primary.withOpacity(0.85),
+            color: scheme.primary,
             width: 1.5,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(fieldRadius),
+          borderSide: BorderSide(
+            color: base.colorScheme.error,
+            width: 1.2,
+          ),
         ),
-        labelStyle: TextStyle(color: scheme.onSurface.withOpacity(0.76)),
-        hintStyle: TextStyle(color: scheme.onSurface.withOpacity(0.50)),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(fieldRadius),
+          borderSide: BorderSide(
+            color: base.colorScheme.error,
+            width: 1.5,
+          ),
+        ),
       ),
 
-      // Buttons
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          elevation: 0,
+          backgroundColor: brightness == Brightness.dark
+              ? scheme.surfaceContainerHighest
+              : scheme.primary,
+          foregroundColor: scheme.onSurface,
+          disabledBackgroundColor: scheme.surfaceContainerHigh,
+          disabledForegroundColor: scheme.onSurfaceVariant,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          textStyle: base.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          foregroundColor: scheme.onSurface,
+          side: BorderSide(color: scheme.outline),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
-          side: BorderSide(color: scheme.outline.withOpacity(0.28)),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          textStyle: base.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
+
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
+          foregroundColor: scheme.onSurface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: base.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
 
-      // Bottom sheets
-      bottomSheetTheme: const BottomSheetThemeData(
+      bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
         modalBackgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         showDragHandle: false,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
 
-      // Dialogs
       dialogTheme: DialogThemeData(
-        backgroundColor: scheme.surfaceContainerHigh,
+        backgroundColor: brightness == Brightness.dark
+            ? scheme.surfaceContainerLow
+            : scheme.surfaceContainerLowest,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        titleTextStyle: base.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w800,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
           color: scheme.onSurface,
         ),
-        contentTextStyle: base.textTheme.bodyMedium?.copyWith(
-          color: scheme.onSurface.withOpacity(0.92),
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: scheme.onSurface,
         ),
       ),
 
-      // Menus
       menuTheme: MenuThemeData(
         style: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerHigh),
+          backgroundColor: WidgetStatePropertyAll(
+            brightness == Brightness.dark
+                ? scheme.surfaceContainerLow
+                : scheme.surfaceContainerLowest,
+          ),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
           shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          ),
-          side: WidgetStatePropertyAll(
-            BorderSide(color: scheme.outline.withOpacity(0.22)),
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: BorderSide(color: scheme.outlineVariant),
+            ),
           ),
         ),
-      ),
-
-      sliderTheme: const SliderThemeData(
-        trackHeight: 3.5,
-        overlayShape: RoundSliderOverlayShape(overlayRadius: 18),
-        thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
       ),
 
       dividerTheme: DividerThemeData(
-        color: scheme.outlineVariant.withOpacity(0.45),
+        color: scheme.outlineVariant,
         thickness: 1,
+        space: 1,
+      ),
+
+      sliderTheme: SliderThemeData(
+        trackHeight: 3.5,
+        activeTrackColor: scheme.primary,
+        inactiveTrackColor: scheme.outlineVariant,
+        thumbColor: scheme.onSurface,
+        overlayColor: scheme.primary.withOpacity(0.12),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+      ),
+
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: brightness == Brightness.dark
+            ? scheme.surfaceContainerLow
+            : scheme.surfaceContainerHighest,
+        selectedColor: scheme.surfaceContainerHighest,
+        disabledColor: scheme.surfaceContainerLow,
+        labelStyle: textTheme.labelLarge?.copyWith(
+          color: scheme.onSurface,
+        ),
+        side: BorderSide(color: scheme.outlineVariant),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+        ),
       ),
     );
   }

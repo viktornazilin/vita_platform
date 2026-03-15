@@ -125,38 +125,6 @@ class _ExpensesView extends StatelessWidget {
                 onRefresh: () => m.load(),
                 child: CustomScrollView(
                   slivers: [
-                    SliverAppBar(
-                      pinned: true,
-                      title: Text(l.expensesTitle),
-                      actions: [
-                        IconButton(
-                          icon: const Icon(Icons.calendar_month),
-                          tooltip: l.expensesPickDate,
-                          onPressed: () => _pickDate(context),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            m.monthCommitted
-                                ? Icons.undo
-                                : Icons.savings_outlined,
-                          ),
-                          tooltip: m.monthCommitted
-                              ? l.expensesCommitUndoTooltip
-                              : l.expensesCommitTooltip,
-                          onPressed:
-                              (m.jars.isNotEmpty &&
-                                  (m.monthCommitted || m.freeCashFlowMonth > 0))
-                              ? () => _toggleCommit(context)
-                              : null,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.tune),
-                          tooltip: l.expensesBudgetSettings,
-                          onPressed: () =>
-                              Navigator.of(context).pushNamed('/budget'),
-                        ),
-                      ],
-                    ),
 
                     // ===== Верхняя сводка доход/расход/свободно =====
                     SliverPadding(

@@ -13,6 +13,7 @@ import '../mood_screen.dart';
 import '../profile_screen.dart';
 import '../reports_screen.dart';
 import '../expenses_screen.dart';
+import '../user_goals_screen.dart';
 
 import '../../widgets/frosted_rail.dart';
 

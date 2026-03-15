@@ -51,14 +51,37 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
 
+  List<String> get _lifeBlockOptions {
+    final seen = <String>{};
+    final out = <String>['general'];
+
+    for (final raw in widget.availableBlocks) {
+      final b = raw.trim();
+      if (b.isEmpty) continue;
+      final key = b.toLowerCase();
+      if (key == 'general') continue;
+      if (seen.add(key)) out.add(b);
+    }
+
+    return out;
+  }
+
+  String _lifeBlockLabel(String value) {
+    return value.toLowerCase() == 'general' ? 'General' : value;
+  }
+
   @override
   void initState() {
     super.initState();
-    _lifeBlock =
-        widget.fixedLifeBlock ??
-        (widget.availableBlocks.isNotEmpty
-            ? widget.availableBlocks.first
-            : 'general');
+
+    final options = _lifeBlockOptions;
+    final fixed = widget.fixedLifeBlock?.trim();
+
+    if (fixed != null && fixed.isNotEmpty) {
+      _lifeBlock = fixed;
+    } else {
+      _lifeBlock = options.contains('general') ? 'general' : options.first;
+    }
   }
 
   @override
@@ -127,6 +150,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
             .withOpacity(isDark ? 0.90 : 0.92);
 
     final borderColor = scheme.outlineVariant.withOpacity(isDark ? 0.65 : 0.55);
+
+    final lifeBlockOptions = _lifeBlockOptions;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -200,10 +225,11 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       Expanded(
                         child: Text(
                           l.addDayGoalTitle,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: scheme.onSurface,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: scheme.onSurface,
+                                  ),
                         ),
                       ),
                     ],
@@ -219,7 +245,6 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           label: l.addDayGoalFieldTitle,
                           hint: l.addDayGoalTitleHint,
                           icon: Icons.flag_rounded,
-                          // ✅ приятнее: 2 строки вместо жёсткого 1
                           minLines: 1,
                           maxLines: 2,
                           maxLen: 60,
@@ -286,15 +311,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               value: _lifeBlock,
                               dropdownColor: scheme.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(14),
-                              items: (widget.availableBlocks.isEmpty
-                                      ? const <String>['general']
-                                      : widget.availableBlocks)
+                              items: lifeBlockOptions
                                   .map(
                                     (b) => DropdownMenuItem(
                                       value: b,
                                       child: Text(
-                                        b,
-                                        style: TextStyle(color: scheme.onSurface),
+                                        _lifeBlockLabel(b),
+                                        style: TextStyle(
+                                          color: scheme.onSurface,
+                                        ),
                                       ),
                                     ),
                                   )
@@ -315,10 +340,11 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       children: [
                         Text(
                           l.addDayGoalImportance,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: scheme.onSurface,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: scheme.onSurface,
+                                  ),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
@@ -332,8 +358,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               selected: selected,
                               onSelected: (_) => setState(() => _importance = v),
                               selectedColor: scheme.primary.withOpacity(0.18),
-                              backgroundColor:
-                                  scheme.surfaceContainerHighest.withOpacity(0.75),
+                              backgroundColor: scheme.surfaceContainerHighest
+                                  .withOpacity(0.75),
                               side: BorderSide(
                                 color: selected
                                     ? scheme.primary.withOpacity(0.35)
@@ -360,10 +386,11 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       children: [
                         Text(
                           l.addDayGoalEmotion,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: scheme.onSurface,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: scheme.onSurface,
+                                  ),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
@@ -375,8 +402,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               selected: selected,
                               onSelected: (_) => setState(() => _emotion = e),
                               selectedColor: scheme.primary.withOpacity(0.18),
-                              backgroundColor:
-                                  scheme.surfaceContainerHighest.withOpacity(0.75),
+                              backgroundColor: scheme.surfaceContainerHighest
+                                  .withOpacity(0.75),
                               side: BorderSide(
                                 color: selected
                                     ? scheme.primary.withOpacity(0.35)
@@ -519,6 +546,7 @@ class _PrettyField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return TextField(
       controller: controller,
@@ -528,9 +556,29 @@ class _PrettyField extends StatelessWidget {
       textInputAction:
           maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: scheme.primary),
         labelText: label,
         hintText: hint,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: isDark
+            ? scheme.surfaceContainerHighest.withOpacity(0.36)
+            : Colors.white.withOpacity(0.78),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(
+            color: scheme.outlineVariant.withOpacity(0.60),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(
+            color: scheme.outlineVariant.withOpacity(0.55),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: scheme.primary, width: 1.4),
+        ),
       ),
     );
   }
@@ -539,26 +587,27 @@ class _PrettyField extends StatelessWidget {
 class _PillButton extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
-  const _PillButton({required this.text, required this.onTap});
+
+  const _PillButton({
+    required this.text,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: scheme.surfaceContainerHigh.withOpacity(isDark ? 0.90 : 0.95),
-      borderRadius: BorderRadius.circular(16),
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: scheme.outlineVariant.withOpacity(isDark ? 0.65 : 0.55),
-            ),
+            color: scheme.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: scheme.primary.withOpacity(0.25)),
           ),
           child: Text(
             text,
@@ -580,16 +629,13 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh.withOpacity(isDark ? 0.90 : 0.95),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: scheme.outlineVariant.withOpacity(isDark ? 0.65 : 0.55),
-        ),
+        color: scheme.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.primary.withOpacity(0.25)),
       ),
       child: Text(
         text,

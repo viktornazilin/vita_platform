@@ -71,7 +71,7 @@ class _GoalsViewState extends State<_GoalsView> {
   Map<DateTime, Map<String, double>> _heat = {};
   double _targetHours = 8;
 
-  bool _showGoalsByBlock = true; // ✅ hide/show “Цели по сферам”
+  bool _showGoalsByBlock = false; // ✅ hide/show “Цели по сферам”
 
   static const Map<String, Color> _blockColors = {
     'health': Color(0xFF2E7D32),
@@ -772,32 +772,6 @@ class _GoalsViewState extends State<_GoalsView> {
       body: NestBackground(
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
-              pinned: true,
-              centerTitle: false,
-              title: const Text('Цели'),
-              actions: [
-                IconButton(
-                  tooltip: 'Быстрые функции',
-                  onPressed: () => _openQuickActions(context),
-                  icon: const Icon(Icons.add),
-                ),
-                IconButton(
-                  tooltip: 'Сегодня',
-                  onPressed: () async {
-                    setState(() => _anchor = DateTime.now());
-                    if (_view == _ViewMode.calendar &&
-                        _calMode == _CalMode.month) {
-                      await _loadMonthHeat(_anchor.year, _anchor.month);
-                    } else {
-                      await _loadWeekHeat();
-                    }
-                  },
-                  icon: const Icon(Icons.today),
-                ),
-              ],
-            ),
-
             // категории
             SliverToBoxAdapter(
               child: Padding(

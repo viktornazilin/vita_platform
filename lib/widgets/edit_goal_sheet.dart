@@ -1,5 +1,4 @@
 // lib/widgets/edit_goal_sheet.dart
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 
@@ -34,32 +33,37 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   late String _lifeBlock;
   late int _importance; // 1..3
   late double _hours; // 0.5..14
-  late TimeOfDay _start; // TimeOfDay
+  late TimeOfDay _start;
 
   List<String> _normalizeBlocks({
     required List<String> availableBlocks,
     String? fixedLifeBlock,
     String? currentValue,
   }) {
-    final set = <String>{};
+    final seen = <String>{};
+    final list = <String>['general'];
 
-    if (fixedLifeBlock != null && fixedLifeBlock.trim().isNotEmpty) {
-      set.add(fixedLifeBlock.trim());
+    void addValue(String? value) {
+      final v = value?.trim();
+      if (v == null || v.isEmpty) return;
+      final key = v.toLowerCase();
+      if (key == 'general') return;
+      if (seen.add(key)) list.add(v);
     }
+
+    addValue(fixedLifeBlock);
 
     for (final b in availableBlocks) {
-      final v = b.trim();
-      if (v.isNotEmpty) set.add(v);
+      addValue(b);
     }
 
-    if (currentValue != null && currentValue.trim().isNotEmpty) {
-      set.add(currentValue.trim());
-    }
+    addValue(currentValue);
 
-    if (set.isEmpty) set.add('general');
-    final list = set.toList();
-    list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return list;
+  }
+
+  String _lifeBlockLabel(String value) {
+    return value.toLowerCase() == 'general' ? 'General' : value;
   }
 
   @override
@@ -71,12 +75,11 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     _descCtrl = TextEditingController(text: g.description);
     _emotionCtrl = TextEditingController(text: g.emotion);
 
-    final initialValue =
-        widget.fixedLifeBlock ??
-        g.lifeBlock ??
-        (widget.availableBlocks.isNotEmpty
-            ? widget.availableBlocks.first
-            : 'general');
+    final initialValue = (widget.fixedLifeBlock?.trim().isNotEmpty ?? false)
+        ? widget.fixedLifeBlock!.trim()
+        : ((g.lifeBlock?.trim().isNotEmpty ?? false)
+              ? g.lifeBlock!.trim()
+              : 'general');
 
     final blocks = _normalizeBlocks(
       availableBlocks: widget.availableBlocks,
@@ -84,9 +87,9 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
       currentValue: initialValue,
     );
 
-    _lifeBlock = blocks.contains(initialValue) ? initialValue : blocks.first;
-    _importance = (g.importance).clamp(1, 3);
-    _hours = (g.spentHours).clamp(0.5, 14.0);
+    _lifeBlock = blocks.contains(initialValue) ? initialValue : 'general';
+    _importance = g.importance.clamp(1, 3);
+    _hours = g.spentHours.clamp(0.5, 14.0);
     _start = TimeOfDay.fromDateTime(g.startTime);
   }
 
@@ -103,19 +106,21 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
       context: context,
       initialTime: _start,
       builder: (ctx, child) {
-        // чуть ближе к Nest-палитре
         final t = Theme.of(ctx);
         return Theme(
           data: t.copyWith(
             colorScheme: t.colorScheme.copyWith(
-              primary: const Color(0xFF3AA8E6),
+              primary: t.colorScheme.primary,
             ),
           ),
           child: child!,
         );
       },
     );
-    if (picked != null) setState(() => _start = picked);
+
+    if (picked != null) {
+      setState(() => _start = picked);
+    }
   }
 
   void _submit() {
@@ -148,21 +153,6 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
       labelText: label,
       hintText: hint,
       prefixIcon: icon == null ? null : Icon(icon),
-      filled: true,
-      fillColor: const Color(0xFFEFF7FF),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFBBD9F7)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFBBD9F7)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFF3AA8E6), width: 1.4),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
   }
 
@@ -170,6 +160,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final canEditBlock = widget.fixedLifeBlock == null;
 
@@ -179,9 +170,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
       currentValue: _lifeBlock,
     );
 
-    final dropdownValue = blocks.contains(_lifeBlock)
-        ? _lifeBlock
-        : blocks.first;
+    final dropdownValue = blocks.contains(_lifeBlock) ? _lifeBlock : 'general';
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -190,243 +179,261 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         initialChildSize: 0.88,
         minChildSize: 0.62,
         maxChildSize: 0.96,
-        builder: (ctx, controller) => SingleChildScrollView(
-          controller: controller,
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 4),
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF9BC7E6).withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(99),
+        builder: (ctx, controller) {
+          return SingleChildScrollView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 4),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: scheme.outline.withOpacity(0.72),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-              Row(
-                children: [
-                  const _IconBubble(icon: Icons.edit_rounded),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      t.editGoalTitle,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF2E4B5A),
-                        height: 1.05,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 10),
-              NestSectionTitle(t.editGoalSectionDetails),
-              NestCard(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                Row(
                   children: [
-                    TextField(
-                      controller: _titleCtrl,
-                      textInputAction: TextInputAction.next,
-                      decoration: _nestInput(
-                        label: t.editGoalFieldTitleLabel,
-                        hint: t.editGoalFieldTitleHint,
-                        icon: Icons.flag_outlined,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _descCtrl,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: _nestInput(
-                        label: t.editGoalFieldDescLabel,
-                        hint: t.editGoalFieldDescHint,
-                        icon: Icons.notes_outlined,
+                    const _IconBubble(icon: Icons.edit_rounded),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        t.editGoalTitle,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface,
+                          height: 1.05,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
 
-              if (canEditBlock) ...[
-                NestSectionTitle(t.editGoalSectionLifeBlock),
+                const SizedBox(height: 12),
+
+                NestSectionTitle(t.editGoalSectionDetails),
                 NestCard(
-                  padding: const EdgeInsets.all(14),
-                  child: DropdownButtonFormField<String>(
-                    value: dropdownValue,
-                    decoration: _nestInput(
-                      label: t.editGoalFieldLifeBlockLabel,
-                      icon: Icons.grid_view_rounded,
-                    ),
-                    items: blocks
-                        .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-                        .toList(),
-                    onChanged: (v) {
-                      if (v == null) return;
-                      setState(() => _lifeBlock = v);
-                    },
-                  ),
-                ),
-              ],
-
-              NestSectionTitle(t.editGoalSectionParams),
-              NestCard(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<int>(
-                            value: _importance,
-                            decoration: _nestInput(
-                              label: t.editGoalFieldImportanceLabel,
-                              icon: Icons.local_fire_department_rounded,
-                            ),
-                            items: [
-                              DropdownMenuItem(
-                                value: 1,
-                                child: Text(t.editGoalImportanceLow),
-                              ),
-                              DropdownMenuItem(
-                                value: 2,
-                                child: Text(t.editGoalImportanceMedium),
-                              ),
-                              DropdownMenuItem(
-                                value: 3,
-                                child: Text(t.editGoalImportanceHigh),
-                              ),
-                            ],
-                            onChanged: (v) =>
-                                setState(() => _importance = v ?? _importance),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _emotionCtrl,
-                            decoration: _nestInput(
-                              label: t.editGoalFieldEmotionLabel,
-                              hint: t.editGoalFieldEmotionHint,
-                              icon: Icons.emoji_emotions_outlined,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.timelapse_rounded,
-                          size: 18,
-                          color: Color(0xFF2E4B5A),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            t.editGoalDurationHours,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF2E4B5A),
-                            ),
-                          ),
-                        ),
-                        NestPill(
-                          leading: const Icon(
-                            Icons.timer_outlined,
-                            size: 16,
-                            color: Color(0xFF2E4B5A),
-                          ),
-                          text: _hours.toStringAsFixed(1),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 3.5,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 8,
-                        ),
-                        overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 18,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _titleCtrl,
+                        textInputAction: TextInputAction.next,
+                        decoration: _nestInput(
+                          label: t.editGoalFieldTitleLabel,
+                          hint: t.editGoalFieldTitleHint,
+                          icon: Icons.flag_outlined,
                         ),
                       ),
-                      child: Slider(
-                        min: 0.5,
-                        max: 14,
-                        divisions: 27,
-                        value: _hours,
-                        label: _hours.toStringAsFixed(1),
-                        onChanged: (v) => setState(() => _hours = v),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _descCtrl,
+                        minLines: 2,
+                        maxLines: 4,
+                        textInputAction: TextInputAction.newline,
+                        decoration: _nestInput(
+                          label: t.editGoalFieldDescLabel,
+                          hint: t.editGoalFieldDescHint,
+                          icon: Icons.notes_outlined,
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.schedule_rounded,
-                          size: 18,
-                          color: Color(0xFF2E4B5A),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            t.editGoalStartTime,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF2E4B5A),
-                            ),
-                          ),
-                        ),
-                        _PillButton(
-                          label: _start.format(context),
-                          icon: Icons.access_time_rounded,
-                          onTap: _pickTime,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _SoftButton(
-                      label: t.commonCancel,
-                      kind: _SoftButtonKind.secondary,
-                      onTap: () => Navigator.pop(context),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SoftButton(
-                      label: t.commonSave,
-                      kind: _SoftButtonKind.primary,
-                      onTap: _submit,
+                ),
+
+                if (canEditBlock) ...[
+                  const SizedBox(height: 2),
+                  NestSectionTitle(t.editGoalSectionLifeBlock),
+                  NestCard(
+                    padding: const EdgeInsets.all(16),
+                    child: DropdownButtonFormField<String>(
+                      value: dropdownValue,
+                      decoration: _nestInput(
+                        label: t.editGoalFieldLifeBlockLabel,
+                        icon: Icons.grid_view_rounded,
+                      ),
+                      items: blocks
+                          .map(
+                            (b) => DropdownMenuItem<String>(
+                              value: b,
+                              child: Text(_lifeBlockLabel(b)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v == null) return;
+                        setState(() => _lifeBlock = v);
+                      },
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 10),
-              const SafeArea(top: false, child: SizedBox(height: 0)),
-            ],
-          ),
-        ),
+
+                const SizedBox(height: 2),
+                NestSectionTitle(t.editGoalSectionParams),
+                NestCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<int>(
+                              value: _importance,
+                              decoration: _nestInput(
+                                label: t.editGoalFieldImportanceLabel,
+                                icon: Icons.local_fire_department_rounded,
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 1,
+                                  child: Text(t.editGoalImportanceLow),
+                                ),
+                                DropdownMenuItem(
+                                  value: 2,
+                                  child: Text(t.editGoalImportanceMedium),
+                                ),
+                                DropdownMenuItem(
+                                  value: 3,
+                                  child: Text(t.editGoalImportanceHigh),
+                                ),
+                              ],
+                              onChanged: (v) {
+                                setState(() => _importance = v ?? _importance);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _emotionCtrl,
+                              textInputAction: TextInputAction.done,
+                              decoration: _nestInput(
+                                label: t.editGoalFieldEmotionLabel,
+                                hint: t.editGoalFieldEmotionHint,
+                                icon: Icons.emoji_emotions_outlined,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timelapse_rounded,
+                            size: 18,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              t.editGoalDurationHours,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          NestPill(
+                            leading: const Icon(
+                              Icons.timer_outlined,
+                              size: 16,
+                            ),
+                            text: _hours.toStringAsFixed(1),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3.5,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 8,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 18,
+                          ),
+                        ),
+                        child: Slider(
+                          min: 0.5,
+                          max: 14,
+                          divisions: 27,
+                          value: _hours,
+                          label: _hours.toStringAsFixed(1),
+                          onChanged: (v) => setState(() => _hours = v),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 18,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              t.editGoalStartTime,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          _PillButton(
+                            label: _start.format(context),
+                            icon: Icons.access_time_rounded,
+                            onTap: _pickTime,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SoftButton(
+                        label: t.commonCancel,
+                        kind: _SoftButtonKind.secondary,
+                        onTap: () => Navigator.pop(context),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SoftButton(
+                        label: t.commonSave,
+                        kind: _SoftButtonKind.primary,
+                        onTap: _submit,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+                const SafeArea(top: false, child: SizedBox(height: 0)),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -434,29 +441,26 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
 class _IconBubble extends StatelessWidget {
   final IconData icon;
+
   const _IconBubble({required this.icon});
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
-      width: 38,
-      height: 38,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3AA8E6), Color(0xFF6C8CFF)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F2B5B7A),
-            blurRadius: 16,
-            offset: Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: scheme.outlineVariant),
       ),
-      child: Icon(icon, color: Colors.white, size: 18),
+      child: Icon(
+        icon,
+        color: scheme.onSurface,
+        size: 18,
+      ),
     );
   }
 }
@@ -474,26 +478,28 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF7FF),
+          color: scheme.surfaceContainer,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFBBD9F7)),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: const Color(0xFF2E4B5A)),
+            Icon(icon, size: 16, color: scheme.primary),
             const SizedBox(width: 8),
             Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF2E4B5A),
-              ),
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
             ),
           ],
         ),
@@ -520,27 +526,16 @@ class _SoftButton extends StatelessWidget {
     final isPrimary = kind == _SoftButtonKind.primary;
 
     return SizedBox(
-      height: 46,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          elevation: isPrimary ? 6 : 0,
-          backgroundColor: isPrimary
-              ? const Color(0xFF3AA8E6)
-              : const Color(0xFFEFF7FF),
-          foregroundColor: isPrimary ? Colors.white : const Color(0xFF2E4B5A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          side: const BorderSide(color: Color(0xFFBBD9F7)),
-        ),
-        child: Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
-        ),
-      ),
+      height: 48,
+      child: isPrimary
+          ? FilledButton(
+              onPressed: onTap,
+              child: Text(label),
+            )
+          : OutlinedButton(
+              onPressed: onTap,
+              child: Text(label),
+            ),
     );
   }
 }

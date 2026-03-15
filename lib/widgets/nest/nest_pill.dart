@@ -15,24 +15,18 @@ class NestPill extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Плотный фон пилла
     final backgroundColor = isDark
-        ? scheme.surfaceContainerHigh.withOpacity(0.90)
-        : scheme.surfaceContainerHigh.withOpacity(0.95);
+        ? scheme.surfaceContainer
+        : scheme.surfaceContainerHighest;
 
-    // Бордер
-    final borderColor = isDark
-        ? scheme.outlineVariant.withOpacity(0.60)
-        : scheme.outlineVariant.withOpacity(0.55);
-
-    // Цвет текста — всегда контрастный
+    final borderColor = scheme.outlineVariant;
     final textColor = scheme.onSurface;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: borderColor),
       ),
       child: Row(
@@ -40,7 +34,7 @@ class NestPill extends StatelessWidget {
         children: [
           IconTheme(
             data: IconThemeData(
-              color: scheme.primary, // аккуратный акцент
+              color: scheme.primary,
               size: 18,
             ),
             child: leading,
@@ -49,7 +43,7 @@ class NestPill extends StatelessWidget {
           Text(
             text,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: textColor,
                 ),
           ),

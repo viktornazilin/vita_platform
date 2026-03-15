@@ -7,27 +7,21 @@ class NestSectionTitle extends StatelessWidget {
   const NestSectionTitle(
     this.text, {
     super.key,
-    this.padding = const EdgeInsets.fromLTRB(2, 14, 2, 8),
+    this.padding = const EdgeInsets.fromLTRB(2, 18, 2, 10),
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // В dark чуть светлее для контраста
-    final titleColor = isDark
-        ? scheme.onSurface
-        : scheme.onSurface;
 
     return Padding(
       padding: padding,
       child: Text(
         text,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3,
-              color: titleColor,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+              color: scheme.onSurface,
             ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,

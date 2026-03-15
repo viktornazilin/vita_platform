@@ -38,6 +38,7 @@ class _MoodViewState extends State<_MoodView> {
   String _selectedEmoji = '😊';
   final _noteController = TextEditingController();
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
+  DateTime _visibleWeekStart = _startOfWeek(DateUtils.dateOnly(DateTime.now()));
   bool _saving = false;
 
   static const int _maxLen = 200;
@@ -49,28 +50,69 @@ class _MoodViewState extends State<_MoodView> {
   }
 
   // ---------------------------------------------------------------------------
-  // UI helpers
+  // Date helpers
   // ---------------------------------------------------------------------------
+
+  static DateTime _startOfWeek(DateTime date) {
+    final d = DateUtils.dateOnly(date);
+    final weekday = d.weekday; // Mon=1 ... Sun=7
+    return d.subtract(Duration(days: weekday - 1));
+  }
+
+  List<DateTime> _daysOfWeek(DateTime weekStart) {
+    return List.generate(
+      7,
+      (index) => DateUtils.dateOnly(weekStart.add(Duration(days: index))),
+    );
+  }
 
   String _formatDateShort(BuildContext context, DateTime d) {
     final loc = MaterialLocalizations.of(context);
     return loc.formatMediumDate(d);
   }
 
-  String _formatDateHeader(BuildContext context, DateTime d) {
+  String _formatWeekRange(BuildContext context, DateTime weekStart) {
     final loc = MaterialLocalizations.of(context);
-    return loc.formatFullDate(d);
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    return '${loc.formatMediumDate(weekStart)} – ${loc.formatMediumDate(weekEnd)}';
   }
 
-  Map<DateTime, List<Mood>> _groupByDay(List<Mood> src) {
-    final map = <DateTime, List<Mood>>{};
-    for (final m in src) {
-      final key = DateUtils.dateOnly(m.date);
-      map.putIfAbsent(key, () => []).add(m);
+  String _weekdayShort(BuildContext context, DateTime date) {
+  switch (date.weekday) {
+    case DateTime.monday:
+      return 'Mon';
+    case DateTime.tuesday:
+      return 'Tue';
+    case DateTime.wednesday:
+      return 'Wed';
+    case DateTime.thursday:
+      return 'Thu';
+    case DateTime.friday:
+      return 'Fri';
+    case DateTime.saturday:
+      return 'Sat';
+    case DateTime.sunday:
+      return 'Sun';
+    default:
+      return '';
+  }
+}
+  
+
+  Map<DateTime, Mood> _moodMapByDay(List<Mood> moods) {
+    final map = <DateTime, Mood>{};
+    for (final mood in moods) {
+      map[DateUtils.dateOnly(mood.date)] = mood;
     }
-    final entries = map.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
-    return {for (final e in entries) e.key: e.value};
+    return map;
+  }
+
+  bool _isToday(DateTime date) {
+    return DateUtils.isSameDay(date, DateTime.now());
+  }
+
+  bool _isSelected(DateTime date) {
+    return DateUtils.isSameDay(date, _selectedDate);
   }
 
   void _snack(String text) {
@@ -106,7 +148,11 @@ class _MoodViewState extends State<_MoodView> {
     );
 
     if (d != null) {
-      setState(() => _selectedDate = DateUtils.dateOnly(d));
+      final normalized = DateUtils.dateOnly(d);
+      setState(() {
+        _selectedDate = normalized;
+        _visibleWeekStart = _startOfWeek(normalized);
+      });
     }
   }
 
@@ -120,7 +166,6 @@ class _MoodViewState extends State<_MoodView> {
     required String note,
   }) async {
     try {
-      // ✅ через repo (как у тебя было), но это лучше перенести в MoodModel
       final model = context.read<MoodModel>();
       await model.repo.upsertMood(
         date: DateUtils.dateOnly(date),
@@ -195,6 +240,7 @@ class _MoodViewState extends State<_MoodView> {
     setState(() {
       _selectedEmoji = '😊';
       _selectedDate = DateUtils.dateOnly(DateTime.now());
+      _visibleWeekStart = _startOfWeek(_selectedDate);
     });
 
     _snack(l.moodSaved);
@@ -222,11 +268,103 @@ class _MoodViewState extends State<_MoodView> {
       note: res.note,
     );
 
-    if (err != null && mounted) {
+    if (!mounted) return;
+
+    if (err != null) {
       _snack(err);
-    } else if (mounted) {
+    } else {
+      setState(() {
+        _selectedDate = DateUtils.dateOnly(res.date);
+        _visibleWeekStart = _startOfWeek(_selectedDate);
+      });
       _snack(l.moodUpdated);
     }
+  }
+
+  Future<void> _confirmDeleteMood(Mood mood) async {
+    final l = AppLocalizations.of(context)!;
+
+    final ok =
+        await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
+            title: Text(l.commonDeleteConfirmTitle),
+            content: Text(
+              '${_formatDateShort(context, DateUtils.dateOnly(mood.date))}: '
+              '${mood.emoji}'
+              '${mood.note.trim().isEmpty ? '' : '\n\n${mood.note.trim()}'}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(l.commonCancel),
+              ),
+              FilledButton.tonal(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(l.commonDelete),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!ok) return;
+
+    final err = await _deleteMood(mood.date);
+    if (err != null && mounted) {
+      _snack(err);
+    }
+  }
+
+  Future<void> _openDayPopup(DateTime day, Mood? mood) async {
+    if (mood == null) {
+      setState(() {
+        _selectedDate = DateUtils.dateOnly(day);
+      });
+      return;
+    }
+
+    final action = await showModalBottomSheet<_DayMoodAction>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _DayMoodSheet(
+        date: day,
+        mood: mood,
+        formatDate: (d) => _formatDateShort(context, d),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _DayMoodAction.edit:
+        await _editMood(mood);
+        break;
+      case _DayMoodAction.delete:
+        await _confirmDeleteMood(mood);
+        break;
+    }
+  }
+
+  void _goToPreviousWeek() {
+    setState(() {
+      _visibleWeekStart = _visibleWeekStart.subtract(const Duration(days: 7));
+    });
+  }
+
+  void _goToNextWeek() {
+    final next = _visibleWeekStart.add(const Duration(days: 7));
+    final currentWeek = _startOfWeek(DateUtils.dateOnly(DateTime.now()));
+
+    if (next.isAfter(currentWeek)) return;
+
+    setState(() {
+      _visibleWeekStart = next;
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -242,8 +380,10 @@ class _MoodViewState extends State<_MoodView> {
 
     final moods = model.moods;
     final loading = model.loading;
-
-    final grouped = _groupByDay(moods);
+    final moodByDay = _moodMapByDay(moods);
+    final weekDays = _daysOfWeek(_visibleWeekStart);
+    final currentWeekStart = _startOfWeek(DateUtils.dateOnly(DateTime.now()));
+    final canGoNext = !_visibleWeekStart.isAtSameMomentAs(currentWeekStart);
 
     return Scaffold(
       body: NestBackground(
@@ -252,24 +392,9 @@ class _MoodViewState extends State<_MoodView> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverAppBar.large(
-                title: Text(l.moodTitle),
-                centerTitle: false,
-                actions: [
-                  IconButton(
-                    tooltip: l.commonRefresh,
-                    onPressed: _refresh,
-                    icon: const Icon(Icons.refresh_rounded),
-                  ),
-                ],
-              ),
-
-              // -----------------------------------------------------------------
-              // Composer (Nest style)
-              // -----------------------------------------------------------------
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
                   child: NestBlurCard(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -300,7 +425,6 @@ class _MoodViewState extends State<_MoodView> {
                             ),
                           ),
                           const SizedBox(height: 10),
-
                           _NestInset(
                             radius: 18,
                             child: Padding(
@@ -315,9 +439,7 @@ class _MoodViewState extends State<_MoodView> {
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 14),
-
                           _NestTextField(
                             controller: _noteController,
                             maxLines: 3,
@@ -326,9 +448,7 @@ class _MoodViewState extends State<_MoodView> {
                             hintText: l.moodNoteHint,
                             prefixIcon: Icons.edit_note_rounded,
                           ),
-
                           const SizedBox(height: 10),
-
                           SizedBox(
                             height: 52,
                             child: FilledButton.icon(
@@ -364,7 +484,7 @@ class _MoodViewState extends State<_MoodView> {
               ),
 
               // -----------------------------------------------------------------
-              // History header
+              // Weekly calendar header
               // -----------------------------------------------------------------
               SliverToBoxAdapter(
                 child: Padding(
@@ -400,100 +520,276 @@ class _MoodViewState extends State<_MoodView> {
                   hasScrollBody: false,
                   child: _EmptyState(
                     emoji: '📝',
-                    title: null, // берем из l10n
-                    subtitle: null, // берем из l10n
+                    title: null,
+                    subtitle: null,
                   ),
                 )
               else
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final entries = grouped.entries.toList();
-                      int cursor = 0;
-
-                      for (final entry in entries) {
-                        final date = entry.key;
-                        final items = entry.value;
-                        final blockLen = 1 + items.length;
-
-                        if (index >= cursor && index < cursor + blockLen) {
-                          final innerIndex = index - cursor;
-
-                          if (innerIndex == 0) {
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-                              child: Text(
-                                _formatDateHeader(context, date),
-                                style: tt.labelLarge?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: cs.onSurfaceVariant,
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: NestBlurCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: _goToPreviousWeek,
+                                  icon: const Icon(Icons.chevron_left_rounded),
                                 ),
-                              ),
-                            );
-                          }
-
-                          final mood = items[innerIndex - 1];
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                            child: _MoodHistoryTile(
-                              mood: mood,
-                              onEdit: () => _editMood(mood),
-                              onDelete: () async {
-                                final ok =
-                                    await showDialog<bool>(
-                                      context: context,
-                                      builder: (_) => AlertDialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            22,
-                                          ),
-                                        ),
-                                        title: Text(l.commonDeleteConfirmTitle),
-                                        content: Text(
-                                          '${_formatDateShort(context, DateUtils.dateOnly(mood.date))}: '
-                                          '${mood.emoji}'
-                                          '${mood.note.trim().isEmpty ? '' : '\n\n${mood.note.trim()}'}',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: Text(l.commonCancel),
-                                          ),
-                                          FilledButton.tonal(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: Text(l.commonDelete),
-                                          ),
-                                        ],
-                                      ),
-                                    ) ??
-                                    false;
-
-                                if (!ok) return;
-
-                                final err = await _deleteMood(mood.date);
-                                if (err != null && mounted) _snack(err);
-                              },
-                              subtitleText: l.moodTapToEdit,
-                              noNoteText: l.moodNoNote,
+                                Expanded(
+                                  child: Text(
+                                    _formatWeekRange(context, _visibleWeekStart),
+                                    textAlign: TextAlign.center,
+                                    style: tt.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: canGoNext ? _goToNextWeek : null,
+                                  icon: const Icon(Icons.chevron_right_rounded),
+                                ),
+                              ],
                             ),
-                          );
-                        }
-
-                        cursor += blockLen;
-                      }
-
-                      return const SizedBox.shrink();
-                    },
-                    childCount: grouped.entries.fold<int>(
-                      0,
-                      (sum, e) => sum + 1 + e.value.length,
+                            const SizedBox(height: 12),
+                            Row(
+                              children: weekDays
+                                  .map(
+                                    (day) => Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        child: _WeekDayCell(
+                                          day: day,
+                                          weekdayLabel:
+                                              _weekdayShort(context, day),
+                                          mood: moodByDay[day],
+                                          isToday: _isToday(day),
+                                          isSelected: _isSelected(day),
+                                          onTap: () => _openDayPopup(
+                                            day,
+                                            moodByDay[day],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 18)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Weekly calendar cell
+// ============================================================================
+
+class _WeekDayCell extends StatelessWidget {
+  final DateTime day;
+  final String weekdayLabel;
+  final Mood? mood;
+  final bool isToday;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _WeekDayCell({
+    required this.day,
+    required this.weekdayLabel,
+    required this.mood,
+    required this.isToday,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final hasMood = mood != null;
+
+    Color bgColor;
+    Color borderColor;
+
+    if (isSelected) {
+      bgColor = cs.primary.withOpacity(0.18);
+      borderColor = cs.primary;
+    } else if (isToday) {
+      bgColor = cs.secondaryContainer.withOpacity(0.45);
+      borderColor = cs.secondary.withOpacity(0.75);
+    } else {
+      bgColor = cs.surfaceContainerHighest.withOpacity(0.22);
+      borderColor = cs.outlineVariant.withOpacity(0.40);
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: bgColor,
+            border: Border.all(color: borderColor, width: isSelected ? 1.4 : 1),
+          ),
+          child: Column(
+            children: [
+              Text(
+                weekdayLabel,
+                style: tt.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${day.day}',
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 28,
+                child: Center(
+                  child: hasMood
+                      ? Text(
+                          mood!.emoji,
+                          style: const TextStyle(fontSize: 22),
+                        )
+                      : Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: cs.outlineVariant.withOpacity(0.55),
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Bottom sheet for selected day
+// ============================================================================
+
+enum _DayMoodAction { edit, delete }
+
+class _DayMoodSheet extends StatelessWidget {
+  final DateTime date;
+  final Mood mood;
+  final String Function(DateTime d) formatDate;
+
+  const _DayMoodSheet({
+    required this.date,
+    required this.mood,
+    required this.formatDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final note = mood.note.trim();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: NestBlurCard(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: cs.outlineVariant.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                mood.emoji,
+                style: const TextStyle(fontSize: 42),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                formatDate(date),
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: cs.outlineVariant.withOpacity(0.35),
+                  ),
+                ),
+                child: Text(
+                  note.isEmpty ? '—' : note,
+                  style: tt.bodyMedium,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: () =>
+                          Navigator.pop(context, _DayMoodAction.edit),
+                      icon: const Icon(Icons.edit_rounded),
+                      label: Text(
+                        AppLocalizations.of(context)!.commonEdit,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: () =>
+                          Navigator.pop(context, _DayMoodAction.delete),
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: Text(
+                        AppLocalizations.of(context)!.commonDelete,
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: cs.errorContainer.withOpacity(0.75),
+                        foregroundColor: cs.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -673,84 +969,6 @@ class _NestTextField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: cs.primary, width: 1.4),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// History tile
-// ============================================================================
-
-class _MoodHistoryTile extends StatelessWidget {
-  final Mood mood;
-  final VoidCallback onEdit;
-  final Future<void> Function() onDelete;
-
-  final String subtitleText;
-  final String noNoteText;
-
-  const _MoodHistoryTile({
-    required this.mood,
-    required this.onEdit,
-    required this.onDelete,
-    required this.subtitleText,
-    required this.noNoteText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final note = mood.note.trim();
-    final title = note.isEmpty ? noNoteText : note;
-
-    return Dismissible(
-      key: ValueKey('mood_${DateUtils.dateOnly(mood.date).toIso8601String()}'),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (_) async {
-        await onDelete();
-        return false;
-      },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: cs.errorContainer.withOpacity(0.55),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Icon(Icons.delete_rounded, color: cs.onErrorContainer),
-      ),
-      child: NestBlurCard(
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 10,
-          ),
-          leading: _NestInset(
-            radius: 999,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Center(
-                child: Text(mood.emoji, style: const TextStyle(fontSize: 22)),
-              ),
-            ),
-          ),
-          title: Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
-          ),
-          subtitle: Text(
-            subtitleText,
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-          trailing: Icon(Icons.edit_rounded, color: cs.onSurfaceVariant),
-          onTap: onEdit,
         ),
       ),
     );

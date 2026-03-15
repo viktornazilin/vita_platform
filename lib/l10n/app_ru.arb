@@ -829,11 +829,11 @@
   "launcherQuickTitle": "Быстро",
 
   "launcherHome": "Главная",
-  "launcherGoals": "Цели",
-  "launcherMood": "Настроение",
+  "launcherGoals": "Задачи",
+  "launcherMood": "Цели",
   "launcherProfile": "Профиль",
-  "launcherInsights": "Инсайты",
-  "launcherReports": "Отчёты",
+  "launcherInsights": "Отчеты",
+  "launcherReports": "Бюджет",
 
   "launcherMassAddTitle": "Массовое добавление за день",
   "launcherMassAddSubtitle": "Расходы + Задачи + Настроение",

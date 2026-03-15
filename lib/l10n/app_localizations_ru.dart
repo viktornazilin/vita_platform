@@ -502,19 +502,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get launcherHome => 'Главная';
 
   @override
-  String get launcherGoals => 'Цели';
+  String get launcherGoals => 'Задачи';
 
   @override
-  String get launcherMood => 'Настроение';
+  String get launcherMood => 'Цели';
 
   @override
   String get launcherProfile => 'Профиль';
 
   @override
-  String get launcherInsights => 'Инсайты';
+  String get launcherInsights => 'Отчеты';
 
   @override
-  String get launcherReports => 'Отчёты';
+  String get launcherReports => 'Бюджет';
 
   @override
   String get launcherMassAddTitle => 'Массовое добавление за день';

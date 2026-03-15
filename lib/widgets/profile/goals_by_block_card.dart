@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
-
+import '../../models/user_goal.dart';
 import '../../models/user_goals_model.dart';
 import '../../models/goal.dart';
 import '../../services/user_goals_repo_mixin.dart';
@@ -595,8 +595,8 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                     else
                       ...list.map((g) {
                         final subtitleParts = <String>[
-                          if (g.description.trim().isNotEmpty)
-                            g.description.trim(),
+                          if ((g.description ?? '').trim().isNotEmpty)
+  (g.description ?? '').trim(),
                           if (g.targetDate != null)
                             l.goalsDeadlineInline(
                               _fmtDate(context, g.targetDate),

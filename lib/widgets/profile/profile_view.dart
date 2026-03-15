@@ -114,12 +114,6 @@ class _ProfileViewState extends State<ProfileView> {
               );
 
         return Scaffold(
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            // ✅ всё остальное (прозрачность, tint, elevation) берём из ThemeController
-            title: titleRow,
-            centerTitle: false,
-          ),
           body: NestBackground(child: content),
         );
       },

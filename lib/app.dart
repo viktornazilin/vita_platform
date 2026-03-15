@@ -15,6 +15,7 @@ import 'screens/onboarding_questionnaire_screen.dart';
 import 'screens/expenses_screen.dart';
 import 'screens/budget_setup_screen.dart';
 import 'screens/epic_intro_screen.dart';
+import 'screens/user_goals_screen.dart';
 
 import 'controllers/theme_controller.dart';
 // ✅ locale controller (manual language switch)
@@ -43,20 +44,15 @@ class _VitaAppState extends State<VitaApp> {
     if (mounted) setState(() => _isReady = true);
   }
 
-  /// Патчим тему аккуратно:
-  /// - НЕ перезатираем полностью ColorScheme через fromSeed (иначе "light" станет почти белым)
-  /// - но при этом фиксируем единый "Nest-blue" и базовые компоненты
   ThemeData _patchNestTheme(ThemeData base, {required bool isDark}) {
-    // Твой фирменный цвет
     const seed = Color(0xFF2F80FF);
 
     final cs0 = base.colorScheme;
     final cs = cs0.copyWith(primary: seed, onPrimary: Colors.white);
 
-    // Лёгкий фирменный фон, чтобы светлая тема не была «больнично белой»
     final scaffoldBg = isDark
-        ? (cs.surface) // в dark обычно норм
-        : const Color(0xFFF4F8FF); // мягкий голубоватый вместо белого
+        ? (cs.surface)
+        : const Color(0xFFF4F8FF);
 
     final surfaceTint = isDark
         ? cs.primary.withOpacity(0.08)
@@ -73,8 +69,6 @@ class _VitaAppState extends State<VitaApp> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
-
-      // Чтобы карточки/контейнеры не уходили в "зелень" и выглядели консистентно
       cardTheme: base.cardTheme.copyWith(
         color: cs.surface,
         surfaceTintColor: surfaceTint,
@@ -86,13 +80,11 @@ class _VitaAppState extends State<VitaApp> {
           ),
         ),
       ),
-
       dialogTheme: base.dialogTheme.copyWith(
         backgroundColor: cs.surface,
         surfaceTintColor: surfaceTint,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
-
       bottomSheetTheme: base.bottomSheetTheme.copyWith(
         backgroundColor: cs.surface,
         surfaceTintColor: surfaceTint,
@@ -100,12 +92,10 @@ class _VitaAppState extends State<VitaApp> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
-
       floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(
         backgroundColor: cs.primary,
         foregroundColor: cs.onPrimary,
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: cs.primary,
@@ -116,7 +106,6 @@ class _VitaAppState extends State<VitaApp> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
-
       inputDecorationTheme: base.inputDecorationTheme.copyWith(
         filled: true,
         fillColor: isDark ? cs.surface.withOpacity(0.55) : Colors.white,
@@ -133,7 +122,6 @@ class _VitaAppState extends State<VitaApp> {
           borderSide: BorderSide(color: cs.primary, width: 1.5),
         ),
       ),
-
       dividerColor: cs.outlineVariant.withOpacity(isDark ? 0.35 : 0.65),
     );
   }
@@ -141,7 +129,7 @@ class _VitaAppState extends State<VitaApp> {
   @override
   Widget build(BuildContext context) {
     final themeCtl = context.watch<ThemeController>();
-    final localeCtl = context.watch<LocaleController>(); // ✅
+    final localeCtl = context.watch<LocaleController>();
 
     final ThemeData light = _patchNestTheme(themeCtl.lightTheme, isDark: false);
     final ThemeData dark = _patchNestTheme(themeCtl.darkTheme, isDark: true);
@@ -154,19 +142,15 @@ class _VitaAppState extends State<VitaApp> {
     return MaterialApp(
       title: 'Nest App',
       debugShowCheckedModeBanner: false,
-
-      // ✅ i18n + manual override via settings
-      locale: localeCtl.locale, // null => system language
-      // ✅ gen-l10n delegates (no const!)
+      locale: localeCtl.locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-
       themeMode: themeCtl.mode,
       theme: light,
       darkTheme: dark,
-
       routes: {
         '/home': (_) => const HomeScreen(),
+        '/user-goals': (_) => const UserGoalsScreen(),
 
         '/register': (_) => ChangeNotifierProvider(
           create: (_) => RegisterModel(),
@@ -187,10 +171,8 @@ class _VitaAppState extends State<VitaApp> {
 
         '/expenses': (_) => const ExpensesScreen(),
         '/budget': (_) => const BudgetSetupScreen(),
-
         '/intro': (_) => EpicIntroScreen(userService: _userService),
       },
-
       home: !_isReady
           ? const _BootSplash()
           : _StartGate(
