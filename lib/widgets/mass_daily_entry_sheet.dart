@@ -7,11 +7,11 @@ import '../domain/category.dart' as dm;
 import '../main.dart';
 import '../models/life_block.dart';
 import '../models/mental_question.dart';
+import '../widgets/add_day_goal_sheet.dart';
 import '../widgets/block_chip.dart';
 
 class MassDailyEntrySheet extends StatefulWidget {
   final List<String> availableBlocks;
-
   const MassDailyEntrySheet({
     super.key,
     required this.availableBlocks,
@@ -1776,6 +1776,7 @@ class _GoalRow {
   final _hoursCtrl = TextEditingController(text: '1.0');
   TimeOfDay? _time;
 
+  String? _userGoalId;
   String _lifeBlock = 'general';
   String? _emotion;
   int _importance = 1;
@@ -1792,6 +1793,7 @@ class _GoalRow {
       lifeBlock: _lifeBlock,
       emotion: _emotion,
       importance: _importance,
+      userGoalId: _userGoalId,
     );
   }
 
@@ -1818,9 +1820,103 @@ class _GoalRowView extends StatefulWidget {
 
 class _GoalRowViewState extends State<_GoalRowView> {
   final _debouncer = _Debouncer(const Duration(milliseconds: 250));
+  final _supabase = Supabase.instance.client;
+
   bool _titleSugLoading = false;
   List<String> _titleSuggestions = [];
   int _reqId = 0;
+
+  bool _loadingUserGoals = false;
+  List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
+
+  String _normalizeBlock(String value) {
+    final v = value.trim().toLowerCase();
+
+    switch (v) {
+      case '':
+        return 'general';
+
+      case 'general':
+      case 'общий':
+      case 'общее':
+      case 'общие':
+      case 'без категории':
+        return 'general';
+
+      case 'health':
+      case 'здоровье':
+      case 'healthcare':
+      case 'wellbeing':
+      case 'well-being':
+      case 'sport':
+      case 'спорт':
+        return 'health';
+
+      case 'career':
+      case 'карьера':
+      case 'работа':
+      case 'job':
+      case 'work':
+      case 'business':
+      case 'бизнес':
+        return 'career';
+
+      case 'finance':
+      case 'финансы':
+      case 'money':
+      case 'financial':
+        return 'finance';
+
+      case 'relationships':
+      case 'relationship':
+      case 'relations':
+      case 'отношения':
+      case 'семья':
+      case 'family':
+        return 'relationships';
+
+      case 'self':
+      case 'selfdevelopment':
+      case 'self-development':
+      case 'personal':
+      case 'personal growth':
+      case 'личное':
+      case 'саморазвитие':
+      case 'creative':
+      case 'творчество':
+        return 'self';
+
+      case 'education':
+      case 'learning':
+      case 'study':
+      case 'учеба':
+      case 'учёба':
+      case 'образование':
+        return 'education';
+
+      case 'travel':
+      case 'путешествия':
+      case 'traveling':
+        return 'travel';
+
+      case 'home':
+      case 'house':
+      case 'дом':
+        return 'home';
+
+      default:
+        return v;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.row._lifeBlock = _normalizeBlock(widget.row._lifeBlock);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserGoalsForCurrentBlock();
+    });
+  }
 
   @override
   void dispose() {
@@ -1859,6 +1955,80 @@ class _GoalRowViewState extends State<_GoalRowView> {
     }
   }
 
+  Future<void> _loadUserGoalsForCurrentBlock() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        widget.row._userGoalId = null;
+        _loadingUserGoals = false;
+      });
+      return;
+    }
+
+    final normalizedBlock = _normalizeBlock(widget.row._lifeBlock);
+
+    setState(() {
+      _loadingUserGoals = true;
+    });
+
+    try {
+      final raw = await _supabase
+          .from('user_goals')
+          .select('id, title, life_block, horizon')
+          .eq('user_id', userId)
+          .eq('life_block', normalizedBlock)
+          .order('title');
+
+      final items = (raw as List)
+          .map(
+            (e) => UserGoalLinkOption(
+              id: (e['id'] ?? '').toString(),
+              title: (e['title'] ?? '').toString(),
+              lifeBlock: (e['life_block'] ?? '').toString(),
+              horizon: (e['horizon'] ?? '').toString(),
+            ),
+          )
+          .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
+          .toList()
+        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+      if (!mounted) return;
+
+      final stillValid = widget.row._userGoalId != null &&
+          items.any((g) => g.id == widget.row._userGoalId);
+
+      setState(() {
+        _userGoalsForSelectedBlock = items;
+        if (!stillValid) {
+          widget.row._userGoalId = null;
+        }
+        _loadingUserGoals = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        widget.row._userGoalId = null;
+        _loadingUserGoals = false;
+      });
+    }
+  }
+
+  String _horizonLabel(String value) {
+    switch (value) {
+      case 'tactical':
+        return 'Тактическая';
+      case 'mid':
+        return 'Среднесрочная';
+      case 'long':
+        return 'Долгосрочная';
+      default:
+        return value;
+    }
+  }
+
   Future<void> _pickTime() async {
     final t = await showTimePicker(
       context: context,
@@ -1875,7 +2045,9 @@ class _GoalRowViewState extends State<_GoalRowView> {
         );
       },
     );
-    if (t != null) setState(() => widget.row._time = t);
+    if (t != null) {
+      setState(() => widget.row._time = t);
+    }
   }
 
   Future<void> _pickEmotion() async {
@@ -1932,6 +2104,12 @@ class _GoalRowViewState extends State<_GoalRowView> {
         ? 'Время'
         : widget.row._time!.format(context);
     final emotionLabel = widget.row._emotion ?? 'Эмоция';
+
+    final goals = _userGoalsForSelectedBlock;
+    final dropdownGoalValue =
+        goals.any((g) => g.id == widget.row._userGoalId)
+            ? widget.row._userGoalId
+            : null;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -2036,8 +2214,18 @@ class _GoalRowViewState extends State<_GoalRowView> {
                   ),
                 )
                 .toList(),
-            onChanged: (v) =>
-                setState(() => widget.row._lifeBlock = (v ?? 'general')),
+            onChanged: (v) async {
+              final next = _normalizeBlock(v ?? 'general');
+              if (next == widget.row._lifeBlock) return;
+
+              setState(() {
+                widget.row._lifeBlock = next;
+                widget.row._userGoalId = null;
+                _userGoalsForSelectedBlock = const [];
+              });
+
+              await _loadUserGoalsForCurrentBlock();
+            },
             decoration: const InputDecoration(
               labelText: 'Категория',
               isDense: true,
@@ -2070,6 +2258,33 @@ class _GoalRowViewState extends State<_GoalRowView> {
             ),
           );
 
+          final userGoalField = DropdownButtonFormField<String?>(
+            value: dropdownGoalValue,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Большая цель',
+              isDense: true,
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Без связи'),
+              ),
+              ...goals.map(
+                (g) => DropdownMenuItem<String?>(
+                  value: g.id,
+                  child: Text(
+                    '${g.title} · ${_horizonLabel(g.horizon)}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+            onChanged: (v) {
+              setState(() => widget.row._userGoalId = v);
+            },
+          );
+
           if (narrow) {
             return Column(
               children: [
@@ -2084,6 +2299,51 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 ),
                 const SizedBox(height: 8),
                 emotionBtn,
+                const SizedBox(height: 8),
+                userGoalField,
+                if (_loadingUserGoals) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Загружаю большие цели...',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (!_loadingUserGoals && goals.isEmpty) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Для этой категории пока нет больших целей.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                ],
               ],
             );
           }
@@ -2101,6 +2361,51 @@ class _GoalRowViewState extends State<_GoalRowView> {
                   SizedBox(width: 120, child: importanceField),
                 ],
               ),
+              const SizedBox(height: 8),
+              userGoalField,
+              if (_loadingUserGoals) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Загружаю большие цели...',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (!_loadingUserGoals && goals.isEmpty) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Для этой категории пока нет больших целей.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ],
             ],
           );
         },
@@ -2208,6 +2513,7 @@ class _GoalEntry {
   final String lifeBlock;
   final String? emotion;
   final int importance;
+  final String? userGoalId;
 
   _GoalEntry({
     required this.title,
@@ -2216,5 +2522,6 @@ class _GoalEntry {
     required this.lifeBlock,
     required this.emotion,
     required this.importance,
+    required this.userGoalId,
   });
 }

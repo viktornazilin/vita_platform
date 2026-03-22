@@ -13,9 +13,25 @@ class ReportSectionCard extends StatelessWidget {
     required this.child,
   });
 
+  bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = _isDark(context);
+
+    final cardColor = isDark
+        ? cs.surface.withOpacity(0.72)
+        : cs.surface.withOpacity(0.88);
+
+    final borderColor = isDark
+        ? cs.outlineVariant.withOpacity(0.42)
+        : cs.outlineVariant.withOpacity(0.72);
+
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.22)
+        : cs.shadow.withOpacity(0.10);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(26),
@@ -24,14 +40,14 @@ class ReportSectionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.70),
+            color: cardColor,
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
+            border: Border.all(color: borderColor),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x1A2B5B7A),
+                color: shadowColor,
                 blurRadius: 26,
-                offset: Offset(0, 14),
+                offset: const Offset(0, 14),
               ),
             ],
           ),
@@ -55,18 +71,30 @@ class _TitleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Row(
       children: [
         Container(
           width: 10,
           height: 10,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [Color(0xFF3AA8E6), Color(0x007DD3FC)],
+              colors: [
+                cs.primary,
+                cs.primary.withOpacity(isDark ? 0.08 : 0.0),
+              ],
             ),
+            boxShadow: [
+              BoxShadow(
+                color: cs.primary.withOpacity(isDark ? 0.35 : 0.20),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 10),
@@ -75,7 +103,7 @@ class _TitleRow extends StatelessWidget {
             title,
             style: tt.titleMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
+              color: cs.onSurface,
               height: 1.1,
             ),
           ),

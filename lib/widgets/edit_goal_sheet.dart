@@ -1,24 +1,55 @@
 // lib/widgets/edit_goal_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/goal.dart';
-import 'add_day_goal_sheet.dart'; // AddGoalResult
+import 'add_day_goal_sheet.dart'; // UserGoalLinkOption
 
 import 'nest/nest_card.dart';
 import 'nest/nest_pill.dart';
 import 'nest/nest_section_title.dart';
+
+class EditGoalResult {
+  final String title;
+  final String description;
+  final String lifeBlock;
+  final int importance;
+  final String emotion;
+  final double hours;
+  final TimeOfDay startTime;
+  final DateTime date;
+  final String? userGoalId;
+
+  const EditGoalResult({
+    required this.title,
+    required this.description,
+    required this.lifeBlock,
+    required this.importance,
+    required this.emotion,
+    required this.hours,
+    required this.startTime,
+    required this.date,
+    this.userGoalId,
+  });
+}
 
 class EditGoalSheet extends StatefulWidget {
   final Goal goal;
   final String? fixedLifeBlock;
   final List<String> availableBlocks;
 
+  /// Оставлено для совместимости, но больше не используется
+  final List<UserGoalLinkOption> availableUserGoals;
+  final String? initialUserGoalId;
+
   const EditGoalSheet({
     super.key,
     required this.goal,
     required this.fixedLifeBlock,
     required this.availableBlocks,
+    this.availableUserGoals = const [],
+    this.initialUserGoalId,
   });
 
   @override
@@ -30,40 +61,218 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _emotionCtrl;
 
+  final _supabase = Supabase.instance.client;
+
   late String _lifeBlock;
-  late int _importance; // 1..3
-  late double _hours; // 0.5..14
+  late int _importance;
+  late double _hours;
   late TimeOfDay _start;
+  late DateTime _selectedDate;
 
-  List<String> _normalizeBlocks({
-    required List<String> availableBlocks,
-    String? fixedLifeBlock,
-    String? currentValue,
-  }) {
+  String? _selectedUserGoalId;
+
+  bool _loadingUserGoals = false;
+  List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
+
+  String _normalizeBlock(String value) {
+    final v = value.trim().toLowerCase();
+
+    switch (v) {
+      case '':
+        return 'general';
+
+      case 'general':
+      case 'general ':
+      case 'общий':
+      case 'общее':
+      case 'общие':
+      case 'без категории':
+        return 'general';
+
+      case 'health':
+      case 'здоровье':
+      case 'healthcare':
+      case 'wellbeing':
+      case 'well-being':
+        return 'health';
+
+      case 'career':
+      case 'карьера':
+      case 'работа':
+      case 'job':
+      case 'work':
+        return 'career';
+
+      case 'finance':
+      case 'финансы':
+      case 'money':
+      case 'financial':
+        return 'finance';
+
+      case 'relationships':
+      case 'relationship':
+      case 'relations':
+      case 'отношения':
+      case 'семья':
+        return 'relationships';
+
+      case 'self':
+      case 'selfdevelopment':
+      case 'self-development':
+      case 'personal':
+      case 'personal growth':
+      case 'личное':
+      case 'саморазвитие':
+        return 'self';
+
+      case 'education':
+      case 'learning':
+      case 'study':
+      case 'учеба':
+      case 'учёба':
+      case 'образование':
+        return 'education';
+
+      case 'travel':
+      case 'путешествия':
+      case 'traveling':
+        return 'travel';
+
+      case 'home':
+      case 'house':
+      case 'дом':
+        return 'home';
+
+      default:
+        return v;
+    }
+  }
+
+  List<String> get _lifeBlockOptions {
     final seen = <String>{};
-    final list = <String>['general'];
+    final out = <String>['general'];
 
-    void addValue(String? value) {
-      final v = value?.trim();
-      if (v == null || v.isEmpty) return;
-      final key = v.toLowerCase();
-      if (key == 'general') return;
-      if (seen.add(key)) list.add(v);
+    for (final raw in widget.availableBlocks) {
+      final b = raw.trim();
+      if (b.isEmpty) continue;
+
+      final normalized = _normalizeBlock(b);
+      if (seen.add(normalized)) {
+        if (normalized == 'general') continue;
+        out.add(normalized);
+      }
     }
 
-    addValue(fixedLifeBlock);
-
-    for (final b in availableBlocks) {
-      addValue(b);
+    final current = _normalizeBlock(_lifeBlock);
+    if (!out.contains(current)) {
+      out.add(current);
     }
 
-    addValue(currentValue);
-
-    return list;
+    return out;
   }
 
   String _lifeBlockLabel(String value) {
-    return value.toLowerCase() == 'general' ? 'General' : value;
+    switch (_normalizeBlock(value)) {
+      case 'general':
+        return 'General';
+      case 'health':
+        return 'Health';
+      case 'career':
+        return 'Career';
+      case 'finance':
+        return 'Finance';
+      case 'relationships':
+        return 'Relationships';
+      case 'self':
+        return 'Self';
+      case 'education':
+        return 'Education';
+      case 'travel':
+        return 'Travel';
+      case 'home':
+        return 'Home';
+      default:
+        return value;
+    }
+  }
+
+  String _horizonLabel(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'tactical':
+        return 'Тактическая';
+      case 'mid':
+        return 'Среднесрочная';
+      case 'long':
+        return 'Долгосрочная';
+      default:
+        return value;
+    }
+  }
+
+  String _formatDate(DateTime d) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(d.day)}.${two(d.month)}.${d.year}';
+  }
+
+  Future<void> _loadUserGoalsForCurrentBlock() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        _selectedUserGoalId = null;
+        _loadingUserGoals = false;
+      });
+      return;
+    }
+
+    final normalizedBlock = _normalizeBlock(_lifeBlock);
+
+    setState(() {
+      _loadingUserGoals = true;
+    });
+
+    try {
+      final raw = await _supabase
+          .from('user_goals')
+          .select('id, title, life_block, horizon')
+          .eq('user_id', userId)
+          .eq('life_block', normalizedBlock)
+          .order('title');
+
+      final items = (raw as List)
+          .map(
+            (e) => UserGoalLinkOption(
+              id: (e['id'] ?? '').toString(),
+              title: (e['title'] ?? '').toString(),
+              lifeBlock: (e['life_block'] ?? '').toString(),
+              horizon: (e['horizon'] ?? '').toString(),
+            ),
+          )
+          .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
+          .toList()
+        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+      if (!mounted) return;
+
+      final stillValid = _selectedUserGoalId != null &&
+          items.any((g) => g.id == _selectedUserGoalId);
+
+      setState(() {
+        _userGoalsForSelectedBlock = items;
+        if (!stillValid) {
+          _selectedUserGoalId = null;
+        }
+        _loadingUserGoals = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        _selectedUserGoalId = null;
+        _loadingUserGoals = false;
+      });
+    }
   }
 
   @override
@@ -75,22 +284,23 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     _descCtrl = TextEditingController(text: g.description);
     _emotionCtrl = TextEditingController(text: g.emotion);
 
-    final initialValue = (widget.fixedLifeBlock?.trim().isNotEmpty ?? false)
+    final initialBlock = (widget.fixedLifeBlock?.trim().isNotEmpty ?? false)
         ? widget.fixedLifeBlock!.trim()
         : ((g.lifeBlock?.trim().isNotEmpty ?? false)
-              ? g.lifeBlock!.trim()
-              : 'general');
+            ? g.lifeBlock!.trim()
+            : 'general');
 
-    final blocks = _normalizeBlocks(
-      availableBlocks: widget.availableBlocks,
-      fixedLifeBlock: widget.fixedLifeBlock,
-      currentValue: initialValue,
-    );
-
-    _lifeBlock = blocks.contains(initialValue) ? initialValue : 'general';
+    _lifeBlock = _normalizeBlock(initialBlock);
     _importance = g.importance.clamp(1, 3);
     _hours = g.spentHours.clamp(0.5, 14.0);
     _start = TimeOfDay.fromDateTime(g.startTime);
+    _selectedDate = DateUtils.dateOnly(g.startTime);
+
+    _selectedUserGoalId = widget.initialUserGoalId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserGoalsForCurrentBlock();
+    });
   }
 
   @override
@@ -123,23 +333,52 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     }
   }
 
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+      builder: (ctx, child) {
+        final t = Theme.of(ctx);
+        return Theme(
+          data: t.copyWith(
+            colorScheme: t.colorScheme.copyWith(
+              primary: t.colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = DateUtils.dateOnly(picked);
+      });
+    }
+  }
+
   void _submit() {
     final t = AppLocalizations.of(context)!;
 
-    final title = _titleCtrl.text.trim().isEmpty
-        ? t.editGoalUntitled
-        : _titleCtrl.text.trim();
+    final title =
+        _titleCtrl.text.trim().isEmpty ? t.editGoalUntitled : _titleCtrl.text.trim();
 
     Navigator.pop(
       context,
-      AddGoalResult(
+      EditGoalResult(
         title: title,
         description: _descCtrl.text.trim(),
-        lifeBlock: _lifeBlock,
+        lifeBlock: _normalizeBlock(_lifeBlock),
         importance: _importance,
         emotion: _emotionCtrl.text.trim(),
         hours: _hours,
         startTime: _start,
+        date: _selectedDate,
+        userGoalId: _selectedUserGoalId,
       ),
     );
   }
@@ -164,19 +403,20 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final canEditBlock = widget.fixedLifeBlock == null;
 
-    final blocks = _normalizeBlocks(
-      availableBlocks: widget.availableBlocks,
-      fixedLifeBlock: widget.fixedLifeBlock,
-      currentValue: _lifeBlock,
-    );
-
+    final blocks = _lifeBlockOptions;
     final dropdownValue = blocks.contains(_lifeBlock) ? _lifeBlock : 'general';
+
+    final dropdownGoalValue = _userGoalsForSelectedBlock.any(
+      (g) => g.id == _selectedUserGoalId,
+    )
+        ? _selectedUserGoalId
+        : null;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.88,
+        initialChildSize: 0.90,
         minChildSize: 0.62,
         maxChildSize: 0.96,
         builder: (ctx, controller) {
@@ -189,16 +429,15 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                 const SizedBox(height: 4),
                 Center(
                   child: Container(
-                    width: 44,
+                    width: 48,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: scheme.outline.withOpacity(0.72),
+                      color: scheme.onSurface.withOpacity(0.16),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     const _IconBubble(icon: Icons.edit_rounded),
@@ -215,9 +454,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
                 NestSectionTitle(t.editGoalSectionDetails),
                 NestCard(
                   padding: const EdgeInsets.all(16),
@@ -248,7 +485,58 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                     ],
                   ),
                 ),
-
+                const SizedBox(height: 2),
+                NestSectionTitle('Дата и время'),
+                NestCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: _pickDate,
+                              child: InputDecorator(
+                                decoration: _nestInput(
+                                  label: 'Дата',
+                                  icon: Icons.calendar_today_rounded,
+                                ),
+                                child: Text(
+                                  _formatDate(_selectedDate),
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: scheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: _pickTime,
+                              child: InputDecorator(
+                                decoration: _nestInput(
+                                  label: 'Время',
+                                  icon: Icons.schedule_rounded,
+                                ),
+                                child: Text(
+                                  _start.format(context),
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: scheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
                 if (canEditBlock) ...[
                   const SizedBox(height: 2),
                   NestSectionTitle(t.editGoalSectionLifeBlock),
@@ -268,14 +556,92 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                             ),
                           )
                           .toList(),
-                      onChanged: (v) {
+                      onChanged: (v) async {
                         if (v == null) return;
-                        setState(() => _lifeBlock = v);
+
+                        final next = _normalizeBlock(v);
+                        if (next == _lifeBlock) return;
+
+                        setState(() {
+                          _lifeBlock = next;
+                          _selectedUserGoalId = null;
+                          _userGoalsForSelectedBlock = const [];
+                        });
+
+                        await _loadUserGoalsForCurrentBlock();
                       },
                     ),
                   ),
                 ],
-
+                const SizedBox(height: 2),
+                NestSectionTitle('Связь с большой целью'),
+                NestCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DropdownButtonFormField<String?>(
+                        value: dropdownGoalValue,
+                        decoration: _nestInput(
+                          label: 'Большая цель',
+                          icon: Icons.link_rounded,
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('Без связи'),
+                          ),
+                          ..._userGoalsForSelectedBlock.map(
+                            (g) => DropdownMenuItem<String?>(
+                              value: g.id,
+                              child: Text(
+                                '${g.title} · ${_horizonLabel(g.horizon)}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: _loadingUserGoals
+                            ? null
+                            : (v) {
+                                setState(() => _selectedUserGoalId = v);
+                              },
+                      ),
+                      if (_loadingUserGoals) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: scheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Загружаю цели для блока "${_lifeBlockLabel(_lifeBlock)}"...',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else if (_userGoalsForSelectedBlock.isEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Для блока "${_lifeBlockLabel(_lifeBlock)}" пока нет доступных целей.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 2),
                 NestSectionTitle(t.editGoalSectionParams),
                 NestCard(
@@ -324,112 +690,61 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 18),
-
                       Row(
                         children: [
                           Icon(
                             Icons.timelapse_rounded,
                             size: 18,
-                            color: scheme.onSurfaceVariant,
+                            color: scheme.primary,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              t.editGoalDurationHours,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: scheme.onSurface,
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Часы: ${_hours.toStringAsFixed(1)}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
                             ),
                           ),
+                          const Spacer(),
                           NestPill(
-                            leading: const Icon(
-                              Icons.timer_outlined,
-                              size: 16,
-                            ),
-                            text: _hours.toStringAsFixed(1),
+                            leading: const Icon(Icons.schedule_rounded, size: 16),
+                            text: '${_hours.toStringAsFixed(1)} ч',
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 8),
-
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 3.5,
-                          thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 8,
-                          ),
-                          overlayShape: const RoundSliderOverlayShape(
-                            overlayRadius: 18,
-                          ),
-                        ),
-                        child: Slider(
-                          min: 0.5,
-                          max: 14,
-                          divisions: 27,
-                          value: _hours,
-                          label: _hours.toStringAsFixed(1),
-                          onChanged: (v) => setState(() => _hours = v),
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.schedule_rounded,
-                            size: 18,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              t.editGoalStartTime,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: scheme.onSurface,
-                              ),
-                            ),
-                          ),
-                          _PillButton(
-                            label: _start.format(context),
-                            icon: Icons.access_time_rounded,
-                            onTap: _pickTime,
-                          ),
-                        ],
+                      Slider(
+                        value: _hours,
+                        min: 0.5,
+                        max: 14,
+                        divisions: 27,
+                        label: _hours.toStringAsFixed(1),
+                        onChanged: (v) {
+                          setState(() => _hours = v);
+                        },
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
-                      child: _SoftButton(
-                        label: t.commonCancel,
-                        kind: _SoftButtonKind.secondary,
-                        onTap: () => Navigator.pop(context),
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(t.commonCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _SoftButton(
-                        label: t.commonSave,
-                        kind: _SoftButtonKind.primary,
-                        onTap: _submit,
+                      child: FilledButton.icon(
+                        onPressed: _submit,
+                        icon: const Icon(Icons.check_rounded),
+                        label: Text(t.commonSave),
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 10),
-                const SafeArea(top: false, child: SizedBox(height: 0)),
               ],
             ),
           );
@@ -449,93 +764,19 @@ class _IconBubble extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      width: 42,
-      height: 42,
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outlineVariant),
+        color: scheme.primary.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: scheme.primary.withOpacity(0.18),
+        ),
       ),
       child: Icon(
         icon,
-        color: scheme.onSurface,
-        size: 18,
+        color: scheme.primary,
       ),
-    );
-  }
-}
-
-class _PillButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _PillButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: scheme.outlineVariant),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: scheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-enum _SoftButtonKind { primary, secondary }
-
-class _SoftButton extends StatelessWidget {
-  final String label;
-  final _SoftButtonKind kind;
-  final VoidCallback onTap;
-
-  const _SoftButton({
-    required this.label,
-    required this.kind,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isPrimary = kind == _SoftButtonKind.primary;
-
-    return SizedBox(
-      height: 48,
-      child: isPrimary
-          ? FilledButton(
-              onPressed: onTap,
-              child: Text(label),
-            )
-          : OutlinedButton(
-              onPressed: onTap,
-              child: Text(label),
-            ),
     );
   }
 }

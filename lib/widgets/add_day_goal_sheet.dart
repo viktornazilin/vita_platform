@@ -1,6 +1,21 @@
 // lib/widgets/goals/add_day_goal_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class UserGoalLinkOption {
+  final String id;
+  final String title;
+  final String lifeBlock;
+  final String horizon;
+
+  const UserGoalLinkOption({
+    required this.id,
+    required this.title,
+    required this.lifeBlock,
+    required this.horizon,
+  });
+}
 
 class AddGoalResult {
   final String title;
@@ -10,6 +25,7 @@ class AddGoalResult {
   final String emotion;
   final double hours;
   final TimeOfDay startTime;
+  final String? userGoalId;
 
   AddGoalResult({
     required this.title,
@@ -19,6 +35,7 @@ class AddGoalResult {
     required this.emotion,
     required this.hours,
     required this.startTime,
+    this.userGoalId,
   });
 }
 
@@ -26,10 +43,17 @@ class AddDayGoalSheet extends StatefulWidget {
   final String? fixedLifeBlock;
   final List<String> availableBlocks;
 
+  /// Оставляем для обратной совместимости, но больше не используем
+  final List<UserGoalLinkOption> availableUserGoals;
+
+  final String? initialUserGoalId;
+
   const AddDayGoalSheet({
     super.key,
     required this.fixedLifeBlock,
     this.availableBlocks = const [],
+    this.availableUserGoals = const [],
+    this.initialUserGoalId,
   });
 
   @override
@@ -40,16 +64,92 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
 
+  final _supabase = Supabase.instance.client;
   final _emotions = const ['😊', '😐', '😢', '😎', '😤', '🤔', '😴', '😇'];
+
   String _emotion = '😊';
-
-  // ✅ ограничиваем 1..3
   int _importance = 2;
-
   double _hours = 1.0;
   late String _lifeBlock;
-
+  String? _selectedUserGoalId;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
+
+  bool _loadingUserGoals = false;
+  List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
+
+  String _normalizeBlock(String value) {
+    final v = value.trim().toLowerCase();
+
+    switch (v) {
+      case '':
+        return 'general';
+
+      case 'general':
+      case 'general ':
+      case 'общий':
+      case 'общее':
+      case 'общие':
+      case 'без категории':
+        return 'general';
+
+      case 'health':
+      case 'здоровье':
+      case 'healthcare':
+      case 'wellbeing':
+      case 'well-being':
+        return 'health';
+
+      case 'career':
+      case 'карьера':
+      case 'работа':
+      case 'job':
+      case 'work':
+        return 'career';
+
+      case 'finance':
+      case 'финансы':
+      case 'money':
+      case 'financial':
+        return 'finance';
+
+      case 'relationships':
+      case 'relationship':
+      case 'relations':
+      case 'отношения':
+      case 'семья':
+        return 'relationships';
+
+      case 'self':
+      case 'selfdevelopment':
+      case 'self-development':
+      case 'personal':
+      case 'personal growth':
+      case 'личное':
+      case 'саморазвитие':
+        return 'self';
+
+      case 'education':
+      case 'learning':
+      case 'study':
+      case 'учеба':
+      case 'учёба':
+      case 'образование':
+        return 'education';
+
+      case 'travel':
+      case 'путешествия':
+      case 'traveling':
+        return 'travel';
+
+      case 'home':
+      case 'house':
+      case 'дом':
+        return 'home';
+
+      default:
+        return v;
+    }
+  }
 
   List<String> get _lifeBlockOptions {
     final seen = <String>{};
@@ -58,16 +158,112 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
     for (final raw in widget.availableBlocks) {
       final b = raw.trim();
       if (b.isEmpty) continue;
-      final key = b.toLowerCase();
-      if (key == 'general') continue;
-      if (seen.add(key)) out.add(b);
+
+      final normalized = _normalizeBlock(b);
+      if (seen.add(normalized)) {
+        if (normalized == 'general') continue;
+        out.add(normalized);
+      }
     }
 
     return out;
   }
 
   String _lifeBlockLabel(String value) {
-    return value.toLowerCase() == 'general' ? 'General' : value;
+    switch (_normalizeBlock(value)) {
+      case 'general':
+        return 'General';
+      case 'health':
+        return 'Health';
+      case 'career':
+        return 'Career';
+      case 'finance':
+        return 'Finance';
+      case 'relationships':
+        return 'Relationships';
+      case 'self':
+        return 'Self';
+      case 'education':
+        return 'Education';
+      case 'travel':
+        return 'Travel';
+      case 'home':
+        return 'Home';
+      default:
+        return value;
+    }
+  }
+
+  String _horizonLabel(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'tactical':
+        return 'Тактическая';
+      case 'mid':
+        return 'Среднесрочная';
+      case 'long':
+        return 'Долгосрочная';
+      default:
+        return value;
+    }
+  }
+
+  Future<void> _loadUserGoalsForCurrentBlock() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        _selectedUserGoalId = null;
+        _loadingUserGoals = false;
+      });
+      return;
+    }
+
+    final normalizedBlock = _normalizeBlock(_lifeBlock);
+
+    setState(() {
+      _loadingUserGoals = true;
+    });
+
+    try {
+      final raw = await _supabase
+          .from('user_goals')
+          .select('id, title, life_block, horizon')
+          .eq('user_id', userId)
+          .eq('life_block', normalizedBlock)
+          .order('title');
+
+      final items = (raw as List)
+          .map((e) => UserGoalLinkOption(
+                id: (e['id'] ?? '').toString(),
+                title: (e['title'] ?? '').toString(),
+                lifeBlock: (e['life_block'] ?? '').toString(),
+                horizon: (e['horizon'] ?? '').toString(),
+              ))
+          .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
+          .toList()
+        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+      if (!mounted) return;
+
+      final stillValid = _selectedUserGoalId != null &&
+          items.any((g) => g.id == _selectedUserGoalId);
+
+      setState(() {
+        _userGoalsForSelectedBlock = items;
+        if (!stillValid) {
+          _selectedUserGoalId = null;
+        }
+        _loadingUserGoals = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        _selectedUserGoalId = null;
+        _loadingUserGoals = false;
+      });
+    }
   }
 
   @override
@@ -78,10 +274,16 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
     final fixed = widget.fixedLifeBlock?.trim();
 
     if (fixed != null && fixed.isNotEmpty) {
-      _lifeBlock = fixed;
+      _lifeBlock = _normalizeBlock(fixed);
     } else {
       _lifeBlock = options.contains('general') ? 'general' : options.first;
     }
+
+    _selectedUserGoalId = widget.initialUserGoalId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserGoalsForCurrentBlock();
+    });
   }
 
   @override
@@ -96,7 +298,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
       context: context,
       initialTime: _startTime,
     );
-    if (picked != null) setState(() => _startTime = picked);
+    if (picked != null) {
+      setState(() => _startTime = picked);
+    }
   }
 
   void _submit() {
@@ -117,8 +321,9 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
           behavior: SnackBarBehavior.floating,
           backgroundColor: scheme.surfaceContainerHigh.withOpacity(0.92),
           elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       );
       return;
@@ -129,11 +334,12 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
       AddGoalResult(
         title: _titleCtrl.text.trim(),
         description: _descCtrl.text.trim(),
-        lifeBlock: _lifeBlock,
+        lifeBlock: _normalizeBlock(_lifeBlock),
         importance: _importance,
         emotion: _emotion,
         hours: _hours,
         startTime: _startTime,
+        userGoalId: _selectedUserGoalId,
       ),
     );
   }
@@ -152,6 +358,12 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
     final borderColor = scheme.outlineVariant.withOpacity(isDark ? 0.65 : 0.55);
 
     final lifeBlockOptions = _lifeBlockOptions;
+
+    final dropdownGoalValue = _userGoalsForSelectedBlock.any(
+      (g) => g.id == _selectedUserGoalId,
+    )
+        ? _selectedUserGoalId
+        : null;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -192,14 +404,14 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       width: 46,
                       height: 5,
                       decoration: BoxDecoration(
-                        color: scheme.onSurfaceVariant
-                            .withOpacity(isDark ? 0.28 : 0.20),
+                        color: scheme.onSurfaceVariant.withOpacity(
+                          isDark ? 0.28 : 0.20,
+                        ),
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                   ),
                   const SizedBox(height: 14),
-
                   Row(
                     children: [
                       Container(
@@ -225,18 +437,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       Expanded(
                         child: Text(
                           l.addDayGoalTitle,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: scheme.onSurface,
-                                  ),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: scheme.onSurface,
+                              ),
                         ),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 14),
-
                   _Section(
                     child: Column(
                       children: [
@@ -262,9 +471,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   _Section(
                     child: Row(
                       children: [
@@ -273,8 +480,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                         Expanded(
                           child: Text(
                             l.addDayGoalStartTime,
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: scheme.onSurface,
                                 ),
@@ -287,9 +493,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   if (widget.fixedLifeBlock == null) ...[
                     _Section(
                       child: Row(
@@ -299,8 +503,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           Expanded(
                             child: Text(
                               l.addDayGoalLifeBlock,
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     color: scheme.onSurface,
                                   ),
@@ -313,19 +516,28 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               borderRadius: BorderRadius.circular(14),
                               items: lifeBlockOptions
                                   .map(
-                                    (b) => DropdownMenuItem(
+                                    (b) => DropdownMenuItem<String>(
                                       value: b,
                                       child: Text(
                                         _lifeBlockLabel(b),
-                                        style: TextStyle(
-                                          color: scheme.onSurface,
-                                        ),
+                                        style: TextStyle(color: scheme.onSurface),
                                       ),
                                     ),
                                   )
                                   .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _lifeBlock = v ?? _lifeBlock),
+                              onChanged: (v) async {
+                                final next =
+                                    _normalizeBlock(v ?? _lifeBlock);
+                                if (next == _lifeBlock) return;
+
+                                setState(() {
+                                  _lifeBlock = next;
+                                  _selectedUserGoalId = null;
+                                  _userGoalsForSelectedBlock = const [];
+                                });
+
+                                await _loadUserGoalsForCurrentBlock();
+                              },
                             ),
                           ),
                         ],
@@ -333,18 +545,119 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                     ),
                     const SizedBox(height: 12),
                   ],
-
+                  _Section(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.link_rounded, color: scheme.primary),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Связать с целью',
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: scheme.onSurface,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<String?>(
+                          value: dropdownGoalValue,
+                          decoration: InputDecoration(
+                            labelText: 'Большая цель',
+                            filled: true,
+                            fillColor: isDark
+                                ? scheme.surfaceContainerHighest.withOpacity(0.36)
+                                : Colors.white.withOpacity(0.78),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: scheme.outlineVariant.withOpacity(0.60),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: scheme.outlineVariant.withOpacity(0.55),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: scheme.primary,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('Без связи'),
+                            ),
+                            ..._userGoalsForSelectedBlock.map(
+                              (g) => DropdownMenuItem<String?>(
+                                value: g.id,
+                                child: Text(
+                                  '${g.title} · ${_horizonLabel(g.horizon)}',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: _loadingUserGoals
+                              ? null
+                              : (v) {
+                                  setState(() => _selectedUserGoalId = v);
+                                },
+                        ),
+                        if (_loadingUserGoals) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: scheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Загружаю цели для блока "${_lifeBlockLabel(_lifeBlock)}"...',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ] else if (_userGoalsForSelectedBlock.isEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Для блока "${_lifeBlockLabel(_lifeBlock)}" пока нет доступных целей.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _Section(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           l.addDayGoalImportance,
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: scheme.onSurface,
-                                  ),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: scheme.onSurface,
+                              ),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
@@ -358,8 +671,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               selected: selected,
                               onSelected: (_) => setState(() => _importance = v),
                               selectedColor: scheme.primary.withOpacity(0.18),
-                              backgroundColor: scheme.surfaceContainerHighest
-                                  .withOpacity(0.75),
+                              backgroundColor:
+                                  scheme.surfaceContainerHighest.withOpacity(0.75),
                               side: BorderSide(
                                 color: selected
                                     ? scheme.primary.withOpacity(0.35)
@@ -377,20 +690,17 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   _Section(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           l.addDayGoalEmotion,
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: scheme.onSurface,
-                                  ),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: scheme.onSurface,
+                              ),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
@@ -398,12 +708,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           children: _emotions.map((e) {
                             final selected = _emotion == e;
                             return ChoiceChip(
-                              label: Text(e, style: const TextStyle(fontSize: 18)),
+                              label: Text(
+                                e,
+                                style: const TextStyle(fontSize: 18),
+                              ),
                               selected: selected,
                               onSelected: (_) => setState(() => _emotion = e),
                               selectedColor: scheme.primary.withOpacity(0.18),
-                              backgroundColor: scheme.surfaceContainerHighest
-                                  .withOpacity(0.75),
+                              backgroundColor:
+                                  scheme.surfaceContainerHighest.withOpacity(0.75),
                               side: BorderSide(
                                 color: selected
                                     ? scheme.primary.withOpacity(0.35)
@@ -415,9 +728,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   _Section(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,8 +738,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             Expanded(
                               child: Text(
                                 l.addDayGoalHours,
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                       fontWeight: FontWeight.w900,
                                       color: scheme.onSurface,
                                     ),
@@ -448,9 +758,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 14),
-
                   Row(
                     children: [
                       Expanded(
@@ -468,7 +776,6 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 8),
                 ],
               ),

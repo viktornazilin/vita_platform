@@ -35,7 +35,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
     ({
       Map<String, YesNoStat> yesNoStats,
       Map<String, ScaleStat> scaleStats,
-      List<dynamic> questions, // нам не нужно типизировать здесь строго
+      List<dynamic> questions,
     })
   >
   _future;
@@ -49,7 +49,6 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
   @override
   void didUpdateWidget(covariant MentalWeekCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // если дни изменились — перегружаем
     if (!_sameDays(oldWidget.days, widget.days)) {
       _future = _load();
     }
@@ -82,13 +81,15 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
 
     final res = await dbRepo.buildWeekMentalStats(days);
 
-    // Приводим к удобному виду для виджета
     return (
       yesNoStats: res.yesNoStats,
       scaleStats: res.scaleStats,
       questions: res.questions,
     );
   }
+
+  bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +131,10 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
               children: [
                 Text(
                   l.mentalWeekLoadError('${snap.error}'),
-                  style: tt.bodySmall?.copyWith(color: cs.error),
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.error,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
@@ -150,7 +154,6 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
         final yesNoAll = data.yesNoStats.values.toList();
         final scaleAll = data.scaleStats.values.toList();
 
-        // показываем только “полезные”
         final yesNoShown =
             (yesNoAll.where((s) => s.total > 0).toList()
                   ..sort((a, b) => b.total.compareTo(a.total)))
@@ -173,7 +176,10 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
               children: [
                 Text(
                   l.mentalWeekNoAnswers,
-                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 if (widget.debug) ...[
                   const SizedBox(height: 10),
@@ -199,7 +205,10 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
               if (yesNoShown.isNotEmpty) ...[
                 Text(
                   l.mentalWeekYesNoHeader,
-                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 for (final s in yesNoShown) ...[
@@ -211,7 +220,10 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
                 if (yesNoShown.isNotEmpty) const SizedBox(height: 4),
                 Text(
                   l.mentalWeekScalesHeader,
-                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 for (final s in scaleShown) ...[
@@ -225,7 +237,10 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
               ],
               Text(
                 l.mentalWeekFooterHint,
-                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -258,18 +273,26 @@ class _DebugBlock extends StatelessWidget {
   final List<String> lines;
   const _DebugBlock({required this.lines});
 
+  bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = _isDark(context);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.35),
+        color: isDark
+            ? cs.surfaceContainerHighest.withOpacity(0.45)
+            : cs.surfaceContainerHighest.withOpacity(0.82),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+        border: Border.all(
+          color: cs.outlineVariant.withOpacity(isDark ? 0.55 : 0.72),
+        ),
       ),
       child: Text(
         lines.join('\n'),
@@ -277,6 +300,7 @@ class _DebugBlock extends StatelessWidget {
           color: cs.onSurfaceVariant,
           fontFamily: 'monospace',
           height: 1.25,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -287,11 +311,15 @@ class _YesNoBar extends StatelessWidget {
   final YesNoStat stat;
   const _YesNoBar({required this.stat});
 
+  bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = _isDark(context);
 
     final label = stat.question.text;
     final ratio = stat.ratio;
@@ -301,26 +329,36 @@ class _YesNoBar extends StatelessWidget {
       children: [
         Text(
           label,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+          style: tt.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: cs.onSurface,
+          ),
         ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: Container(
-            height: 12,
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.35),
-              border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+        const SizedBox(height: 8),
+        Container(
+          height: 12,
+          decoration: BoxDecoration(
+            color: isDark
+                ? cs.surfaceContainerHighest.withOpacity(0.45)
+                : cs.surfaceContainerHighest.withOpacity(0.82),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: cs.outlineVariant.withOpacity(isDark ? 0.55 : 0.72),
             ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
             child: Align(
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
-                widthFactor: ratio.clamp(0, 1),
+                widthFactor: ratio.clamp(0, 1).toDouble(),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: cs.secondary.withOpacity(0.80),
+                    color: isDark
+                        ? cs.secondary.withOpacity(0.82)
+                        : cs.secondary.withOpacity(0.92),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -333,7 +371,10 @@ class _YesNoBar extends StatelessWidget {
           stat.total == 0
               ? l.mentalWeekNoData
               : l.mentalWeekYesCount(stat.yes, stat.total),
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          style: tt.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -351,11 +392,15 @@ class _ScaleSparkline extends StatelessWidget {
     required this.weekdayLabel,
   });
 
+  bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = _isDark(context);
 
     final label = stat.question.text;
     final avg = stat.avg;
@@ -371,39 +416,65 @@ class _ScaleSparkline extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                style: tt.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: cs.onSurface,
+                ),
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              avg == null ? l.commonDash : avg.toStringAsFixed(1),
-              style: tt.labelLarge?.copyWith(color: cs.onSurfaceVariant),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? cs.surfaceContainerHighest.withOpacity(0.42)
+                    : cs.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: isDark
+                      ? cs.outlineVariant.withOpacity(0.45)
+                      : cs.primary.withOpacity(0.18),
+                ),
+              ),
+              child: Text(
+                avg == null ? l.commonDash : avg.toStringAsFixed(1),
+                style: tt.labelLarge?.copyWith(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            height: 54,
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.35),
-              border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+        Container(
+          height: 54,
+          decoration: BoxDecoration(
+            color: isDark
+                ? cs.surfaceContainerHighest.withOpacity(0.45)
+                : cs.surfaceContainerHighest.withOpacity(0.82),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: cs.outlineVariant.withOpacity(isDark ? 0.55 : 0.72),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: CustomPaint(
-                painter: _SparklinePainter(
-                  values: stat.series,
-                  min: minV,
-                  max: maxV,
-                  color: cs.primary.withOpacity(0.9),
-                  bgColor: cs.onSurfaceVariant.withOpacity(0.06),
-                ),
-                child: const SizedBox.expand(),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: CustomPaint(
+              painter: _SparklinePainter(
+                values: stat.series,
+                min: minV,
+                max: maxV,
+                color: isDark
+                    ? cs.primary.withOpacity(0.92)
+                    : cs.primary.withOpacity(0.98),
+                bgColor: isDark
+                    ? cs.onSurfaceVariant.withOpacity(0.08)
+                    : cs.primary.withOpacity(0.05),
               ),
+              child: const SizedBox.expand(),
             ),
           ),
         ),
@@ -417,6 +488,7 @@ class _ScaleSparkline extends StatelessWidget {
                 style: tt.bodySmall?.copyWith(
                   fontSize: 11,
                   color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             );
@@ -450,7 +522,7 @@ class _SparklinePainter extends CustomPainter {
 
     final paintLine = Paint()
       ..color = color
-      ..strokeWidth = 2.2
+      ..strokeWidth = 2.4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
@@ -483,10 +555,13 @@ class _SparklinePainter extends CustomPainter {
         continue;
       }
       final x = (i / (n - 1)) * size.width;
-      final y = size.height - (norm(v).clamp(0, 1) * size.height);
+      final y = size.height - (norm(v).clamp(0.0, 1.0) * size.height);
       current.add(Offset(x, y));
     }
-    if (current.length >= 2) segments.add(current);
+
+    if (current.length >= 2) {
+      segments.add(current);
+    }
 
     if (segments.isEmpty) return;
 
@@ -496,15 +571,16 @@ class _SparklinePainter extends CustomPainter {
         path.lineTo(points[i].dx, points[i].dy);
       }
       canvas.drawPath(path, paintLine);
+
       for (final p in points) {
-        canvas.drawCircle(p, 2.8, paintDot);
+        canvas.drawCircle(p, 2.9, paintDot);
       }
     }
   }
 
   @override
   bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
-    return oldDelegate.values != values ||
+    return !listEquals(oldDelegate.values, values) ||
         oldDelegate.min != min ||
         oldDelegate.max != max ||
         oldDelegate.color != color ||

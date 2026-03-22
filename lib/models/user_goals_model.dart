@@ -22,7 +22,7 @@ class UserGoalsModel extends ChangeNotifier {
   Map<String, Map<GoalHorizon, List<UserGoal>>> get grouped {
     final out = <String, Map<GoalHorizon, List<UserGoal>>>{};
 
-    for (final g in _items) {
+    for (final g in filteredItems) {
       final byH = out.putIfAbsent(g.lifeBlock, () => {});
       final list = byH.putIfAbsent(g.horizon, () => <UserGoal>[]);
       list.add(g);
@@ -42,6 +42,8 @@ class UserGoalsModel extends ChangeNotifier {
     return out;
   }
 
+  /// Все цели из БД, без фильтра по блоку.
+  /// Фильтрация по lifeBlock должна происходить уже на уровне UI/геттеров.
   Future<void> load() async {
     loading = true;
     error = null;
@@ -49,7 +51,7 @@ class UserGoalsModel extends ChangeNotifier {
 
     try {
       _items = await repo.getUserGoals(
-        lifeBlock: _selectedBlock == 'all' ? null : _selectedBlock,
+        lifeBlock: null,
         horizon: _selectedHorizon,
         includeCompleted: true,
       );
@@ -61,9 +63,37 @@ class UserGoalsModel extends ChangeNotifier {
     }
   }
 
+  /// Отфильтрованный список для отображения на экране.
+  /// Но исходный _items всегда содержит все цели.
+  List<UserGoal> get filteredItems {
+    Iterable<UserGoal> result = _items;
+
+    if (_selectedBlock != 'all') {
+      final selected = _selectedBlock.trim().toLowerCase();
+      result = result.where(
+        (g) => g.lifeBlock.trim().toLowerCase() == selected,
+      );
+    }
+
+    if (_selectedHorizon != null) {
+      result = result.where((g) => g.horizon == _selectedHorizon);
+    }
+
+    final list = result.toList();
+
+    list.sort((a, b) {
+      if (a.sortOrder != b.sortOrder) {
+        return a.sortOrder.compareTo(b.sortOrder);
+      }
+      return b.createdAt.compareTo(a.createdAt);
+    });
+
+    return list;
+  }
+
   void setSelectedBlock(String block) {
     _selectedBlock = block;
-    load();
+    notifyListeners();
   }
 
   void setSelectedHorizon(GoalHorizon? horizon) {
@@ -129,7 +159,7 @@ class UserGoalsModel extends ChangeNotifier {
   }
 
   List<UserGoal> goalsByHorizon(GoalHorizon horizon) {
-    return _items.where((g) => g.horizon == horizon).toList();
+    return filteredItems.where((g) => g.horizon == horizon).toList();
   }
 
   Future<void> createGoal({

@@ -583,10 +583,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeTitleHome => 'Главная';
 
   @override
-  String get homeTitleGoals => 'Цели';
+  String get homeTitleGoals => 'Задачи';
 
   @override
-  String get homeTitleMood => 'Настроение';
+  String get homeTitleMood => 'Цели';
 
   @override
   String get homeTitleProfile => 'Профиль';

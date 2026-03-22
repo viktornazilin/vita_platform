@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
   static final _screens = <Widget>[
     const HomeDashboardTab(),
     const GoalsScreen(),
-    const MoodScreen(),
+    const UserGoalsScreen(),
     const ProfileScreen(),
     const ReportsScreen(),
     const ExpensesScreen(),

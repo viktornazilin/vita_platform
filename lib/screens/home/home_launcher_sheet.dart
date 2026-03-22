@@ -80,8 +80,8 @@ void showHomeLauncherSheet({
                     },
                   ),
                   LauncherTile(
-                    icon: Icons.mood,
-                    label: AppLocalizations.of(ctx)!.launcherMood,
+                    icon: Icons.track_changes_rounded,
+                    label: 'Цели',
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(2);
@@ -125,7 +125,6 @@ void showHomeLauncherSheet({
 
                   return Column(
                     children: [
-                      // ✅ Массовое добавление (логика 1-в-1)
                       _NestQuickActionTile(
                         icon: Icons.bolt,
                         color: cs.primary,
@@ -155,7 +154,6 @@ void showHomeLauncherSheet({
                             Navigator.pop(ctx);
 
                             try {
-                              // 1) Настроение
                               if (result.mood != null) {
                                 await dbRepo.upsertMood(
                                   date: DateUtils.dateOnly(result.date),
@@ -164,7 +162,6 @@ void showHomeLauncherSheet({
                                 );
                               }
 
-                              // 2) Расходы
                               for (final e in result.expenses) {
                                 final ts = DateTime(
                                   result.date.year,
@@ -183,7 +180,6 @@ void showHomeLauncherSheet({
                                 );
                               }
 
-                              // 1.5) Привычки
                               if (result.habits.isNotEmpty) {
                                 final habitRows = result.habits
                                     .map(
@@ -199,7 +195,6 @@ void showHomeLauncherSheet({
                                 await dbRepo.upsertHabitEntries(habitRows);
                               }
 
-                              // 1.6) Ментальное здоровье
                               if (result.mental.isNotEmpty) {
                                 final rows = result.mental.map((a) {
                                   if (a.valueBool != null) {
@@ -228,7 +223,6 @@ void showHomeLauncherSheet({
                                 await dbRepo.upsertMentalAnswers(rows);
                               }
 
-                              // 2.5) Доходы
                               for (final i in result.incomes) {
                                 final ts = DateTime(
                                   result.date.year,
@@ -247,7 +241,6 @@ void showHomeLauncherSheet({
                                 );
                               }
 
-                              // 3) Задачи
                               DateTime _combine(DateTime day, TimeOfDay t) =>
                                   DateTime(
                                     day.year,
@@ -288,7 +281,6 @@ void showHomeLauncherSheet({
                                 );
                               }
 
-                              // 4) Привычки (повторная запись)
                               final habitRows = result.habits
                                   .map(
                                     (h) => HabitEntryUpsert(
@@ -329,10 +321,7 @@ void showHomeLauncherSheet({
                           }
                         },
                       ),
-
                       const SizedBox(height: 10),
-
-                      // 🔮 AI-план
                       _NestQuickActionTile(
                         icon: Icons.auto_awesome,
                         color: cs.tertiary,
@@ -365,10 +354,7 @@ void showHomeLauncherSheet({
                           }
                         },
                       ),
-
                       const SizedBox(height: 10),
-
-                      // 🧠 AI-инсайты
                       _NestQuickActionTile(
                         icon: Icons.psychology_alt,
                         color: cs.secondary,
@@ -389,10 +375,7 @@ void showHomeLauncherSheet({
                           );
                         },
                       ),
-
                       const SizedBox(height: 10),
-
-                      // 🔁 Регулярная цель
                       _NestQuickActionTile(
                         icon: Icons.event_repeat_rounded,
                         color: cs.primaryContainer,
@@ -525,17 +508,14 @@ void showHomeLauncherSheet({
                           }
                         },
                       ),
-
                       const SizedBox(height: 10),
-
-                      // ✅ Google Calendar (кликабельно)
                       _NestQuickActionTile(
                         icon: Icons.calendar_month_rounded,
                         color: cs.primary,
                         title: l.launcherGoogleCalendarSyncTitle,
                         subtitle: l.launcherGoogleCalendarSyncSubtitle,
                         onTap: () async {
-                          Navigator.pop(ctx); // закрываем launcher sheet
+                          Navigator.pop(ctx);
 
                           await showModalBottomSheet<void>(
                             context: context,
@@ -565,28 +545,33 @@ void showHomeLauncherSheet({
   );
 }
 
-// ============================================================================
-// Nest sheet widgets (локально)
-// ============================================================================
-
 class _NestSheet extends StatelessWidget {
   final Widget child;
   const _NestSheet({required this.child});
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.78),
+          color: isDark
+              ? cs.surface.withOpacity(0.92)
+              : cs.surface.withOpacity(0.94),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: const Color(0xFFD6E6F5)),
-          boxShadow: const [
+          border: Border.all(
+            color: cs.outlineVariant.withOpacity(isDark ? 0.42 : 0.72),
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x1A2B5B7A),
+              color: isDark
+                  ? Colors.black.withOpacity(0.24)
+                  : cs.shadow.withOpacity(0.12),
               blurRadius: 28,
-              offset: Offset(0, -10),
+              offset: const Offset(0, -10),
             ),
           ],
         ),
@@ -605,6 +590,8 @@ class _NestSheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Container(
@@ -612,20 +599,20 @@ class _NestSheetHeader extends StatelessWidget {
           height: 38,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF3AA8E6), Color(0xFF6C8CFF)],
+              colors: [cs.primary, cs.tertiary],
             ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x1F2B5B7A),
+                color: cs.primary.withOpacity(0.22),
                 blurRadius: 16,
-                offset: Offset(0, 10),
+                offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+          child: Icon(Icons.auto_awesome, color: cs.onPrimary, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -634,13 +621,17 @@ class _NestSheetHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: cs.onSurface,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: tt.bodySmall?.copyWith(
-                  color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -657,13 +648,15 @@ class _NestSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
         text,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w900,
-          color: const Color(0xFF2E4B5A),
+          color: cs.onSurface,
         ),
       ),
     );
@@ -688,58 +681,78 @@ class _NestQuickActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: () => onTap(),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.72),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFD6E6F5)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x142B5B7A),
-              blurRadius: 18,
-              offset: Offset(0, 10),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onTap(),
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark
+                ? cs.surfaceContainerHigh.withOpacity(0.78)
+                : cs.surface.withOpacity(0.96),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: cs.outlineVariant.withOpacity(isDark ? 0.38 : 0.65),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withOpacity(0.14),
-                border: Border.all(color: const Color(0xFFD6E6F5)),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.16)
+                    : cs.shadow.withOpacity(0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
               ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withOpacity(isDark ? 0.20 : 0.16),
+                  border: Border.all(
+                    color: color.withOpacity(isDark ? 0.32 : 0.24),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: tt.bodySmall?.copyWith(
-                      color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                ),
+                child: Icon(icon, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: cs.onSurface,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: tt.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF2E4B5A)),
-          ],
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: cs.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -760,15 +773,21 @@ class _NestQuickActionTileDisabled extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Opacity(
-      opacity: 0.55,
+      opacity: 0.62,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.62),
+          color: isDark
+              ? cs.surfaceContainerHigh.withOpacity(0.72)
+              : cs.surface.withOpacity(0.90),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFD6E6F5)),
+          border: Border.all(
+            color: cs.outlineVariant.withOpacity(isDark ? 0.34 : 0.60),
+          ),
         ),
         child: Row(
           children: [
@@ -777,12 +796,16 @@ class _NestQuickActionTileDisabled extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF2E4B5A).withOpacity(0.08),
-                border: Border.all(color: const Color(0xFFD6E6F5)),
+                color: cs.surfaceContainerHighest.withOpacity(
+                  isDark ? 0.34 : 0.78,
+                ),
+                border: Border.all(
+                  color: cs.outlineVariant.withOpacity(isDark ? 0.34 : 0.60),
+                ),
               ),
               child: Icon(
                 icon,
-                color: const Color(0xFF2E4B5A).withOpacity(0.7),
+                color: cs.onSurfaceVariant.withOpacity(0.85),
               ),
             ),
             const SizedBox(width: 12),
@@ -792,13 +815,17 @@ class _NestQuickActionTileDisabled extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                    style: tt.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: cs.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: tt.bodySmall?.copyWith(
-                      color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

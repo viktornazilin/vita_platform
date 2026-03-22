@@ -1,9 +1,27 @@
 // lib/widgets/recurring_goal_sheet.dart
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'nest/nest_card.dart';
+import 'nest/nest_pill.dart';
+import 'nest/nest_section_title.dart';
 
 enum RecurrenceType { everyNDays, weekly }
+
+class UserGoalLinkOption {
+  final String id;
+  final String title;
+  final String lifeBlock;
+  final String horizon;
+
+  const UserGoalLinkOption({
+    required this.id,
+    required this.title,
+    required this.lifeBlock,
+    required this.horizon,
+  });
+}
 
 class RecurringGoalPlan {
   final String title;
@@ -15,11 +33,9 @@ class RecurringGoalPlan {
   final TimeOfDay time;
   final RecurrenceType type;
 
-  // every N days
   final int everyNDays;
-
-  // weekly
   final Set<int> weekdays; // DateTime.monday..DateTime.sunday
+  final String? userGoalId;
 
   const RecurringGoalPlan({
     required this.title,
@@ -32,6 +48,7 @@ class RecurringGoalPlan {
     required this.type,
     required this.everyNDays,
     required this.weekdays,
+    this.userGoalId,
   });
 }
 
@@ -45,12 +62,15 @@ class RecurringGoalSheet extends StatefulWidget {
 class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   final _titleCtrl = TextEditingController();
   final _emotionCtrl = TextEditingController();
+  final _supabase = Supabase.instance.client;
 
   RecurrenceType _type = RecurrenceType.everyNDays;
   int _everyNDays = 2;
-
-  // по умолчанию: пн/ср/пт
-  Set<int> _weekdays = {DateTime.monday, DateTime.wednesday, DateTime.friday};
+  Set<int> _weekdays = {
+    DateTime.monday,
+    DateTime.wednesday,
+    DateTime.friday,
+  };
 
   TimeOfDay _time = const TimeOfDay(hour: 9, minute: 0);
   DateTime _until = DateUtils.dateOnly(
@@ -60,6 +80,18 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   String _lifeBlock = 'health';
   int _importance = 2;
   double _hours = 1.0;
+  String? _selectedUserGoalId;
+
+  bool _loadingUserGoals = false;
+  List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserGoalsForCurrentBlock();
+    });
+  }
 
   @override
   void dispose() {
@@ -70,6 +102,185 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
 
   DateTime _dateOnly(DateTime d) => DateUtils.dateOnly(d);
 
+  String _normalizeBlock(String value) {
+    final v = value.trim().toLowerCase();
+
+    switch (v) {
+      case '':
+        return 'general';
+
+      case 'general':
+      case 'общий':
+      case 'общее':
+      case 'общие':
+      case 'без категории':
+        return 'general';
+
+      case 'health':
+      case 'здоровье':
+      case 'healthcare':
+      case 'wellbeing':
+      case 'well-being':
+      case 'sport':
+      case 'спорт':
+        return 'health';
+
+      case 'career':
+      case 'карьера':
+      case 'работа':
+      case 'job':
+      case 'work':
+      case 'business':
+      case 'бизнес':
+        return 'career';
+
+      case 'finance':
+      case 'финансы':
+      case 'money':
+      case 'financial':
+        return 'finance';
+
+      case 'relationships':
+      case 'relationship':
+      case 'relations':
+      case 'отношения':
+      case 'семья':
+      case 'family':
+        return 'relationships';
+
+      case 'self':
+      case 'selfdevelopment':
+      case 'self-development':
+      case 'personal':
+      case 'personal growth':
+      case 'личное':
+      case 'саморазвитие':
+      case 'creative':
+      case 'творчество':
+        return 'self';
+
+      case 'education':
+      case 'learning':
+      case 'study':
+      case 'учеба':
+      case 'учёба':
+      case 'образование':
+        return 'education';
+
+      case 'travel':
+      case 'путешествия':
+      case 'traveling':
+        return 'travel';
+
+      case 'home':
+      case 'house':
+      case 'дом':
+        return 'home';
+
+      default:
+        return v;
+    }
+  }
+
+  String _lifeBlockLabel(String value) {
+    switch (_normalizeBlock(value)) {
+      case 'general':
+        return 'Общее';
+      case 'health':
+        return 'Здоровье';
+      case 'career':
+        return 'Карьера';
+      case 'finance':
+        return 'Финансы';
+      case 'relationships':
+        return 'Отношения';
+      case 'self':
+        return 'Саморазвитие';
+      case 'education':
+        return 'Образование';
+      case 'travel':
+        return 'Путешествия';
+      case 'home':
+        return 'Дом';
+      default:
+        return value;
+    }
+  }
+
+  String _horizonLabel(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'tactical':
+        return 'Тактическая';
+      case 'mid':
+        return 'Среднесрочная';
+      case 'long':
+        return 'Долгосрочная';
+      default:
+        return value;
+    }
+  }
+
+  Future<void> _loadUserGoalsForCurrentBlock() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        _selectedUserGoalId = null;
+        _loadingUserGoals = false;
+      });
+      return;
+    }
+
+    final normalizedBlock = _normalizeBlock(_lifeBlock);
+
+    setState(() {
+      _loadingUserGoals = true;
+    });
+
+    try {
+      final raw = await _supabase
+          .from('user_goals')
+          .select('id, title, life_block, horizon')
+          .eq('user_id', userId)
+          .eq('life_block', normalizedBlock)
+          .order('title');
+
+      final items = (raw as List)
+          .map(
+            (e) => UserGoalLinkOption(
+              id: (e['id'] ?? '').toString(),
+              title: (e['title'] ?? '').toString(),
+              lifeBlock: (e['life_block'] ?? '').toString(),
+              horizon: (e['horizon'] ?? '').toString(),
+            ),
+          )
+          .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
+          .toList()
+        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+      if (!mounted) return;
+
+      final stillValid = _selectedUserGoalId != null &&
+          items.any((g) => g.id == _selectedUserGoalId);
+
+      setState(() {
+        _userGoalsForSelectedBlock = items;
+        if (!stillValid) {
+          _selectedUserGoalId = null;
+        }
+        _loadingUserGoals = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _userGoalsForSelectedBlock = const [];
+        _selectedUserGoalId = null;
+        _loadingUserGoals = false;
+      });
+    }
+  }
+
   Future<void> _pickUntil() async {
     final d = await showDatePicker(
       context: context,
@@ -77,12 +288,19 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
       firstDate: DateUtils.dateOnly(DateTime.now()),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
     );
-    if (d != null) setState(() => _until = _dateOnly(d));
+    if (d != null) {
+      setState(() => _until = _dateOnly(d));
+    }
   }
 
   Future<void> _pickTime() async {
-    final t = await showTimePicker(context: context, initialTime: _time);
-    if (t != null) setState(() => _time = t);
+    final t = await showTimePicker(
+      context: context,
+      initialTime: _time,
+    );
+    if (t != null) {
+      setState(() => _time = t);
+    }
   }
 
   String _fmtDate(DateTime d) =>
@@ -142,7 +360,6 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
       return out;
     }
 
-    // weekly
     final wds = weekdays.isEmpty ? {start.weekday} : weekdays;
     for (
       var day = start;
@@ -156,10 +373,11 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
     return out;
   }
 
-  // -----------------------------
-  // UI helpers (Nest style)
-  // -----------------------------
-  InputDecoration _dec({required String label, String? hint, IconData? icon}) {
+  InputDecoration _input({
+    required String label,
+    String? hint,
+    IconData? icon,
+  }) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -167,10 +385,47 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
     );
   }
 
+  void _submit() {
+    final t = AppLocalizations.of(context)!;
+    final title = _titleCtrl.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t.addDayGoalEnterTitle)),
+      );
+      return;
+    }
+
+    if (_type == RecurrenceType.weekly && _weekdays.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Выберите хотя бы один день недели')),
+      );
+      return;
+    }
+
+    Navigator.pop(
+      context,
+      RecurringGoalPlan(
+        title: title,
+        lifeBlock: _normalizeBlock(_lifeBlock),
+        importance: _importance,
+        emotion: _emotionCtrl.text.trim(),
+        plannedHours: _hours,
+        until: _until,
+        time: _time,
+        type: _type,
+        everyNDays: _everyNDays,
+        weekdays: _weekdays,
+        userGoalId: _selectedUserGoalId,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final tt = theme.textTheme;
+    final scheme = theme.colorScheme;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     final today = DateUtils.dateOnly(DateTime.now());
@@ -183,43 +438,23 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
       weekdays: _weekdays,
     );
 
-    final inputTheme = theme.inputDecorationTheme.copyWith(
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.72),
-      labelStyle: TextStyle(color: const Color(0xFF2E4B5A).withOpacity(0.80)),
-      hintStyle: TextStyle(color: const Color(0xFF2E4B5A).withOpacity(0.55)),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFD6E6F5)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFD6E6F5)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFF3AA8E6), width: 1.4),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    );
+    final dropdownGoalValue = _userGoalsForSelectedBlock.any(
+      (g) => g.id == _selectedUserGoalId,
+    )
+        ? _selectedUserGoalId
+        : null;
 
-    return Theme(
-      data: theme.copyWith(inputDecorationTheme: inputTheme),
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottom),
-        child: DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.90,
-          minChildSize: 0.62,
-          maxChildSize: 0.96,
-          builder: (ctx, controller) => SingleChildScrollView(
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.90,
+        minChildSize: 0.62,
+        maxChildSize: 0.96,
+        builder: (ctx, controller) {
+          return SingleChildScrollView(
             controller: controller,
-            padding: EdgeInsets.fromLTRB(
-              14,
-              10,
-              14,
-              14 + MediaQuery.of(context).padding.bottom,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -229,71 +464,83 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                     width: 44,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF9BC7E6).withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(99),
+                      color: scheme.outline.withOpacity(0.72),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
-
+                const SizedBox(height: 16),
                 Row(
                   children: [
-                    const _IconBubble(icon: Icons.repeat_rounded),
-                    const SizedBox(width: 10),
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: scheme.outlineVariant),
+                      ),
+                      child: Icon(
+                        Icons.repeat_rounded,
+                        color: scheme.onSurface,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Регулярная цель',
-                        style: tt.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface,
                           height: 1.05,
-                          color: const Color(0xFF2E4B5A),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
-                  'Создаст цели с сегодняшнего дня до дедлайна.',
-                  style: tt.bodyMedium?.copyWith(
-                    color: const Color(0xFF2E4B5A).withOpacity(0.70),
+                  'Создаст задачи с сегодняшнего дня до выбранной даты.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
-                // DETAILS
-                const _SectionTitle('Детали'),
-                _SectionCard(
+                NestSectionTitle('Детали'),
+                NestCard(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       TextField(
                         controller: _titleCtrl,
                         textInputAction: TextInputAction.next,
-                        decoration: _dec(
+                        decoration: _input(
                           label: 'Название цели',
                           hint: 'Например: Тренировка',
-                          icon: Icons.flag_rounded,
+                          icon: Icons.flag_outlined,
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _emotionCtrl,
-                        decoration: _dec(
-                          label: 'Эмоция (опционально)',
+                        textInputAction: TextInputAction.done,
+                        decoration: _input(
+                          label: 'Эмоция',
                           hint: 'Например: 💪 мотивация',
-                          icon: Icons.mood_rounded,
+                          icon: Icons.emoji_emotions_outlined,
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 12),
-
-                // RECURRENCE
-                const _SectionTitle('Регулярность'),
-                _SectionCard(
+                const SizedBox(height: 2),
+                NestSectionTitle('Регулярность'),
+                NestCard(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -301,34 +548,52 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _ChoicePill(
-                            label: 'Каждые N дней',
-                            icon: Icons.calendar_view_day_rounded,
+                          ChoiceChip(
+                            label: const Text('Каждые N дней'),
                             selected: _type == RecurrenceType.everyNDays,
-                            onTap: () => setState(
-                              () => _type = RecurrenceType.everyNDays,
-                            ),
+                            onSelected: (_) {
+                              setState(() => _type = RecurrenceType.everyNDays);
+                            },
                           ),
-                          _ChoicePill(
-                            label: 'По дням недели',
-                            icon: Icons.view_week_rounded,
+                          ChoiceChip(
+                            label: const Text('По дням недели'),
                             selected: _type == RecurrenceType.weekly,
-                            onTap: () =>
-                                setState(() => _type = RecurrenceType.weekly),
+                            onSelected: (_) {
+                              setState(() => _type = RecurrenceType.weekly);
+                            },
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       if (_type == RecurrenceType.everyNDays)
-                        _StepperRow(
-                          label: 'Интервал',
-                          valueText: 'каждые $_everyNDays дн.',
-                          onMinus: _everyNDays > 1
-                              ? () => setState(() => _everyNDays--)
-                              : null,
-                          onPlus: _everyNDays < 14
-                              ? () => setState(() => _everyNDays++)
-                              : null,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Интервал',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: _everyNDays > 1
+                                  ? () => setState(() => _everyNDays--)
+                                  : null,
+                              icon: const Icon(Icons.remove_rounded),
+                            ),
+                            NestPill(
+  leading: const Icon(Icons.repeat_rounded, size: 16),
+  text: '$_everyNDays дн.',
+),
+                            IconButton(
+                              onPressed: _everyNDays < 14
+                                  ? () => setState(() => _everyNDays++)
+                                  : null,
+                              icon: const Icon(Icons.add_rounded),
+                            ),
+                          ],
                         )
                       else
                         Wrap(
@@ -344,10 +609,10 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                               DateTime.saturday,
                               DateTime.sunday,
                             ])
-                              _DayChip(
-                                label: _weekdayLabel(wd),
+                              FilterChip(
+                                label: Text(_weekdayLabel(wd)),
                                 selected: _weekdays.contains(wd),
-                                onTap: () {
+                                onSelected: (_) {
                                   setState(() {
                                     if (_weekdays.contains(wd)) {
                                       _weekdays.remove(wd);
@@ -359,22 +624,22 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                               ),
                           ],
                         ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
-                            child: _PillButton(
-                              icon: Icons.schedule_rounded,
-                              label: 'Время: ${_fmtTime(_time)}',
-                              onTap: _pickTime,
+                            child: OutlinedButton.icon(
+                              onPressed: _pickTime,
+                              icon: const Icon(Icons.schedule_rounded),
+                              label: Text('Время: ${_fmtTime(_time)}'),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: _PillButton(
-                              icon: Icons.calendar_month_rounded,
-                              label: 'До: ${_fmtDate(_until)}',
-                              onTap: _pickUntil,
+                            child: OutlinedButton.icon(
+                              onPressed: _pickUntil,
+                              icon: const Icon(Icons.calendar_month_rounded),
+                              label: Text('До: ${_fmtDate(_until)}'),
                             ),
                           ),
                         ],
@@ -383,11 +648,10 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                   ),
                 ),
 
-                const SizedBox(height: 12),
-
-                // PARAMETERS
-                const _SectionTitle('Параметры'),
-                _SectionCard(
+                const SizedBox(height: 2),
+                NestSectionTitle('Параметры'),
+                NestCard(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -396,7 +660,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: _lifeBlock,
-                              decoration: _dec(
+                              decoration: _input(
                                 label: 'Блок жизни',
                                 icon: Icons.grid_view_rounded,
                               ),
@@ -406,35 +670,57 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                                   child: Text('Здоровье'),
                                 ),
                                 DropdownMenuItem(
-                                  value: 'sport',
-                                  child: Text('Спорт'),
+                                  value: 'career',
+                                  child: Text('Карьера'),
                                 ),
                                 DropdownMenuItem(
-                                  value: 'business',
-                                  child: Text('Бизнес'),
+                                  value: 'finance',
+                                  child: Text('Финансы'),
                                 ),
                                 DropdownMenuItem(
-                                  value: 'creative',
-                                  child: Text('Творчество'),
+                                  value: 'relationships',
+                                  child: Text('Отношения'),
                                 ),
                                 DropdownMenuItem(
-                                  value: 'family',
-                                  child: Text('Семья'),
+                                  value: 'self',
+                                  child: Text('Саморазвитие'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'education',
+                                  child: Text('Образование'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'travel',
+                                  child: Text('Путешествия'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'home',
+                                  child: Text('Дом'),
                                 ),
                                 DropdownMenuItem(
                                   value: 'general',
                                   child: Text('Общее'),
                                 ),
                               ],
-                              onChanged: (v) =>
-                                  setState(() => _lifeBlock = v ?? 'general'),
+                              onChanged: (v) async {
+                                final next = _normalizeBlock(v ?? 'general');
+                                if (next == _lifeBlock) return;
+
+                                setState(() {
+                                  _lifeBlock = next;
+                                  _selectedUserGoalId = null;
+                                  _userGoalsForSelectedBlock = const [];
+                                });
+
+                                await _loadUserGoalsForCurrentBlock();
+                              },
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField<int>(
                               value: _importance,
-                              decoration: _dec(
+                              decoration: _input(
                                 label: 'Важность',
                                 icon: Icons.local_fire_department_rounded,
                               ),
@@ -443,518 +729,174 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                                 DropdownMenuItem(value: 2, child: Text('2')),
                                 DropdownMenuItem(value: 3, child: Text('3')),
                               ],
-                              onChanged: (v) =>
-                                  setState(() => _importance = v ?? 2),
+                              onChanged: (v) {
+                                setState(() => _importance = v ?? 2);
+                              },
                             ),
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 12),
-                      _StepperRow(
-                        label: 'План часов',
-                        valueText:
-                            '${_hours.toStringAsFixed(_hours.truncateToDouble() == _hours ? 0 : 1)} ч',
-                        onMinus: _hours > 0.5
-                            ? () => setState(() => _hours = _hours - 0.5)
-                            : null,
-                        onPlus: _hours < 14
-                            ? () => setState(() => _hours = _hours + 0.5)
-                            : null,
+
+                      DropdownButtonFormField<String?>(
+                        value: dropdownGoalValue,
+                        decoration: _input(
+                          label: 'Большая цель',
+                          icon: Icons.link_rounded,
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('Без связи'),
+                          ),
+                          ..._userGoalsForSelectedBlock.map(
+                            (g) => DropdownMenuItem<String?>(
+                              value: g.id,
+                              child: Text(
+                                '${g.title} · ${_horizonLabel(g.horizon)}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: _loadingUserGoals
+                            ? null
+                            : (v) {
+                                setState(() => _selectedUserGoalId = v);
+                              },
                       ),
-                      const SizedBox(height: 12),
-                      _PreviewPill(count: occurrences.length),
+
+                      if (_loadingUserGoals) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: scheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Загружаю цели для блока "${_lifeBlockLabel(_lifeBlock)}"...',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else if (_userGoalsForSelectedBlock.isEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Для блока "${_lifeBlockLabel(_lifeBlock)}" пока нет доступных целей.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 18),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'План часов',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          NestPill(
+  leading: const Icon(Icons.timer_outlined, size: 16),
+  text: _hours.toStringAsFixed(
+    _hours.truncateToDouble() == _hours ? 0 : 1,
+  ),
+),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3.5,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 8,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 18,
+                          ),
+                        ),
+                        child: Slider(
+                          min: 0.5,
+                          max: 14,
+                          divisions: 27,
+                          value: _hours,
+                          label: _hours.toStringAsFixed(1),
+                          onChanged: (v) => setState(() => _hours = v),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: scheme.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              color: scheme.primary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Будет создано задач: ${occurrences.length}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: scheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 14),
-
-                // ACTIONS
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
-                      child: _SoftButton(
-                        label: 'Отмена',
-                        kind: _SoftButtonKind.secondary,
-                        onTap: () => Navigator.pop(context),
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(t.commonCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _SoftButton(
-                        label: 'Создать',
-                        kind: _SoftButtonKind.primary,
-                        onTap: () {
-                          final title = _titleCtrl.text.trim();
-                          if (title.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Введите название цели'),
-                              ),
-                            );
-                            return;
-                          }
-                          if (_type == RecurrenceType.weekly &&
-                              _weekdays.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Выберите хотя бы один день недели',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.pop(
-                            context,
-                            RecurringGoalPlan(
-                              title: title,
-                              lifeBlock: _lifeBlock,
-                              importance: _importance,
-                              emotion: _emotionCtrl.text.trim(),
-                              plannedHours: _hours,
-                              until: _until,
-                              time: _time,
-                              type: _type,
-                              everyNDays: _everyNDays,
-                              weekdays: _weekdays,
-                            ),
-                          );
-                        },
+                      child: FilledButton(
+                        onPressed: _submit,
+                        child: const Text('Создать'),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
                 const SafeArea(top: false, child: SizedBox(height: 0)),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Small Nest-style pieces (local, so file is drop-in)
-// ============================================================================
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 14, 2, 8),
-      child: Text(
-        text,
-        style: tt.titleMedium?.copyWith(
-          fontWeight: FontWeight.w900,
-          color: const Color(0xFF2E4B5A),
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final Widget child;
-  const _SectionCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.70),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A2B5B7A),
-                blurRadius: 26,
-                offset: Offset(0, 14),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _IconBubble extends StatelessWidget {
-  final IconData icon;
-  const _IconBubble({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x162B5B7A),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: Colors.white, size: 18),
-    );
-  }
-}
-
-class _ChoicePill extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ChoicePill({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF3AA8E6).withOpacity(0.18)
-              : const Color(0xFFEFF7FF),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: selected ? const Color(0xFF3AA8E6) : const Color(0xFFBBD9F7),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: selected
-                  ? const Color(0xFF2E4B5A)
-                  : const Color(0xFF2E4B5A),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: tt.labelLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFF2E4B5A),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DayChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _DayChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF3AA8E6).withOpacity(0.18)
-              : const Color(0xFFEFF7FF),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? const Color(0xFF3AA8E6) : const Color(0xFFBBD9F7),
-          ),
-        ),
-        child: Text(
-          label,
-          style: tt.labelLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: const Color(0xFF2E4B5A),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PreviewPill extends StatelessWidget {
-  final int count;
-  const _PreviewPill({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF7FF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFBBD9F7)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
-              ),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              size: 18,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Будет создано целей: $count',
-              style: tt.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFF2E4B5A),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepperRow extends StatelessWidget {
-  final String label;
-  final String valueText;
-  final VoidCallback? onMinus;
-  final VoidCallback? onPlus;
-
-  const _StepperRow({
-    required this.label,
-    required this.valueText,
-    required this.onMinus,
-    required this.onPlus,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: tt.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                valueText,
-                style: tt.bodyMedium?.copyWith(
-                  color: const Color(0xFF2E4B5A).withOpacity(0.70),
-                ),
-              ),
-            ],
-          ),
-        ),
-        _MiniIconButton(icon: Icons.remove_rounded, onTap: onMinus),
-        const SizedBox(width: 6),
-        _MiniIconButton(icon: Icons.add_rounded, onTap: onPlus),
-      ],
-    );
-  }
-}
-
-class _MiniIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _MiniIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Opacity(
-        opacity: enabled ? 1 : 0.35,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEFF7FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFBBD9F7)),
-          ),
-          child: Icon(icon, color: const Color(0xFF2E4B5A)),
-        ),
-      ),
-    );
-  }
-}
-
-class _PillButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _PillButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.72),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFD6E6F5)),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 16, color: const Color(0xFF2E4B5A)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    label,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF2E4B5A),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-enum _SoftButtonKind { primary, secondary }
-
-class _SoftButton extends StatelessWidget {
-  final String label;
-  final _SoftButtonKind kind;
-  final VoidCallback onTap;
-
-  const _SoftButton({
-    required this.label,
-    required this.kind,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final isPrimary = kind == _SoftButtonKind.primary;
-
-    final bg = isPrimary ? null : Colors.white.withOpacity(0.72);
-
-    final gradient = isPrimary
-        ? const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
-          )
-        : null;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        decoration: BoxDecoration(
-          color: bg,
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isPrimary
-                ? const Color(0x663AA8E6)
-                : const Color(0xFFD6E6F5),
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1A2B5B7A),
-              blurRadius: 20,
-              offset: Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: tt.titleSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: isPrimary ? Colors.white : const Color(0xFF2E4B5A),
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

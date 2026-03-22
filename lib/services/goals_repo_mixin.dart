@@ -7,9 +7,15 @@ mixin GoalsRepoMixin on BaseRepo {
   // Goals CRUD
   // =========================
 
-  Future<List<Goal>> fetchGoals({String? lifeBlock}) async {
+  Future<List<Goal>> fetchGoals({String? lifeBlock, String? userGoalId}) async {
     var q = client.from('goals').select().eq('user_id', uid);
-    if (lifeBlock != null) q = q.eq('life_block', lifeBlock);
+
+    if (lifeBlock != null) {
+      q = q.eq('life_block', lifeBlock);
+    }
+    if (userGoalId != null) {
+      q = q.eq('user_goal_id', userGoalId);
+    }
 
     final res = await q.order('created_at', ascending: false);
     return (res as List)
@@ -24,10 +30,11 @@ mixin GoalsRepoMixin on BaseRepo {
     required String lifeBlock,
     int importance = 1,
     String emotion = '',
-    double spentHours = 1.0, // как было в GoalService
+    double spentHours = 1.0,
     required DateTime startTime,
+    String? userGoalId,
   }) async {
-    final insert = {
+    final insert = <String, dynamic>{
       'user_id': uid,
       'title': title,
       'description': description,
@@ -38,10 +45,40 @@ mixin GoalsRepoMixin on BaseRepo {
       'emotion': emotion,
       'spent_hours': spentHours,
       'start_time': startTime.toIso8601String(),
+      'user_goal_id': userGoalId,
     };
 
     final res = await client.from('goals').insert(insert).select().single();
     return Goal.fromMap(res);
+  }
+
+  Future<List<Goal>> createGoalsBulk(
+    List<Map<String, dynamic>> items,
+  ) async {
+    if (items.isEmpty) return [];
+
+    final payload = items
+        .map(
+          (item) => <String, dynamic>{
+            'user_id': uid,
+            'title': item['title'],
+            'description': item['description'] ?? '',
+            'deadline': _asIsoString(item['deadline']),
+            'is_completed': item['is_completed'] ?? false,
+            'life_block': item['life_block'] ?? 'general',
+            'importance': item['importance'] ?? 1,
+            'emotion': item['emotion'] ?? '',
+            'spent_hours': _asDouble(item['spent_hours'] ?? 1.0),
+            'start_time': _asIsoString(item['start_time']),
+            'user_goal_id': item['user_goal_id'],
+          },
+        )
+        .toList();
+
+    final res = await client.from('goals').insert(payload).select();
+    return (res as List)
+        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> updateGoal(Goal goal) async {
@@ -57,13 +94,47 @@ mixin GoalsRepoMixin on BaseRepo {
           'emotion': goal.emotion,
           'spent_hours': goal.spentHours,
           'start_time': goal.startTime.toIso8601String(),
+          'user_goal_id': _extractUserGoalId(goal),
         })
         .eq('id', goal.id)
         .eq('user_id', uid);
   }
 
+  Future<void> updateGoalFields({
+    required String goalId,
+    String? title,
+    String? description,
+    DateTime? deadline,
+    bool? isCompleted,
+    String? lifeBlock,
+    int? importance,
+    String? emotion,
+    double? spentHours,
+    DateTime? startTime,
+    Object? userGoalId = _unset,
+  }) async {
+    final update = <String, dynamic>{};
+
+    if (title != null) update['title'] = title;
+    if (description != null) update['description'] = description;
+    if (deadline != null) update['deadline'] = deadline.toIso8601String();
+    if (isCompleted != null) update['is_completed'] = isCompleted;
+    if (lifeBlock != null) update['life_block'] = lifeBlock;
+    if (importance != null) update['importance'] = importance;
+    if (emotion != null) update['emotion'] = emotion;
+    if (spentHours != null) update['spent_hours'] = spentHours;
+    if (startTime != null) update['start_time'] = startTime.toIso8601String();
+
+    if (!identical(userGoalId, _unset)) {
+      update['user_goal_id'] = userGoalId;
+    }
+
+    if (update.isEmpty) return;
+
+    await client.from('goals').update(update).eq('id', goalId).eq('user_id', uid);
+  }
+
   Future<void> deleteGoal(String id) async {
-    // если id в БД bigint/int, а у тебя в модели строка "123"
     final dynamic idValue = int.tryParse(id) ?? id;
 
     final res = await client
@@ -87,10 +158,11 @@ mixin GoalsRepoMixin on BaseRepo {
     }
   }
 
-  /// Совмещённая логика из repo + GoalService:
-  /// - берём цели на дату
-  /// - если lifeBlock задан — фильтруем СРАЗУ в запросе
-  Future<List<Goal>> getGoalsByDate(DateTime date, {String? lifeBlock}) async {
+  Future<List<Goal>> getGoalsByDate(
+    DateTime date, {
+    String? lifeBlock,
+    String? userGoalId,
+  }) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
 
@@ -101,13 +173,39 @@ mixin GoalsRepoMixin on BaseRepo {
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
 
-    if (lifeBlock != null) q = q.eq('life_block', lifeBlock);
+    if (lifeBlock != null) {
+      q = q.eq('life_block', lifeBlock);
+    }
+    if (userGoalId != null) {
+      q = q.eq('user_goal_id', userGoalId);
+    }
 
-    final res = await q;
+    final res = await q.order('start_time', ascending: true);
 
     return (res as List)
         .map((m) => Goal.fromMap(m as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<List<Goal>> getGoalsLinkedToUserGoal(String userGoalId) async {
+    final res = await client
+        .from('goals')
+        .select()
+        .eq('user_id', uid)
+        .eq('user_goal_id', userGoalId)
+        .order('start_time', ascending: true);
+
+    return (res as List)
+        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> unlinkGoalsFromUserGoal(String userGoalId) async {
+    await client
+        .from('goals')
+        .update({'user_goal_id': null})
+        .eq('user_id', uid)
+        .eq('user_goal_id', userGoalId);
   }
 
   Future<void> toggleGoalCompleted(String id, {bool? value}) async {
@@ -131,7 +229,9 @@ mixin GoalsRepoMixin on BaseRepo {
       await addXP(10);
       final total = await getTotalHoursSpentOnDate(DateTime.now());
       final target = await getTargetHours();
-      if (total >= target) await addXP(20);
+      if (total >= target) {
+        await addXP(20);
+      }
     }
   }
 
@@ -142,20 +242,29 @@ mixin GoalsRepoMixin on BaseRepo {
   Future<List<String>> searchGoalTitles({
     required String query,
     int limit = 8,
+    String? lifeBlock,
+    String? userGoalId,
   }) async {
     final q = query.trim();
     if (q.isEmpty) return [];
 
     final pattern = '%$q%';
 
-    final rows = await client
+    var req = client
         .from('goals')
-        .select('title, created_at, deadline')
+        .select('title, created_at, deadline, life_block, user_goal_id')
         .eq('user_id', uid)
         .ilike('title', pattern)
-        .neq('title', '')
-        .order('created_at', ascending: false)
-        .limit(200);
+        .neq('title', '');
+
+    if (lifeBlock != null) {
+      req = req.eq('life_block', lifeBlock);
+    }
+    if (userGoalId != null) {
+      req = req.eq('user_goal_id', userGoalId);
+    }
+
+    final rows = await req.order('created_at', ascending: false).limit(200);
 
     final seen = <String>{};
     final out = <String>[];
@@ -179,13 +288,24 @@ mixin GoalsRepoMixin on BaseRepo {
   Future<List<Map<String, dynamic>>> listGoalTitleHistory({
     required DateTime start,
     required DateTime end,
+    String? lifeBlock,
+    String? userGoalId,
   }) async {
-    final res = await client
+    var q = client
         .from('goals')
-        .select('title, deadline')
+        .select('title, deadline, life_block, user_goal_id')
         .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
+
+    if (lifeBlock != null) {
+      q = q.eq('life_block', lifeBlock);
+    }
+    if (userGoalId != null) {
+      q = q.eq('user_goal_id', userGoalId);
+    }
+
+    final res = await q;
 
     return (res as List)
         .map((e) => (e as Map).cast<String, dynamic>())
@@ -194,19 +314,29 @@ mixin GoalsRepoMixin on BaseRepo {
 
   Future<List<String>> suggestRecurringGoalTitles({
     int lookbackDays = 30,
+    String? lifeBlock,
+    String? userGoalId,
   }) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final start = today.subtract(Duration(days: lookbackDays));
     final end = today.add(const Duration(days: 1));
 
-    final res = await client
+    var q = client
         .from('goals')
-        .select('title, deadline')
+        .select('title, deadline, life_block, user_goal_id')
         .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
 
+    if (lifeBlock != null) {
+      q = q.eq('life_block', lifeBlock);
+    }
+    if (userGoalId != null) {
+      q = q.eq('user_goal_id', userGoalId);
+    }
+
+    final res = await q;
     final items = (res as List).cast<dynamic>();
 
     final Map<String, Set<String>> daysByTitle = {};
@@ -299,35 +429,86 @@ mixin GoalsRepoMixin on BaseRepo {
   Future<List<Goal>> fetchGoalsInRange({
     required DateTime start,
     required DateTime end,
+    String? lifeBlock,
+    String? userGoalId,
   }) async {
-    final res = await client
+    var q = client
         .from('goals')
         .select()
         .eq('user_id', uid)
         .gte('start_time', start.toIso8601String())
-        .lt('start_time', end.toIso8601String())
-        .order('start_time', ascending: true);
+        .lt('start_time', end.toIso8601String());
+
+    if (lifeBlock != null) {
+      q = q.eq('life_block', lifeBlock);
+    }
+    if (userGoalId != null) {
+      q = q.eq('user_goal_id', userGoalId);
+    }
+
+    final res = await q.order('start_time', ascending: true);
 
     return (res as List)
         .map((m) => Goal.fromMap(m as Map<String, dynamic>))
         .toList();
   }
 
-  Future<double> getTotalHoursSpentOnDate(DateTime date) async {
+  Future<double> getTotalHoursSpentOnDate(
+    DateTime date, {
+    String? lifeBlock,
+    String? userGoalId,
+  }) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
 
-    final res = await client
+    var q = client
         .from('goals')
-        .select('spent_hours')
+        .select('spent_hours, life_block, user_goal_id')
         .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
+
+    if (lifeBlock != null) {
+      q = q.eq('life_block', lifeBlock);
+    }
+    if (userGoalId != null) {
+      q = q.eq('user_goal_id', userGoalId);
+    }
+
+    final res = await q;
 
     return (res as List).fold<double>(
       0,
       (sum, item) => sum + ((item['spent_hours'] ?? 0) as num).toDouble(),
     );
+  }
+
+  // =========================
+  // Helpers
+  // =========================
+
+  static const Object _unset = Object();
+
+  String _asIsoString(dynamic value) {
+    if (value is DateTime) return value.toIso8601String();
+    if (value is String) return value;
+    throw ArgumentError('Expected DateTime or ISO string, got: $value');
+  }
+
+  double _asDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+    return 0;
+  }
+
+  dynamic _extractUserGoalId(Goal goal) {
+    try {
+      return (goal as dynamic).userGoalId;
+    } catch (_) {
+      return null;
+    }
   }
 }
 

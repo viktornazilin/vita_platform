@@ -11,7 +11,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../../models/habit.dart';
 import '../../models/mental_question.dart';
 import '../../models/week_insights.dart';
-
+import '../mood_screen.dart';
 // ✅ new widgets (week cards)
 import '../../widgets/mood/mood_week_card.dart';
 import '../../widgets/mood/habits_week_card.dart';
@@ -753,7 +753,13 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                             context,
                             icon: Icons.open_in_new,
                             label: l.homeOpenMoodHistoryCta,
-                            onPressed: () => _go(context, 2),
+                            onPressed: () {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MoodScreen(),
+      ),
+    );
+  },
                           ),
                         ],
                       ),
