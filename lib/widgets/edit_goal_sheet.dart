@@ -4,35 +4,11 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/goal.dart';
-import 'add_day_goal_sheet.dart'; // UserGoalLinkOption
+import 'add_day_goal_sheet.dart';
 
 import 'nest/nest_card.dart';
 import 'nest/nest_pill.dart';
 import 'nest/nest_section_title.dart';
-
-class EditGoalResult {
-  final String title;
-  final String description;
-  final String lifeBlock;
-  final int importance;
-  final String emotion;
-  final double hours;
-  final TimeOfDay startTime;
-  final DateTime date;
-  final String? userGoalId;
-
-  const EditGoalResult({
-    required this.title,
-    required this.description,
-    required this.lifeBlock,
-    required this.importance,
-    required this.emotion,
-    required this.hours,
-    required this.startTime,
-    required this.date,
-    this.userGoalId,
-  });
-}
 
 class EditGoalSheet extends StatefulWidget {
   final Goal goal;
@@ -251,7 +227,9 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
           )
           .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
           .toList()
-        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        ..sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        );
 
       if (!mounted) return;
 
@@ -261,7 +239,6 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
       setState(() {
         _userGoalsForSelectedBlock = items;
         if (!stillValid) {
-          _selectedUserGoalId = null;
         }
         _loadingUserGoals = false;
       });
@@ -364,12 +341,13 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   void _submit() {
     final t = AppLocalizations.of(context)!;
 
-    final title =
-        _titleCtrl.text.trim().isEmpty ? t.editGoalUntitled : _titleCtrl.text.trim();
+    final title = _titleCtrl.text.trim().isEmpty
+        ? t.editGoalUntitled
+        : _titleCtrl.text.trim();
 
     Navigator.pop(
       context,
-      EditGoalResult(
+      AddGoalResult(
         title: title,
         description: _descCtrl.text.trim(),
         lifeBlock: _normalizeBlock(_lifeBlock),
@@ -377,7 +355,6 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         emotion: _emotionCtrl.text.trim(),
         hours: _hours,
         startTime: _start,
-        date: _selectedDate,
         userGoalId: _selectedUserGoalId,
       ),
     );
@@ -489,50 +466,46 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                 NestSectionTitle('Дата и время'),
                 NestCard(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: _pickDate,
-                              child: InputDecorator(
-                                decoration: _nestInput(
-                                  label: 'Дата',
-                                  icon: Icons.calendar_today_rounded,
-                                ),
-                                child: Text(
-                                  _formatDate(_selectedDate),
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: scheme.onSurface,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: _pickDate,
+                          child: InputDecorator(
+                            decoration: _nestInput(
+                              label: 'Дата',
+                              icon: Icons.calendar_today_rounded,
+                            ),
+                            child: Text(
+                              _formatDate(_selectedDate),
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: scheme.onSurface,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: _pickTime,
-                              child: InputDecorator(
-                                decoration: _nestInput(
-                                  label: 'Время',
-                                  icon: Icons.schedule_rounded,
-                                ),
-                                child: Text(
-                                  _start.format(context),
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: scheme.onSurface,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: _pickTime,
+                          child: InputDecorator(
+                            decoration: _nestInput(
+                              label: 'Время',
+                              icon: Icons.schedule_rounded,
+                            ),
+                            child: Text(
+                              _start.format(context),
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: scheme.onSurface,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

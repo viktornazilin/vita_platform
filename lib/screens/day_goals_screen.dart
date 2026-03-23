@@ -106,6 +106,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           emotion: res.emotion,
           hours: res.hours,
           startTime: res.startTime,
+          userGoalId: res.userGoalId,
         );
 
         await vm.load();
@@ -139,6 +140,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           goal: g,
           fixedLifeBlock: vm.lifeBlock,
           availableBlocks: vm.availableBlocks,
+          initialUserGoalId: g.userGoalId,
         ),
       ),
     );
@@ -156,6 +158,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           emotion: res.emotion,
           hours: res.hours,
           startTime: res.startTime,
+          userGoalId: res.userGoalId,
         );
 
         await vm.load();
@@ -250,13 +253,11 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
     final vm = context.watch<DayGoalsModel>();
     final title = vm.lifeBlock ?? l.dayGoalsAllLifeBlocks;
 
-    final allGoals = [...vm.goals]..sort(
-        (a, b) => a.startTime.compareTo(b.startTime),
-      );
+    final allGoals = [...vm.goals]
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
-    final visibleGoals = _hideCompleted
-        ? allGoals.where((g) => !g.isCompleted).toList()
-        : allGoals;
+    final visibleGoals =
+        _hideCompleted ? allGoals.where((g) => !g.isCompleted).toList() : allGoals;
 
     final grouped = _groupGoalsByTimeOfDay(visibleGoals);
 
@@ -354,7 +355,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   List<Widget> _buildSections(Map<_DaySection, List<Goal>> grouped) {
     final sections = <Widget>[];
     int runningIndex = 0;
-    final totalVisible = grouped.values.fold<int>(0, (sum, list) => sum + list.length);
+    final totalVisible =
+        grouped.values.fold<int>(0, (sum, list) => sum + list.length);
 
     for (final section in _DaySection.values) {
       final items = grouped[section];
@@ -453,9 +455,9 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: const Color(0xFF2E4B5A),
-          ),
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF2E4B5A),
+              ),
         ),
       ],
     );
@@ -503,16 +505,16 @@ class _DaySummaryCard extends StatelessWidget {
               Text(
                 'Сводка дня',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
-                ),
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF2E4B5A),
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Держи фокус на главном и не перегружай день.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF587282),
-                ),
+                      color: const Color(0xFF587282),
+                    ),
               ),
               const SizedBox(height: 14),
               ClipRRect(
@@ -521,7 +523,8 @@ class _DaySummaryCard extends StatelessWidget {
                   value: progress.clamp(0.0, 1.0),
                   minHeight: 10,
                   backgroundColor: const Color(0xFFE8F2FA),
-                  valueColor: const AlwaysStoppedAnimation(Color(0xFF3AA8E6)),
+                  valueColor:
+                      const AlwaysStoppedAnimation(Color(0xFF3AA8E6)),
                 ),
               ),
               const SizedBox(height: 14),
@@ -587,17 +590,17 @@ class _SummaryStat extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
-            ),
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF2E4B5A),
+                ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF587282),
-            ),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF587282),
+                ),
           ),
         ],
       ),
@@ -631,9 +634,9 @@ class _HoursPill extends StatelessWidget {
           Text(
             'Осталось часов: ${hours.toStringAsFixed(1)}',
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF385262),
-            ),
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF385262),
+                ),
           ),
         ],
       ),
@@ -671,9 +674,9 @@ class _HideCompletedToggle extends StatelessWidget {
             child: Text(
               'Скрыть выполненные',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF2E4B5A),
-              ),
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2E4B5A),
+                  ),
             ),
           ),
           Switch.adaptive(
@@ -767,9 +770,9 @@ class _NestEmptyState extends StatelessWidget {
           message,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF2E4B5A),
-          ),
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2E4B5A),
+              ),
         ),
       ),
     );
@@ -806,7 +809,6 @@ class _NestSheet extends StatelessWidget {
   }
 }
 
-/// FAB: один "+" → меню (Add/Scan/Calendar)
 enum _FabAction { add, scan, calendar }
 
 class _MainFab extends StatelessWidget {
@@ -981,16 +983,16 @@ class _FabMenuButton extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF2E4B5A),
-                      ),
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF2E4B5A),
+                          ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF2E4B5A).withOpacity(0.65),
-                      ),
+                            color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                          ),
                     ),
                   ],
                 ),

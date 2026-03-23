@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/home_model.dart';
-import 'dart:ui' show ImageFilter;
 
 import '../goals_screen.dart';
 import '../mood_screen.dart';
@@ -16,6 +15,8 @@ import '../expenses_screen.dart';
 import '../user_goals_screen.dart';
 
 import '../../widgets/frosted_rail.dart';
+import '../../widgets/nest/nest_background.dart';
+import '../../widgets/nest/nest_blur_card.dart';
 
 import 'home_dashboard_tab.dart';
 import 'home_launcher_sheet.dart';
@@ -65,6 +66,18 @@ class _HomeViewState extends State<_HomeView> {
     };
   }
 
+  IconData _iconFor(int idx) {
+    return switch (idx) {
+      0 => Icons.home_rounded,
+      1 => Icons.flag_rounded,
+      2 => Icons.track_changes_rounded,
+      3 => Icons.person_rounded,
+      4 => Icons.insights_rounded,
+      5 => Icons.account_balance_wallet_rounded,
+      _ => Icons.apps_rounded,
+    };
+  }
+
   void _onDashboardScroll(ScrollDirection dir) {
     if (dir == ScrollDirection.reverse && _fabVisible.value) {
       _fabVisible.value = false;
@@ -93,6 +106,7 @@ class _HomeViewState extends State<_HomeView> {
         ],
       ),
     );
+
     if (ok == true) {
       await _signOut(context);
     }
@@ -120,7 +134,9 @@ class _HomeViewState extends State<_HomeView> {
     double size = 110,
     bool small = false,
   }) {
-    // ✅ Nest-styled FAB (дизайн), поведение то же
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: size,
       height: size,
@@ -136,26 +152,42 @@ class _HomeViewState extends State<_HomeView> {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(size * 0.32),
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF3AA8E6), Color(0xFF6C8CFF)],
+              colors: isDark
+                  ? [
+                      cs.surfaceContainerHighest,
+                      cs.primary.withOpacity(0.88),
+                    ]
+                  : [
+                      cs.primary.withOpacity(0.92),
+                      cs.secondary.withOpacity(0.90),
+                    ],
             ),
-            boxShadow: const [
+            border: Border.all(
+              color: isDark
+                  ? cs.outline.withOpacity(0.70)
+                  : Colors.white.withOpacity(0.85),
+            ),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x2A2B5B7A),
-                blurRadius: 22,
-                offset: Offset(0, 14),
+                color: isDark
+                    ? Colors.black.withOpacity(0.22)
+                    : cs.primary.withOpacity(0.16),
+                blurRadius: small ? 10 : 18,
+                offset: Offset(0, small ? 4 : 8),
               ),
             ],
-            border: Border.all(color: const Color(0x66FFFFFF)),
           ),
           child: Center(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(size * 0.26),
               child: Container(
-                color: Colors.white.withOpacity(0.92),
-                padding: EdgeInsets.all(small ? 6 : 10),
+                color: isDark
+                    ? cs.surfaceContainerLow.withOpacity(0.96)
+                    : Colors.white.withOpacity(0.94),
+                padding: EdgeInsets.all(small ? 5 : 8),
                 child: Image.asset(
                   'assets/images/logo.png',
                   width: size * 0.55,
@@ -175,86 +207,157 @@ class _HomeViewState extends State<_HomeView> {
     showHomeLauncherSheet(context: context, model: model);
   }
 
+  Widget _buildTopBar(
+    BuildContext context,
+    HomeModel model, {
+    required bool compact,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final l = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 16 : 0,
+        compact ? 12 : 8,
+        compact ? 16 : 0,
+        12,
+      ),
+      child: NestBlurCard(
+        radius: 24,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: compact ? 44 : 48,
+              height: compact ? 44 : 48,
+              decoration: BoxDecoration(
+                color: cs.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cs.outlineVariant),
+              ),
+              child: Icon(
+                _iconFor(model.selectedIndex),
+                color: cs.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _titleFor(model.selectedIndex, context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Nest App',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: l.homeSignOutTooltip,
+              style: IconButton.styleFrom(
+                backgroundColor: cs.surfaceContainerHighest.withOpacity(0.55),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () => _confirmSignOut(context),
+              icon: const Icon(Icons.logout_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedContent(
+    BuildContext context,
+    HomeModel model, {
+    required double bottomInset,
+  }) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 280),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        final offsetTween = Tween<Offset>(
+          begin: const Offset(0.02, 0),
+          end: Offset.zero,
+        ).chain(CurveTween(curve: Curves.easeOutCubic));
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: animation.drive(offsetTween),
+            child: child,
+          ),
+        );
+      },
+      child: PageStorage(
+        key: ValueKey(model.selectedIndex),
+        bucket: _bucket,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: bottomInset),
+          child: IndexedStack(
+            index: model.selectedIndex,
+            children: HomeScreen._screens,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final model = context.watch<HomeModel>();
-    final l = AppLocalizations.of(context)!;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 900;
         final isDashboard = model.selectedIndex == 0;
+        final safeBottom = MediaQuery.of(context).padding.bottom;
 
-        final double fabSizeCompact = 140;
-        final double fabSizeRailSmall = 44;
-
-        Widget content = Stack(
-          children: [
-            const _NestBackground(),
-            SafeArea(
-              bottom: false,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (child, animation) {
-                  final offsetTween = Tween<Offset>(
-                    begin: const Offset(0.02, 0),
-                    end: Offset.zero,
-                  ).chain(CurveTween(curve: Curves.easeOutCubic));
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: animation.drive(offsetTween),
-                      child: child,
-                    ),
-                  );
-                },
-                child: PageStorage(
-                  key: ValueKey(model.selectedIndex),
-                  bucket: _bucket,
-                  child: IndexedStack(
-                    index: model.selectedIndex,
-                    children: HomeScreen._screens,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-
-        // padding от FAB: только в compact
-        if (isCompact) {
-          final bottomSafe = MediaQuery.of(context).padding.bottom;
-          content = Padding(
-            padding: EdgeInsets.only(
-              bottom: (fabSizeCompact / 2) + bottomSafe + 16,
-            ),
-            child: content,
-          );
-        }
-
-        // FAB size
-        final double fabSize = isCompact
-            ? (isDashboard ? 84 : fabSizeCompact)
-            : fabSizeRailSmall;
+        // ↓↓↓ СДЕЛАНО НАМНОГО КОМПАКТНЕЕ
+        final double fabSizeCompact = isDashboard ? 72 : 82;
+        final double fabBottomCompact = 10 + safeBottom;
+        final double fabReserveCompact = 64 + safeBottom;
+        final double railFabSize = 44;
 
         final fab = ValueListenableBuilder<bool>(
           valueListenable: _fabVisible,
           builder: (context, visible, _) {
             final show = !isDashboard || visible;
-            return AnimatedSlide(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              offset: show ? Offset.zero : const Offset(0, 0.25),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                opacity: show ? 1 : 0,
-                child: _logoFab(
-                  context,
-                  heroTag: isCompact ? 'launcher-fab' : 'launcher-fab-rail',
-                  size: fabSize,
-                  onPressed: () => _openLauncher(context, model),
+
+            return IgnorePointer(
+              ignoring: !show,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                offset: show ? Offset.zero : const Offset(0, 0.20),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 180),
+                  opacity: show ? 1 : 0,
+                  child: _logoFab(
+                    context,
+                    heroTag: 'launcher-fab',
+                    size: fabSizeCompact,
+                    onPressed: () => _openLauncher(context, model),
+                  ),
                 ),
               ),
             );
@@ -263,179 +366,162 @@ class _HomeViewState extends State<_HomeView> {
 
         if (isCompact) {
           return Scaffold(
-            extendBodyBehindAppBar: true,
             backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              title: Text(_titleFor(model.selectedIndex, context)),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              actions: [
-                IconButton(
-                  tooltip: l.homeSignOutTooltip,
-                  icon: const Icon(Icons.logout),
-                  onPressed: () => _confirmSignOut(context),
-                ),
-              ],
+            body: NestBackground(
+              child: Stack(
+                children: [
+                  Column(
+                    children: [
+                      _buildTopBar(
+                        context,
+                        model,
+                        compact: true,
+                      ),
+                      Expanded(
+                        child: NotificationListener<UserScrollNotification>(
+                          onNotification: (n) {
+                            if (isDashboard) _onDashboardScroll(n.direction);
+                            return false;
+                          },
+                          child: _buildAnimatedContent(
+                            context,
+                            model,
+                            bottomInset: fabReserveCompact,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: fabBottomCompact,
+                    child: Center(child: fab),
+                  ),
+                ],
+              ),
             ),
-            body: NotificationListener<UserScrollNotification>(
-              onNotification: (n) {
-                if (isDashboard) _onDashboardScroll(n.direction);
-                return false;
-              },
-              child: content,
-            ),
-            floatingActionButton: fab,
-            floatingActionButtonLocation:
-                FloatingActionButtonLocation.centerFloat,
           );
         }
 
         final extendedRail = constraints.maxWidth >= 1200;
+
         return Scaffold(
-          extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text(_titleFor(model.selectedIndex, context)),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            actions: [
-              IconButton(
-                tooltip: l.homeSignOutTooltip,
-                icon: const Icon(Icons.logout),
-                onPressed: () => _confirmSignOut(context),
-              ),
-            ],
-          ),
-          body: Row(
-            children: [
-              FrostedRail(
-                child: NavigationRail(
-                  selectedIndex: model.selectedIndex,
-                  onDestinationSelected: model.select,
-                  extended: extendedRail,
-                  useIndicator: true,
-                  leading: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Tooltip(
-                      message: l.homeQuickActionsTooltip,
-                      child: _logoFab(
-                        context,
-                        heroTag: 'launcher-fab-rail',
-                        size: fabSizeRailSmall,
-                        small: true,
-                        onPressed: () => _openLauncher(context, model),
+          body: NestBackground(
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
+                  child: FrostedRail(
+                    child: NavigationRail(
+                      selectedIndex: model.selectedIndex,
+                      onDestinationSelected: model.select,
+                      extended: extendedRail,
+                      useIndicator: true,
+                      backgroundColor: Colors.transparent,
+                      leading: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Tooltip(
+                          message: AppLocalizations.of(context)!
+                              .homeQuickActionsTooltip,
+                          child: _logoFab(
+                            context,
+                            heroTag: 'launcher-fab-rail',
+                            size: railFabSize,
+                            small: true,
+                            onPressed: () => _openLauncher(context, model),
+                          ),
+                        ),
                       ),
+                      destinations: [
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.home_outlined),
+                          selectedIcon: const Icon(Icons.home_rounded),
+                          label: Text(
+                            AppLocalizations.of(context)!.homeTitleHome,
+                          ),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.flag_outlined),
+                          selectedIcon: const Icon(Icons.flag_rounded),
+                          label: Text(
+                            AppLocalizations.of(context)!.homeTitleGoals,
+                          ),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.track_changes_outlined),
+                          selectedIcon:
+                              const Icon(Icons.track_changes_rounded),
+                          label: Text(
+                            AppLocalizations.of(context)!.homeTitleMood,
+                          ),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.person_outline),
+                          selectedIcon: const Icon(Icons.person_rounded),
+                          label: Text(
+                            AppLocalizations.of(context)!.homeTitleProfile,
+                          ),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.insights_outlined),
+                          selectedIcon: const Icon(Icons.insights_rounded),
+                          label: Text(
+                            AppLocalizations.of(context)!.homeTitleReports,
+                          ),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(
+                            Icons.account_balance_wallet_outlined,
+                          ),
+                          selectedIcon:
+                              const Icon(Icons.account_balance_wallet_rounded),
+                          label: Text(
+                            AppLocalizations.of(context)!.homeTitleExpenses,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  destinations: [
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.home_outlined),
-                      selectedIcon: const Icon(Icons.home),
-                      label: Text(l.homeTitleHome),
-                    ),
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.flag_outlined),
-                      selectedIcon: const Icon(Icons.flag),
-                      label: Text(l.homeTitleGoals),
-                    ),
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.mood_outlined),
-                      selectedIcon: const Icon(Icons.mood),
-                      label: Text(l.homeTitleMood),
-                    ),
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.person_outline),
-                      selectedIcon: const Icon(Icons.person),
-                      label: Text(l.homeTitleProfile),
-                    ),
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.insights_outlined),
-                      selectedIcon: const Icon(Icons.insights),
-                      label: Text(l.homeTitleReports),
-                    ),
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.account_balance_wallet_outlined),
-                      selectedIcon: const Icon(Icons.account_balance_wallet),
-                      label: Text(l.homeTitleExpenses),
-                    ),
-                  ],
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: extendedRail ? 32 : 24,
-                    vertical: 12,
-                  ),
-                  child: NotificationListener<UserScrollNotification>(
-                    onNotification: (n) {
-                      if (isDashboard) _onDashboardScroll(n.direction);
-                      return false;
-                    },
-                    child: content,
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      extendedRail ? 20 : 16,
+                      12,
+                      extendedRail ? 20 : 16,
+                      12,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildTopBar(
+                          context,
+                          model,
+                          compact: false,
+                        ),
+                        Expanded(
+                          child: NotificationListener<UserScrollNotification>(
+                            onNotification: (n) {
+                              if (isDashboard) _onDashboardScroll(n.direction);
+                              return false;
+                            },
+                            child: _buildAnimatedContent(
+                              context,
+                              model,
+                              bottomInset: 0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
-    );
-  }
-}
-
-// ============================================================================
-// NEST background (оставляем тут)
-// ============================================================================
-class _NestBackground extends StatelessWidget {
-  const _NestBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFF7FCFF),
-            Color(0xFFEAF6FF),
-            Color(0xFFD7EEFF),
-            Color(0xFFF2FAFF),
-          ],
-        ),
-      ),
-      child: Stack(
-        children: const [
-          Positioned(top: -140, left: -120, child: _SoftBlob(size: 360)),
-          Positioned(bottom: -180, right: -140, child: _SoftBlob(size: 420)),
-          Positioned(top: 120, right: -90, child: _SoftBlob(size: 240)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SoftBlob extends StatelessWidget {
-  final double size;
-  const _SoftBlob({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [Color(0x663AA8E6), Color(0x0058B9FF)],
-          ),
-        ),
-      ),
     );
   }
 }

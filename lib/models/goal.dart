@@ -1,4 +1,3 @@
-// models/goal.dart
 class Goal {
   final String id;
   final String userId;
@@ -12,6 +11,9 @@ class Goal {
   final String emotion;
   final double spentHours;
 
+  // ✅ ДОБАВИТЬ
+  final String? userGoalId;
+
   Goal({
     required this.id,
     required this.userId,
@@ -24,9 +26,9 @@ class Goal {
     this.importance = 1,
     this.emotion = '',
     this.spentHours = 0,
+    this.userGoalId, // ✅
   });
 
-  /// UI alias for compatibility with screens/widgets
   double get hours => spentHours;
 
   factory Goal.fromMap(Map<String, dynamic> map) => Goal(
@@ -41,6 +43,9 @@ class Goal {
         importance: (map['importance'] ?? 1) as int,
         emotion: (map['emotion'] ?? '') as String,
         spentHours: (map['spent_hours'] ?? 0).toDouble(),
+
+        // ✅ ДОБАВИТЬ
+        userGoalId: map['user_goal_id'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -55,6 +60,9 @@ class Goal {
         'importance': importance,
         'emotion': emotion,
         'spent_hours': spentHours,
+
+        // ✅ ДОБАВИТЬ
+        'user_goal_id': userGoalId,
       };
 
   Goal copyWith({
@@ -69,6 +77,9 @@ class Goal {
     int? importance,
     String? emotion,
     double? spentHours,
+
+    // ✅ ДОБАВИТЬ
+    String? userGoalId,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -82,6 +93,9 @@ class Goal {
       importance: importance ?? this.importance,
       emotion: emotion ?? this.emotion,
       spentHours: spentHours ?? this.spentHours,
+
+      // ✅
+      userGoalId: userGoalId ?? this.userGoalId,
     );
   }
 }

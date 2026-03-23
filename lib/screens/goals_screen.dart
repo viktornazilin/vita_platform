@@ -11,7 +11,6 @@ import '../models/life_block.dart';
 import '../models/profile_model.dart';
 import '../models/user_goals_model.dart';
 
-import '../widgets/block_chip.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
 
@@ -82,6 +81,7 @@ class _GoalsViewState extends State<_GoalsView> {
     'finance': Color.fromARGB(255, 245, 153, 4),
     'hobby': Color(0xFF7E57C2),
     'hobbies': Color(0xFF7E57C2),
+    'spirituality': Color(0xFF8E44AD),
   };
 
   // ---------- helpers ----------
@@ -299,26 +299,91 @@ class _GoalsViewState extends State<_GoalsView> {
     return list.take(3).toList();
   }
 
+  String _normalizeBlockKey(String key) {
+    final k = key.trim().toLowerCase();
+
+    switch (k) {
+      case 'health':
+      case 'здоровье':
+        return 'health';
+      case 'career':
+      case 'work':
+      case 'карьера':
+        return 'career';
+      case 'family':
+      case 'семья':
+        return 'family';
+      case 'relations':
+      case 'relationship':
+      case 'relationships':
+      case 'отношения':
+        return 'relations';
+      case 'education':
+      case 'study':
+      case 'обучение':
+      case 'образование':
+        return 'education';
+      case 'finance':
+      case 'finances':
+      case 'финансы':
+        return 'finance';
+      case 'hobby':
+      case 'hobbies':
+      case 'хобби':
+        return 'hobby';
+      case 'spirituality':
+      case 'spirit':
+      case 'духовность':
+        return 'spirituality';
+      default:
+        return k;
+    }
+  }
+
+  String _blockTitle(String key) {
+    switch (_normalizeBlockKey(key)) {
+      case 'health':
+        return 'Здоровье';
+      case 'career':
+        return 'Карьера';
+      case 'family':
+        return 'Семья';
+      case 'relations':
+        return 'Отношения';
+      case 'education':
+        return 'Образование';
+      case 'finance':
+        return 'Финансы';
+      case 'hobby':
+        return 'Хобби';
+      case 'spirituality':
+        return 'Духовность';
+      default:
+        return key;
+    }
+  }
+
   // ---------- icons for blocks ----------
   IconData _blockIcon(String key) {
-    switch (key.toLowerCase()) {
-      case 'career':
-        return Icons.work_rounded;
-      case 'education':
-        return Icons.school_rounded;
+    switch (_normalizeBlockKey(key)) {
       case 'health':
         return Icons.favorite_rounded;
+      case 'career':
+        return Icons.work_rounded;
       case 'family':
-        return Icons.family_restroom_rounded;
+        return Icons.home_rounded;
       case 'relations':
-        return Icons.favorite_border_rounded;
+        return Icons.people_alt_rounded;
+      case 'education':
+        return Icons.school_rounded;
       case 'finance':
         return Icons.account_balance_wallet_rounded;
       case 'hobby':
-      case 'hobbies':
-        return Icons.sports_esports_rounded;
+        return Icons.palette_rounded;
+      case 'spirituality':
+        return Icons.self_improvement_rounded;
       default:
-        return Icons.circle;
+        return Icons.circle_rounded;
     }
   }
 
@@ -772,38 +837,36 @@ class _GoalsViewState extends State<_GoalsView> {
       body: NestBackground(
         child: CustomScrollView(
           slivers: [
-            // категории
+            // категории-иконки
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(12 + sidePad, 8, 12 + sidePad, 0),
-                child: SizedBox(
-                  height: isCompact ? 56 : 62,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.zero,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.zero,
+                  child: Row(
                     children: [
-                      BlockChip(
+                      _LifeBlockIconChip(
+                        icon: Icons.apps_rounded,
                         label: 'Все',
                         selected: m.selectedBlock == 'all',
                         onTap: () => m.setSelectedBlock('all'),
                       ),
+                      const SizedBox(width: 10),
                       ...m.lifeBlocks
                           .where((b) => b.toLowerCase() != 'general')
-                          .map(
-                            (b) => Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: BlockChip(
-                                label: getBlockLabel(
-                                  LifeBlock.values.firstWhere(
-                                    (e) => e.name == b,
-                                    orElse: () => LifeBlock.health,
-                                  ),
-                                ),
+                          .map((b) {
+                            final normalized = _normalizeBlockKey(b);
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: _LifeBlockIconChip(
+                                icon: _blockIcon(normalized),
+                                label: _blockTitle(normalized),
                                 selected: m.selectedBlock == b,
                                 onTap: () => m.setSelectedBlock(b),
                               ),
-                            ),
-                          ),
+                            );
+                          }),
                     ],
                   ),
                 ),
@@ -1462,20 +1525,7 @@ class _DayCellState extends State<_DayCell> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final bgBase = widget.isToday
-        ? cs.primaryContainer.withOpacity(0.55)
-        : cs.surface.withOpacity(0.90);
-
-    final labelColor = !widget.inMonth
-        ? cs.onSurfaceVariant.withOpacity(0.5)
-        : widget.isWeekend
-        ? cs.onSurface.withOpacity(0.85)
-        : cs.onSurface;
-
-    const radius = 12.0;
-
     final heat = widget.heat ?? const <String, double>{};
-
     double hours = 0;
     for (final v in heat.values) {
       hours += v;
@@ -1491,6 +1541,15 @@ class _DayCellState extends State<_DayCell> {
     }
 
     final hasData = frac > 0.0;
+    final labelColor = hasData || widget.isToday
+        ? Colors.white
+        : !widget.inMonth
+        ? cs.onSurfaceVariant.withOpacity(0.45)
+        : widget.isWeekend
+        ? cs.onSurface.withOpacity(0.88)
+        : cs.onSurface;
+
+    const radius = 24.0;
 
     return AnimatedScale(
       duration: const Duration(milliseconds: 110),
@@ -1505,89 +1564,158 @@ class _DayCellState extends State<_DayCell> {
             widget.onTap();
           },
           borderRadius: BorderRadius.circular(radius),
-          child: NestBlurCard(
-            child: ClipRRect(
+          child: Container(
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
-              child: Stack(
-                children: [
-                  Positioned.fill(child: ColoredBox(color: bgBase)),
-
-                  if (hasData)
-                    Positioned.fill(
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: FractionallySizedBox(
-                          widthFactor: 1.0,
-                          heightFactor: frac,
-                          alignment: Alignment.bottomCenter,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [
-                                  fillColor.withOpacity(0.95),
-                                  fillColor.withOpacity(0.55),
-                                  fillColor.withOpacity(0.18),
-                                ],
-                                stops: const [0.0, 0.75, 1.0],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.center,
-                            colors: [
-                              Colors.white.withOpacity(0.20),
-                              Colors.white.withOpacity(0.0),
-                            ],
-                            stops: const [0.0, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  if (widget.isToday)
-                    Positioned(
-                      right: 6,
-                      top: 6,
-                      child: Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: cs.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-
-                  Center(
-                    child: Text(
-                      '${widget.date.day}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        height: 1.0,
-                        color: labelColor,
-                      ),
-                    ),
-                  ),
-                ],
+              color: hasData || widget.isToday
+                  ? null
+                  : cs.surface.withOpacity(0.92),
+              gradient: hasData || widget.isToday
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        fillColor.withOpacity(widget.isToday ? 0.98 : 0.94),
+                        fillColor.withOpacity(hasData ? 0.82 : 0.72),
+                      ],
+                    )
+                  : null,
+              border: Border.all(
+                color: hasData || widget.isToday
+                    ? Colors.white.withOpacity(0.18)
+                    : cs.outline.withOpacity(0.22),
+                width: 1.4,
               ),
+              boxShadow: hasData || widget.isToday
+                  ? [
+                      BoxShadow(
+                        color: fillColor.withOpacity(0.24),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _CellProgressRingPainter(
+                      progress: frac,
+                      color: fillColor,
+                      active: hasData || widget.isToday,
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(radius),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withOpacity(hasData || widget.isToday ? 0.16 : 0.08),
+                          Colors.white.withOpacity(0.00),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (widget.isToday)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.95),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                Center(
+                  child: Text(
+                    '${widget.date.day}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      height: 1.0,
+                      color: labelColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+}
+
+class _CellProgressRingPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final bool active;
+
+  const _CellProgressRingPainter({
+    required this.progress,
+    required this.color,
+    required this.active,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final inset = 4.0;
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      size.width - inset * 2,
+      size.height - inset * 2,
+    );
+    final radius = Radius.circular((size.width - inset * 2) / 2);
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+
+    final track = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..color = active
+          ? Colors.white.withOpacity(0.24)
+          : Colors.white.withOpacity(0.08);
+
+    canvas.drawRRect(rrect, track);
+
+    if (!active || progress <= 0) return;
+
+    final path = Path()..addRRect(rrect);
+    final metric = path.computeMetrics().first;
+    final drawPath = metric.extractPath(0, metric.length * progress.clamp(0.0, 1.0));
+
+    final progressPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(0.55),
+          color.withOpacity(0.95),
+          color,
+        ],
+      ).createShader(rect);
+
+    canvas.drawPath(drawPath, progressPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CellProgressRingPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
+        oldDelegate.active != active;
   }
 }
 
@@ -1752,3 +1880,76 @@ class _NestQuickActionTile extends StatelessWidget {
     );
   }
 }
+
+
+class _LifeBlockIconChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LifeBlockIconChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            color: selected
+                ? cs.primary.withOpacity(0.22)
+                : Colors.white.withOpacity(0.08),
+            border: Border.all(
+              color: selected
+                  ? cs.primary.withOpacity(0.70)
+                  : Colors.white.withOpacity(0.30),
+              width: 1.2,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: cs.primary.withOpacity(0.18),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? cs.onPrimaryContainer : cs.onSurface,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: tt.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: selected ? cs.onPrimaryContainer : cs.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

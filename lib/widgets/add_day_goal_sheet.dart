@@ -27,7 +27,7 @@ class AddGoalResult {
   final TimeOfDay startTime;
   final String? userGoalId;
 
-  AddGoalResult({
+  const AddGoalResult({
     required this.title,
     required this.description,
     required this.lifeBlock,
@@ -43,7 +43,8 @@ class AddDayGoalSheet extends StatefulWidget {
   final String? fixedLifeBlock;
   final List<String> availableBlocks;
 
-  /// Оставляем для обратной совместимости, но больше не используем
+  /// Используется как fallback, чтобы показать уже связанную цель,
+  /// даже если она не попала в запрос по текущему life_block.
   final List<UserGoalLinkOption> availableUserGoals;
 
   final String? initialUserGoalId;
@@ -207,13 +208,23 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
     }
   }
 
+  UserGoalLinkOption? _findSelectedGoalFallback() {
+    final selectedId = _selectedUserGoalId;
+    if (selectedId == null) return null;
+
+    for (final g in widget.availableUserGoals) {
+      if (g.id == selectedId) return g;
+    }
+
+    return null;
+  }
+
   Future<void> _loadUserGoalsForCurrentBlock() async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
       if (!mounted) return;
       setState(() {
         _userGoalsForSelectedBlock = const [];
-        _selectedUserGoalId = null;
         _loadingUserGoals = false;
       });
       return;
@@ -234,33 +245,41 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
           .order('title');
 
       final items = (raw as List)
-          .map((e) => UserGoalLinkOption(
-                id: (e['id'] ?? '').toString(),
-                title: (e['title'] ?? '').toString(),
-                lifeBlock: (e['life_block'] ?? '').toString(),
-                horizon: (e['horizon'] ?? '').toString(),
-              ))
+          .map(
+            (e) => UserGoalLinkOption(
+              id: (e['id'] ?? '').toString(),
+              title: (e['title'] ?? '').toString(),
+              lifeBlock: (e['life_block'] ?? '').toString(),
+              horizon: (e['horizon'] ?? '').toString(),
+            ),
+          )
           .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
-          .toList()
-        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+          .toList();
+
+      final selectedId = _selectedUserGoalId;
+      if (selectedId != null && !items.any((g) => g.id == selectedId)) {
+        final fallback = _findSelectedGoalFallback();
+        if (fallback != null) {
+          items.add(fallback);
+        }
+      }
+
+      items.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
       if (!mounted) return;
 
-      final stillValid = _selectedUserGoalId != null &&
-          items.any((g) => g.id == _selectedUserGoalId);
-
       setState(() {
         _userGoalsForSelectedBlock = items;
-        if (!stillValid) {
-          _selectedUserGoalId = null;
-        }
         _loadingUserGoals = false;
       });
     } catch (_) {
       if (!mounted) return;
+
+      final fallback = _findSelectedGoalFallback();
+
       setState(() {
-        _userGoalsForSelectedBlock = const [];
-        _selectedUserGoalId = null;
+        _userGoalsForSelectedBlock =
+            fallback == null ? const [] : <UserGoalLinkOption>[fallback];
         _loadingUserGoals = false;
       });
     }
@@ -526,8 +545,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                                   )
                                   .toList(),
                               onChanged: (v) async {
-                                final next =
-                                    _normalizeBlock(v ?? _lifeBlock);
+                                final next = _normalizeBlock(v ?? _lifeBlock);
                                 if (next == _lifeBlock) return;
 
                                 setState(() {
@@ -567,6 +585,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                         const SizedBox(height: 10),
                         DropdownButtonFormField<String?>(
                           value: dropdownGoalValue,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Большая цель',
                             filled: true,
@@ -596,7 +615,10 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           items: [
                             const DropdownMenuItem<String?>(
                               value: null,
-                              child: Text('Без связи'),
+                              child: Text(
+                                'Без связи',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             ..._userGoalsForSelectedBlock.map(
                               (g) => DropdownMenuItem<String?>(
@@ -604,10 +626,33 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                                 child: Text(
                                   '${g.title} · ${_horizonLabel(g.horizon)}',
                                   overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                             ),
                           ],
+                          selectedItemBuilder: (context) {
+                            return [
+                              const Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Без связи',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              ..._userGoalsForSelectedBlock.map(
+                                (g) => Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    '${g.title} · ${_horizonLabel(g.horizon)}',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                            ];
+                          },
                           onChanged: _loadingUserGoals
                               ? null
                               : (v) {
@@ -627,11 +672,13 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Text(
-                                'Загружаю цели для блока "${_lifeBlockLabel(_lifeBlock)}"...',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: scheme.onSurfaceVariant,
-                                    ),
+                              Expanded(
+                                child: Text(
+                                  'Загружаю цели для блока "${_lifeBlockLabel(_lifeBlock)}"...',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                ),
                               ),
                             ],
                           ),

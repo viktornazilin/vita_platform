@@ -35,8 +35,6 @@ class DayGoalsModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // GoalService убран — идём напрямую в dbRepo
-      // Передаём "чистый день" в UTC, как у тебя было
       final allDay = await dbRepo.getGoalsByDate(
         DateTime.utc(date.year, date.month, date.day),
         lifeBlock: lifeBlock,
@@ -44,7 +42,6 @@ class DayGoalsModel extends ChangeNotifier {
 
       if (myRev != _rev) return;
 
-      // lifeBlock уже отфильтрован на уровне запроса, но оставим защиту
       final filtered = lifeBlock == null
           ? allDay
           : allDay.where((g) => g.lifeBlock == lifeBlock).toList();
@@ -72,6 +69,7 @@ class DayGoalsModel extends ChangeNotifier {
     required String emotion,
     required double hours,
     required TimeOfDay startTime,
+    String? userGoalId,
   }) async {
     final startDateTimeUtc = DateTime.utc(
       date.year,
@@ -84,12 +82,13 @@ class DayGoalsModel extends ChangeNotifier {
     await dbRepo.createGoal(
       title: title.trim(),
       description: description.trim(),
-      deadline: _dayStartUtc(), // "день" в UTC
+      deadline: _dayStartUtc(),
       lifeBlock: lifeBlockValue,
       importance: importance,
       emotion: emotion,
       spentHours: hours,
       startTime: startDateTimeUtc,
+      userGoalId: userGoalId,
     );
 
     await load();
@@ -104,27 +103,29 @@ class DayGoalsModel extends ChangeNotifier {
     required String emotion,
     required double hours,
     required TimeOfDay startTime,
+    String? userGoalId,
   }) async {
-    final old = _goals.firstWhere((g) => g.id == id);
+    final startDateTimeUtc = DateTime.utc(
+      date.year,
+      date.month,
+      date.day,
+      startTime.hour,
+      startTime.minute,
+    );
 
-    final updated = old.copyWith(
+    await dbRepo.updateGoalFields(
+      goalId: id,
       title: title.trim(),
       description: description.trim(),
+      deadline: _dayStartUtc(),
       lifeBlock: lifeBlockValue,
       importance: importance,
       emotion: emotion,
       spentHours: hours,
-      startTime: DateTime.utc(
-        date.year,
-        date.month,
-        date.day,
-        startTime.hour,
-        startTime.minute,
-      ),
-      deadline: _dayStartUtc(),
+      startTime: startDateTimeUtc,
+      userGoalId: userGoalId,
     );
 
-    await dbRepo.updateGoal(updated);
     await load();
   }
 
