@@ -5,13 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/profile_model.dart';
-
-import '../../controllers/locale_controller.dart'; // ✅ ADD
+import '../../controllers/locale_controller.dart';
 
 import 'profile_ui_helpers.dart';
 import 'habits_card.dart';
 
-// Nest UI
 import '../../widgets/nest/nest_card.dart';
 import '../../widgets/nest/nest_section_title.dart';
 import '../../widgets/nest/nest_sheet.dart';
@@ -45,9 +43,9 @@ class ProfileRightColumn extends StatelessWidget {
               Text(
                 l.profileDeleteAccountBody,
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF2E4B5A).withOpacity(0.85),
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: const Color(0xFF2E4B5A).withOpacity(0.85),
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               const SizedBox(height: 14),
               Row(
@@ -80,10 +78,7 @@ class ProfileRightColumn extends StatelessWidget {
     return res == true;
   }
 
-  Future<void> _handleDeleteAccount(
-    BuildContext context,
-    ProfileModel model,
-  ) async {
+  Future<void> _handleDeleteAccount(BuildContext context, ProfileModel model) async {
     final l = AppLocalizations.of(context)!;
 
     final ok = await _confirmDeleteAccount(context);
@@ -97,27 +92,46 @@ class ProfileRightColumn extends StatelessWidget {
       return;
     }
 
-    // После удаления и signOut — уводим на логин
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pushNamedAndRemoveUntil('/login', (r) => false);
+    Navigator.of(context, rootNavigator: true)
+        .pushNamedAndRemoveUntil('/login', (r) => false);
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l.profileAccountDeletedToast)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l.profileAccountDeletedToast)));
+  }
+
+  Future<void> _changeLanguage(
+    BuildContext context, {
+    required ProfileModel model,
+    required LocaleController localeCtl,
+    required Locale? locale,
+  }) async {
+    await localeCtl.setLocale(locale);
+    if (!context.mounted) return;
+
+    final err = await model.setPreferredLanguage(locale?.languageCode);
+    if (!context.mounted) return;
+
+    if (err != null) {
+      ProfileUi.snack(context, err);
+      return;
+    }
+
+    await model.load();
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final model = context.watch<ProfileModel>();
-    final localeCtl = context.watch<LocaleController>(); // ✅
+    final localeCtl = context.watch<LocaleController>();
+
+    final selectedLocale = model.preferredLanguage == null || model.preferredLanguage!.isEmpty
+        ? localeCtl.locale
+        : Locale(model.preferredLanguage!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ===== Header =====
         Row(
           children: [
             Expanded(child: NestSectionTitle(l.profileQuestionnaireSection)),
@@ -131,7 +145,6 @@ class ProfileRightColumn extends StatelessWidget {
         ),
         const SizedBox(height: 10),
 
-        // ===== Content =====
         if (!model.hasCompletedQuestionnaire) ...[
           NestCard(
             padding: const EdgeInsets.all(16),
@@ -141,9 +154,9 @@ class ProfileRightColumn extends StatelessWidget {
                 Text(
                   l.profileQuestionnaireNotDoneTitle,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF2E4B5A).withOpacity(0.75),
-                    fontWeight: FontWeight.w600,
-                  ),
+                        color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 12),
                 Align(
@@ -157,7 +170,6 @@ class ProfileRightColumn extends StatelessWidget {
             ),
           ),
         ] else ...[
-          // ===== Life blocks =====
           NestCard(
             padding: const EdgeInsets.all(12),
             child: ProfileUi.chipsCard(
@@ -165,11 +177,10 @@ class ProfileRightColumn extends StatelessWidget {
               title: l.profileLifeBlocksTitle,
               items: model.lifeBlocks,
               onEdit: () async {
-                final v = await ProfileUi.editChipsDialog(
+                final v = await ProfileUi.selectLifeBlocksDialog(
                   context,
                   title: l.profileLifeBlocksTitle,
                   initial: model.lifeBlocks,
-                  hint: l.profileLifeBlocksHint,
                 );
                 if (v == null) return;
                 final err = await model.setLifeBlocks(v);
@@ -181,7 +192,6 @@ class ProfileRightColumn extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // ===== Priorities =====
           NestCard(
             padding: const EdgeInsets.all(12),
             child: ProfileUi.chipsCard(
@@ -203,15 +213,11 @@ class ProfileRightColumn extends StatelessWidget {
               },
             ),
           ),
-
           const SizedBox(height: 10),
 
-          // ✅ Habits
           const HabitsCard(),
-
           const SizedBox(height: 12),
 
-          // ===== Language Switcher (NEW) =====
           NestCard(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -220,14 +226,19 @@ class ProfileRightColumn extends StatelessWidget {
                 Text(
                   l.settingsLanguageTitle,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF2E4B5A),
-                  ),
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF2E4B5A),
+                      ),
                 ),
                 const SizedBox(height: 10),
                 _LanguageDropdown(
-                  value: localeCtl.locale,
-                  onChanged: (loc) => localeCtl.setLocale(loc),
+                  value: selectedLocale,
+                  onChanged: (loc) => _changeLanguage(
+                    context,
+                    model: model,
+                    localeCtl: localeCtl,
+                    locale: loc,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Opacity(
@@ -235,8 +246,8 @@ class ProfileRightColumn extends StatelessWidget {
                   child: Text(
                     l.settingsLanguageSubtitle,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                 ),
               ],
@@ -245,60 +256,77 @@ class ProfileRightColumn extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ===== Danger Zone =====
-          NestCard(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: NestCard(
+              padding: EdgeInsets.zero,
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                collapsedShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                leading: Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: Text(
                   l.profileDangerZoneTitle,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF2E4B5A),
-                  ),
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF2E4B5A),
+                      ),
                 ),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  onPressed: model.deletingAccount
-                      ? null
-                      : () => _handleDeleteAccount(context, model),
-                  icon: model.deletingAccount
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator.adaptive(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.delete_forever_rounded),
-                  label: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                subtitle: Text(
+                  'Удаление аккаунта',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                      ),
+                ),
+                children: [
+                  FilledButton.icon(
+                    onPressed: model.deletingAccount
+                        ? null
+                        : () => _handleDeleteAccount(context, model),
+                    icon: model.deletingAccount
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.delete_forever_rounded),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        model.deletingAccount
+                            ? l.profileDeletingAccount
+                            : l.profileDeleteAccountCta,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Opacity(
+                    opacity: 0.75,
                     child: Text(
-                      model.deletingAccount
-                          ? l.profileDeletingAccount
-                          : l.profileDeleteAccountCta,
+                      l.profileDeleteAccountFootnote,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Opacity(
-                  opacity: 0.75,
-                  child: Text(
-                    l.profileDeleteAccountFootnote,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -307,15 +335,14 @@ class ProfileRightColumn extends StatelessWidget {
   }
 }
 
-/// ✅ Language dropdown (Nest style)
 class _LanguageDropdown extends StatelessWidget {
-  final Locale? value; // null => system
+  final Locale? value;
   final ValueChanged<Locale?> onChanged;
 
   const _LanguageDropdown({required this.value, required this.onChanged});
 
   String _label(Locale? l) {
-    if (l == null) return 'System';
+    if (l == null) return 'Системный';
     switch (l.languageCode) {
       case 'ru':
         return 'Русский';
@@ -374,9 +401,9 @@ class _LanguageDropdown extends StatelessWidget {
                   child: Text(
                     _label(loc),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF2E4B5A),
-                    ),
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF2E4B5A),
+                        ),
                   ),
                 ),
               )
@@ -388,7 +415,6 @@ class _LanguageDropdown extends StatelessWidget {
   }
 }
 
-/// Мини-ссылка-кнопка в стиле Nest
 class _NestLinkButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -415,9 +441,9 @@ class _NestLinkButton extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF2E4B5A),
-              ),
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2E4B5A),
+                  ),
             ),
           ],
         ),
@@ -426,7 +452,6 @@ class _NestLinkButton extends StatelessWidget {
   }
 }
 
-/// Primary-кнопка в стиле Nest (голубой градиент)
 class _NestPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -457,9 +482,9 @@ class _NestPrimaryButton extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-          ),
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
         ),
       ),
     );
@@ -476,26 +501,25 @@ class _SheetHeader extends StatelessWidget {
       children: [
         Center(
           child: Container(
-            width: 44,
+            width: 42,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFF2E4B5A).withOpacity(0.20),
-              borderRadius: BorderRadius.circular(99),
+              color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(999),
             ),
           ),
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
-            ),
-          ),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
         ),
       ],
     );
   }
 }
+

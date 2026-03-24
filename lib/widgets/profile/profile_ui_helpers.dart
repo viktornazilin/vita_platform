@@ -4,37 +4,42 @@ import 'package:flutter/material.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
-// Nest UI (проверь пути/имена)
 import '../../widgets/nest/nest_card.dart';
 import '../../widgets/nest/nest_sheet.dart';
 
 class ProfileUi {
-  // ======= Toast =======
+  static const List<String> availableLifeBlocks = <String>[
+    'health',
+    'career',
+    'family',
+    'finance',
+    'education',
+    'hobbies',
+  ];
+
   static void snack(BuildContext context, String text) {
-  final sm = ScaffoldMessenger.maybeOf(context);
-  if (sm == null) return;
+    final sm = ScaffoldMessenger.maybeOf(context);
+    if (sm == null) return;
 
-  final scheme = Theme.of(context).colorScheme;
+    final scheme = Theme.of(context).colorScheme;
 
-  sm.showSnackBar(
-    SnackBar(
-      content: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
+    sm.showSnackBar(
+      SnackBar(
+        content: Text(
+          text,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: scheme.surfaceContainerHigh.withOpacity(0.92),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: scheme.surfaceContainerHigh.withOpacity(0.92),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    ),
-  );
-}
+    );
+  }
 
-  // ======= LifeBlock mapping (label + icon) =======
-  // ВАЖНО: label хранится как l10n-key, а отображение — через локализацию.
   static LifeBlockMeta blockMeta(String raw) {
     final k = raw.trim().toLowerCase();
 
@@ -74,65 +79,32 @@ class ProfileUi {
           icon: Icons.savings_rounded,
         );
 
-      case 'learning':
       case 'education':
       case 'study':
       case 'учёба':
+      case 'образование':
+      case 'learning':
       case 'развитие':
         return const LifeBlockMeta(
-          key: 'learning',
-          labelKey: 'lifeBlockLearning',
-          icon: Icons.auto_stories_rounded,
+          key: 'education',
+          labelKey: 'lifeBlockEducation',
+          icon: Icons.menu_book_rounded,
         );
 
-      case 'social':
-      case 'friends':
-      case 'друзья':
+      case 'hobby':
+      case 'hobbies':
+      case 'хобби':
         return const LifeBlockMeta(
-          key: 'social',
-          labelKey: 'lifeBlockSocial',
-          icon: Icons.groups_rounded,
-        );
-
-      case 'rest':
-      case 'fun':
-      case 'отдых':
-        return const LifeBlockMeta(
-          key: 'rest',
-          labelKey: 'lifeBlockRest',
-          icon: Icons.beach_access_rounded,
-        );
-
-      case 'balance':
-      case 'баланс':
-        return const LifeBlockMeta(
-          key: 'balance',
-          labelKey: 'lifeBlockBalance',
-          icon: Icons.spa_rounded,
-        );
-
-      case 'love':
-      case 'любовь':
-        return const LifeBlockMeta(
-          key: 'love',
-          labelKey: 'lifeBlockLove',
-          icon: Icons.favorite_border_rounded,
-        );
-
-      case 'creativity':
-      case 'творчество':
-        return const LifeBlockMeta(
-          key: 'creativity',
-          labelKey: 'lifeBlockCreativity',
+          key: 'hobbies',
+          labelKey: 'lifeBlockHobby',
           icon: Icons.palette_rounded,
         );
 
-      case 'general':
       default:
         return const LifeBlockMeta(
-          key: 'general',
-          labelKey: 'lifeBlockGeneral',
-          icon: Icons.bubble_chart_rounded,
+          key: 'hobbies',
+          labelKey: 'lifeBlockHobby',
+          icon: Icons.palette_rounded,
         );
     }
   }
@@ -141,7 +113,6 @@ class ProfileUi {
     final l = AppLocalizations.of(context)!;
     final meta = blockMeta(raw);
 
-    // без рефлексии: обычный switch по labelKey
     switch (meta.labelKey) {
       case 'lifeBlockHealth':
         return l.lifeBlockHealth;
@@ -151,27 +122,17 @@ class ProfileUi {
         return l.lifeBlockFamily;
       case 'lifeBlockFinance':
         return l.lifeBlockFinance;
-      case 'lifeBlockLearning':
-        return l.lifeBlockLearning;
-      case 'lifeBlockSocial':
-        return l.lifeBlockSocial;
-      case 'lifeBlockRest':
-        return l.lifeBlockRest;
-      case 'lifeBlockBalance':
-        return l.lifeBlockBalance;
-      case 'lifeBlockLove':
-        return l.lifeBlockLove;
-      case 'lifeBlockCreativity':
-        return l.lifeBlockCreativity;
-      case 'lifeBlockGeneral':
+      case 'lifeBlockEducation':
+        return 'Образование';
+      case 'lifeBlockHobby':
+        return 'Хобби';
       default:
-        return l.lifeBlockGeneral;
+        return 'Хобби';
     }
   }
 
-  // ======= Nest-styled dialogs =======
-
   static Future<String?> promptText(
+
     BuildContext context, {
     required String title,
     required String label,
@@ -318,6 +279,7 @@ class ProfileUi {
     int decimals = 1,
   }) async {
     final l = AppLocalizations.of(context)!;
+    double value = initial.clamp(min, max);
 
     return showModalBottomSheet<double>(
       context: context,
@@ -327,8 +289,6 @@ class ProfileUi {
       builder: (ctx) => NestSheet(
         child: StatefulBuilder(
           builder: (ctx, setSt) {
-            double value = initial.clamp(min, max);
-
             return Padding(
               padding: EdgeInsets.only(
                 left: 16,
@@ -397,6 +357,7 @@ class ProfileUi {
     );
   }
 
+
   static Future<List<String>?> editChipsDialog(
     BuildContext context, {
     required String title,
@@ -444,15 +405,14 @@ class ProfileUi {
                     child: FilledButton(
                       onPressed: () {
                         final raw = ctrl.text.trim();
-                        final list =
-                            (raw.isEmpty)
-                                  ? <String>[]
-                                  : raw
-                                        .split(',')
-                                        .map((e) => e.trim())
-                                        .where((e) => e.isNotEmpty)
-                                        .toSet()
-                                        .toList()
+                        final list = raw.isEmpty
+                            ? <String>[]
+                            : raw
+                                  .split(',')
+                                  .map((e) => e.trim())
+                                  .where((e) => e.isNotEmpty)
+                                  .toSet()
+                                  .toList()
                               ..sort();
                         Navigator.pop(ctx, list);
                       },
@@ -471,7 +431,90 @@ class ProfileUi {
     return res;
   }
 
-  // ======= Nest widgets =======
+  static Future<List<String>?> selectLifeBlocksDialog(
+    BuildContext context, {
+    required String title,
+    required List<String> initial,
+  }) async {
+    final l = AppLocalizations.of(context)!;
+    final selected = initial.map((e) => blockMeta(e).key).toSet();
+
+    final res = await showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => NestSheet(
+        child: StatefulBuilder(
+          builder: (ctx, setSt) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 14,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SheetHeader(title: title),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: availableLifeBlocks.map((raw) {
+                      final meta = blockMeta(raw);
+                      final active = selected.contains(meta.key);
+                      return FilterChip(
+                        selected: active,
+                        label: Text(blockLabel(ctx, meta.key)),
+                        avatar: Icon(meta.icon, size: 16),
+                        onSelected: (v) {
+                          setSt(() {
+                            if (v) {
+                              selected.add(meta.key);
+                            } else {
+                              selected.remove(meta.key);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text(l.commonCancel),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () => Navigator.pop(
+                            ctx,
+                            availableLifeBlocks
+                                .where((e) => selected.contains(blockMeta(e).key))
+                                .toList(),
+                          ),
+                          child: Text(l.commonSave),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    return res;
+  }
 
   static Widget editableRow({
     required BuildContext context,
@@ -640,11 +683,7 @@ class LifeBlockMeta {
     required this.icon,
   });
 
-  /// ✅ FIX: goals_by_block_card.dart ожидает meta.label
-  /// Тут возвращаем просто ключ локализации — а "человеческий" текст
-  /// получается через ProfileUi.blockLabel(context, raw).
-  /// Но чтобы сборка не падала, label должен существовать.
-  String get label => labelKey;
+  String get label => key;
 }
 
 class _SheetHeader extends StatelessWidget {
@@ -653,37 +692,29 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final handleColor = isDark
-        ? scheme.onSurfaceVariant.withOpacity(0.28)
-        : scheme.onSurfaceVariant.withOpacity(0.20);
-
     return Column(
       children: [
         Center(
           child: Container(
-            width: 44,
+            width: 42,
             height: 5,
             decoration: BoxDecoration(
-              color: handleColor,
-              borderRadius: BorderRadius.circular(99),
+              color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(999),
             ),
           ),
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: scheme.onSurface,
-                ),
-          ),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
         ),
       ],
     );
   }
 }
+

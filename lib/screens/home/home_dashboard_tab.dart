@@ -16,6 +16,9 @@ import '../mood_screen.dart';
 import '../../widgets/mood/mood_week_card.dart';
 import '../../widgets/mood/habits_week_card.dart';
 import '../../widgets/mood/mental_week_card.dart';
+import '../../widgets/home/hobby_tracker_card.dart';
+import '../../widgets/home/health_tracker_card.dart';
+import '../../widgets/home/shopping_tracker_card.dart';
 
 import '../../widgets/report_section_card.dart';
 import '../../widgets/mood_selector.dart';
@@ -547,6 +550,22 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                     ],
                   );
                 },
+              ),
+            ),
+          ),
+
+          // ✅ NEW: HOME TRACKERS
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+              child: Column(
+                children: const [
+                  HobbyTrackerCard(),
+                  SizedBox(height: 10),
+                  HealthTrackerCard(),
+                  SizedBox(height: 10),
+                  ShoppingTrackerCard(),
+                ],
               ),
             ),
           ),

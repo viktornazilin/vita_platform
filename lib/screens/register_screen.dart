@@ -1,8 +1,7 @@
-// lib/screens/register_screen.dart
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,15 +10,9 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/register_model.dart';
 import '../services/user_service.dart';
-
-/// ─── Палитра Nest (как в LoginScreen) ─────────────────────────────────────────
-const _kOffWhite = Color(0xFFFAF8F5);
-const _kCloud = Color(0xFFEFF6FB);
-const _kSky = Color(0xFF3FA7D6);
-const _kSkyDeep = Color(0xFF2C7FB2);
-const _kInk = Color(0xFF163043);
-const _kInkSoft = Color(0x99163043);
-// ──────────────────────────────────────────────────────────────────────────────
+import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_blur_card.dart';
+import '../widgets/nest/nest_pill.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -53,10 +46,9 @@ class _RegisterViewState extends State<_RegisterView> {
   final _passFocus = FocusNode();
   final _pass2Focus = FocusNode();
 
+  StreamSubscription<AuthState>? _authSub;
   bool _obscure1 = true;
   bool _obscure2 = true;
-
-  StreamSubscription<AuthState>? _authSub;
   bool _busy = false;
 
   bool get _isApplePlatform {
@@ -68,10 +60,7 @@ class _RegisterViewState extends State<_RegisterView> {
   @override
   void initState() {
     super.initState();
-
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((
-      data,
-    ) async {
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       if (!mounted) return;
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         await _routeAfterAuth();
@@ -104,8 +93,8 @@ class _RegisterViewState extends State<_RegisterView> {
     }
 
     final hasArchetype =
-        (userService.selectedArchetype != null &&
-        userService.selectedArchetype!.isNotEmpty);
+        userService.selectedArchetype != null && userService.selectedArchetype!.isNotEmpty;
+
     if (!hasArchetype) {
       Navigator.pushNamedAndRemoveUntil(context, '/archetype', (_) => false);
       return;
@@ -118,32 +107,26 @@ class _RegisterViewState extends State<_RegisterView> {
     }
   }
 
-  // ───────────── Validators (localized) ─────────────
-
-  String? _validateName(BuildContext context, String? v) {
+  String? _validateName(BuildContext context, String? value) {
     final l = AppLocalizations.of(context)!;
-    final s = (v ?? '').trim();
+    final s = (value ?? '').trim();
     if (s.isEmpty) return l.registerErrNameRequired;
     return null;
   }
 
-  String? _validateEmail(BuildContext context, String? v) {
+  String? _validateEmail(BuildContext context, String? value) {
     final l = AppLocalizations.of(context)!;
-    final s = (v ?? '').trim();
+    final s = (value ?? '').trim();
     if (s.isEmpty) return l.registerErrEmailRequired;
-    final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s);
-    if (!ok) return l.registerErrEmailInvalid;
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(s)) {
+      return l.registerErrEmailInvalid;
+    }
     return null;
   }
 
-  /// ✅ Strong password:
-  /// - min 8 chars
-  /// - 1 lower
-  /// - 1 upper
-  /// - 1 digit
-  String? _validateStrongPassword(BuildContext context, String? v) {
+  String? _validateStrongPassword(BuildContext context, String? value) {
     final l = AppLocalizations.of(context)!;
-    final s = v ?? '';
+    final s = value ?? '';
     if (s.isEmpty) return l.registerErrPassRequired;
     if (s.length < 8) return l.registerErrPassMin8;
     if (!RegExp(r'[a-z]').hasMatch(s)) return l.registerErrPassNeedLower;
@@ -152,15 +135,13 @@ class _RegisterViewState extends State<_RegisterView> {
     return null;
   }
 
-  String? _validateConfirm(BuildContext context, String? v) {
+  String? _validateConfirm(BuildContext context, String? value) {
     final l = AppLocalizations.of(context)!;
-    final s = v ?? '';
+    final s = value ?? '';
     if (s.isEmpty) return l.registerErrConfirmRequired;
     if (s != _passCtrl.text) return l.registerErrPasswordsMismatch;
     return null;
   }
-
-  // ───────────── Actions ─────────────
 
   Future<void> _onRegister() async {
     if (_busy) return;
@@ -191,16 +172,13 @@ class _RegisterViewState extends State<_RegisterView> {
     if (ok) {
       await _routeAfterAuth();
     } else if (model.error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(model.error!)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.error!)));
     }
   }
 
   Future<void> _registerWithGoogle() async {
     if (_busy) return;
     setState(() => _busy = true);
-
     final model = context.read<RegisterModel>();
     await model.registerWithGoogle();
 
@@ -208,9 +186,7 @@ class _RegisterViewState extends State<_RegisterView> {
     setState(() => _busy = false);
 
     if (model.error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(model.error!)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.error!)));
     }
   }
 
@@ -226,7 +202,6 @@ class _RegisterViewState extends State<_RegisterView> {
 
     if (_busy) return;
     setState(() => _busy = true);
-
     final model = context.read<RegisterModel>();
     await model.registerWithApple();
 
@@ -234,347 +209,216 @@ class _RegisterViewState extends State<_RegisterView> {
     setState(() => _busy = false);
 
     if (model.error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(model.error!)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.error!)));
     }
   }
 
   void _openTerms() => Navigator.pushNamed(context, '/terms');
   void _openPrivacy() => Navigator.pushNamed(context, '/privacy');
 
-  InputDecoration _dec(BuildContext context, String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: _kSky.withOpacity(0.24)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _kSkyDeep, width: 1.4),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final model = context.watch<RegisterModel>();
     final isLoading = model.loading || _busy;
+    final scheme = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      backgroundColor: _kOffWhite,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_kOffWhite, _kCloud],
-          ),
-        ),
-        child: SafeArea(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: Center(
-              child: AnimatedPadding(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                padding: EdgeInsets.only(
-                  bottom: bottomInset > 0 ? bottomInset + 12 : 20,
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.80),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: _kSky.withOpacity(0.18)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _kSkyDeep.withOpacity(0.08),
-                            blurRadius: 26,
-                            offset: const Offset(0, 10),
+      body: NestBackground(
+        useSoftGradient: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Center(
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                bottomInset > 0 ? bottomInset + 12 : 20,
+              ),
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: NestBlurCard(
+                    radius: 28,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: NestPill(
+                              leading: const Icon(Icons.auto_awesome_outlined),
+                              text: 'Nest',
+                            ),
                           ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 28,
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                          const SizedBox(height: 18),
+                          const _LogoPlate(),
+                          const SizedBox(height: 18),
+                          Text(
+                            l.registerTitle,
+                            textAlign: TextAlign.center,
+                            style: tt.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          TextFormField(
+                            controller: _nameCtrl,
+                            focusNode: _nameFocus,
+                            validator: (v) => _validateName(context, v),
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.name],
+                            onFieldSubmitted: (_) => _emailFocus.requestFocus(),
+                            decoration: InputDecoration(
+                              labelText: l.registerNameLabel,
+                              prefixIcon: const Icon(Icons.person_outline_rounded),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _emailCtrl,
+                            focusNode: _emailFocus,
+                            validator: (v) => _validateEmail(context, v),
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.email],
+                            onFieldSubmitted: (_) => _passFocus.requestFocus(),
+                            decoration: InputDecoration(
+                              labelText: l.registerEmailLabel,
+                              prefixIcon: const Icon(Icons.alternate_email_rounded),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _passCtrl,
+                            focusNode: _passFocus,
+                            validator: (v) => _validateStrongPassword(context, v),
+                            obscureText: _obscure1,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.newPassword],
+                            onFieldSubmitted: (_) => _pass2Focus.requestFocus(),
+                            decoration: InputDecoration(
+                              labelText: l.registerPasswordLabel,
+                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(() => _obscure1 = !_obscure1),
+                                icon: Icon(
+                                  _obscure1
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _pass2Ctrl,
+                            focusNode: _pass2Focus,
+                            validator: (v) => _validateConfirm(context, v),
+                            obscureText: _obscure2,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.newPassword],
+                            onFieldSubmitted: (_) => _onRegister(),
+                            decoration: InputDecoration(
+                              labelText: l.registerConfirmPasswordLabel,
+                              prefixIcon: const Icon(Icons.verified_user_outlined),
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(() => _obscure2 = !_obscure2),
+                                icon: Icon(
+                                  _obscure2
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _LegalRow(
+                            value: model.termsAccepted,
+                            enabled: !isLoading,
+                            onChanged: (v) {
+  model.termsAccepted = v;
+  model.notifyListeners();
+},
+                            onOpenTerms: _openTerms,
+                            onOpenPrivacy: _openPrivacy,
+                          ),
+                          if (model.error != null) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              model.error!,
+                              style: tt.bodySmall?.copyWith(
+                                color: scheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: isLoading
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    child: Center(
+                                      child: CircularProgressIndicator.adaptive(),
+                                    ),
+                                  )
+                                : FilledButton.icon(
+                                    onPressed: _onRegister,
+                                    icon: const Icon(Icons.person_add_alt_1_rounded),
+                                    label: Text(l.registerBtnSignUp),
+                                  ),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
                             children: [
-                              const _LogoPlate(
-                                assetPath: 'assets/images/logo.png',
-                                height: 120,
-                                borderRadius: 22,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-
-                              Text(
-                                l.registerTitle,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      color: _kInk,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(height: 18),
-
-                              TextFormField(
-                                controller: _nameCtrl,
-                                focusNode: _nameFocus,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.name],
-                                decoration: _dec(
-                                  context,
-                                  l.registerNameLabel,
-                                  Icons.person_outline,
-                                ),
-                                validator: (v) => _validateName(context, v),
-                                onFieldSubmitted: (_) =>
-                                    _emailFocus.requestFocus(),
-                              ),
-                              const SizedBox(height: 12),
-
-                              TextFormField(
-                                controller: _emailCtrl,
-                                focusNode: _emailFocus,
-                                keyboardType: TextInputType.emailAddress,
-                                autofillHints: const [AutofillHints.email],
-                                textInputAction: TextInputAction.next,
-                                validator: (v) => _validateEmail(context, v),
-                                decoration: _dec(
-                                  context,
-                                  l.registerEmailLabel,
-                                  Icons.alternate_email,
-                                ),
-                                onFieldSubmitted: (_) =>
-                                    _passFocus.requestFocus(),
-                              ),
-                              const SizedBox(height: 12),
-
-                              TextFormField(
-                                controller: _passCtrl,
-                                focusNode: _passFocus,
-                                obscureText: _obscure1,
-                                textInputAction: TextInputAction.next,
-                                validator: (v) =>
-                                    _validateStrongPassword(context, v),
-                                onFieldSubmitted: (_) =>
-                                    _pass2Focus.requestFocus(),
-                                decoration:
-                                    _dec(
-                                      context,
-                                      l.registerPasswordLabel,
-                                      Icons.lock_outline,
-                                    ).copyWith(
-                                      suffixIcon: IconButton(
-                                        onPressed: () => setState(
-                                          () => _obscure1 = !_obscure1,
-                                        ),
-                                        icon: Icon(
-                                          _obscure1
-                                              ? Icons.visibility
-                                              : Icons.visibility_off,
-                                        ),
-                                        tooltip: _obscure1
-                                            ? l.registerShowPassword
-                                            : l.registerHidePassword,
-                                      ),
-                                    ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              TextFormField(
-                                controller: _pass2Ctrl,
-                                focusNode: _pass2Focus,
-                                obscureText: _obscure2,
-                                textInputAction: TextInputAction.done,
-                                validator: (v) => _validateConfirm(context, v),
-                                onFieldSubmitted: (_) => _onRegister(),
-                                decoration:
-                                    _dec(
-                                      context,
-                                      l.registerConfirmPasswordLabel,
-                                      Icons.lock,
-                                    ).copyWith(
-                                      suffixIcon: IconButton(
-                                        onPressed: () => setState(
-                                          () => _obscure2 = !_obscure2,
-                                        ),
-                                        icon: Icon(
-                                          _obscure2
-                                              ? Icons.visibility
-                                              : Icons.visibility_off,
-                                        ),
-                                        tooltip: _obscure2
-                                            ? l.registerShowPassword
-                                            : l.registerHidePassword,
-                                      ),
-                                    ),
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              _LegalRow(
-                                value: model.termsAccepted,
-                                enabled: !isLoading,
-                                onChanged: (v) => model.setTerms(v),
-                                onOpenTerms: _openTerms,
-                                onOpenPrivacy: _openPrivacy,
-                              ),
-
-                              if (model.error != null) ...[
-                                const SizedBox(height: 10),
-                                Text(
-                                  model.error!,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                              ],
-
-                              const SizedBox(height: 16),
-
-                              SizedBox(
-                                width: double.infinity,
-                                child: isLoading
-                                    ? const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 10,
-                                          ),
-                                          child:
-                                              CircularProgressIndicator.adaptive(),
-                                        ),
-                                      )
-                                    : FilledButton.icon(
-                                        onPressed: _onRegister,
-                                        icon: const Icon(
-                                          Icons.person_add_alt_1_outlined,
-                                        ),
-                                        label: Text(l.registerBtnSignUp),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: _kSky,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 14,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                          ),
-                                          shadowColor: _kSky.withOpacity(0.25),
-                                          elevation: 2,
-                                        ),
-                                      ),
-                              ),
-
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  const Expanded(child: Divider()),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                    child: Text(
-                                      l.commonOr,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(color: _kInkSoft),
-                                    ),
-                                  ),
-                                  const Expanded(child: Divider()),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: isLoading
-                                      ? null
-                                      : _registerWithGoogle,
-                                  icon: const Icon(Icons.g_mobiledata),
-                                  label: Text(l.registerContinueGoogle),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                      color: _kSkyDeep.withOpacity(0.35),
-                                    ),
-                                    foregroundColor: _kSkyDeep,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
+                              Expanded(child: Divider(color: scheme.outlineVariant)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(
+                                  l.commonOr,
+                                  style: tt.labelMedium?.copyWith(
+                                    color: scheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
-
-                              const SizedBox(height: 10),
-
-                              // Apple: видна всегда, но на Web/Android покажет подсказку
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: isLoading
-                                      ? null
-                                      : _registerWithApple,
-                                  icon: const Icon(Icons.apple),
-                                  label: Text(
-                                    _isApplePlatform
-                                        ? l.registerContinueApple
-                                        : l.registerContinueAppleIos,
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                      color: _kSkyDeep.withOpacity(0.35),
-                                    ),
-                                    foregroundColor: _kSkyDeep,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-                              TextButton(
-                                onPressed: isLoading
-                                    ? null
-                                    : () => Navigator.pushReplacementNamed(
-                                        context,
-                                        '/login',
-                                      ),
-                                child: Text(l.registerHaveAccountCta),
-                              ),
+                              Expanded(child: Divider(color: scheme.outlineVariant)),
                             ],
                           ),
-                        ),
+                          const SizedBox(height: 14),
+                          OutlinedButton.icon(
+                            onPressed: isLoading ? null : _registerWithGoogle,
+                            icon: const Icon(Icons.g_mobiledata_rounded),
+                            label: Text(l.registerContinueGoogle),
+                          ),
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            onPressed: isLoading ? null : _registerWithApple,
+                            icon: const Icon(Icons.apple),
+                            label: Text(
+                              _isApplePlatform
+                                  ? l.registerContinueApple
+                                  : l.registerContinueAppleIos,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextButton(
+                            onPressed: isLoading
+                                ? null
+                                : () => Navigator.pushReplacementNamed(context, '/login'),
+                            child: Text(l.registerHaveAccountCta),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -606,56 +450,50 @@ class _LegalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final textStyle = Theme.of(
-      context,
-    ).textTheme.bodyMedium?.copyWith(color: _kInk);
+    final scheme = Theme.of(context).colorScheme;
+    final style = Theme.of(context).textTheme.bodyMedium;
+
+    Widget link(String text, VoidCallback onTap) {
+      return InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+          child: Text(
+            text,
+            style: style?.copyWith(
+              color: scheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      );
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 2),
+          padding: const EdgeInsets.only(top: 1),
           child: Checkbox(
             value: value,
             onChanged: enabled ? (v) => onChanged(v ?? false) : null,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(5),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Wrap(
-              children: [
-                Text(l.registerLegalPrefix, style: textStyle),
-                InkWell(
-                  onTap: enabled ? onOpenTerms : null,
-                  child: Text(
-                    l.registerLegalTerms,
-                    style: textStyle?.copyWith(
-                      color: _kSkyDeep,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Text(l.registerLegalMiddle, style: textStyle),
-                InkWell(
-                  onTap: enabled ? onOpenPrivacy : null,
-                  child: Text(
-                    l.registerLegalPrivacy,
-                    style: textStyle?.copyWith(
-                      color: _kSkyDeep,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Text(l.registerLegalSuffix, style: textStyle),
-              ],
-            ),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(l.registerLegalPrefix, style: style),
+              link(l.registerLegalTerms, onOpenTerms),
+              Text(l.registerLegalMiddle, style: style),
+              link(l.registerLegalPrivacy, onOpenPrivacy),
+              Text(l.registerLegalSuffix, style: style),
+            ],
           ),
         ),
       ],
@@ -664,46 +502,25 @@ class _LegalRow extends StatelessWidget {
 }
 
 class _LogoPlate extends StatelessWidget {
-  final String assetPath;
-  final double height;
-  final double borderRadius;
-  final EdgeInsetsGeometry padding;
-
-  const _LogoPlate({
-    required this.assetPath,
-    required this.height,
-    this.borderRadius = 24,
-    this.padding = const EdgeInsets.all(16),
-  });
+  const _LogoPlate();
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [_kOffWhite, _kCloud],
-        ),
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: _kSky.withOpacity(0.12)),
-        boxShadow: [
-          BoxShadow(
-            color: _kSkyDeep.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: isDark ? scheme.surfaceContainer : scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: scheme.outlineVariant),
       ),
-      padding: padding,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius - 6),
-        child: Image.asset(
-          assetPath,
-          height: height,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-        ),
+      child: Image.asset(
+        'assets/images/logo.png',
+        height: 160,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
       ),
     );
   }
