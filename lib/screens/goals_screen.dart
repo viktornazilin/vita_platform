@@ -2,6 +2,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../main.dart'; // dbRepo
@@ -51,7 +52,16 @@ class GoalsScreen extends StatelessWidget {
 
 enum _ViewMode { dashboard, calendar }
 
+
+
 enum _CalMode { week, month }
+
+class _QuickSimpleGoalResult {
+  final String title;
+  final TimeOfDay? time;
+
+  const _QuickSimpleGoalResult({required this.title, required this.time});
+}
 
 class _GoalsView extends StatefulWidget {
   const _GoalsView();
@@ -738,6 +748,84 @@ class _GoalsViewState extends State<_GoalsView> {
 
                 const SizedBox(height: 10),
 
+                _NestQuickActionTile(
+                  icon: Icons.edit_note_rounded,
+                  color: cs.secondaryContainer,
+                  title: 'Простое добавление задачи',
+                  subtitle:
+                      'Только название, время опционально, категория General',
+                  onTap: () async {
+                    final result = await showModalBottomSheet<_QuickSimpleGoalResult>(
+                      context: ctx,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      backgroundColor: cs.surface,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (_) => const _SimpleGoalSheet(),
+                    );
+
+                    if (result == null || !context.mounted) return;
+
+                    Navigator.pop(ctx);
+
+                    try {
+                      final now = DateTime.now();
+                      final start = result.time == null
+                          ? DateTime(now.year, now.month, now.day, 9, 0)
+                          : DateTime(
+                              now.year,
+                              now.month,
+                              now.day,
+                              result.time!.hour,
+                              result.time!.minute,
+                            );
+
+                      final deadline = DateTime(
+                        now.year,
+                        now.month,
+                        now.day,
+                        23,
+                        59,
+                      );
+
+                      await dbRepo.createGoal(
+                        title: result.title,
+                        description: '',
+                        deadline: deadline,
+                        lifeBlock: 'general',
+                        importance: 1,
+                        emotion: '',
+                        spentHours: 0,
+                        startTime: start,
+                      );
+
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Задача создана'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+
+                      await _reloadHeat(context.read<GoalsCalendarModel>());
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Ошибка создания задачи: $e'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
                 // ✅ Google Calendar
                 _NestQuickActionTile(
                   icon: Icons.calendar_month_rounded,
@@ -834,6 +922,11 @@ class _GoalsViewState extends State<_GoalsView> {
     }
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openQuickActions(context),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Добавить'),
+      ),
       body: NestBackground(
         child: CustomScrollView(
           slivers: [
@@ -1190,6 +1283,164 @@ class _GoalsViewState extends State<_GoalsView> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _SimpleGoalSheet extends StatefulWidget {
+  const _SimpleGoalSheet();
+
+  @override
+  State<_SimpleGoalSheet> createState() => _SimpleGoalSheetState();
+}
+
+class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
+  final _titleCtrl = TextEditingController();
+  TimeOfDay? _time;
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _time ?? TimeOfDay.now(),
+    );
+    if (picked != null && mounted) {
+      setState(() => _time = picked);
+    }
+  }
+
+  void _submit() {
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Введите название задачи'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _QuickSimpleGoalResult(
+        title: title,
+        time: _time,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 42,
+              height: 5,
+              decoration: BoxDecoration(
+                color: cs.outlineVariant,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(Icons.edit_note_rounded, color: cs.primary),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Простое добавление задачи',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Только название, время опционально. Категория по умолчанию — General.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _titleCtrl,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              inputFormatters: [
+                FilteringTextInputFormatter.deny(RegExp(r'^\s+')),
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Название задачи',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickTime,
+                    icon: const Icon(Icons.schedule_rounded),
+                    label: Text(
+                      _time == null
+                          ? 'Добавить время'
+                          : 'Время: ${MaterialLocalizations.of(context).formatTimeOfDay(_time!)}',
+                    ),
+                  ),
+                ),
+                if (_time != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Убрать время',
+                    onPressed: () => setState(() => _time = null),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _submit,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Создать задачу'),
+              ),
+            ),
           ],
         ),
       ),

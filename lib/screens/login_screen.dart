@@ -211,170 +211,200 @@ class _LoginViewState extends State<_LoginView> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: NestBackground(
         useSoftGradient: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
-          child: Center(
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.fromLTRB(
-                20,
-                12,
-                20,
-                bottomInset > 0 ? bottomInset + 12 : 20,
-              ),
-              child: SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 500),
-                  child: NestBlurCard(
-                    radius: 28,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 24,
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Center(
-                            child: NestPill(
-                              leading: const Icon(Icons.wb_sunny_outlined),
-                              text: 'Nest',
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final keyboardOpen = bottomInset > 0;
+
+                return AnimatedPadding(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    12,
+                    20,
+                    keyboardOpen ? 12 : 20,
+                  ),
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+                      child: Align(
+                        alignment:
+                            keyboardOpen ? Alignment.topCenter : Alignment.center,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          child: NestBlurCard(
+                            radius: 28,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 24,
                             ),
-                          ),
-                          const SizedBox(height: 18),
-                          const _LogoPlate(),
-                          const SizedBox(height: 18),
-                          Center(
-                            child: Text(
-                              l.loginTitle,
-                              textAlign: TextAlign.center,
-                              style: tt.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          TextFormField(
-                            controller: _emailCtrl,
-                            focusNode: _emailFocus,
-                            keyboardType: TextInputType.emailAddress,
-                            autofillHints: const [AutofillHints.email],
-                            textInputAction: TextInputAction.next,
-                            validator: (v) => _validateEmail(context, v),
-                            decoration: InputDecoration(
-                              labelText: l.loginEmailLabel,
-                              prefixIcon: const Icon(Icons.alternate_email),
-                            ),
-                            onFieldSubmitted: (_) => _passFocus.requestFocus(),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _passCtrl,
-                            focusNode: _passFocus,
-                            obscureText: _obscure,
-                            textInputAction: TextInputAction.done,
-                            validator: (v) => _validatePass(context, v),
-                            onFieldSubmitted: (_) => _login(),
-                            decoration: InputDecoration(
-                              labelText: l.loginPasswordLabel,
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              suffixIcon: IconButton(
-                                onPressed: () => setState(() => _obscure = !_obscure),
-                                icon: Icon(
-                                  _obscure
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                                tooltip: _obscure
-                                    ? l.loginShowPassword
-                                    : l.loginHidePassword,
-                              ),
-                            ),
-                          ),
-                          if (model.errorText != null) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              model.errorText!,
-                              style: tt.bodySmall?.copyWith(
-                                color: scheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              TextButton(
-                                onPressed: isLoading ? null : _startPasswordReset,
-                                child: Text(l.loginForgotPassword),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: isLoading
-                                    ? null
-                                    : () => Navigator.pushNamed(context, '/register'),
-                                child: Text(l.loginCreateAccount),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: isLoading
-                                ? const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 10),
-                                    child: Center(
-                                      child: CircularProgressIndicator.adaptive(),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Center(
+                                    child: NestPill(
+                                      leading: const Icon(Icons.wb_sunny_outlined),
+                                      text: 'Nest',
                                     ),
-                                  )
-                                : FilledButton.icon(
-                                    onPressed: _login,
-                                    icon: const Icon(Icons.login_rounded),
-                                    label: Text(l.loginBtnSignIn),
                                   ),
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(child: Divider(color: scheme.outlineVariant)),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                child: Text(
-                                  l.loginOr,
-                                  style: tt.labelMedium?.copyWith(
-                                    color: scheme.onSurfaceVariant,
+                                  const SizedBox(height: 18),
+                                  const _LogoPlate(),
+                                  const SizedBox(height: 18),
+                                  Center(
+                                    child: Text(
+                                      l.loginTitle,
+                                      textAlign: TextAlign.center,
+                                      style: tt.headlineSmall?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 18),
+                                  TextFormField(
+                                    controller: _emailCtrl,
+                                    focusNode: _emailFocus,
+                                    keyboardType: TextInputType.emailAddress,
+                                    autofillHints: const [AutofillHints.email],
+                                    textInputAction: TextInputAction.next,
+                                    validator: (v) => _validateEmail(context, v),
+                                    decoration: InputDecoration(
+                                      labelText: l.loginEmailLabel,
+                                      prefixIcon: const Icon(Icons.alternate_email),
+                                    ),
+                                    onFieldSubmitted: (_) => _passFocus.requestFocus(),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextFormField(
+                                    controller: _passCtrl,
+                                    focusNode: _passFocus,
+                                    obscureText: _obscure,
+                                    textInputAction: TextInputAction.done,
+                                    validator: (v) => _validatePass(context, v),
+                                    onFieldSubmitted: (_) => _login(),
+                                    decoration: InputDecoration(
+                                      labelText: l.loginPasswordLabel,
+                                      prefixIcon: const Icon(Icons.lock_outline),
+                                      suffixIcon: IconButton(
+                                        onPressed: () =>
+                                            setState(() => _obscure = !_obscure),
+                                        icon: Icon(
+                                          _obscure
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                        ),
+                                        tooltip: _obscure
+                                            ? l.loginShowPassword
+                                            : l.loginHidePassword,
+                                      ),
+                                    ),
+                                  ),
+                                  if (model.errorText != null) ...[
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      model.errorText!,
+                                      style: tt.bodySmall?.copyWith(
+                                        color: scheme.error,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      TextButton(
+                                        onPressed:
+                                            isLoading ? null : _startPasswordReset,
+                                        child: Text(l.loginForgotPassword),
+                                      ),
+                                      const Spacer(),
+                                      TextButton(
+                                        onPressed: isLoading
+                                            ? null
+                                            : () => Navigator.pushNamed(
+                                                  context,
+                                                  '/register',
+                                                ),
+                                        child: Text(l.loginCreateAccount),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: isLoading
+                                        ? const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: 10,
+                                            ),
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator.adaptive(),
+                                            ),
+                                          )
+                                        : FilledButton.icon(
+                                            onPressed: _login,
+                                            icon: const Icon(Icons.login_rounded),
+                                            label: Text(l.loginBtnSignIn),
+                                          ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Divider(color: scheme.outlineVariant),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                        ),
+                                        child: Text(
+                                          l.loginOr,
+                                          style: tt.labelMedium?.copyWith(
+                                            color: scheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Divider(color: scheme.outlineVariant),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  OutlinedButton.icon(
+                                    onPressed: isLoading ? null : _loginWithGoogle,
+                                    icon: const Icon(Icons.g_mobiledata_rounded),
+                                    label: Text(l.loginContinueGoogle),
+                                  ),
+                                  if (_showAppleButton) ...[
+                                    const SizedBox(height: 10),
+                                    OutlinedButton.icon(
+                                      onPressed: isLoading ? null : _loginWithApple,
+                                      icon: const Icon(Icons.apple),
+                                      label: Text(l.loginContinueApple),
+                                    ),
+                                  ],
+                                ],
                               ),
-                              Expanded(child: Divider(color: scheme.outlineVariant)),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          OutlinedButton.icon(
-                            onPressed: isLoading ? null : _loginWithGoogle,
-                            icon: const Icon(Icons.g_mobiledata_rounded),
-                            label: Text(l.loginContinueGoogle),
-                          ),
-                          if (_showAppleButton) ...[
-                            const SizedBox(height: 10),
-                            OutlinedButton.icon(
-                              onPressed: isLoading ? null : _loginWithApple,
-                              icon: const Icon(Icons.apple),
-                              label: Text(l.loginContinueApple),
                             ),
-                          ],
-                        ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),

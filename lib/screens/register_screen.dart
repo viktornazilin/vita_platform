@@ -226,204 +226,256 @@ class _RegisterViewState extends State<_RegisterView> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: NestBackground(
         useSoftGradient: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
-          child: Center(
-            child: AnimatedPadding(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.fromLTRB(
-                20,
-                12,
-                20,
-                bottomInset > 0 ? bottomInset + 12 : 20,
-              ),
-              child: SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: NestBlurCard(
-                    radius: 28,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 24,
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Center(
-                            child: NestPill(
-                              leading: const Icon(Icons.auto_awesome_outlined),
-                              text: 'Nest',
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final keyboardOpen = bottomInset > 0;
+
+                return AnimatedPadding(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    12,
+                    20,
+                    keyboardOpen ? 12 : 20,
+                  ),
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+                      child: Align(
+                        alignment:
+                            keyboardOpen ? Alignment.topCenter : Alignment.center,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 560),
+                          child: NestBlurCard(
+                            radius: 28,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 24,
                             ),
-                          ),
-                          const SizedBox(height: 18),
-                          const _LogoPlate(),
-                          const SizedBox(height: 18),
-                          Text(
-                            l.registerTitle,
-                            textAlign: TextAlign.center,
-                            style: tt.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          TextFormField(
-                            controller: _nameCtrl,
-                            focusNode: _nameFocus,
-                            validator: (v) => _validateName(context, v),
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.name],
-                            onFieldSubmitted: (_) => _emailFocus.requestFocus(),
-                            decoration: InputDecoration(
-                              labelText: l.registerNameLabel,
-                              prefixIcon: const Icon(Icons.person_outline_rounded),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _emailCtrl,
-                            focusNode: _emailFocus,
-                            validator: (v) => _validateEmail(context, v),
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.email],
-                            onFieldSubmitted: (_) => _passFocus.requestFocus(),
-                            decoration: InputDecoration(
-                              labelText: l.registerEmailLabel,
-                              prefixIcon: const Icon(Icons.alternate_email_rounded),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _passCtrl,
-                            focusNode: _passFocus,
-                            validator: (v) => _validateStrongPassword(context, v),
-                            obscureText: _obscure1,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.newPassword],
-                            onFieldSubmitted: (_) => _pass2Focus.requestFocus(),
-                            decoration: InputDecoration(
-                              labelText: l.registerPasswordLabel,
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
-                              suffixIcon: IconButton(
-                                onPressed: () => setState(() => _obscure1 = !_obscure1),
-                                icon: Icon(
-                                  _obscure1
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _pass2Ctrl,
-                            focusNode: _pass2Focus,
-                            validator: (v) => _validateConfirm(context, v),
-                            obscureText: _obscure2,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.newPassword],
-                            onFieldSubmitted: (_) => _onRegister(),
-                            decoration: InputDecoration(
-                              labelText: l.registerConfirmPasswordLabel,
-                              prefixIcon: const Icon(Icons.verified_user_outlined),
-                              suffixIcon: IconButton(
-                                onPressed: () => setState(() => _obscure2 = !_obscure2),
-                                icon: Icon(
-                                  _obscure2
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          _LegalRow(
-                            value: model.termsAccepted,
-                            enabled: !isLoading,
-                            onChanged: (v) {
-  model.termsAccepted = v;
-  model.notifyListeners();
-},
-                            onOpenTerms: _openTerms,
-                            onOpenPrivacy: _openPrivacy,
-                          ),
-                          if (model.error != null) ...[
-                            const SizedBox(height: 10),
-                            Text(
-                              model.error!,
-                              style: tt.bodySmall?.copyWith(
-                                color: scheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: isLoading
-                                ? const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 10),
-                                    child: Center(
-                                      child: CircularProgressIndicator.adaptive(),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Center(
+                                    child: NestPill(
+                                      leading: const Icon(
+                                        Icons.auto_awesome_outlined,
+                                      ),
+                                      text: 'Nest',
                                     ),
-                                  )
-                                : FilledButton.icon(
-                                    onPressed: _onRegister,
-                                    icon: const Icon(Icons.person_add_alt_1_rounded),
-                                    label: Text(l.registerBtnSignUp),
                                   ),
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              Expanded(child: Divider(color: scheme.outlineVariant)),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                child: Text(
-                                  l.commonOr,
-                                  style: tt.labelMedium?.copyWith(
-                                    color: scheme.onSurfaceVariant,
+                                  const SizedBox(height: 18),
+                                  const _LogoPlate(),
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    l.registerTitle,
+                                    textAlign: TextAlign.center,
+                                    style: tt.headlineSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 18),
+                                  TextFormField(
+                                    controller: _nameCtrl,
+                                    focusNode: _nameFocus,
+                                    validator: (v) => _validateName(context, v),
+                                    textInputAction: TextInputAction.next,
+                                    autofillHints: const [AutofillHints.name],
+                                    onFieldSubmitted: (_) =>
+                                        _emailFocus.requestFocus(),
+                                    decoration: InputDecoration(
+                                      labelText: l.registerNameLabel,
+                                      prefixIcon: const Icon(
+                                        Icons.person_outline_rounded,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextFormField(
+                                    controller: _emailCtrl,
+                                    focusNode: _emailFocus,
+                                    validator: (v) => _validateEmail(context, v),
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
+                                    autofillHints: const [AutofillHints.email],
+                                    onFieldSubmitted: (_) =>
+                                        _passFocus.requestFocus(),
+                                    decoration: InputDecoration(
+                                      labelText: l.registerEmailLabel,
+                                      prefixIcon: const Icon(
+                                        Icons.alternate_email_rounded,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextFormField(
+                                    controller: _passCtrl,
+                                    focusNode: _passFocus,
+                                    validator: (v) =>
+                                        _validateStrongPassword(context, v),
+                                    obscureText: _obscure1,
+                                    textInputAction: TextInputAction.next,
+                                    autofillHints: const [
+                                      AutofillHints.newPassword,
+                                    ],
+                                    onFieldSubmitted: (_) =>
+                                        _pass2Focus.requestFocus(),
+                                    decoration: InputDecoration(
+                                      labelText: l.registerPasswordLabel,
+                                      prefixIcon: const Icon(
+                                        Icons.lock_outline_rounded,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        onPressed: () =>
+                                            setState(() => _obscure1 = !_obscure1),
+                                        icon: Icon(
+                                          _obscure1
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextFormField(
+                                    controller: _pass2Ctrl,
+                                    focusNode: _pass2Focus,
+                                    validator: (v) => _validateConfirm(context, v),
+                                    obscureText: _obscure2,
+                                    textInputAction: TextInputAction.done,
+                                    autofillHints: const [
+                                      AutofillHints.newPassword,
+                                    ],
+                                    onFieldSubmitted: (_) => _onRegister(),
+                                    decoration: InputDecoration(
+                                      labelText: l.registerConfirmPasswordLabel,
+                                      prefixIcon: const Icon(
+                                        Icons.verified_user_outlined,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        onPressed: () =>
+                                            setState(() => _obscure2 = !_obscure2),
+                                        icon: Icon(
+                                          _obscure2
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _LegalRow(
+                                    value: model.termsAccepted,
+                                    enabled: !isLoading,
+                                    onChanged: (v) {
+                                      model.termsAccepted = v;
+                                      model.notifyListeners();
+                                    },
+                                    onOpenTerms: _openTerms,
+                                    onOpenPrivacy: _openPrivacy,
+                                  ),
+                                  if (model.error != null) ...[
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      model.error!,
+                                      style: tt.bodySmall?.copyWith(
+                                        color: scheme.error,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 16),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: isLoading
+                                        ? const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: 10,
+                                            ),
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator.adaptive(),
+                                            ),
+                                          )
+                                        : FilledButton.icon(
+                                            onPressed: _onRegister,
+                                            icon: const Icon(
+                                              Icons.person_add_alt_1_rounded,
+                                            ),
+                                            label: Text(l.registerBtnSignUp),
+                                          ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Divider(color: scheme.outlineVariant),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                        ),
+                                        child: Text(
+                                          l.commonOr,
+                                          style: tt.labelMedium?.copyWith(
+                                            color: scheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Divider(color: scheme.outlineVariant),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  OutlinedButton.icon(
+                                    onPressed:
+                                        isLoading ? null : _registerWithGoogle,
+                                    icon: const Icon(Icons.g_mobiledata_rounded),
+                                    label: Text(l.registerContinueGoogle),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  OutlinedButton.icon(
+                                    onPressed:
+                                        isLoading ? null : _registerWithApple,
+                                    icon: const Icon(Icons.apple),
+                                    label: Text(
+                                      _isApplePlatform
+                                          ? l.registerContinueApple
+                                          : l.registerContinueAppleIos,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextButton(
+                                    onPressed: isLoading
+                                        ? null
+                                        : () => Navigator.pushReplacementNamed(
+                                              context,
+                                              '/login',
+                                            ),
+                                    child: Text(l.registerHaveAccountCta),
+                                  ),
+                                ],
                               ),
-                              Expanded(child: Divider(color: scheme.outlineVariant)),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          OutlinedButton.icon(
-                            onPressed: isLoading ? null : _registerWithGoogle,
-                            icon: const Icon(Icons.g_mobiledata_rounded),
-                            label: Text(l.registerContinueGoogle),
-                          ),
-                          const SizedBox(height: 10),
-                          OutlinedButton.icon(
-                            onPressed: isLoading ? null : _registerWithApple,
-                            icon: const Icon(Icons.apple),
-                            label: Text(
-                              _isApplePlatform
-                                  ? l.registerContinueApple
-                                  : l.registerContinueAppleIos,
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          TextButton(
-                            onPressed: isLoading
-                                ? null
-                                : () => Navigator.pushReplacementNamed(context, '/login'),
-                            child: Text(l.registerHaveAccountCta),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),

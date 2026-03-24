@@ -11,6 +11,7 @@ import '../domain/jar.dart';
 import '../widgets/add_expense_dialog.dart';
 import '../widgets/add_income_dialog.dart';
 import '../main.dart'; // dbRepo
+import 'budget_setup_screen.dart';
 
 // ✅ Nest
 import '../widgets/nest/nest_background.dart';
@@ -40,6 +41,31 @@ class _ExpensesView extends StatelessWidget {
       lastDate: DateTime.now(),
     );
     if (picked != null) await m.setDay(picked);
+  }
+
+
+  Future<void> _shiftDay(BuildContext context, int deltaDays) async {
+    final m = context.read<BudgetModel>();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final current = DateTime(
+      m.selectedDay.year,
+      m.selectedDay.month,
+      m.selectedDay.day,
+    );
+    final target = current.add(Duration(days: deltaDays));
+
+    if (target.isAfter(today)) return;
+    await m.setDay(target);
+  }
+
+  Future<void> _openBudgetSetup(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const BudgetSetupScreen()),
+    );
+
+    if (!context.mounted) return;
+    await context.read<BudgetModel>().load();
   }
 
   Future<void> _toggleCommit(BuildContext context) async {
@@ -125,6 +151,25 @@ class _ExpensesView extends StatelessWidget {
                 onRefresh: () => m.load(),
                 child: CustomScrollView(
                   slivers: [
+
+                    // ===== Управление датой + настройки категорий =====
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        16 + sidePad,
+                        16,
+                        16 + sidePad,
+                        8,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _ExpenseControlsCard(
+                          selectedDay: m.selectedDay,
+                          onPrevDay: () => _shiftDay(context, -1),
+                          onNextDay: () => _shiftDay(context, 1),
+                          onPickDay: () => _pickDate(context),
+                          onOpenSetup: () => _openBudgetSetup(context),
+                        ),
+                      ),
+                    ),
 
                     // ===== Верхняя сводка доход/расход/свободно =====
                     SliverPadding(
@@ -493,6 +538,158 @@ class _ExpensesView extends StatelessWidget {
 /// ============================================================================
 /// Nest tiles/cards
 /// ============================================================================
+
+
+class _ExpenseControlsCard extends StatelessWidget {
+  final DateTime selectedDay;
+  final VoidCallback onPrevDay;
+  final VoidCallback onNextDay;
+  final VoidCallback onPickDay;
+  final VoidCallback onOpenSetup;
+
+  const _ExpenseControlsCard({
+    required this.selectedDay,
+    required this.onPrevDay,
+    required this.onNextDay,
+    required this.onPickDay,
+    required this.onOpenSetup,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final ml = MaterialLocalizations.of(context);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final sel = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+    final canGoNext = !sel.isAtSameMomentAs(today);
+
+    return NestBlurCard(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            _CircleActionButton(
+              icon: Icons.chevron_left_rounded,
+              onTap: onPrevDay,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: onPickDay,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withOpacity(0.22),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: cs.outlineVariant.withOpacity(0.45),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Расходы за день',
+                        style: tt.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 16,
+                            color: cs.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              ml.formatMediumDate(selectedDay),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: tt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _CircleActionButton(
+              icon: Icons.chevron_right_rounded,
+              onTap: canGoNext ? onNextDay : null,
+            ),
+            const SizedBox(width: 10),
+            _CircleActionButton(
+              icon: Icons.tune_rounded,
+              onTap: onOpenSetup,
+              tooltip: 'Настроить категории',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  final String? tooltip;
+
+  const _CircleActionButton({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final child = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Ink(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: onTap == null
+                ? cs.surfaceContainerHighest.withOpacity(0.12)
+                : cs.surfaceContainerHighest.withOpacity(0.28),
+            border: Border.all(
+              color: cs.outlineVariant.withOpacity(onTap == null ? 0.18 : 0.45),
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: onTap == null ? cs.onSurfaceVariant.withOpacity(0.45) : cs.onSurface,
+          ),
+        ),
+      ),
+    );
+
+    if (tooltip == null || tooltip!.isEmpty) return child;
+    return Tooltip(message: tooltip!, child: child);
+  }
+}
 
 class _TxTileNest extends StatelessWidget {
   final String title;
