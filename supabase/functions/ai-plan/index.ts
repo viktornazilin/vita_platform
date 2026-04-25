@@ -1,1098 +1,902 @@
-// supabase/functions/ai-planner/index.ts
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// supabase/functions/ai-plan/index.ts
+// AI Plan v5: concrete goal-linked task planning
+// Main idea: generate not generic advice, but actionable tasks that move active user_goals forward.
+
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// ─────────────────────────────────────────────────────────────
-// Env
-// ─────────────────────────────────────────────────────────────
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("PROJECT_URL");
-const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY");
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-4.1-mini";
-
-if (!SUPABASE_URL) console.error("[ai-planner] Missing SUPABASE_URL (or PROJECT_URL)");
-if (!SERVICE_ROLE_KEY) console.error("[ai-planner] Missing SERVICE_ROLE_KEY");
-
-const admin = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!, {
-  auth: { persistSession: false },
-});
-
-// ─────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────
 type Horizon = "week" | "month";
+type AnyRow = Record<string, unknown>;
 
-type UserGoalRow = {
-  id: string;
-  life_block: string | null;
-  horizon: string;
-  title: string;
-  description: string | null;
-  target_date: string | null;
-  is_completed: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-};
-
-type GoalTaskRow = {
-  id: string;
-  title: string | null;
-  description: string | null;
-  life_block: string | null;
-  importance: number | null;
-  is_completed: boolean | null;
-  deadline: string | null;
-  start_time: string | null;
-  created_at: string | null;
-  spent_hours: number | null;
-};
-
-type PlanItem = {
+type PlanDraft = {
   title: string;
   description: string;
   life_block: string;
-  importance: 1 | 2 | 3;
-  start_time: string;
+  importance: number;
   planned_hours: number;
   reason: string;
+  source: string;
+  user_goal_id: string | null;
+  source_goal_title?: string;
+  source_task_id?: string | null;
+  start_time?: string;
+  recurring?: string | null;
 };
 
-type SnapshotOk = {
-  ok: true;
-  horizon: Horizon;
-  window: {
-    from: string;
-    to: string;
-    planning_days: number;
-    days: string[];
-  };
-  profile: {
-    profile_source: "users.id" | "users.user_id" | "not_found";
-    archetype: string | null;
-    target_hours_per_day: number | null;
-    priorities: unknown;
-    life_blocks: unknown;
-  };
-  user_goals: Array<{
-    id: string;
-    horizon: string;
-    life_block: string;
-    title: string;
-    description: string;
-    target_date: string | null;
-    updated_at: string;
-  }>;
-  latest_insights_run: null | {
-    id: string;
-    created_at: string;
-    period: string;
-    date_from: string;
-    date_to: string;
-    version: string;
-    insights: unknown;
-    stats: unknown;
-  };
-  workload_by_day: Array<{
-    day: string;
-    existing_count: number;
-    existing_hours_est: number;
-  }>;
-  recent_task_titles_norm: string[];
-  task_patterns: {
-    time_preference: Array<{
-      bucket: string;
-      completion_ratio: number;
-      n: number;
-    }>;
-    by_life_block_60d: Record<
-      string,
-      {
-        tasks_total_60d: number;
-        completion_ratio_60d: number;
-        spent_hours_sum_60d: number;
-      }
-    >;
-  };
-  habits_summary_30d: Array<{
-    name: string;
-    done_days_30d: number;
-    value_sum_30d: number;
-  }>;
-  mental_coverage_30d: Array<{
-    code: string;
-    days_with_answers_30d: number;
-  }>;
-  upcoming_tasks_in_window: Array<{
-    id: string;
-    title: string;
-    life_block: string;
-    start_time: string | null;
-    deadline: string | null;
-    importance: number;
-  }>;
-};
-
-type SnapshotFail = {
-  ok: false;
-  reason: string;
-  hint?: string;
-  debug?: Record<string, unknown>;
-};
-
-type Snapshot = SnapshotOk | SnapshotFail;
-
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers":
-        "authorization, x-client-info, apikey, content-type",
-    },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 
-function errorResponse(
-  code: string,
-  message: string,
-  status = 400,
-  details?: unknown,
-) {
-  return jsonResponse(
-    {
-      ok: false,
-      code,
-      message,
-      details: details ?? null,
-    },
-    status,
-  );
+function asString(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
 }
 
-function dateOnlyISO(d: Date) {
+function asNumber(v: unknown, fallback = 1): number {
+  const n = typeof v === "number" ? v : Number(v ?? fallback);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function asBool(v: unknown): boolean {
+  return v === true;
+}
+
+function clampImportance(v: unknown): number {
+  const n = typeof v === "number" ? v : Number(v ?? 3);
+  if (!Number.isFinite(n)) return 3;
+  return Math.max(1, Math.min(5, Math.round(n)));
+}
+
+function normalizePeriod(v: unknown): Horizon {
+  const s = asString(v).toLowerCase();
+  if (["month", "monthly", "30", "30_days", "last_30_days"].includes(s)) return "month";
+  return "week";
+}
+
+function normalizeLifeBlock(v: unknown): string {
+  const s = asString(v);
+  if (!s) return "other";
+
+  const map: Record<string, string> = {
+    work: "career",
+    career: "career",
+    job: "career",
+    работа: "career",
+    карьера: "career",
+    health: "health",
+    sport: "health",
+    fitness: "health",
+    здоровье: "health",
+    спорт: "health",
+    футбол: "health",
+    rest: "health",
+    family: "family",
+    relationship: "family",
+    social: "family",
+    семья: "family",
+    finance: "finance",
+    money: "finance",
+    финансы: "finance",
+    деньги: "finance",
+    education: "education",
+    growth: "education",
+    study: "education",
+    learning: "education",
+    обучение: "education",
+    образование: "education",
+    hobbies: "hobbies",
+    hobby: "hobbies",
+    хобби: "hobbies",
+    other: "other",
+  };
+
+  return map[s.toLowerCase()] ?? s.toLowerCase();
+}
+
+function parseDateOnly(v: unknown): Date | null {
+  const s = asString(v);
+  if (!s) return null;
+  const d = new Date(`${s}T00:00:00.000Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function toDateOnly(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function safeNum(n: unknown, fallback = 0) {
-  const x = Number(n);
-  return Number.isFinite(x) ? x : fallback;
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
 }
 
-function horizonToDays(h: string): number {
-  return String(h).toLowerCase() === "month" ? 30 : 7;
+function diffDaysInclusive(from: Date, to: Date): number {
+  const ms = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()) -
+    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());
+  return Math.max(1, Math.floor(ms / 86400000) + 1);
 }
 
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
+function scheduledDate(index: number, total: number, start: Date, end: Date, period: Horizon): Date {
+  const days = diffDaysInclusive(start, end);
+  let offset = 0;
 
-function timeBucket(hour: number) {
-  if (hour >= 5 && hour <= 11) return "morning";
-  if (hour >= 12 && hour <= 17) return "afternoon";
-  if (hour >= 18 && hour <= 23) return "evening";
-  return "night";
-}
-
-function normalizeTitle(s: unknown) {
-  return String(s ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-function isValidDateTime(s: string) {
-  const t = Date.parse(s);
-  return Number.isFinite(t);
-}
-
-function startOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-function endOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x;
-}
-
-function addDays(d: Date, days: number) {
-  const x = new Date(d);
-  x.setDate(x.getDate() + days);
-  return x;
-}
-
-function mean(arr: number[]) {
-  if (!arr.length) return null;
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function isWithinWindow(iso: string, fromISO: string, toISO: string) {
-  const t = Date.parse(iso);
-  const a = Date.parse(fromISO);
-  const b = Date.parse(toISO);
-  return Number.isFinite(t) && Number.isFinite(a) && Number.isFinite(b) && t >= a && t <= b;
-}
-
-// Только точное совпадение, без агрессивного fuzzy matching
-function isTooSimilar(title: string, existingTitlesNorm: Set<string>) {
-  const t = normalizeTitle(title);
-  if (!t) return true;
-  return existingTitlesNorm.has(t);
-}
-
-// Minimal item normalization to protect inserts
-function normalizeItem(raw: any): PlanItem | null {
-  const title = String(raw?.title ?? "").trim();
-  if (!title) return null;
-
-  const description = String(raw?.description ?? "").trim();
-  const life_block = String(raw?.life_block ?? "general").trim() || "general";
-
-  let importance = Number(raw?.importance ?? 1);
-  if (![1, 2, 3].includes(importance)) importance = 1;
-
-  const planned_hours = clamp(safeNum(raw?.planned_hours, 1), 0.25, 6);
-  const reason = String(raw?.reason ?? "").trim();
-
-  const start_time = String(raw?.start_time ?? "").trim();
-  if (!start_time || !isValidDateTime(start_time)) return null;
-
-  return {
-    title,
-    description,
-    life_block,
-    importance: importance as 1 | 2 | 3,
-    start_time,
-    planned_hours,
-    reason,
-  };
-}
-
-// ─────────────────────────────────────────────────────────────
-// Profile resolver
-// Supports both:
-// - public.users.id = auth.users.id
-// - public.users.user_id = auth.users.id
-// ─────────────────────────────────────────────────────────────
-async function resolveUserProfile(authUserId: string) {
-  // 1) direct match on users.id
-  const { data: rowById, error: errById } = await admin
-    .from("users")
-    .select("id,user_id,archetype,target_hours,priorities,life_blocks")
-    .eq("id", authUserId)
-    .maybeSingle();
-
-  if (errById) {
-    throw new Error(`users select by id failed: ${errById.message}`);
+  if (period === "week") {
+    // spread over week, skipping too much clustering
+    offset = Math.min(days - 1, index % Math.max(1, days));
+  } else {
+    const denominator = Math.max(1, total - 1);
+    offset = Math.round((index / denominator) * (days - 1));
   }
-  if (rowById) {
+
+  const d = addDays(start, offset);
+  const hour = 9 + (index % 4) * 2;
+  d.setUTCHours(hour, 0, 0, 0);
+  return d;
+}
+
+function goalId(g: AnyRow): string {
+  return asString(g.id);
+}
+
+function goalTitle(g: AnyRow): string {
+  return asString(g.title);
+}
+
+function goalLifeBlock(g: AnyRow): string {
+  return normalizeLifeBlock(g.life_block);
+}
+
+function planItemKey(it: PlanDraft): string {
+  return `${it.user_goal_id ?? "none"}|${it.title.toLowerCase()}|${normalizeLifeBlock(it.life_block)}`;
+}
+
+function pickExistingColumns(row: AnyRow, columns: Set<string>): AnyRow {
+  const out: AnyRow = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (columns.has(k)) out[k] = v;
+  }
+  return out;
+}
+
+function errorToJson(err: unknown): AnyRow {
+  if (err && typeof err === "object") {
+    const e = err as AnyRow;
     return {
-      profileSource: "users.id" as const,
-      row: rowById,
+      message: asString(e.message) || String(err),
+      code: asString(e.code),
+      details: asString(e.details),
+      hint: asString(e.hint),
+      raw: JSON.stringify(err),
     };
   }
-
-  // 2) fallback match on users.user_id
-  const { data: rowByUserId, error: errByUserId } = await admin
-    .from("users")
-    .select("id,user_id,archetype,target_hours,priorities,life_blocks")
-    .eq("user_id", authUserId)
-    .maybeSingle();
-
-  if (errByUserId) {
-    // column may not exist or query may fail depending on schema
-    console.warn("[ai-planner] users select by user_id failed:", errByUserId.message);
-  }
-
-  if (rowByUserId) {
-    return {
-      profileSource: "users.user_id" as const,
-      row: rowByUserId,
-    };
-  }
-
-  return {
-    profileSource: "not_found" as const,
-    row: null,
-  };
+  return { message: String(err) };
 }
 
-// ─────────────────────────────────────────────────────────────
-// Snapshot builder
-// ─────────────────────────────────────────────────────────────
-async function buildPlanSnapshot(authUserId: string, horizon: Horizon): Promise<Snapshot> {
-  const days = horizonToDays(horizon);
+async function getColumns(supabase: ReturnType<typeof createClient>, table: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("information_schema.columns")
+    .select("column_name")
+    .eq("table_schema", "public")
+    .eq("table_name", table);
 
-  const now = new Date();
-  const planFrom = startOfDay(now);
-  const planTo = endOfDay(addDays(planFrom, days - 1));
+  if (error) {
+    if (table === "ai_plans") return new Set(["id", "user_id", "horizon", "created_at"]);
+    if (table === "ai_plan_items") {
+      return new Set([
+        "id",
+        "user_id",
+        "plan_id",
+        "title",
+        "description",
+        "life_block",
+        "importance",
+        "planned_hours",
+        "reason",
+        "state",
+        "start_time",
+        "created_at",
+      ]);
+    }
+  }
 
-  const historyFrom = startOfDay(addDays(planFrom, -60));
-  const insightsLookbackFrom = startOfDay(addDays(planFrom, -30));
-  const habitsFrom = startOfDay(addDays(planFrom, -30));
+  return new Set((data ?? []).map((r: AnyRow) => asString(r.column_name)).filter(Boolean));
+}
 
-  console.log("[ai-planner] buildPlanSnapshot authUserId =", authUserId);
-  console.log("[ai-planner] window =", {
-    from: planFrom.toISOString(),
-    to: planTo.toISOString(),
-    days,
-  });
+function cleanTaskTitle(s: string): string {
+  const title = s.replace(/\s+/g, " ").trim();
+  if (title.length <= 125) return title;
+  return `${title.slice(0, 122)}...`;
+}
 
-  // 0) user profile
-  const { profileSource, row: userRow } = await resolveUserProfile(authUserId);
-  console.log("[ai-planner] profileSource =", profileSource);
+function inferHours(task: AnyRow, period: Horizon): number {
+  const spent = asNumber(task.spent_hours, 0);
+  if (spent > 0) return Math.max(0.25, Math.min(3, spent));
+  return period === "month" ? 1.25 : 1;
+}
 
-  // 1) user_goals
-  const { data: userGoals, error: ugErr } = await admin
-    .from("user_goals")
-    .select("id,life_block,horizon,title,description,target_date,is_completed,sort_order,created_at,updated_at")
-    .eq("user_id", authUserId)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+function containsAny(s: string, words: string[]): boolean {
+  const lower = s.toLowerCase();
+  return words.some((w) => lower.includes(w.toLowerCase()));
+}
 
-  if (ugErr) throw new Error(`user_goals select failed: ${ugErr.message}`);
+function extractNumber(s: string): number | null {
+  const m = s.match(/(\d+)/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
 
-  const activeGoals = ((userGoals ?? []) as UserGoalRow[]).filter((g) => !g.is_completed);
-  console.log("[ai-planner] activeGoals =", activeGoals.length);
+function incrementSequenceTitle(title: string): string | null {
+  const patterns = [
+    /(урок|lesson|модуль|module|глава|chapter|лекция|lecture)\s*№?\s*(\d+)/i,
+    /(день|day)\s*№?\s*(\d+)/i,
+  ];
+  for (const p of patterns) {
+    const m = title.match(p);
+    if (!m) continue;
+    const current = Number(m[2]);
+    if (!Number.isFinite(current)) continue;
+    return title.replace(m[0], `${m[1]} ${current + 1}`);
+  }
+  return null;
+}
 
-  if (activeGoals.length === 0) {
-    return {
-      ok: false,
-      reason: "У пользователя нет активных целей в user_goals.",
-      hint: "Добавь 1–3 активные цели и попробуй снова.",
-      debug: {
-        auth_user_id: authUserId,
-        profile_source: profileSource,
-        user_goals_count: (userGoals ?? []).length,
+type GoalDomain =
+  | "football"
+  | "fitness"
+  | "language"
+  | "programming"
+  | "career"
+  | "finance"
+  | "writing"
+  | "reading"
+  | "nutrition"
+  | "relationship"
+  | "generic";
+
+function detectDomain(goal: AnyRow): GoalDomain {
+  const text = `${goalTitle(goal)} ${asString(goal.description)} ${goalLifeBlock(goal)}`.toLowerCase();
+  if (containsAny(text, ["футбол", "football", "soccer"])) return "football";
+  if (containsAny(text, ["зал", "gym", "трениров", "fitness", "спорт", "бег", "run", "мышц", "вес", "body"])) return "fitness";
+  if (containsAny(text, ["немец", "англий", "language", "язык", "deutsch", "english", "слова", "grammar", "граммат"])) return "language";
+  if (containsAny(text, ["flutter", "dart", "python", "javascript", "код", "app", "прилож", "программ", "supabase", "sap", "hana"])) return "programming";
+  if (containsAny(text, ["карьер", "работ", "job", "cv", "резюме", "interview", "собесед", "сертифик", "promotion", "зарплат"])) return "career";
+  if (containsAny(text, ["финанс", "деньг", "инвест", "акци", "budget", "бюджет", "накоп", "saving", "портфель"])) return "finance";
+  if (containsAny(text, ["диссер", "стать", "напис", "publication", "текст", "chapter", "глава", "раздел"])) return "writing";
+  if (containsAny(text, ["прочит", "книга", "reading", "read", "литератур"])) return "reading";
+  if (containsAny(text, ["еда", "калор", "питани", "diet", "nutrition", "завтрак", "ужин"])) return "nutrition";
+  if (containsAny(text, ["сем", "отнош", "жена", "девуш", "family", "relationship", "liza", "лиза"])) return "relationship";
+  return "generic";
+}
+
+function actionTemplatesForGoal(goal: AnyRow, period: Horizon): Array<{ title: string; desc: string; hours: number; importance: number; recurring?: string | null }> {
+  const g = cleanTaskTitle(goalTitle(goal));
+  const domain = detectDomain(goal);
+  const month = period === "month";
+
+  const map: Record<GoalDomain, Array<{ title: string; desc: string; hours: number; importance: number; recurring?: string | null }>> = {
+    football: [
+      {
+        title: `Тренировка по футболу: 10 мин разминки + 25 мин техники + 10 мин заминки`,
+        desc: `Конкретный шаг к цели «${g}»: потренировать базовую технику и физическую форму.`,
+        hours: 0.75,
+        importance: 4,
       },
-    };
+      {
+        title: `Отработать 50 касаний мяча и 20 передач в стену`,
+        desc: `Измеримая футбольная задача для цели «${g}».`,
+        hours: 0.75,
+        importance: 4,
+      },
+      {
+        title: `Посмотреть 15 минут обучающего видео по футболу и выписать 3 упражнения`,
+        desc: `Задача даёт понятный следующий набор упражнений для цели «${g}».`,
+        hours: 0.5,
+        importance: 3,
+      },
+      {
+        title: `Сыграть или организовать одну футбольную тренировку/матч`,
+        desc: `Практический шаг: не просто подумать о цели, а выйти в игру.`,
+        hours: 1.5,
+        importance: 5,
+      },
+    ],
+    fitness: [
+      {
+        title: `Сделать тренировку: 10 мин разминки + 3 упражнения по 3 подхода`,
+        desc: `Конкретная тренировка для продвижения цели «${g}».`,
+        hours: 1,
+        importance: 4,
+      },
+      {
+        title: `Записать текущие показатели: вес, энергия, сон и 1 фото прогресса`,
+        desc: `Без измерения прогресса цель «${g}» сложнее контролировать.`,
+        hours: 0.25,
+        importance: 3,
+      },
+      {
+        title: `Пройти 8–10 тыс. шагов и отметить самочувствие вечером`,
+        desc: `Небольшой, но измеримый вклад в здоровье.`,
+        hours: 1,
+        importance: 3,
+      },
+    ],
+    language: [
+      {
+        title: `Выучить 20 новых слов и составить 5 предложений`,
+        desc: `Конкретная языковая практика для цели «${g}».`,
+        hours: 0.75,
+        importance: 4,
+      },
+      {
+        title: `Пройти один урок и сделать 10 упражнений`,
+        desc: `Продвижение по учебному материалу с проверяемым результатом.`,
+        hours: 1,
+        importance: 4,
+      },
+      {
+        title: `Записать 2-минутный монолог и отметить 3 ошибки`,
+        desc: `Практика речи для цели «${g}», а не пассивное изучение.`,
+        hours: 0.5,
+        importance: 4,
+      },
+      {
+        title: `Повторить старые слова 15 минут и удалить те, которые уже знаешь`,
+        desc: `Поддержание базы, чтобы прогресс не откатывался.`,
+        hours: 0.25,
+        importance: 3,
+      },
+    ],
+    programming: [
+      {
+        title: `Реализовать один маленький экран/метод для цели «${g}»`,
+        desc: `Не общий прогресс, а конкретный deliverable в коде.`,
+        hours: 1.5,
+        importance: 4,
+      },
+      {
+        title: `Исправить одну ошибку и записать причину в заметку`,
+        desc: `Техническая задача с результатом: ошибка закрыта, причина понятна.`,
+        hours: 1,
+        importance: 4,
+      },
+      {
+        title: `Сделать refactor одного файла и проверить запуск приложения`,
+        desc: `Улучшение качества проекта, связанного с целью «${g}».`,
+        hours: 1,
+        importance: 3,
+      },
+    ],
+    career: [
+      {
+        title: `Сделать один карьерный deliverable по цели «${g}»`,
+        desc: `Завершить маленький, но видимый результат: документ, письмо, подготовка или решение.`,
+        hours: 1,
+        importance: 4,
+      },
+      {
+        title: `Обновить список следующих 3 шагов по цели «${g}»`,
+        desc: `Сделать цель управляемой: что именно делать дальше и в каком порядке.`,
+        hours: 0.5,
+        importance: 3,
+      },
+      {
+        title: `Подготовить один аргумент/пример результата для карьерного роста`,
+        desc: `Материал для будущего performance review, резюме или переговоров.`,
+        hours: 0.75,
+        importance: 4,
+      },
+    ],
+    finance: [
+      {
+        title: `Обновить бюджет: доходы, расходы, накопления за последние 7 дней`,
+        desc: `Финансовая цель «${g}» требует регулярной сверки цифр.`,
+        hours: 0.5,
+        importance: 4,
+      },
+      {
+        title: `Найти одну статью расходов для сокращения и записать действие`,
+        desc: `Конкретное улучшение финансового поведения, а не общий анализ.`,
+        hours: 0.5,
+        importance: 3,
+      },
+      {
+        title: `Проверить портфель/накопления и зафиксировать одно решение`,
+        desc: `Задача должна закончиться решением: купить, не покупать, отложить, изучить.`,
+        hours: 0.75,
+        importance: 4,
+      },
+    ],
+    writing: [
+      {
+        title: `Написать 500–700 слов по цели «${g}»`,
+        desc: `Конкретный объём текста, который реально продвигает цель.`,
+        hours: 1.5,
+        importance: 5,
+      },
+      {
+        title: `Составить структуру одного раздела: 5 пунктов + логика переходов`,
+        desc: `Подготовка к написанию без хаоса.`,
+        hours: 1,
+        importance: 4,
+      },
+      {
+        title: `Отредактировать один готовый фрагмент и убрать повторы`,
+        desc: `Повышение качества уже созданного материала.`,
+        hours: 1,
+        importance: 4,
+      },
+    ],
+    reading: [
+      {
+        title: `Прочитать 20 страниц и выписать 3 полезные идеи`,
+        desc: `Чтение превращается в результат, если после него есть выводы.`,
+        hours: 0.75,
+        importance: 3,
+      },
+      {
+        title: `Сделать короткий конспект прочитанного: 5 тезисов`,
+        desc: `Фиксация прогресса по цели «${g}».`,
+        hours: 0.5,
+        importance: 3,
+      },
+    ],
+    nutrition: [
+      {
+        title: `Запланировать 3 приёма пищи на завтра и купить недостающие продукты`,
+        desc: `Конкретный шаг для цели «${g}», чтобы не принимать решения в последний момент.`,
+        hours: 0.5,
+        importance: 4,
+      },
+      {
+        title: `Записать питание за день и отметить, где было лишнее/недостающее`,
+        desc: `Без записи сложно понять, что реально улучшать.`,
+        hours: 0.25,
+        importance: 3,
+      },
+    ],
+    relationship: [
+      {
+        title: `Запланировать 45 минут качественного времени без телефона`,
+        desc: `Конкретное действие для цели «${g}».`,
+        hours: 0.75,
+        importance: 4,
+      },
+      {
+        title: `Обсудить один открытый вопрос и договориться о следующем шаге`,
+        desc: `Задача должна закончиться договорённостью, а не абстрактным разговором.`,
+        hours: 0.75,
+        importance: 4,
+      },
+    ],
+    generic: [
+      {
+        title: `Сделать один измеримый шаг по цели «${g}» и записать результат`,
+        desc: `Сформулируй результат в конце: что изменилось после выполнения задачи.`,
+        hours: 1,
+        importance: 4,
+      },
+      {
+        title: `Разбить цель «${g}» на 3 конкретных действия`,
+        desc: `После этого AI сможет предлагать более точный план.`,
+        hours: 0.5,
+        importance: 4,
+      },
+      {
+        title: `Закрыть самый маленький следующий шаг по цели «${g}»`,
+        desc: `Минимальное действие, которое уменьшает расстояние до цели.`,
+        hours: 0.75,
+        importance: 3,
+      },
+    ],
+  };
+
+  const base = map[domain] ?? map.generic;
+  return month ? [...base, ...base] : base;
+}
+
+function makeContinuationTitle(task: AnyRow, goal: AnyRow): string {
+  const taskTitle = cleanTaskTitle(asString(task.title));
+  const g = cleanTaskTitle(goalTitle(goal));
+  if (!taskTitle) return `Сделать конкретный шаг по цели «${g}»`;
+
+  if (!asBool(task.is_completed)) {
+    return `Завершить: ${taskTitle}`;
   }
 
-  // 2) latest ai_insights run
-  const { data: insightsRun, error: irErr } = await admin
-    .from("ai_insights_runs")
-    .select("id,created_at,period,date_from,date_to,version,model,stats,insights,snapshot")
-    .eq("user_id", authUserId)
-    .gte("created_at", insightsLookbackFrom.toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const inc = incrementSequenceTitle(taskTitle);
+  if (inc && inc !== taskTitle) return `Продолжить: ${cleanTaskTitle(inc)}`;
 
-  if (irErr) throw new Error(`ai_insights_runs select failed: ${irErr.message}`);
+  const lower = taskTitle.toLowerCase();
+  const n = extractNumber(taskTitle);
 
-  // 3) tasks history + planning window
-  const { data: tasks, error: tasksErr } = await admin
-    .from("goals")
-    .select("id,title,description,life_block,importance,is_completed,deadline,start_time,created_at,spent_hours")
-    .eq("user_id", authUserId)
-    .gte("start_time", historyFrom.toISOString())
-    .lte("start_time", planTo.toISOString())
-    .order("start_time", { ascending: true });
-
-  if (tasksErr) throw new Error(`goals select failed: ${tasksErr.message}`);
-
-  const allTasks = ((tasks ?? []) as GoalTaskRow[]).filter((t) => !!t.start_time && isValidDateTime(String(t.start_time)));
-  const historyTasks = allTasks.filter((t) => Date.parse(String(t.start_time)) < planFrom.getTime());
-  const upcomingTasks = allTasks.filter((t) => Date.parse(String(t.start_time)) >= planFrom.getTime());
-
-  console.log("[ai-planner] tasks =", {
-    all: allTasks.length,
-    history: historyTasks.length,
-    upcoming: upcomingTasks.length,
-  });
-
-  // 4) habits
-  const { data: habits, error: hErr } = await admin
-    .from("habits")
-    .select("id,title,is_negative,created_at")
-    .eq("user_id", authUserId);
-
-  if (hErr) throw new Error(`habits select failed: ${hErr.message}`);
-
-  const habitTitleById = new Map<string, string>();
-  (habits ?? []).forEach((h: any) => habitTitleById.set(h.id, h.title));
-
-  const { data: habitEntries, error: heErr } = await admin
-    .from("habit_entries")
-    .select("habit_id,day,done,value")
-    .eq("user_id", authUserId)
-    .gte("day", dateOnlyISO(habitsFrom))
-    .lte("day", dateOnlyISO(now));
-
-  if (heErr) throw new Error(`habit_entries select failed: ${heErr.message}`);
-
-  // 5) mental answers
-  const { data: questions, error: qErr } = await admin
-    .from("mental_questions")
-    .select("id,code,answer_type,is_active");
-
-  if (qErr) throw new Error(`mental_questions select failed: ${qErr.message}`);
-
-  const qById = new Map<string, { code: string; type: string }>();
-  (questions ?? []).forEach((q: any) => qById.set(q.id, { code: q.code, type: q.answer_type }));
-
-  const { data: answers, error: aErr } = await admin
-    .from("mental_answers")
-    .select("day,question_id,value_bool,value_int,value_text")
-    .eq("user_id", authUserId)
-    .gte("day", dateOnlyISO(habitsFrom))
-    .lte("day", dateOnlyISO(now));
-
-  if (aErr) throw new Error(`mental_answers select failed: ${aErr.message}`);
-
-  // ─────────────────────────────────────────────
-  // Aggregations for planning realism
-  // ─────────────────────────────────────────────
-
-  const loadByDay = new Map<string, { count: number; hours: number }>();
-  for (const t of upcomingTasks) {
-    if (t.is_completed) continue;
-    const d = String(t.start_time).slice(0, 10);
-    const rec = loadByDay.get(d) ?? { count: 0, hours: 0 };
-    rec.count += 1;
-
-    const est =
-      safeNum(t.spent_hours, 0) > 0
-        ? safeNum(t.spent_hours, 0)
-        : Number(t.importance ?? 1) === 3
-        ? 1.5
-        : Number(t.importance ?? 1) === 2
-        ? 1.0
-        : 0.5;
-
-    rec.hours += clamp(est, 0, 6);
-    loadByDay.set(d, rec);
+  if (containsAny(lower, ["слов", "words", "vocab"])) {
+    return `Выучить ${n ?? 20} новых слов и повторить старые`;
+  }
+  if (containsAny(lower, ["урок", "lesson", "модуль"])) {
+    return `Пройти следующий урок и сделать упражнения`;
+  }
+  if (containsAny(lower, ["трениров", "зал", "спорт", "футбол", "football"])) {
+    return `Повторить тренировку и добавить 1 усложнение`;
+  }
+  if (containsAny(lower, ["напис", "статья", "глава", "раздел", "текст"])) {
+    return `Написать следующий фрагмент: 500–700 слов`;
+  }
+  if (containsAny(lower, ["прочит", "книга", "read"])) {
+    return `Прочитать следующие 20 страниц и выписать 3 идеи`;
+  }
+  if (containsAny(lower, ["код", "fix", "bug", "flutter", "supabase", "реализ"])) {
+    return `Продолжить разработку: закрыть один маленький технический шаг`;
   }
 
-  const bucketDone: Record<string, number> = { morning: 0, afternoon: 0, evening: 0, night: 0 };
-  const bucketTotal: Record<string, number> = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+  const alreadyActionLike = /^(пройти|прочитать|сделать|подготовить|написать|изучить|выучить|тренировка|проверить|создать|обновить|разобрать|повторить|закрыть|исправить)/i.test(taskTitle);
+  if (alreadyActionLike) return `Повторить/продолжить: ${taskTitle}`;
 
-  const byBlock = new Map<string, { total: number; done: number; hours: number }>();
+  return `Сделать следующий шаг после задачи: ${taskTitle}`;
+}
 
-  for (const t of historyTasks) {
-    const st = new Date(String(t.start_time));
-    const b = timeBucket(st.getHours());
-    bucketTotal[b] += 1;
-    if (t.is_completed) bucketDone[b] += 1;
+function makeStarterTask(goal: AnyRow, index: number, period: Horizon): PlanDraft {
+  const title = cleanTaskTitle(goalTitle(goal));
+  const block = goalLifeBlock(goal);
+  const templates = actionTemplatesForGoal(goal, period);
+  const t = templates[index % templates.length];
+  const horizon = asString(goal.horizon);
 
-    const lb = String(t.life_block ?? "general");
-    const rec = byBlock.get(lb) ?? { total: 0, done: 0, hours: 0 };
-    rec.total += 1;
-    if (t.is_completed) rec.done += 1;
-    rec.hours += safeNum(t.spent_hours, 0);
-    byBlock.set(lb, rec);
+  return {
+    title: cleanTaskTitle(t.title),
+    description: t.desc || asString(goal.description) || `Конкретный шаг к большой цели «${title}».`,
+    life_block: block,
+    importance: Math.max(t.importance, horizon === "long" || period === "month" ? 4 : 3),
+    planned_hours: t.hours,
+    reason: `Конкретный шаг к цели: ${title}`,
+    source: "user_goals_concrete_template",
+    user_goal_id: goalId(goal),
+    source_goal_title: title,
+    recurring: t.recurring ?? null,
+  };
+}
+
+function buildGoalScore(goal: AnyRow, tasks: AnyRow[], now: Date): number {
+  let score = 0;
+
+  const horizon = asString(goal.horizon);
+  if (horizon === "tactical") score += 5;
+  if (horizon === "mid") score += 3;
+  if (horizon === "long") score += 2;
+
+  const targetDate = parseDateOnly(goal.target_date);
+  if (targetDate) {
+    const daysLeft = Math.ceil((targetDate.getTime() - now.getTime()) / 86400000);
+    if (daysLeft < 0) score += 8;
+    else if (daysLeft <= 7) score += 7;
+    else if (daysLeft <= 30) score += 4;
   }
 
-  const timePreference = Object.keys(bucketTotal)
-    .map((k) => ({
-      bucket: k,
-      completion_ratio: bucketTotal[k]
-        ? bucketDone[k] / bucketTotal[k]
-        : 0,
-      n: bucketTotal[k],
+  if (tasks.length === 0) score += 5;
+  else {
+    const unfinished = tasks.filter((t) => !asBool(t.is_completed)).length;
+    score += Math.min(6, unfinished * 2);
+  }
+
+  score += Math.max(0, 8 - tasks.length);
+  return score;
+}
+
+function buildActionablePlanItems(params: {
+  period: Horizon;
+  userGoals: AnyRow[];
+  recentGoals: AnyRow[];
+  periodStart: Date;
+  periodEnd: Date;
+  requestedLifeBlock: string;
+  hasRequestedLifeBlock: boolean;
+}): PlanDraft[] {
+  const { period, userGoals, recentGoals, periodStart, requestedLifeBlock, hasRequestedLifeBlock } = params;
+  const maxItems = period === "month" ? 18 : 8;
+  const maxPerGoal = period === "month" ? 5 : 3;
+
+  const goalsById = new Map(userGoals.map((g) => [goalId(g), g]));
+  const tasksByGoal = new Map<string, AnyRow[]>();
+
+  for (const t of recentGoals) {
+    const gid = asString(t.user_goal_id);
+    if (!gid || !goalsById.has(gid)) continue;
+    const arr = tasksByGoal.get(gid) ?? [];
+    arr.push(t);
+    tasksByGoal.set(gid, arr);
+  }
+
+  const candidates = userGoals
+    .filter((g) => !hasRequestedLifeBlock || goalLifeBlock(g) === requestedLifeBlock)
+    .map((g) => ({
+      goal: g,
+      tasks: tasksByGoal.get(goalId(g)) ?? [],
+      score: buildGoalScore(g, tasksByGoal.get(goalId(g)) ?? [], periodStart),
     }))
-    .sort((a, b) => b.completion_ratio - a.completion_ratio);
+    .sort((a, b) => b.score - a.score);
 
-  const blockStats: Record<string, { tasks_total_60d: number; completion_ratio_60d: number; spent_hours_sum_60d: number }> = {};
-  for (const [k, v] of byBlock.entries()) {
-    blockStats[k] = {
-      tasks_total_60d: v.total,
-      completion_ratio_60d: v.total ? v.done / v.total : 0,
-      spent_hours_sum_60d: v.hours,
-    };
-  }
+  const drafts: PlanDraft[] = [];
 
-  const recentTitlesNorm = new Set<string>();
-  for (const t of allTasks.slice(-250)) {
-    const nt = normalizeTitle(t.title);
-    if (nt) recentTitlesNorm.add(nt);
-  }
+  for (const c of candidates) {
+    if (drafts.length >= maxItems) break;
 
-  const habitDoneDays = new Map<string, number>();
-  const habitValueSum = new Map<string, number>();
-  for (const e of habitEntries ?? []) {
-    const name = habitTitleById.get(e.habit_id) ?? String(e.habit_id);
-    if (e.done) habitDoneDays.set(name, (habitDoneDays.get(name) ?? 0) + 1);
-    habitValueSum.set(name, (habitValueSum.get(name) ?? 0) + safeNum(e.value, 0));
-  }
+    const g = c.goal;
+    const gid = goalId(g);
+    const goalName = cleanTaskTitle(goalTitle(g));
+    const block = goalLifeBlock(g);
 
-  const habitsSummary = Array.from(habitTitleById.values()).map((name) => ({
-    name,
-    done_days_30d: habitDoneDays.get(name) ?? 0,
-    value_sum_30d: habitValueSum.get(name) ?? 0,
-  }));
+    const unfinished = c.tasks.filter((t) => !asBool(t.is_completed) && asString(t.title));
+    const completed = c.tasks.filter((t) => asBool(t.is_completed) && asString(t.title));
+    const orderedTasks = [...unfinished, ...completed].slice(0, Math.max(1, Math.floor(maxPerGoal / 2)));
 
-  const mentalDaysByCode = new Map<string, Set<string>>();
-  for (const a of answers ?? []) {
-    const meta = qById.get(a.question_id);
-    if (!meta) continue;
+    let addedForGoal = 0;
 
-    if (
-      a.value_bool === null &&
-      a.value_int === null &&
-      !String(a.value_text ?? "").trim()
-    ) {
-      continue;
+    for (const task of orderedTasks) {
+      if (drafts.length >= maxItems || addedForGoal >= maxPerGoal) break;
+
+      drafts.push({
+        title: makeContinuationTitle(task, g),
+        description: `Цель: ${goalName}. Основано на твоей прошлой задаче «${cleanTaskTitle(asString(task.title))}».`,
+        life_block: block,
+        importance: Math.max(clampImportance(task.importance), asString(g.horizon) === "long" ? 4 : 3),
+        planned_hours: inferHours(task, period),
+        reason: asBool(task.is_completed)
+          ? `Следующий конкретный шаг по цели: ${goalName}`
+          : `Нужно закрыть незавершённый шаг по цели: ${goalName}`,
+        source: "past_goal_tasks_concrete",
+        user_goal_id: gid,
+        source_goal_title: goalName,
+        source_task_id: asString(task.id) || null,
+      });
+      addedForGoal++;
     }
 
-    const set = mentalDaysByCode.get(meta.code) ?? new Set<string>();
-    set.add(String(a.day));
-    mentalDaysByCode.set(meta.code, set);
-  }
-
-  const mentalCoverage = Array.from(mentalDaysByCode.entries()).map(([code, set]) => ({
-    code,
-    days_with_answers_30d: set.size,
-  }));
-
-  const targetHoursRaw = userRow?.target_hours;
-  const targetHours =
-    targetHoursRaw === null || targetHoursRaw === undefined
-      ? null
-      : safeNum(targetHoursRaw, 0);
-
-  const windowDays: string[] = [];
-  for (let i = 0; i < days; i++) {
-    windowDays.push(dateOnlyISO(addDays(planFrom, i)));
-  }
-
-  const workloadByDay = windowDays.map((d) => ({
-    day: d,
-    existing_count: loadByDay.get(d)?.count ?? 0,
-    existing_hours_est: Number((loadByDay.get(d)?.hours ?? 0).toFixed(2)),
-  }));
-
-  return {
-    ok: true,
-    horizon,
-    window: {
-      from: planFrom.toISOString(),
-      to: planTo.toISOString(),
-      planning_days: days,
-      days: windowDays,
-    },
-    profile: {
-      profile_source: profileSource,
-      archetype: userRow?.archetype ?? null,
-      target_hours_per_day: targetHours,
-      priorities: userRow?.priorities ?? null,
-      life_blocks: userRow?.life_blocks ?? null,
-    },
-    user_goals: activeGoals.map((g) => ({
-      id: g.id,
-      horizon: g.horizon,
-      life_block: g.life_block ?? "general",
-      title: g.title,
-      description: g.description ?? "",
-      target_date: g.target_date ?? null,
-      updated_at: g.updated_at,
-    })),
-    latest_insights_run: insightsRun
-      ? {
-          id: insightsRun.id,
-          created_at: insightsRun.created_at,
-          period: insightsRun.period,
-          date_from: insightsRun.date_from,
-          date_to: insightsRun.date_to,
-          version: insightsRun.version,
-          insights: insightsRun.insights ?? [],
-          stats: insightsRun.stats ?? {},
-        }
-      : null,
-    workload_by_day: workloadByDay,
-    recent_task_titles_norm: Array.from(recentTitlesNorm).slice(0, 200),
-    task_patterns: {
-      time_preference: timePreference,
-      by_life_block_60d: blockStats,
-    },
-    habits_summary_30d: habitsSummary,
-    mental_coverage_30d: mentalCoverage,
-    upcoming_tasks_in_window: upcomingTasks
-      .filter((t) => !t.is_completed)
-      .slice(0, 120)
-      .map((t) => ({
-        id: t.id,
-        title: t.title ?? "",
-        life_block: t.life_block ?? "general",
-        start_time: t.start_time,
-        deadline: t.deadline,
-        importance: Number(t.importance ?? 1),
-      })),
-  };
-}
-
-// ─────────────────────────────────────────────────────────────
-// Prompt + LLM
-// ─────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `Ты — строгий AI-планировщик для приложения самоменеджмента.
-
-Требования:
-- План строится ОТ user_goals. Каждая предлагаемая задача должна иметь понятную связь с одной или несколькими целями.
-- Используй ТОЛЬКО данные snapshot.
-- Не выдумывай факты.
-- Если используешь инсайты, формулируй осторожно: "наблюдалась ассоциация", "есть тенденция", "по данным периода".
-- План должен быть реалистичным: не перегружай дни, учитывай текущую нагрузку и привычное время успешного выполнения.
-- Не предлагай дубликаты уже существующих задач.
-- Каждая задача обязана иметь start_time в ISO datetime внутри окна snapshot.window.
-- Максимум: week=12 задач, month=20 задач.
-- Верни ТОЛЬКО валидный JSON-объект вида {"items":[...]} без markdown и без пояснительного текста.`;
-
-async function callPlanLLM(snapshot: SnapshotOk) {
-  if (!OPENAI_API_KEY) {
-    throw new Error("Missing OPENAI_API_KEY");
-  }
-
-  const userPrompt = `Сгенерируй план задач.
-
-Схема ответа (СТРОГО):
-{
-  "items": [
-    {
-      "title": "string",
-      "description": "string",
-      "life_block": "string",
-      "importance": 1,
-      "start_time": "2026-03-10T18:00:00.000Z",
-      "planned_hours": 1.0,
-      "reason": "короткое объяснение связи с целями и почему задача уместна"
+    while (drafts.length < maxItems && addedForGoal < maxPerGoal) {
+      drafts.push(makeStarterTask(g, addedForGoal, period));
+      addedForGoal++;
     }
-  ]
-}
+  }
 
-Ограничения:
-- Делай конкретные действия, без абстрактных формулировок.
-- planned_hours обычно 0.5..2.0, редко до 3.0.
-- Выбирай дни с меньшей нагрузкой по snapshot.workload_by_day.
-- Учитывай snapshot.task_patterns.time_preference.
-- Используй snapshot.latest_insights_run только как мягкий контекст, а не как доказанный факт.
-- Если данных мало, делай более консервативный и короткий план.
-- Избегай названий, совпадающих с snapshot.recent_task_titles_norm.
-- start_time должен попадать внутрь snapshot.window.
-- Если целей много, выбери 2–4 ключевые и сделай по ним шаги.
-
-Данные snapshot:
-${JSON.stringify(snapshot)}`;
-
-  const r = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      input: [
-        {
-          role: "system",
-          content: [{ type: "input_text", text: SYSTEM_PROMPT }],
-        },
-        {
-          role: "user",
-          content: [{ type: "input_text", text: userPrompt }],
-        },
-      ],
-      text: {
-        format: {
-          type: "json_object",
-        },
+  if (drafts.length === 0) {
+    const block = hasRequestedLifeBlock ? requestedLifeBlock : "career";
+    drafts.push(
+      {
+        title: period === "month" ? "Выбрать 3 главные цели месяца и записать первый шаг к каждой" : "Выбрать 3 главные цели недели и записать первый шаг к каждой",
+        description: "Сначала нужны активные большие цели. После этого AI сможет строить конкретный план действий.",
+        life_block: block,
+        importance: 4,
+        planned_hours: 1,
+        reason: "Недостаточно активных больших целей",
+        source: "fallback_no_user_goals",
+        user_goal_id: null,
       },
-    }),
-  });
-
-  if (!r.ok) {
-    const errText = await r.text();
-    throw new Error(`LLM request failed: ${errText}`);
+      {
+        title: "Создать одну маленькую задачу и привязать её к большой цели",
+        description: "После появления связанных задач AI будет предлагать следующие действия на основе истории.",
+        life_block: block,
+        importance: 3,
+        planned_hours: 0.5,
+        reason: "Нужно накопить историю задач по целям",
+        source: "fallback_no_user_goals",
+        user_goal_id: null,
+      },
+    );
   }
 
-  const data = await r.json();
-
-  let outputText: string | null = null;
-
-  if (typeof data?.output_text === "string" && data.output_text.trim()) {
-    outputText = data.output_text.trim();
-  }
-
-  if (!outputText && Array.isArray(data?.output)) {
-    for (const out of data.output) {
-      const contents = Array.isArray(out?.content) ? out.content : [];
-      for (const c of contents) {
-        if (typeof c?.text === "string" && c.text.trim()) {
-          outputText = c.text.trim();
-          break;
-        }
-      }
-      if (outputText) break;
-    }
-  }
-
-  if (!outputText) {
-    console.error("[ai-planner] bad LLM response shape:", JSON.stringify(data));
-    throw new Error("Bad LLM response shape");
-  }
-
-  let parsed: any;
-  try {
-    parsed = JSON.parse(outputText);
-  } catch {
-    console.error("[ai-planner] LLM output not JSON:", outputText);
-    throw new Error("LLM output is not valid JSON");
-  }
-
-  const items: any[] | null =
-    Array.isArray(parsed?.items)
-      ? parsed.items
-      : Array.isArray(parsed)
-      ? parsed
-      : Array.isArray(parsed?.plan)
-      ? parsed.plan
-      : null;
-
-  if (!Array.isArray(items)) {
-    console.error("[ai-planner] LLM parsed keys:", parsed ? Object.keys(parsed) : null);
-    throw new Error("LLM output does not contain items[]");
-  }
-
-  return items;
+  const seen = new Set<string>();
+  return drafts
+    .filter((it) => {
+      const key = planItemKey(it);
+      if (!it.title || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, maxItems);
 }
 
-// ─────────────────────────────────────────────────────────────
-// Optional local fallback
-// ─────────────────────────────────────────────────────────────
-function buildFallbackItems(snapshot: SnapshotOk): PlanItem[] {
-  const maxItems = snapshot.horizon === "month" ? 6 : 3;
-  const preferredBuckets = snapshot.task_patterns.time_preference
-    .filter((x) => x.n > 0)
-    .map((x) => x.bucket);
-
-  const bucketToHour: Record<string, number> = {
-    morning: 9,
-    afternoon: 14,
-    evening: 19,
-    night: 21,
-  };
-
-  const existingTitlesNorm = new Set<string>(snapshot.recent_task_titles_norm);
-  const loadMap = new Map<string, { count: number; hours: number }>();
-  for (const d of snapshot.workload_by_day) {
-    loadMap.set(d.day, {
-      count: d.existing_count,
-      hours: d.existing_hours_est,
-    });
-  }
-
-  const sortedDays = [...snapshot.workload_by_day].sort((a, b) => {
-    if (a.existing_hours_est !== b.existing_hours_est) {
-      return a.existing_hours_est - b.existing_hours_est;
-    }
-    return a.existing_count - b.existing_count;
-  });
-
-  const chosenGoals = snapshot.user_goals.slice(0, 4);
-  const result: PlanItem[] = [];
-
-  for (let i = 0; i < chosenGoals.length && result.length < maxItems; i++) {
-    const goal = chosenGoals[i];
-    const dayInfo = sortedDays[i % Math.max(sortedDays.length, 1)];
-    if (!dayInfo) break;
-
-    const preferredBucket = preferredBuckets[0] ?? "evening";
-    const hour = bucketToHour[preferredBucket] ?? 19;
-
-    const start = new Date(`${dayInfo.day}T00:00:00.000Z`);
-    start.setUTCHours(hour, 0, 0, 0);
-
-    const title = `Шаг по цели: ${goal.title}`;
-    if (isTooSimilar(title, existingTitlesNorm)) continue;
-
-    result.push({
-      title,
-      description: goal.description
-        ? `Сделать конкретный шаг по цели: ${goal.description}`
-        : `Сделать конкретный шаг по цели "${goal.title}".`,
-      life_block: goal.life_block || "general",
-      importance: 2,
-      start_time: start.toISOString(),
-      planned_hours: 1,
-      reason: `Fallback-план на основе активной цели "${goal.title}" и свободного дня ${dayInfo.day}.`,
-    });
-
-    existingTitlesNorm.add(normalizeTitle(title));
-  }
-
-  return result;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Post-filtering & realism guards
-// ─────────────────────────────────────────────────────────────
-function postFilterItems(
-  normalized: PlanItem[],
-  snapshot: SnapshotOk,
-) {
-  const fromISO = snapshot.window.from;
-  const toISO = snapshot.window.to;
-
-  const existingTitlesNorm = new Set<string>();
-  for (const t of snapshot.upcoming_tasks_in_window ?? []) {
-    const nt = normalizeTitle(t.title);
-    if (nt) existingTitlesNorm.add(nt);
-  }
-  for (const nt of snapshot.recent_task_titles_norm ?? []) {
-    if (typeof nt === "string" && nt.trim()) existingTitlesNorm.add(nt.trim());
-  }
-
-  const maxItems = snapshot.horizon === "month" ? 20 : 12;
-
-  const loadMap = new Map<string, { count: number; hours: number }>();
-  for (const d of snapshot.workload_by_day ?? []) {
-    loadMap.set(String(d.day), {
-      count: Number(d.existing_count ?? 0),
-      hours: Number(d.existing_hours_est ?? 0),
-    });
-  }
-
-  const targetHours = snapshot.profile?.target_hours_per_day;
-  const hardHoursCap =
-    typeof targetHours === "number" && Number.isFinite(targetHours) && targetHours > 0
-      ? clamp(targetHours, 2, 10)
-      : 6;
-
-  const kept: PlanItem[] = [];
-  const rejected: Array<{ title: string; reason: string }> = [];
-
-  for (const it of normalized) {
-    if (kept.length >= maxItems) break;
-
-    if (!isWithinWindow(it.start_time, fromISO, toISO)) {
-      rejected.push({ title: it.title, reason: "outside_window" });
-      continue;
-    }
-
-    if (isTooSimilar(it.title, existingTitlesNorm)) {
-      rejected.push({ title: it.title, reason: "duplicate_title" });
-      continue;
-    }
-
-    const day = String(it.start_time).slice(0, 10);
-    const rec = loadMap.get(day) ?? { count: 0, hours: 0 };
-
-    const estH = clamp(safeNum(it.planned_hours, 1), 0.25, 6);
-    const countCap = snapshot.horizon === "month" ? 5 : 4;
-
-    if (rec.count >= countCap) {
-      rejected.push({ title: it.title, reason: "day_count_overload" });
-      continue;
-    }
-
-    if (rec.hours + estH > hardHoursCap) {
-      rejected.push({ title: it.title, reason: "day_hours_overload" });
-      continue;
-    }
-
-    kept.push({
-      ...it,
-      planned_hours: estH,
-    });
-
-    existingTitlesNorm.add(normalizeTitle(it.title));
-    rec.count += 1;
-    rec.hours += estH;
-    loadMap.set(day, rec);
-  }
-
-  return { kept, rejected };
-}
-
-// ─────────────────────────────────────────────────────────────
-// Handler
-// ─────────────────────────────────────────────────────────────
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return jsonResponse({}, 200);
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
 
   try {
-    if (!SUPABASE_URL) {
-      return errorResponse("missing_supabase_url", "Missing SUPABASE_URL (or PROJECT_URL)", 500);
-    }
-    if (!SERVICE_ROLE_KEY) {
-      return errorResponse("missing_service_role_key", "Missing SERVICE_ROLE_KEY secret", 500);
-    }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    const auth = req.headers.get("authorization") ?? "";
-    const jwt = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-    if (!jwt) {
-      return errorResponse("missing_bearer_token", "Missing Authorization bearer token", 401);
+    if (!supabaseUrl || !serviceRoleKey) {
+      return jsonResponse({ ok: false, error: "Missing Supabase environment variables" }, 500);
     }
 
-    const { data: u, error: uErr } = await admin.auth.getUser(jwt);
-    if (uErr || !u?.user) {
-      return errorResponse("invalid_token", "Invalid token", 401, uErr?.message ?? null);
-    }
+    const authHeader = req.headers.get("Authorization") ?? "";
 
-    const authUserId = u.user.id;
-    const payload = await req.json().catch(() => ({}));
-    const horizonRaw = String(payload?.horizon ?? "week").toLowerCase();
-
-    if (horizonRaw !== "week" && horizonRaw !== "month") {
-      return errorResponse("invalid_horizon", "Invalid horizon. Use 'week' or 'month'.", 400);
-    }
-
-    const horizon = horizonRaw as Horizon;
-
-    console.log("[ai-planner] request start", {
-      authUserId,
-      horizon,
-      hasOpenAiKey: !!OPENAI_API_KEY,
-      model: OPENAI_MODEL,
+    const userClient = createClient(supabaseUrl, serviceRoleKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
     });
 
-    // 1) snapshot
-    const snapshot = await buildPlanSnapshot(authUserId, horizon);
-    console.log("[ai-planner] snapshot ok =", snapshot.ok);
-
-    if (!snapshot.ok) {
-      return errorResponse(
-        "planning_preconditions_not_met",
-        "Planning preconditions not met",
-        422,
-        snapshot,
-      );
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData.user?.id) {
+      return jsonResponse({ ok: false, error: "Unauthorized: cannot resolve current user", details: userError }, 401);
     }
 
-    console.log("[ai-planner] snapshot stats", {
-      goals: snapshot.user_goals.length,
-      hasInsights: !!snapshot.latest_insights_run,
-      upcoming: snapshot.upcoming_tasks_in_window.length,
-      profileSource: snapshot.profile.profile_source,
+    const userId = userData.user.id;
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
     });
 
-    // 2) LLM plan or fallback
-    let rawItems: any[] = [];
-    let generationMode: "llm" | "fallback" = "llm";
+    const body = await req.json().catch(() => ({}));
+    const period = normalizePeriod(body.period ?? body.horizon);
 
-    if (!OPENAI_API_KEY) {
-      console.warn("[ai-planner] OPENAI_API_KEY missing, using fallback");
-      rawItems = buildFallbackItems(snapshot);
-      generationMode = "fallback";
-    } else {
-      try {
-        rawItems = await callPlanLLM(snapshot);
-      } catch (e) {
-        console.error("[ai-planner] LLM failed, using fallback:", String(e));
-        rawItems = buildFallbackItems(snapshot);
-        generationMode = "fallback";
+    const now = new Date();
+    const requestStart = parseDateOnly(body.date_from ?? body.date) ?? now;
+    const periodStart = new Date(requestStart);
+    periodStart.setUTCHours(0, 0, 0, 0);
+
+    const periodEnd = parseDateOnly(body.date_to) ?? addDays(periodStart, period === "month" ? 29 : 6);
+    periodEnd.setUTCHours(23, 59, 59, 999);
+
+    const contextStart = addDays(periodStart, period === "month" ? -120 : -60);
+
+    const [planColumns, itemColumns] = await Promise.all([
+      getColumns(supabase, "ai_plans"),
+      getColumns(supabase, "ai_plan_items"),
+    ]);
+
+    const { data: insightRun } = await supabase
+      .from("ai_insights_runs")
+      .select("id, created_at, period, date_from, date_to, insights, stats")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const rawRequestedLifeBlock = asString(body.life_block);
+    const hasRequestedLifeBlock = rawRequestedLifeBlock.length > 0;
+    const requestedLifeBlock = hasRequestedLifeBlock ? normalizeLifeBlock(rawRequestedLifeBlock) : "";
+
+    let goalsQuery = supabase
+      .from("user_goals")
+      .select("id, title, description, life_block, horizon, target_date, is_completed, sort_order, created_at")
+      .eq("user_id", userId)
+      .eq("is_completed", false)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(40);
+
+    if (hasRequestedLifeBlock) goalsQuery = goalsQuery.eq("life_block", requestedLifeBlock);
+
+    const { data: userGoalsRaw, error: userGoalsError } = await goalsQuery;
+    if (userGoalsError) {
+      return jsonResponse({ ok: false, stage: "load_user_goals", error: errorToJson(userGoalsError) }, 500);
+    }
+
+    const userGoals = Array.isArray(userGoalsRaw) ? userGoalsRaw as AnyRow[] : [];
+    const goalIds = userGoals.map(goalId).filter(Boolean);
+
+    let recentGoals: AnyRow[] = [];
+    if (goalIds.length > 0) {
+      const { data: goalsRaw, error: goalsError } = await supabase
+        .from("goals")
+        .select("id, title, description, life_block, importance, is_completed, spent_hours, start_time, deadline, user_goal_id, created_at")
+        .eq("user_id", userId)
+        .in("user_goal_id", goalIds)
+        .gte("start_time", contextStart.toISOString())
+        .order("start_time", { ascending: false })
+        .limit(500);
+
+      if (goalsError) {
+        return jsonResponse({ ok: false, stage: "load_goals", error: errorToJson(goalsError) }, 500);
       }
+      recentGoals = Array.isArray(goalsRaw) ? goalsRaw as AnyRow[] : [];
     }
 
-    console.log("[ai-planner] rawItems =", rawItems.length, "mode =", generationMode);
+    const drafts = buildActionablePlanItems({
+      period,
+      userGoals,
+      recentGoals,
+      periodStart,
+      periodEnd,
+      requestedLifeBlock,
+      hasRequestedLifeBlock,
+    });
 
-    // 3) normalize
-    const normalized = rawItems
-      .map((x: any) => normalizeItem(x))
-      .filter((x: PlanItem | null): x is PlanItem => !!x);
+    const finalItems = drafts.map((it, index) => {
+      const itemDate = scheduledDate(index, drafts.length, periodStart, periodEnd, period);
+      return {
+        user_id: userId,
+        title: cleanTaskTitle(it.title) || "AI-задача",
+        description: it.description,
+        life_block: normalizeLifeBlock(it.life_block),
+        importance: clampImportance(it.importance),
+        planned_hours: Math.max(0.25, Math.min(8, asNumber(it.planned_hours, 1))),
+        reason: it.reason,
+        state: "suggested",
+        start_time: itemDate.toISOString(),
+        user_goal_id: it.user_goal_id,
+        source_task_id: it.source_task_id ?? null,
+        recurring: it.recurring ?? null,
+      };
+    });
 
-    console.log("[ai-planner] normalized =", normalized.length);
+    const desiredPlanRow: AnyRow = {
+      user_id: userId,
+      horizon: period,
+      period,
+      date_from: toDateOnly(periodStart),
+      date_to: toDateOnly(periodEnd),
+      source_insight_run_id: insightRun?.id ?? null,
+      input_snapshot: {
+        strategy: "concrete_goal_linked_tasks_v5",
+        period,
+        date_from: toDateOnly(periodStart),
+        date_to: toDateOnly(periodEnd),
+        latest_insight_run_id: insightRun?.id ?? null,
+        active_user_goals_count: userGoals.length,
+        linked_history_tasks_count: recentGoals.length,
+        auto_distribution: true,
+        link_user_goal_id: true,
+        generated_at: now.toISOString(),
+      },
+    };
 
-    if (normalized.length === 0) {
-      return errorResponse(
-        "planner_returned_no_valid_items",
-        "Planner returned no valid items",
-        422,
-        {
-          generation_mode: generationMode,
-          raw_items_count: rawItems.length,
-          raw_items_sample: rawItems.slice(0, 5),
-        },
-      );
-    }
-
-    // 4) post-filter
-    const { kept: filtered, rejected } = postFilterItems(normalized, snapshot);
-    console.log("[ai-planner] filtered =", filtered.length, "rejected =", rejected.length);
-
-    if (filtered.length === 0) {
-      return errorResponse(
-        "all_items_filtered",
-        "Planner returned items, but all were filtered as duplicates, outside window, or overload",
-        422,
-        {
-          generation_mode: generationMode,
-          normalized_count: normalized.length,
-          rejected_sample: rejected.slice(0, 10),
-          normalized_sample: normalized.slice(0, 5),
-        },
-      );
-    }
-
-    // 5) save plan header
-    const { data: planRow, error: planErr } = await admin
+    const planInsert = pickExistingColumns(desiredPlanRow, planColumns);
+    const { data: plan, error: planError } = await supabase
       .from("ai_plans")
-      .insert({
-        user_id: authUserId,
-        horizon,
-        status: "draft",
-        snapshot: {
-          ...snapshot,
-          generation_mode: generationMode,
-        },
-      })
-      .select("id,created_at,horizon,status")
+      .insert(planInsert)
+      .select("*")
       .single();
 
-    if (planErr) {
-      throw new Error(`ai_plans insert failed: ${planErr.message}`);
+    if (planError) {
+      return jsonResponse({ ok: false, stage: "insert_ai_plans", error: errorToJson(planError), inserted: planInsert }, 500);
     }
 
-    const planId = planRow.id as string;
+    const planId = asString(plan.id);
+    const rowsToInsert = finalItems.map((it) => pickExistingColumns({ ...it, plan_id: planId }, itemColumns));
 
-    // 6) save items
-    const rows = filtered.map((it) => ({
-      plan_id: planId,
-      user_id: authUserId,
-      title: it.title,
-      description: it.description,
-      life_block: it.life_block,
-      importance: it.importance,
-      start_time: it.start_time,
-      planned_hours: it.planned_hours,
-      reason: it.reason,
-      state: "suggested",
+    const { data: insertedItems, error: itemsError } = await supabase
+      .from("ai_plan_items")
+      .insert(rowsToInsert)
+      .select("*");
+
+    if (itemsError) {
+      return jsonResponse({ ok: false, stage: "insert_ai_plan_items", error: errorToJson(itemsError), inserted_sample: rowsToInsert[0] ?? null }, 500);
+    }
+
+    const itemsFromDb = Array.isArray(insertedItems) ? insertedItems as AnyRow[] : [];
+
+    const responseItems = itemsFromDb.map((row, i) => ({
+      ...row,
+      user_goal_id: row.user_goal_id ?? finalItems[i]?.user_goal_id ?? null,
+      source_task_id: row.source_task_id ?? finalItems[i]?.source_task_id ?? null,
+      recurring: row.recurring ?? finalItems[i]?.recurring ?? null,
     }));
 
-    const { data: savedItems, error: itemsErr } = await admin
-      .from("ai_plan_items")
-      .insert(rows)
-      .select("id,title,description,life_block,importance,start_time,planned_hours,reason,state");
-
-    if (itemsErr) {
-      throw new Error(`ai_plan_items insert failed: ${itemsErr.message}`);
-    }
-
-    return jsonResponse(
-      {
-        ok: true,
-        plan_id: planId,
-        generation_mode: generationMode,
-        plan: planRow,
-        snapshot,
-        items: savedItems ?? [],
-        debug: {
-          normalized_count: normalized.length,
-          filtered_count: filtered.length,
-          rejected_count: rejected.length,
-        },
+    return jsonResponse({
+      ok: true,
+      plan_id: planId,
+      plan,
+      items: responseItems,
+      meta: {
+        strategy: "concrete_goal_linked_tasks_v5",
+        period,
+        date_from: toDateOnly(periodStart),
+        date_to: toDateOnly(periodEnd),
+        active_user_goals_count: userGoals.length,
+        linked_history_tasks_count: recentGoals.length,
+        auto_distribution: true,
+        link_user_goal_id: true,
+        user_goal_id_persisted: itemColumns.has("user_goal_id"),
       },
-      200,
-    );
-  } catch (e) {
-    console.error("[ai-planner] unhandled error:", String(e));
-    return errorResponse("unhandled_error", "Unhandled error", 500, String(e));
+    });
+  } catch (err) {
+    return jsonResponse({ ok: false, stage: "unexpected", error: errorToJson(err) }, 500);
   }
 });

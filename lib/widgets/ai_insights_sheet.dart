@@ -48,22 +48,22 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
         'ai-insights',
         body: {
           'period': _period,
-          // если хочешь отключать LLM-полировку:
-          // 'polish_with_llm': true,
+          // LLM включаем только для 7 дней.
+          // Для 30/90 дней используем быстрый rule-based анализ,
+          // чтобы Edge Function не упиралась в timeout и большой payload.
+          'use_llm': _period == 'last_7_days',
         },
       );
 
       final raw = res.data is String
           ? jsonDecode(res.data as String)
           : res.data;
-      final map = (raw as Map).cast<String, dynamic>();
 
-      // ✅ новая функция возвращает { run, snapshot, stats, insights }
-      final list = (map['insights'] as List?) ?? const [];
-      final items = list
-          .whereType<Map>()
-          .map((e) => AiInsight.fromJson(e.cast<String, dynamic>()))
-          .toList();
+      final map = raw is Map
+          ? raw.cast<String, dynamic>()
+          : <String, dynamic>{'insights': raw};
+
+      final items = _parseInsightsFromResponse(map);
 
       setState(() {
         _insights = items;
@@ -79,6 +79,73 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  List<AiInsight> _parseInsightsFromResponse(Map<String, dynamic> map) {
+    // Поддерживаем оба формата:
+    // 1) старый: { "insights": [ ... ] }
+    // 2) новый: { "insights": { "summary": "...", "insights": [ ... ] } }
+    final dynamic insightsRoot = map['insights'];
+
+    final List<dynamic> rawList;
+    if (insightsRoot is List) {
+      rawList = insightsRoot;
+    } else if (insightsRoot is Map) {
+      final nested = insightsRoot['insights'];
+      rawList = nested is List ? nested : const [];
+    } else {
+      rawList = const [];
+    }
+
+    return rawList
+        .whereType<Map>()
+        .map((e) => _normalizeInsightJson(e.cast<String, dynamic>()))
+        .map(AiInsight.fromJson)
+        .toList();
+  }
+
+  Map<String, dynamic> _normalizeInsightJson(Map<String, dynamic> json) {
+    // Edge Function v2 обычно возвращает поле "insight".
+    // Если LLM вернул "description" или "text", UI всё равно не должен падать.
+    final insightText = (json['insight'] ??
+            json['description'] ??
+            json['text'] ??
+            json['body'] ??
+            '')
+        .toString();
+
+    final title = (json['title'] ?? json['name'] ?? 'AI-инсайт').toString();
+    final type = (json['type'] ?? json['category'] ?? 'general').toString();
+
+    final evidenceRaw = json['evidence'];
+    final evidence = evidenceRaw is List
+        ? evidenceRaw.map((e) => e.toString()).toList()
+        : <String>[];
+
+    final strengthRaw = json['impact_strength'] ??
+        json['impactStrength'] ??
+        json['strength'] ??
+        0.5;
+
+    final strength = strengthRaw is num
+        ? strengthRaw.toDouble()
+        : double.tryParse(strengthRaw.toString()) ?? 0.5;
+
+    return <String, dynamic>{
+      ...json,
+      'title': title,
+      'type': type,
+      'insight': insightText,
+      'evidence': evidence,
+      'suggestion': (json['suggestion'] ?? json['recommendation'] ?? '').toString(),
+      'impact_goal': (json['impact_goal'] ?? json['impactGoal'] ?? '').toString(),
+      'impact_strength': strength.clamp(0.0, 1.0),
+      'impact_direction': (json['impact_direction'] ??
+              json['impactDirection'] ??
+              json['direction'] ??
+              'mixed')
+          .toString(),
+    };
   }
 
   // ❌ УБРАЛИ авто-запуск в initState
