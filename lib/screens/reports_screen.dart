@@ -1093,38 +1093,10 @@ class _ReportsBody extends StatelessWidget {
                         title: 'Выполнено по блокам',
                         child: doneByBlock.isEmpty
                             ? const ReportEmptyChart()
-                            : Column(
-                                children: [
-                                  SizedBox(
-                                    height: 220,
-                                    child: PieChart(
-                                      PieChartData(
-                                        startDegreeOffset: -90,
-                                        sectionsSpace: 2,
-                                        centerSpaceRadius: 46,
-                                        pieTouchData:
-                                            PieTouchData(enabled: true),
-                                        sections: buildPieSectionsInt(
-                                          context,
-                                          doneByBlock,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _LegendCollapse(
-                                    title: 'Показать легенду',
-                                    child: ReportLegend(
-                                      entries: sortedEntriesInt(doneByBlock),
-                                      colors: palette(cs),
-                                      valueFormatter: (n) => n.toString(),
-                                      total: doneByBlock.values.fold<int>(
-                                        0,
-                                        (a, b) => a + b,
-                                      ).toDouble(),
-                                    ),
-                                  ),
-                                ],
+                            : _InteractiveIntDonutChart(
+                                data: doneByBlock,
+                                emptyLabel: 'Нет выполненных задач',
+                                valueFormatter: (value) => '$value задач',
                               ),
                       ),
                     ),
@@ -1276,35 +1248,11 @@ class _ReportsBody extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 220,
-                                  child: PieChart(
-                                    PieChartData(
-                                      startDegreeOffset: -90,
-                                      sections: buildExpensePieSections(
-                                        context,
-                                        data.byCategory,
-                                      ),
-                                      sectionsSpace: 2,
-                                      centerSpaceRadius: 46,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                _LegendCollapse(
-                                  title: 'Показать категории',
-                                  child: ReportLegend(
-                                    entries: sortedEntriesDouble(
-                                      data.byCategory,
-                                    ),
-                                    colors: palette(cs),
-                                    valueFormatter: (n) =>
-                                        '${(n as double).toStringAsFixed(0)} €',
-                                    total: data.byCategory.values.fold<double>(
-                                      0.0,
-                                      (a, b) => a + b,
-                                    ),
-                                  ),
+                                _InteractiveDoubleDonutChart(
+                                  data: data.byCategory,
+                                  emptyLabel: 'Нет расходов по категориям',
+                                  valueFormatter: (value) =>
+                                      '${value.toStringAsFixed(2)} €',
                                 ),
                                 const SizedBox(height: 14),
                                 SizedBox(
@@ -1459,78 +1407,155 @@ class _PeriodBar extends StatelessWidget {
   final VoidCallback onPrev;
   final VoidCallback onNext;
 
+  String _periodLabel(ReportPeriod p) {
+    switch (p) {
+      case ReportPeriod.day:
+        return 'День';
+      case ReportPeriod.week:
+        return 'Нед';
+      case ReportPeriod.month:
+        return 'Мес';
+    }
+  }
+
+  Widget _periodTab(
+    BuildContext context, {
+    required ReportPeriod value,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final selected = period == value;
+
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: () => onPeriod(value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 170),
+          curve: Curves.easeOutCubic,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? cs.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: cs.primary.withOpacity(0.22),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              _periodLabel(value),
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              style: tt.labelLarge?.copyWith(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Row(
-      children: [
-        Expanded(
-          child: SegmentedButton<ReportPeriod>(
-            segments: const [
-              ButtonSegment(value: ReportPeriod.day, label: Text('День')),
-              ButtonSegment(value: ReportPeriod.week, label: Text('Неделя')),
-              ButtonSegment(value: ReportPeriod.month, label: Text('Месяц')),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 430;
+
+        final periodSwitcher = Container(
+          height: 50,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainer,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              _periodTab(context, value: ReportPeriod.day),
+              _periodTab(context, value: ReportPeriod.week),
+              _periodTab(context, value: ReportPeriod.month),
             ],
-            selected: {period},
-            showSelectedIcon: true,
-            style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return cs.surfaceContainerHigh;
-                }
-                return cs.surfaceContainerLow;
-              }),
-              foregroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return cs.onSurface;
-                }
-                return cs.onSurfaceVariant;
-              }),
-              side: WidgetStateProperty.all(
-                BorderSide(color: cs.outlineVariant),
-              ),
-              textStyle: WidgetStateProperty.all(
-                tt.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              shape: WidgetStateProperty.all(
-                RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+          ),
+        );
+
+        final dateSwitcher = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _CircleIconButton(
+              tooltip: 'Назад',
+              icon: Icons.chevron_left_rounded,
+              onTap: onPrev,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Container(
+                height: 44,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                constraints: const BoxConstraints(minWidth: 108),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    rangeLabel,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: tt.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
                 ),
               ),
-              padding: WidgetStateProperty.all(
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            ),
+            const SizedBox(width: 8),
+            _CircleIconButton(
+              tooltip: 'Вперёд',
+              icon: Icons.chevron_right_rounded,
+              onTap: onNext,
+            ),
+          ],
+        );
+
+        if (compact) {
+          return Row(
+            children: [
+              SizedBox(
+                width: 162,
+                child: periodSwitcher,
               ),
+              const SizedBox(width: 10),
+              Expanded(child: dateSwitcher),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            SizedBox(
+              width: 245,
+              child: periodSwitcher,
             ),
-            onSelectionChanged: (s) => onPeriod(s.first),
-          ),
-        ),
-        const SizedBox(width: 8),
-        _CircleIconButton(
-          tooltip: 'Назад',
-          icon: Icons.chevron_left_rounded,
-          onTap: onPrev,
-        ),
-        const SizedBox(width: 6),
-        ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 96),
-          child: Text(
-            rangeLabel,
-            textAlign: TextAlign.center,
-            style: tt.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: cs.onSurface,
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        _CircleIconButton(
-          tooltip: 'Вперёд',
-          icon: Icons.chevron_right_rounded,
-          onTap: onNext,
-        ),
-      ],
+            const SizedBox(width: 12),
+            Expanded(child: dateSwitcher),
+          ],
+        );
+      },
     );
   }
 }
@@ -1590,6 +1615,364 @@ class _KpiStrip extends StatelessWidget {
         itemCount: children.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) => SizedBox(width: 210, child: children[i]),
+      ),
+    );
+  }
+}
+
+
+/// ======= Interactive donut charts =======
+/// Диаграммы показывают только проценты внутри секторов.
+/// Название выбранной категории появляется отдельной карточкой только после тапа.
+class _InteractiveIntDonutChart extends StatefulWidget {
+  const _InteractiveIntDonutChart({
+    required this.data,
+    required this.emptyLabel,
+    required this.valueFormatter,
+  });
+
+  final Map<String, int> data;
+  final String emptyLabel;
+  final String Function(int value) valueFormatter;
+
+  @override
+  State<_InteractiveIntDonutChart> createState() => _InteractiveIntDonutChartState();
+}
+
+class _InteractiveIntDonutChartState extends State<_InteractiveIntDonutChart> {
+  int _touchedIndex = -1;
+
+  List<MapEntry<String, int>> get _entries {
+    final entries = widget.data.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return entries;
+  }
+
+  @override
+  void didUpdateWidget(covariant _InteractiveIntDonutChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_touchedIndex >= _entries.length) {
+      _touchedIndex = -1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final entries = _entries;
+    final total = entries.fold<int>(0, (sum, e) => sum + e.value);
+
+    if (entries.isEmpty || total <= 0) {
+      return const ReportEmptyChart();
+    }
+
+    final colors = palette(cs);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 230,
+          child: PieChart(
+            PieChartData(
+              startDegreeOffset: -90,
+              sectionsSpace: 2,
+              centerSpaceRadius: 52,
+              pieTouchData: PieTouchData(
+                enabled: true,
+                touchCallback: (event, response) {
+                  if (!mounted) return;
+                  setState(() {
+                    if (!event.isInterestedForInteractions ||
+                        response == null ||
+                        response.touchedSection == null) {
+                      _touchedIndex = -1;
+                      return;
+                    }
+                    _touchedIndex = response.touchedSection!.touchedSectionIndex;
+                  });
+                },
+              ),
+              sections: List.generate(entries.length, (index) {
+                final entry = entries[index];
+                final percent = entry.value / total * 100;
+                final isTouched = index == _touchedIndex;
+
+                return PieChartSectionData(
+                  color: colors[index % colors.length],
+                  value: entry.value.toDouble(),
+                  radius: isTouched ? 76 : 68,
+                  title: percent >= 4 ? '${percent.round()}%' : '',
+                  titlePositionPercentageOffset: 0.62,
+                  titleStyle: theme.textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    shadows: const [
+                      Shadow(
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                        color: Color(0x66000000),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: _touchedIndex < 0
+              ? _ChartHintCard(
+                  key: const ValueKey('hint'),
+                  text: 'Нажмите на сектор диаграммы',
+                  icon: Icons.touch_app_rounded,
+                )
+              : _SelectedChartValueCard(
+                  key: ValueKey('selected_$_touchedIndex'),
+                  color: colors[_touchedIndex % colors.length],
+                  label: entries[_touchedIndex].key,
+                  value: widget.valueFormatter(entries[_touchedIndex].value),
+                  percent: entries[_touchedIndex].value / total * 100,
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InteractiveDoubleDonutChart extends StatefulWidget {
+  const _InteractiveDoubleDonutChart({
+    required this.data,
+    required this.emptyLabel,
+    required this.valueFormatter,
+  });
+
+  final Map<String, double> data;
+  final String emptyLabel;
+  final String Function(double value) valueFormatter;
+
+  @override
+  State<_InteractiveDoubleDonutChart> createState() =>
+      _InteractiveDoubleDonutChartState();
+}
+
+class _InteractiveDoubleDonutChartState extends State<_InteractiveDoubleDonutChart> {
+  int _touchedIndex = -1;
+
+  List<MapEntry<String, double>> get _entries {
+    final entries = widget.data.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return entries;
+  }
+
+  @override
+  void didUpdateWidget(covariant _InteractiveDoubleDonutChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_touchedIndex >= _entries.length) {
+      _touchedIndex = -1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final entries = _entries;
+    final total = entries.fold<double>(0, (sum, e) => sum + e.value);
+
+    if (entries.isEmpty || total <= 0) {
+      return const ReportEmptyChart();
+    }
+
+    final colors = palette(cs);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 230,
+          child: PieChart(
+            PieChartData(
+              startDegreeOffset: -90,
+              sectionsSpace: 2,
+              centerSpaceRadius: 52,
+              pieTouchData: PieTouchData(
+                enabled: true,
+                touchCallback: (event, response) {
+                  if (!mounted) return;
+                  setState(() {
+                    if (!event.isInterestedForInteractions ||
+                        response == null ||
+                        response.touchedSection == null) {
+                      _touchedIndex = -1;
+                      return;
+                    }
+                    _touchedIndex = response.touchedSection!.touchedSectionIndex;
+                  });
+                },
+              ),
+              sections: List.generate(entries.length, (index) {
+                final entry = entries[index];
+                final percent = entry.value / total * 100;
+                final isTouched = index == _touchedIndex;
+
+                return PieChartSectionData(
+                  color: colors[index % colors.length],
+                  value: entry.value,
+                  radius: isTouched ? 76 : 68,
+                  title: percent >= 4 ? '${percent.round()}%' : '',
+                  titlePositionPercentageOffset: 0.62,
+                  titleStyle: theme.textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    shadows: const [
+                      Shadow(
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                        color: Color(0x66000000),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: _touchedIndex < 0
+              ? _ChartHintCard(
+                  key: const ValueKey('hint'),
+                  text: 'Нажмите на сектор диаграммы',
+                  icon: Icons.touch_app_rounded,
+                )
+              : _SelectedChartValueCard(
+                  key: ValueKey('selected_$_touchedIndex'),
+                  color: colors[_touchedIndex % colors.length],
+                  label: entries[_touchedIndex].key,
+                  value: widget.valueFormatter(entries[_touchedIndex].value),
+                  percent: entries[_touchedIndex].value / total * 100,
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectedChartValueCard extends StatelessWidget {
+  const _SelectedChartValueCard({
+    super.key,
+    required this.color,
+    required this.label,
+    required this.value,
+    required this.percent,
+  });
+
+  final Color color;
+  final String label;
+  final String value;
+  final double percent;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: cs.surface.withOpacity(0.72),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.8)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.28),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: cs.onSurface,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '$value • ${percent.toStringAsFixed(1)}%',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartHintCard extends StatelessWidget {
+  const _ChartHintCard({
+    super.key,
+    required this.text,
+    required this.icon,
+  });
+
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withOpacity(0.42),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.75)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: cs.primary),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
