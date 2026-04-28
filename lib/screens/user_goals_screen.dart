@@ -11,6 +11,7 @@ import '../models/life_block.dart';
 import '../widgets/block_chip.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
+import '../services/onboarding_tour_service.dart';
 
 class UserGoalsScreen extends StatelessWidget {
   const UserGoalsScreen({super.key});
@@ -31,8 +32,58 @@ class UserGoalsScreen extends StatelessWidget {
   }
 }
 
-class _UserGoalsView extends StatelessWidget {
+class _UserGoalsView extends StatefulWidget {
   const _UserGoalsView();
+
+  @override
+  State<_UserGoalsView> createState() => _UserGoalsViewState();
+}
+
+class _UserGoalsViewState extends State<_UserGoalsView> {
+  final GlobalKey _headerKey = GlobalKey();
+  final GlobalKey _filtersKey = GlobalKey();
+  final GlobalKey _addKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    OnboardingTourService.activeHomeTab.addListener(_maybeShowUserGoalsOnboarding);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowUserGoalsOnboarding());
+  }
+
+  void _maybeShowUserGoalsOnboarding() {
+    if (!mounted || OnboardingTourService.activeHomeTab.value != 2) return;
+
+    if (OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.userGoals)) {
+      OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.userGoals,
+        showTour: () => OnboardingTourService.showUserGoalsTour(
+          context: context,
+          headerKey: _headerKey,
+          filtersKey: _filtersKey,
+          addKey: _addKey,
+          markAsSeen: false,
+        ),
+      );
+      return;
+    }
+
+    if (OnboardingTourService.isFullFlowActive) return;
+
+    OnboardingTourService.showUserGoalsTourIfNeeded(
+      context: context,
+      headerKey: _headerKey,
+      filtersKey: _filtersKey,
+      addKey: _addKey,
+    );
+  }
+
+  @override
+  void dispose() {
+    OnboardingTourService.activeHomeTab.removeListener(_maybeShowUserGoalsOnboarding);
+    super.dispose();
+  }
 
   Color _blockColor(String key) {
     switch (key.toLowerCase()) {
@@ -245,6 +296,7 @@ class _UserGoalsView extends StatelessWidget {
       floatingActionButton: allowedBlocks.isEmpty
           ? null
           : FloatingActionButton.extended(
+              key: _addKey,
               onPressed: () => _openCreateDialog(context, allowedBlocks),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Новая цель'),
@@ -258,7 +310,9 @@ class _UserGoalsView extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-                  child: NestBlurCard(
+                  child: KeyedSubtree(
+                    key: _headerKey,
+                    child: NestBlurCard(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -280,13 +334,16 @@ class _UserGoalsView extends StatelessWidget {
                         ],
                       ),
                     ),
+                    ),
                   ),
                 ),
               ),
 
               // blocks
               SliverToBoxAdapter(
-                child: Padding(
+                child: KeyedSubtree(
+                  key: _filtersKey,
+                  child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                   child: SizedBox(
                     height: 54,
@@ -315,6 +372,7 @@ class _UserGoalsView extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 ),
               ),

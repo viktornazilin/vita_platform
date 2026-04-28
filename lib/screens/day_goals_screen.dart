@@ -9,7 +9,6 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../models/goal.dart';
 import '../models/day_goals_model.dart';
 import '../widgets/add_day_goal_sheet.dart';
-import '../widgets/timeline_row.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
 import '../widgets/day_google_calendar_sync_sheet.dart';
@@ -54,8 +53,13 @@ class _DayGoalsView extends StatefulWidget {
 
 class _DayGoalsViewState extends State<_DayGoalsView> {
   final _scroll = ScrollController();
+  final GlobalKey _fabKey = GlobalKey();
+  final GlobalKey _summaryKey = GlobalKey();
+  final GlobalKey _filterKey = GlobalKey();
+
   bool _busy = false;
   bool _hideCompleted = false;
+  final Set<_DaySection> _expandedSections = {..._DaySection.values};
 
   @override
   void dispose() {
@@ -282,6 +286,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
             scrolledUnderElevation: 0,
           ),
           floatingActionButton: _MainFab(
+            key: _fabKey,
             onAdd: () {
               if (_busy) return;
               _openAdd();
@@ -313,6 +318,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
                             padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
                             children: [
                               _DaySummaryCard(
+                                key: _summaryKey,
                                 totalGoals: totalGoals,
                                 completedGoals: completedGoals,
                                 remainingGoals: remainingGoals,
@@ -321,6 +327,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
                               ),
                               const SizedBox(height: 12),
                               _HideCompletedToggle(
+                                key: _filterKey,
                                 value: _hideCompleted,
                                 onChanged: (v) {
                                   setState(() => _hideCompleted = v);
@@ -354,33 +361,41 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
   List<Widget> _buildSections(Map<_DaySection, List<Goal>> grouped) {
     final sections = <Widget>[];
-    int runningIndex = 0;
-    final totalVisible =
-        grouped.values.fold<int>(0, (sum, list) => sum + list.length);
 
     for (final section in _DaySection.values) {
-      final items = grouped[section];
-      if (items == null || items.isEmpty) continue;
+      final items = grouped[section] ?? const <Goal>[];
+      if (items.isEmpty) continue;
 
-      sections.add(_SectionHeader(section: section));
-      sections.add(const SizedBox(height: 8));
+      final expanded = _expandedSections.contains(section);
+      final openItems = items.where((g) => !g.isCompleted).toList();
+      final doneItems = items.where((g) => g.isCompleted).toList();
 
-      for (final g in items) {
-        sections.add(
-          TimelineRow(
-            key: ValueKey(g.id),
-            goal: g,
-            index: runningIndex,
-            total: totalVisible,
-            onToggle: () => _toggleComplete(g),
-            onDelete: () => _confirmAndDelete(g),
-            onEdit: () => _openEdit(g),
-          ),
-        );
-        runningIndex++;
-      }
-
-      sections.add(const SizedBox(height: 12));
+      sections.add(
+        _KanbanDaySection(
+          section: section,
+          goals: items,
+          openGoals: openItems,
+          doneGoals: doneItems,
+          expanded: expanded,
+          onToggleExpanded: () {
+            setState(() {
+              if (expanded) {
+                _expandedSections.remove(section);
+              } else {
+                _expandedSections.add(section);
+              }
+            });
+          },
+          onToggleGoal: _toggleComplete,
+          onDelete: _confirmAndDelete,
+          onEdit: _openEdit,
+          onMoveToDoneState: (goal, done) {
+            if (goal.isCompleted == done) return;
+            _toggleComplete(goal);
+          },
+        ),
+      );
+      sections.add(const SizedBox(height: 14));
     }
 
     return sections;
@@ -410,58 +425,623 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
 enum _DaySection { morning, day, evening }
 
-class _SectionHeader extends StatelessWidget {
+class _KanbanDaySection extends StatelessWidget {
   final _DaySection section;
+  final List<Goal> goals;
+  final List<Goal> openGoals;
+  final List<Goal> doneGoals;
+  final bool expanded;
+  final VoidCallback onToggleExpanded;
+  final Future<void> Function(Goal goal) onToggleGoal;
+  final Future<void> Function(Goal goal) onDelete;
+  final Future<void> Function(Goal goal) onEdit;
+  final void Function(Goal goal, bool done) onMoveToDoneState;
 
-  const _SectionHeader({required this.section});
+  const _KanbanDaySection({
+    required this.section,
+    required this.goals,
+    required this.openGoals,
+    required this.doneGoals,
+    required this.expanded,
+    required this.onToggleExpanded,
+    required this.onToggleGoal,
+    required this.onDelete,
+    required this.onEdit,
+    required this.onMoveToDoneState,
+  });
 
   @override
   Widget build(BuildContext context) {
-    String title;
-    IconData icon;
-    Color accent;
+    final meta = _sectionMeta(section);
 
-    switch (section) {
-      case _DaySection.morning:
-        title = 'Утро';
-        icon = Icons.wb_sunny_rounded;
-        accent = const Color(0xFFF59E0B);
-        break;
-      case _DaySection.day:
-        title = 'День';
-        icon = Icons.light_mode_rounded;
-        accent = const Color(0xFF3AA8E6);
-        break;
-      case _DaySection.evening:
-        title = 'Вечер';
-        icon = Icons.nights_stay_rounded;
-        accent = const Color(0xFF7C83FD);
-        break;
-    }
-
-    return Row(
-      children: [
-        Container(
-          width: 34,
-          height: 34,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
           decoration: BoxDecoration(
-            color: accent.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: accent.withOpacity(0.18)),
-          ),
-          child: Icon(icon, color: accent, size: 18),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFF2E4B5A),
+            color: Colors.white.withOpacity(0.58),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: const Color(0xFFD6E6F5)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x102B5B7A),
+                blurRadius: 22,
+                offset: Offset(0, 14),
               ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(26),
+                  onTap: onToggleExpanded,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+                    child: Row(
+                      children: [
+                        AnimatedRotation(
+                          turns: expanded ? 0.25 : 0,
+                          duration: const Duration(milliseconds: 180),
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            color: meta.accent,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: meta.accent.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: meta.accent.withOpacity(0.18)),
+                          ),
+                          child: Icon(meta.icon, color: meta.accent, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${meta.title} (${goals.length})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: const Color(0xFF2E4B5A),
+                                ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _MiniCounter(label: 'Ост.', value: openGoals.length, accent: const Color(0xFFF59E0B)),
+                                const SizedBox(width: 6),
+                                _MiniCounter(label: 'Гот.', value: doneGoals.length, accent: const Color(0xFF22C55E)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedCrossFade(
+                firstChild: const SizedBox.shrink(),
+                secondChild: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+                  child: _KanbanBoard(
+                    openGoals: openGoals,
+                    doneGoals: doneGoals,
+                    accent: meta.accent,
+                    onToggleGoal: onToggleGoal,
+                    onDelete: onDelete,
+                    onEdit: onEdit,
+                    onMoveToDoneState: onMoveToDoneState,
+                  ),
+                ),
+                crossFadeState: expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 220),
+                sizeCurve: Curves.easeOutCubic,
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
+}
+
+class _KanbanBoard extends StatelessWidget {
+  final List<Goal> openGoals;
+  final List<Goal> doneGoals;
+  final Color accent;
+  final Future<void> Function(Goal goal) onToggleGoal;
+  final Future<void> Function(Goal goal) onDelete;
+  final Future<void> Function(Goal goal) onEdit;
+  final void Function(Goal goal, bool done) onMoveToDoneState;
+
+  const _KanbanBoard({
+    required this.openGoals,
+    required this.doneGoals,
+    required this.accent,
+    required this.onToggleGoal,
+    required this.onDelete,
+    required this.onEdit,
+    required this.onMoveToDoneState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final openColumn = _KanbanColumn(
+          title: 'В работе',
+          subtitle: '${openGoals.length}',
+          icon: Icons.bolt_rounded,
+          accent: accent,
+          goals: openGoals,
+          doneColumn: false,
+          emptyText: 'Нет активных задач',
+          onToggleGoal: onToggleGoal,
+          onDelete: onDelete,
+          onEdit: onEdit,
+          onMoveToDoneState: onMoveToDoneState,
+        );
+
+        final doneColumn = _KanbanColumn(
+          title: 'Готово',
+          subtitle: '${doneGoals.length}',
+          icon: Icons.check_circle_rounded,
+          accent: const Color(0xFF22C55E),
+          goals: doneGoals,
+          doneColumn: true,
+          emptyText: 'Пока пусто',
+          onToggleGoal: onToggleGoal,
+          onDelete: onDelete,
+          onEdit: onEdit,
+          onMoveToDoneState: onMoveToDoneState,
+        );
+
+        if (constraints.maxWidth < 340) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              openColumn,
+              const SizedBox(height: 10),
+              doneColumn,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: openColumn),
+            const SizedBox(width: 8),
+            Expanded(child: doneColumn),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _KanbanColumn extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final List<Goal> goals;
+  final bool doneColumn;
+  final String emptyText;
+  final Future<void> Function(Goal goal) onToggleGoal;
+  final Future<void> Function(Goal goal) onDelete;
+  final Future<void> Function(Goal goal) onEdit;
+  final void Function(Goal goal, bool done) onMoveToDoneState;
+
+  const _KanbanColumn({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.goals,
+    required this.doneColumn,
+    required this.emptyText,
+    required this.onToggleGoal,
+    required this.onDelete,
+    required this.onEdit,
+    required this.onMoveToDoneState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DragTarget<Goal>(
+      onWillAccept: (goal) => goal != null && goal.isCompleted != doneColumn,
+      onAccept: (goal) => onMoveToDoneState(goal, doneColumn),
+      builder: (context, candidate, rejected) {
+        final isActiveDrop = candidate.isNotEmpty;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(8),
+          constraints: const BoxConstraints(minHeight: 132),
+          decoration: BoxDecoration(
+            color: isActiveDrop ? accent.withOpacity(0.12) : const Color(0xFFF4FAFF).withOpacity(0.72),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isActiveDrop ? accent.withOpacity(0.42) : const Color(0xFFD6E6F5),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 17, color: accent),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF2E4B5A),
+                          ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF2E4B5A),
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (goals.isEmpty)
+                _KanbanEmptyHint(text: emptyText)
+              else
+                ...goals.map(
+                  (goal) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: LongPressDraggable<Goal>(
+                      data: goal,
+                      feedback: Material(
+                        color: Colors.transparent,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 180),
+                          child: _KanbanGoalCard(
+                            goal: goal,
+                            compact: true,
+                            onToggle: () {},
+                            onEdit: () {},
+                            onDelete: () {},
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.35,
+                        child: _KanbanGoalCard(
+                          goal: goal,
+                          onToggle: () => onToggleGoal(goal),
+                          onEdit: () => onEdit(goal),
+                          onDelete: () => onDelete(goal),
+                        ),
+                      ),
+                      child: _KanbanGoalCard(
+                        goal: goal,
+                        onToggle: () => onToggleGoal(goal),
+                        onEdit: () => onEdit(goal),
+                        onDelete: () => onDelete(goal),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _KanbanGoalCard extends StatelessWidget {
+  final Goal goal;
+  final bool compact;
+  final VoidCallback onToggle;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _KanbanGoalCard({
+    required this.goal,
+    required this.onToggle,
+    required this.onEdit,
+    required this.onDelete,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final time = _formatGoalTime(goal.startTime);
+    final isDone = goal.isCompleted;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(10, compact ? 9 : 10, 8, compact ? 9 : 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(isDone ? 0.58 : 0.82),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDone ? const Color(0xFFD8EAD8) : const Color(0xFFD6E6F5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F2B5B7A),
+            blurRadius: 14,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 4,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isDone ? const Color(0xFF22C55E) : const Color(0xFF7AAECF),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  goal.title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        height: 1.12,
+                        decoration: isDone ? TextDecoration.lineThrough : null,
+                        color: const Color(0xFF2E4B5A).withOpacity(isDone ? 0.58 : 1),
+                      ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: onToggle,
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: Icon(
+                    isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    size: 19,
+                    color: isDone ? const Color(0xFF22C55E) : const Color(0xFF6A8190),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (!compact) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _GoalChip(icon: Icons.schedule_rounded, label: time),
+                _GoalChip(icon: Icons.timer_rounded, label: '${goal.hours.toStringAsFixed(1)} ч'),
+                if (goal.lifeBlock.trim().isNotEmpty)
+                  _GoalChip(icon: Icons.grid_view_rounded, label: goal.lifeBlock),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _CardAction(icon: Icons.edit_rounded, onTap: onEdit),
+                const SizedBox(width: 4),
+                _CardAction(icon: Icons.delete_outline_rounded, onTap: onDelete, danger: true),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _GoalChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 118),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF6FF).withOpacity(0.82),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: const Color(0xFF5D7B8F)),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF5D7B8F),
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardAction extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool danger;
+
+  const _CardAction({
+    required this.icon,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        width: 31,
+        height: 31,
+        decoration: BoxDecoration(
+          color: danger ? const Color(0xFFFFEEF0) : const Color(0xFFEAF6FF),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: danger ? const Color(0xFFFFCCD2) : const Color(0xFFD6E6F5),
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: danger ? const Color(0xFFEF4444) : const Color(0xFF5D7B8F),
+        ),
+      ),
+    );
+  }
+}
+
+class _KanbanEmptyHint extends StatelessWidget {
+  final String text;
+
+  const _KanbanEmptyHint({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.52),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD6E6F5)),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF6A8190),
+            ),
+      ),
+    );
+  }
+}
+
+class _MiniCounter extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color accent;
+
+  const _MiniCounter({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label $value',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF2E4B5A),
+            ),
+      ),
+    );
+  }
+}
+
+class _SectionMeta {
+  final String title;
+  final IconData icon;
+  final Color accent;
+
+  const _SectionMeta({
+    required this.title,
+    required this.icon,
+    required this.accent,
+  });
+}
+
+_SectionMeta _sectionMeta(_DaySection section) {
+  switch (section) {
+    case _DaySection.morning:
+      return const _SectionMeta(
+        title: 'Утро',
+        icon: Icons.wb_sunny_rounded,
+        accent: Color(0xFFF59E0B),
+      );
+    case _DaySection.day:
+      return const _SectionMeta(
+        title: 'День',
+        icon: Icons.light_mode_rounded,
+        accent: Color(0xFF3AA8E6),
+      );
+    case _DaySection.evening:
+      return const _SectionMeta(
+        title: 'Вечер',
+        icon: Icons.nights_stay_rounded,
+        accent: Color(0xFF7C83FD),
+      );
+  }
+}
+
+String _formatGoalTime(DateTime dateTime) {
+  final h = dateTime.hour.toString().padLeft(2, '0');
+  final m = dateTime.minute.toString().padLeft(2, '0');
+  return '$h:$m';
 }
 
 class _DaySummaryCard extends StatelessWidget {
@@ -472,6 +1052,7 @@ class _DaySummaryCard extends StatelessWidget {
   final double progress;
 
   const _DaySummaryCard({
+    super.key,
     required this.totalGoals,
     required this.completedGoals,
     required this.remainingGoals,
@@ -649,6 +1230,7 @@ class _HideCompletedToggle extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   const _HideCompletedToggle({
+    super.key,
     required this.value,
     required this.onChanged,
   });
@@ -817,6 +1399,7 @@ class _MainFab extends StatelessWidget {
   final VoidCallback onCalendar;
 
   const _MainFab({
+    super.key,
     required this.onAdd,
     required this.onScan,
     required this.onCalendar,
@@ -828,6 +1411,7 @@ class _MainFab extends StatelessWidget {
       width: 62,
       height: 62,
       child: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _openMenu(context),
         elevation: 10,
         backgroundColor: const Color(0xFF3AA8E6),

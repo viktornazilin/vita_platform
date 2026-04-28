@@ -17,6 +17,7 @@ import '../user_goals_screen.dart';
 import '../../widgets/frosted_rail.dart';
 import '../../widgets/nest/nest_background.dart';
 import '../../widgets/nest/nest_blur_card.dart';
+import '../../services/onboarding_tour_service.dart';
 
 import 'home_dashboard_tab.dart';
 import 'home_launcher_sheet.dart';
@@ -52,6 +53,26 @@ class _HomeView extends StatefulWidget {
 class _HomeViewState extends State<_HomeView> {
   static final PageStorageBucket _bucket = PageStorageBucket();
   final ValueNotifier<bool> _fabVisible = ValueNotifier<bool>(true);
+
+  final GlobalKey _launcherKey = GlobalKey(debugLabel: 'nest_launcher');
+  final GlobalKey _helpKey = GlobalKey(debugLabel: 'nest_help');
+  final GlobalKey _railKey = GlobalKey(debugLabel: 'nest_navigation_rail');
+
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final model = context.read<HomeModel>();
+      OnboardingTourService.startFullAppOnboardingIfNeeded(
+        context: context,
+        onSelectTab: model.select,
+        launcherKey: _launcherKey,
+        helpKey: _helpKey,
+        navigationKey: _railKey,
+      );
+    });
+  }
 
   String _titleFor(int idx, BuildContext context) {
     final l = AppLocalizations.of(context)!;
@@ -129,6 +150,7 @@ class _HomeViewState extends State<_HomeView> {
 
   Widget _logoFab(
     BuildContext context, {
+    Key? key,
     required VoidCallback onPressed,
     required String heroTag,
     double size = 110,
@@ -141,6 +163,7 @@ class _HomeViewState extends State<_HomeView> {
       width: size,
       height: size,
       child: FloatingActionButton(
+        key: key,
         heroTag: heroTag,
         elevation: 0,
         highlightElevation: 0,
@@ -269,6 +292,26 @@ class _HomeViewState extends State<_HomeView> {
             ),
             const SizedBox(width: 8),
             IconButton(
+              key: _helpKey,
+              tooltip: 'How-To',
+              style: IconButton.styleFrom(
+                backgroundColor: cs.surfaceContainerHighest.withOpacity(0.55),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () => OnboardingTourService.startFullAppOnboarding(
+                context: context,
+                onSelectTab: model.select,
+                launcherKey: _launcherKey,
+                helpKey: _helpKey,
+                navigationKey: _railKey,
+                forceRestart: true,
+              ),
+              icon: const Icon(Icons.help_outline_rounded),
+            ),
+            const SizedBox(width: 6),
+            IconButton(
               tooltip: l.homeSignOutTooltip,
               style: IconButton.styleFrom(
                 backgroundColor: cs.surfaceContainerHighest.withOpacity(0.55),
@@ -325,6 +368,7 @@ class _HomeViewState extends State<_HomeView> {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<HomeModel>();
+    OnboardingTourService.setActiveHomeTab(model.selectedIndex);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -354,6 +398,7 @@ class _HomeViewState extends State<_HomeView> {
                   opacity: show ? 1 : 0,
                   child: _logoFab(
                     context,
+                    key: _launcherKey,
                     heroTag: 'launcher-fab',
                     size: fabSizeCompact,
                     onPressed: () => _openLauncher(context, model),
@@ -415,6 +460,7 @@ class _HomeViewState extends State<_HomeView> {
                   padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
                   child: FrostedRail(
                     child: NavigationRail(
+                      key: _railKey,
                       selectedIndex: model.selectedIndex,
                       onDestinationSelected: model.select,
                       extended: extendedRail,
@@ -427,6 +473,7 @@ class _HomeViewState extends State<_HomeView> {
                               .homeQuickActionsTooltip,
                           child: _logoFab(
                             context,
+                            key: _launcherKey,
                             heroTag: 'launcher-fab-rail',
                             size: railFabSize,
                             small: true,

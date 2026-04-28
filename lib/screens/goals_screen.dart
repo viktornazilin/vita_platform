@@ -25,6 +25,7 @@ import '../screens/home/home_google_calendar_sheet.dart';
 
 import '../services/habits_repo_mixin.dart' show HabitEntryUpsert;
 import '../services/mental_repo_mixin.dart';
+import '../services/onboarding_tour_service.dart';
 
 import 'day_goals_screen.dart';
 
@@ -81,6 +82,10 @@ class _GoalsViewState extends State<_GoalsView> {
   double _targetHours = 8;
 
   bool _showGoalsByBlock = false; // ✅ hide/show “Цели по сферам”
+
+  final GlobalKey _addGoalKey = GlobalKey(debugLabel: 'goals_add');
+  final GlobalKey _modeSwitchKey = GlobalKey(debugLabel: 'goals_mode_switch');
+  final GlobalKey _filterKey = GlobalKey(debugLabel: 'goals_life_block_filter');
 
   static const Map<String, Color> _blockColors = {
     'health': Color(0xFF2E7D32),
@@ -196,6 +201,42 @@ class _GoalsViewState extends State<_GoalsView> {
     super.initState();
     _loadTargetHours();
     _loadWeekHeat();
+    OnboardingTourService.activeHomeTab.addListener(_maybeShowGoalsOnboarding);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowGoalsOnboarding());
+  }
+
+  void _maybeShowGoalsOnboarding() {
+    if (!mounted || OnboardingTourService.activeHomeTab.value != 1) return;
+
+    if (OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.goals)) {
+      OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.goals,
+        showTour: () => OnboardingTourService.showGoalsTour(
+          context: context,
+          addKey: _addGoalKey,
+          modeKey: _modeSwitchKey,
+          filterKey: _filterKey,
+          markAsSeen: false,
+        ),
+      );
+      return;
+    }
+
+    if (OnboardingTourService.isFullFlowActive) return;
+
+    OnboardingTourService.showGoalsTourIfNeeded(
+      context: context,
+      addKey: _addGoalKey,
+      modeKey: _modeSwitchKey,
+      filterKey: _filterKey,
+    );
+  }
+
+  @override
+  void dispose() {
+    OnboardingTourService.activeHomeTab.removeListener(_maybeShowGoalsOnboarding);
+    super.dispose();
   }
 
   Future<void> _loadTargetHours() async {
@@ -923,6 +964,7 @@ class _GoalsViewState extends State<_GoalsView> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
+        key: _addGoalKey,
         onPressed: () => _openQuickActions(context),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Добавить'),
@@ -935,6 +977,7 @@ class _GoalsViewState extends State<_GoalsView> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(12 + sidePad, 8, 12 + sidePad, 0),
                 child: SingleChildScrollView(
+                  key: _filterKey,
                   scrollDirection: Axis.horizontal,
                   padding: EdgeInsets.zero,
                   child: Row(
@@ -989,6 +1032,7 @@ class _GoalsViewState extends State<_GoalsView> {
                           const SizedBox(height: 8),
 
                           SegmentedButton<_ViewMode>(
+                            key: _modeSwitchKey,
                             segments: const [
                               ButtonSegment(
                                 value: _ViewMode.dashboard,

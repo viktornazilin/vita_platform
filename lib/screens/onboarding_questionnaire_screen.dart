@@ -14,6 +14,7 @@ import '../services/user_service.dart';
 // ✅ Nest
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
+import '../services/onboarding_tour_service.dart';
 
 class OnboardingQuestionnaireScreen extends StatelessWidget {
   final VoidCallback? onCompleted;
@@ -47,6 +48,25 @@ class _QuestionnaireScaffold extends StatefulWidget {
 
 class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
   final _pageController = PageController();
+  final GlobalKey _progressKey = GlobalKey();
+  final GlobalKey _stepKey = GlobalKey();
+  final GlobalKey _nextKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowQuestionnaireOnboarding());
+  }
+
+  void _maybeShowQuestionnaireOnboarding() {
+    if (!mounted) return;
+    OnboardingTourService.showQuestionnaireTourIfNeeded(
+      context: context,
+      progressKey: _progressKey,
+      stepKey: _stepKey,
+      nextKey: _nextKey,
+    );
+  }
 
   @override
   void dispose() {
@@ -181,10 +201,13 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 720),
-                  child: NestBlurCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: _NestProgress(value: progress),
+                  child: KeyedSubtree(
+                    key: _progressKey,
+                    child: NestBlurCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: _NestProgress(value: progress),
+                      ),
                     ),
                   ),
                 ),
@@ -202,7 +225,13 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                       m.prevStep();
                     }
                   },
-                  children: steps,
+                  children: [
+                    for (var i = 0; i < steps.length; i++)
+                      KeyedSubtree(
+                        key: i == m.currentStep ? _stepKey : ValueKey('onboarding_step_$i'),
+                        child: steps[i],
+                      ),
+                  ],
                 ),
               ),
 
@@ -265,29 +294,32 @@ class _QuestionnaireScaffoldState extends State<_QuestionnaireScaffold> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: FilledButton(
-                              onPressed: m.isLoading
-                                  ? null
-                                  : () => _goNext(m, stepsLen),
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
+                            child: KeyedSubtree(
+                              key: _nextKey,
+                              child: FilledButton(
+                                onPressed: m.isLoading
+                                    ? null
+                                    : () => _goNext(m, stepsLen),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
+                                child: m.isLoading
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator.adaptive(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : (m.currentStep == stepsLen - 1
+                                          ? Text(l.commonDone)
+                                          : Text(l.commonNext)),
                               ),
-                              child: m.isLoading
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator.adaptive(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : (m.currentStep == stepsLen - 1
-                                        ? Text(l.commonDone)
-                                        : Text(l.commonNext)),
                             ),
                           ),
                         ],

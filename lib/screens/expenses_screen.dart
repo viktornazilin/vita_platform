@@ -12,6 +12,7 @@ import '../widgets/add_expense_dialog.dart';
 import '../widgets/add_income_dialog.dart';
 import '../main.dart'; // dbRepo
 import 'budget_setup_screen.dart';
+import '../services/onboarding_tour_service.dart';
 
 // ✅ Nest
 import '../widgets/nest/nest_background.dart';
@@ -29,8 +30,61 @@ class ExpensesScreen extends StatelessWidget {
   }
 }
 
-class _ExpensesView extends StatelessWidget {
+class _ExpensesView extends StatefulWidget {
   const _ExpensesView();
+
+  
+  State<_ExpensesView> createState() => _ExpensesViewState();
+}
+
+class _ExpensesViewState extends State<_ExpensesView> {
+  final GlobalKey _controlsKey = GlobalKey();
+  final GlobalKey _summaryKey = GlobalKey();
+  final GlobalKey _transactionsKey = GlobalKey();
+  final GlobalKey _fabKey = GlobalKey();
+
+  
+  void initState() {
+    super.initState();
+    OnboardingTourService.activeHomeTab.addListener(_maybeShowExpensesOnboarding);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowExpensesOnboarding());
+  }
+
+  void _maybeShowExpensesOnboarding() {
+    if (!mounted || OnboardingTourService.activeHomeTab.value != 5) return;
+
+    if (OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.expenses)) {
+      OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.expenses,
+        showTour: () => OnboardingTourService.showExpensesTour(
+          context: context,
+          controlsKey: _controlsKey,
+          summaryKey: _summaryKey,
+          transactionsKey: _transactionsKey,
+          fabKey: _fabKey,
+          markAsSeen: false,
+        ),
+      );
+      return;
+    }
+
+    if (OnboardingTourService.isFullFlowActive) return;
+
+    OnboardingTourService.showExpensesTourIfNeeded(
+      context: context,
+      controlsKey: _controlsKey,
+      summaryKey: _summaryKey,
+      transactionsKey: _transactionsKey,
+      fabKey: _fabKey,
+    );
+  }
+
+  
+  void dispose() {
+    OnboardingTourService.activeHomeTab.removeListener(_maybeShowExpensesOnboarding);
+    super.dispose();
+  }
 
   Future<void> _pickDate(BuildContext context) async {
     final m = context.read<BudgetModel>();
@@ -161,12 +215,15 @@ class _ExpensesView extends StatelessWidget {
                         8,
                       ),
                       sliver: SliverToBoxAdapter(
-                        child: _ExpenseControlsCard(
-                          selectedDay: m.selectedDay,
-                          onPrevDay: () => _shiftDay(context, -1),
-                          onNextDay: () => _shiftDay(context, 1),
-                          onPickDay: () => _pickDate(context),
-                          onOpenSetup: () => _openBudgetSetup(context),
+                        child: KeyedSubtree(
+                          key: _controlsKey,
+                          child: _ExpenseControlsCard(
+                            selectedDay: m.selectedDay,
+                            onPrevDay: () => _shiftDay(context, -1),
+                            onNextDay: () => _shiftDay(context, 1),
+                            onPickDay: () => _pickDate(context),
+                            onOpenSetup: () => _openBudgetSetup(context),
+                          ),
                         ),
                       ),
                     ),
@@ -180,14 +237,17 @@ class _ExpensesView extends StatelessWidget {
                         8,
                       ),
                       sliver: SliverToBoxAdapter(
-                        child: _BudgetTopCard(
-                          income: income,
-                          expense: expense,
-                          free: free,
-                          label: l.expensesMonthSummary,
-                          incomeLabel: l.expensesIncomeLegend(income),
-                          expenseLabel: l.expensesExpenseLegend(expense),
-                          freeLabel: l.expensesFreeLegend(free),
+                        child: KeyedSubtree(
+                          key: _summaryKey,
+                          child: _BudgetTopCard(
+                            income: income,
+                            expense: expense,
+                            free: free,
+                            label: l.expensesMonthSummary,
+                            incomeLabel: l.expensesIncomeLegend(income),
+                            expenseLabel: l.expensesExpenseLegend(expense),
+                            freeLabel: l.expensesFreeLegend(free),
+                          ),
                         ),
                       ),
                     ),
@@ -220,6 +280,7 @@ class _ExpensesView extends StatelessWidget {
                     // ===== Список операций за день =====
                     if (m.dayTx.isEmpty)
                       SliverFillRemaining(
+                        key: _transactionsKey,
                         hasScrollBody: false,
                         child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -238,6 +299,7 @@ class _ExpensesView extends StatelessWidget {
                       )
                     else
                       SliverPadding(
+                        key: _transactionsKey,
                         padding: EdgeInsets.symmetric(horizontal: 16 + sidePad),
                         sliver: SliverList.separated(
                           itemCount: m.dayTx.length,
@@ -525,11 +587,14 @@ class _ExpensesView extends StatelessWidget {
                 ),
               ),
       ),
-      floatingActionButton: _FabMenuNest(
-        onAddExpense: () => _addExpense(context),
-        onAddIncome: () => _addIncome(context),
-        addExpenseTooltip: l.expensesAddExpense,
-        addIncomeTooltip: l.expensesAddIncome,
+      floatingActionButton: KeyedSubtree(
+        key: _fabKey,
+        child: _FabMenuNest(
+          onAddExpense: () => _addExpense(context),
+          onAddIncome: () => _addIncome(context),
+          addExpenseTooltip: l.expensesAddExpense,
+          addIncomeTooltip: l.expensesAddIncome,
+        ),
       ),
     );
   }

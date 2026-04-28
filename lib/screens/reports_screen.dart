@@ -14,6 +14,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../main.dart'; // dbRepo
 import '../models/reports_model.dart';
+import '../services/onboarding_tour_service.dart';
 
 // Nest style
 import '../widgets/nest/nest_background.dart';
@@ -70,8 +71,55 @@ class _ReportsView extends StatelessWidget {
   }
 }
 
-class _ReportsBody extends StatelessWidget {
+class _ReportsBody extends StatefulWidget {
   const _ReportsBody();
+
+  @override
+  State<_ReportsBody> createState() => _ReportsBodyState();
+}
+
+class _ReportsBodyState extends State<_ReportsBody> {
+  final GlobalKey _periodKey = GlobalKey(debugLabel: 'reports_period');
+  final GlobalKey _chartKey = GlobalKey(debugLabel: 'reports_first_chart');
+
+  @override
+  void initState() {
+    super.initState();
+    OnboardingTourService.activeHomeTab.addListener(_maybeShowReportsOnboarding);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowReportsOnboarding());
+  }
+
+  void _maybeShowReportsOnboarding() {
+    if (!mounted || OnboardingTourService.activeHomeTab.value != 4) return;
+
+    if (OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.reports)) {
+      OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.reports,
+        showTour: () => OnboardingTourService.showReportsTour(
+          context: context,
+          periodKey: _periodKey,
+          chartKey: _chartKey,
+          markAsSeen: false,
+        ),
+      );
+      return;
+    }
+
+    if (OnboardingTourService.isFullFlowActive) return;
+
+    OnboardingTourService.showReportsTourIfNeeded(
+      context: context,
+      periodKey: _periodKey,
+      chartKey: _chartKey,
+    );
+  }
+
+  @override
+  void dispose() {
+    OnboardingTourService.activeHomeTab.removeListener(_maybeShowReportsOnboarding);
+    super.dispose();
+  }
 
   // ----------------------------------------------------------------------------
   // Helpers: date range iteration
@@ -336,6 +384,7 @@ class _ReportsBody extends StatelessWidget {
                 child: _centered(
                   _HeaderShell(
                     child: _PeriodBar(
+                      key: _periodKey,
                       rangeLabel: model.rangeLabel,
                       period: model.period,
                       onPeriod: (p) => context.read<ReportsModel>().setPeriod(p),
@@ -417,8 +466,10 @@ class _ReportsBody extends StatelessWidget {
                   child: _centered(
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-                      child: ReportSectionCard(
-                        title: 'Эффективность периода',
+                      child: KeyedSubtree(
+                        key: _chartKey,
+                        child: ReportSectionCard(
+                          title: 'Эффективность периода',
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -439,6 +490,7 @@ class _ReportsBody extends StatelessWidget {
                               ),
                             ),
                           ],
+                        ),
                         ),
                       ),
                     ),
@@ -1394,6 +1446,7 @@ class _HeaderShell extends StatelessWidget {
 /// ======= Period Bar =======
 class _PeriodBar extends StatelessWidget {
   const _PeriodBar({
+    super.key,
     required this.rangeLabel,
     required this.period,
     required this.onPeriod,

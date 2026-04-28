@@ -13,6 +13,7 @@ import '../widgets/add_jar_dialog.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/limit_sheet.dart';
 import '../widgets/save_bar.dart';
+import '../../../services/onboarding_tour_service.dart';
 
 class BudgetSetupScreen extends StatelessWidget {
   const BudgetSetupScreen({super.key});
@@ -34,7 +35,30 @@ class _SetupView extends StatefulWidget {
 }
 
 class _SetupViewState extends State<_SetupView> {
+  final GlobalKey _incomeKey = GlobalKey();
+  final GlobalKey _expenseKey = GlobalKey();
+  final GlobalKey _jarsKey = GlobalKey();
+  final GlobalKey _saveKey = GlobalKey();
+
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowBudgetOnboarding());
+  }
+
+  void _maybeShowBudgetOnboarding() {
+    if (!mounted) return;
+    OnboardingTourService.showBudgetTourIfNeeded(
+      context: context,
+      incomeKey: _incomeKey,
+      expenseKey: _expenseKey,
+      jarsKey: _jarsKey,
+      saveKey: _saveKey,
+    );
+  }
+
 
   Future<void> _save(BudgetModel m) async {
     if (_saving) return;
@@ -464,9 +488,11 @@ class _SetupViewState extends State<_SetupView> {
         final horizontalPad = width >= 1180 ? 24.0 : 16.0;
 
         final sections = <Widget>[
-          _buildCategorySection(
-            context: context,
-            title: l.budgetIncomeCategoriesTitle,
+          KeyedSubtree(
+            key: _incomeKey,
+            child: _buildCategorySection(
+              context: context,
+              title: l.budgetIncomeCategoriesTitle,
             subtitle: l.budgetIncomeCategoriesSubtitle,
             icon: Icons.trending_up_rounded,
             categories: m.incomeCategories,
@@ -483,8 +509,11 @@ class _SetupViewState extends State<_SetupView> {
               m: m,
               category: category,
             ),
+            ),
           ),
-          _buildCategorySection(
+          KeyedSubtree(
+            key: _expenseKey,
+            child: _buildCategorySection(
             context: context,
             title: l.budgetExpenseCategoriesTitle,
             subtitle: l.budgetExpenseCategoriesSubtitle,
@@ -503,8 +532,12 @@ class _SetupViewState extends State<_SetupView> {
               m: m,
               category: category,
             ),
+            ),
           ),
-          _buildJarsSection(context, m),
+          KeyedSubtree(
+            key: _jarsKey,
+            child: _buildJarsSection(context, m),
+          ),
         ];
 
         return Scaffold(
@@ -545,9 +578,12 @@ class _SetupViewState extends State<_SetupView> {
               ],
             ),
           ),
-          bottomNavigationBar: SaveBar(
-            saving: _saving,
-            onSave: () => _save(m),
+          bottomNavigationBar: KeyedSubtree(
+            key: _saveKey,
+            child: SaveBar(
+              saving: _saving,
+              onSave: () => _save(m),
+            ),
           ),
         );
       },
