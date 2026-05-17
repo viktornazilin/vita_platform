@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
@@ -186,15 +187,16 @@ class OnboardingTourService {
   }
 
   static Future<void> _showWelcomeDialog(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         icon: Icon(Icons.auto_awesome_rounded, color: cs.primary),
-        title: const Text('Добро пожаловать в Nest'),
-        content: const Text(
-          'Сейчас я быстро покажу главные функции: быстрые действия, задачи, большие цели, профиль, отчёты и финансы.',
+        title: Text(l.onboardingWelcomeTitle),
+        content: Text(
+          l.onboardingWelcomeBody,
         ),
         actions: [
           TextButton(
@@ -204,11 +206,11 @@ class OnboardingTourService {
               await prefs.setBool(_fullAppTourKey, true);
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text('Пропустить'),
+            child: Text(l.onboardingSkip),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Начать'),
+            child: Text(l.onboardingStart),
           ),
         ],
       ),
@@ -216,19 +218,20 @@ class OnboardingTourService {
   }
 
   static Future<void> _showFinishDialog(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: Icon(Icons.check_circle_rounded, color: cs.primary),
-        title: const Text('Готово'),
-        content: const Text(
-          'Теперь ты знаешь, где находятся основные функции Nest. Обучение можно запустить снова через значок помощи на главном экране.',
+        title: Text(l.onboardingFinishTitle),
+        content: Text(
+          l.onboardingFinishBody,
         ),
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Понятно'),
+            child: Text(l.onboardingGotIt),
           ),
         ],
       ),
@@ -263,12 +266,13 @@ class OnboardingTourService {
     required GlobalKey? navigationKey,
     bool markAsSeen = false,
   }) async {
+    final l = AppLocalizations.of(context)!;
     final targets = <TargetFocus>[
       _target(
         id: 'launcher',
         key: launcherKey,
-        title: 'Быстрые действия',
-        text: 'Через эту кнопку ты быстро добавляешь задачи, настроение, расходы, привычки и запускаешь AI-план.',
+        title: l.onboardingMainQuickActionsTitle,
+        text: l.onboardingMainQuickActionsText,
         align: ContentAlign.top,
         shape: ShapeLightFocus.RRect,
       ),
@@ -276,16 +280,16 @@ class OnboardingTourService {
         _target(
           id: 'navigation',
           key: navigationKey,
-          title: 'Навигация по Nest',
-          text: 'Здесь находятся основные разделы: главная, задачи, большие цели, профиль, отчёты и финансы.',
+          title: l.onboardingMainNavigationTitle,
+          text: l.onboardingMainNavigationText,
           align: ContentAlign.right,
           shape: ShapeLightFocus.RRect,
         ),
       _target(
         id: 'help',
         key: helpKey,
-        title: 'Инструкцию можно открыть снова',
-        text: 'Нажми на этот значок, если захочешь повторить интерактивный How-To позже.',
+        title: l.onboardingMainHelpTitle,
+        text: l.onboardingMainHelpText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.Circle,
       ),
@@ -327,28 +331,29 @@ class OnboardingTourService {
     required GlobalKey filterKey,
     bool markAsSeen = false,
   }) async {
+    final l = AppLocalizations.of(context)!;
     final targets = <TargetFocus>[
       _target(
         id: 'goals_filter',
         key: filterKey,
-        title: 'Фильтр по сфере жизни',
-        text: 'Выбирай карьеру, здоровье, финансы и другие сферы, чтобы смотреть задачи именно в нужном контексте.',
+        title: l.onboardingGoalsFilterTitle,
+        text: l.onboardingGoalsFilterText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'goals_mode',
         key: modeKey,
-        title: 'Дашборд или календарь',
-        text: 'Дашборд показывает общую картину, а календарь помогает планировать задачи по дням и неделям.',
+        title: l.onboardingGoalsModeTitle,
+        text: l.onboardingGoalsModeText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'goals_add',
         key: addKey,
-        title: 'Добавление действий',
-        text: 'Здесь можно быстро добавить задачу, серию задач или заполнить день сразу несколькими записями.',
+        title: l.onboardingGoalsAddTitle,
+        text: l.onboardingGoalsAddText,
         align: ContentAlign.top,
         shape: ShapeLightFocus.RRect,
       ),
@@ -387,20 +392,21 @@ class OnboardingTourService {
     required GlobalKey chartKey,
     bool markAsSeen = false,
   }) async {
+    final l = AppLocalizations.of(context)!;
     final targets = <TargetFocus>[
       _target(
         id: 'reports_period',
         key: periodKey,
-        title: 'Период анализа',
-        text: 'Переключай день, неделю и месяц, чтобы сравнивать динамику целей, настроения, привычек и финансов.',
+        title: l.onboardingReportsPeriodTitle,
+        text: l.onboardingReportsPeriodText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'reports_chart',
         key: chartKey,
-        title: 'Интерактивные графики',
-        text: 'Нажимай на сектора и точки графиков — приложение покажет подробности только по выбранному элементу.',
+        title: l.onboardingReportsChartTitle,
+        text: l.onboardingReportsChartText,
         align: ContentAlign.top,
         shape: ShapeLightFocus.RRect,
       ),
@@ -424,10 +430,11 @@ class OnboardingTourService {
   }
 
   static Future<void> showUserGoalsTour({required BuildContext context, required GlobalKey headerKey, required GlobalKey filtersKey, required GlobalKey addKey, bool markAsSeen = false}) async {
+    final l = AppLocalizations.of(context)!;
     final targets = <TargetFocus>[
-      _target(id: 'user_goals_header', key: headerKey, title: 'Большие цели', text: 'Здесь хранятся стратегические цели: краткосрочные, среднесрочные и долгосрочные. Потом к ним можно привязывать ежедневные задачи.', align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
-      _target(id: 'user_goals_filters', key: filtersKey, title: 'Фильтры целей', text: 'Фильтруй цели по сфере жизни и горизонту, чтобы быстро сфокусироваться на нужном направлении.', align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
-      _target(id: 'user_goals_add', key: addKey, title: 'Создать большую цель', text: 'Нажми сюда, чтобы добавить цель, выбрать сферу жизни, горизонт и дедлайн.', align: ContentAlign.top, shape: ShapeLightFocus.RRect),
+      _target(id: 'user_goals_header', key: headerKey, title: l.onboardingUserGoalsHeaderTitle, text: l.onboardingUserGoalsHeaderText, align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
+      _target(id: 'user_goals_filters', key: filtersKey, title: l.onboardingUserGoalsFiltersTitle, text: l.onboardingUserGoalsFiltersText, align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
+      _target(id: 'user_goals_add', key: addKey, title: l.onboardingUserGoalsAddTitle, text: l.onboardingUserGoalsAddText, align: ContentAlign.top, shape: ShapeLightFocus.RRect),
     ];
     await _show(context: context, targets: targets);
     if (markAsSeen) { final prefs = await SharedPreferences.getInstance(); await prefs.setBool(_userGoalsTourKey, true); }
@@ -459,28 +466,29 @@ class OnboardingTourService {
     required GlobalKey focusKey,
     bool markAsSeen = false,
   }) async {
+    final l = AppLocalizations.of(context)!;
     await _show(context: context, targets: [
       _target(
         id: 'profile_header',
         key: headerKey,
-        title: 'Профиль',
-        text: 'Это центр персональных настроек Nest: здесь пользователь управляет аккаунтом, фокусом, привычками и параметрами приложения.',
+        title: l.onboardingProfileHeaderTitle,
+        text: l.onboardingProfileHeaderText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'profile_card',
         key: profileCardKey,
-        title: 'Личные данные',
-        text: 'Имя, возраст и базовые параметры используются для персонализации интерфейса и будущих AI-рекомендаций.',
+        title: l.onboardingProfileCardTitle,
+        text: l.onboardingProfileCardText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'profile_focus',
         key: focusKey,
-        title: 'Фокус и настройки',
-        text: 'Здесь задаются параметры, которые влияют на планирование дня, аналитику и рекомендации в приложении.',
+        title: l.onboardingProfileFocusTitle,
+        text: l.onboardingProfileFocusText,
         align: ContentAlign.top,
         shape: ShapeLightFocus.RRect,
       ),
@@ -497,11 +505,12 @@ class OnboardingTourService {
   }
 
   static Future<void> showBudgetTour({required BuildContext context, required GlobalKey incomeKey, required GlobalKey expenseKey, required GlobalKey jarsKey, required GlobalKey saveKey, bool markAsSeen = false}) async {
+    final l = AppLocalizations.of(context)!;
     final targets = <TargetFocus>[
-      _target(id: 'budget_income', key: incomeKey, title: 'Категории доходов', text: 'Добавляй источники дохода, чтобы финансовая аналитика понимала структуру поступлений.', align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
-      _target(id: 'budget_expense', key: expenseKey, title: 'Категории расходов', text: 'Здесь настраиваются категории расходов и лимиты. Это помогает видеть, где бюджет уходит быстрее всего.', align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
-      _target(id: 'budget_jars', key: jarsKey, title: 'Копилки и распределение', text: 'Используй копилки для целей накопления: путешествия, подушка безопасности, инвестиции или крупные покупки.', align: ContentAlign.top, shape: ShapeLightFocus.RRect),
-      _target(id: 'budget_save', key: saveKey, title: 'Сохранить настройки', text: 'После изменений не забудь сохранить бюджет — тогда категории и лимиты попадут в базу.', align: ContentAlign.top, shape: ShapeLightFocus.RRect),
+      _target(id: 'budget_income', key: incomeKey, title: l.onboardingBudgetIncomeTitle, text: l.onboardingBudgetIncomeText, align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
+      _target(id: 'budget_expense', key: expenseKey, title: l.onboardingBudgetExpenseTitle, text: l.onboardingBudgetExpenseText, align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
+      _target(id: 'budget_jars', key: jarsKey, title: l.onboardingBudgetJarsTitle, text: l.onboardingBudgetJarsText, align: ContentAlign.top, shape: ShapeLightFocus.RRect),
+      _target(id: 'budget_save', key: saveKey, title: l.onboardingBudgetSaveTitle, text: l.onboardingBudgetSaveText, align: ContentAlign.top, shape: ShapeLightFocus.RRect),
     ];
     await _show(context: context, targets: targets);
     if (markAsSeen) { final prefs = await SharedPreferences.getInstance(); await prefs.setBool(_budgetTourKey, true); }
@@ -516,10 +525,11 @@ class OnboardingTourService {
   }
 
   static Future<void> showDayGoalsTour({required BuildContext context, required GlobalKey summaryKey, required GlobalKey filterKey, required GlobalKey fabKey, bool markAsSeen = false}) async {
+    final l = AppLocalizations.of(context)!;
     final targets = <TargetFocus>[
-      _target(id: 'day_goals_summary', key: summaryKey, title: 'Итог дня', text: 'В этой карточке видно прогресс дня: сколько задач выполнено, сколько осталось и сколько времени ещё запланировано.', align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
-      _target(id: 'day_goals_filter', key: filterKey, title: 'Скрыть выполненные', text: 'Включи фильтр, чтобы оставить на экране только актуальные задачи.', align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
-      _target(id: 'day_goals_fab', key: fabKey, title: 'Добавить активность', text: 'Через эту кнопку можно добавить задачу, распознать запись из ежедневника или синхронизировать Google Calendar.', align: ContentAlign.top, shape: ShapeLightFocus.Circle),
+      _target(id: 'day_goals_summary', key: summaryKey, title: l.onboardingDayGoalsSummaryTitle, text: l.onboardingDayGoalsSummaryText, align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
+      _target(id: 'day_goals_filter', key: filterKey, title: l.onboardingDayGoalsFilterTitle, text: l.onboardingDayGoalsFilterText, align: ContentAlign.bottom, shape: ShapeLightFocus.RRect),
+      _target(id: 'day_goals_fab', key: fabKey, title: l.onboardingDayGoalsFabTitle, text: l.onboardingDayGoalsFabText, align: ContentAlign.top, shape: ShapeLightFocus.Circle),
     ];
     await _show(context: context, targets: targets);
     if (markAsSeen) { final prefs = await SharedPreferences.getInstance(); await prefs.setBool(_dayGoalsTourKey, true); }
@@ -534,6 +544,7 @@ class OnboardingTourService {
   }
 
   static Future<void> showQuestionnaireTour({required BuildContext context, required GlobalKey progressKey, required GlobalKey stepKey, required GlobalKey nextKey, bool markAsSeen = false}) async {
+    final l = AppLocalizations.of(context)!;
     // Не подсвечиваем весь PageView/step container: на маленьких экранах такой target
     // выглядит как затемнение всего экрана и уводит карточку вниз. Поэтому оставляем
     // только реальные компактные элементы: прогресс и кнопку перехода дальше.
@@ -541,16 +552,16 @@ class OnboardingTourService {
       _target(
         id: 'questionnaire_progress',
         key: progressKey,
-        title: 'Прогресс настройки',
-        text: 'Здесь видно, на каком шаге первичной настройки ты сейчас находишься.',
+        title: l.onboardingQuestionnaireProgressTitle,
+        text: l.onboardingQuestionnaireProgressText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'questionnaire_next',
         key: nextKey,
-        title: 'Переход дальше',
-        text: 'После заполнения текущего шага нажми сюда. В конце Nest сохранит профиль, сферы жизни и цели.',
+        title: l.onboardingQuestionnaireNextTitle,
+        text: l.onboardingQuestionnaireNextText,
         align: ContentAlign.top,
         shape: ShapeLightFocus.RRect,
       ),
@@ -590,36 +601,37 @@ class OnboardingTourService {
     required GlobalKey fabKey,
     bool markAsSeen = false,
   }) async {
+    final l = AppLocalizations.of(context)!;
     final targets = <TargetFocus>[
       _target(
         id: 'expenses_controls',
         key: controlsKey,
-        title: 'День и настройки бюджета',
-        text: 'Здесь выбирается дата для операций, а также открываются настройки категорий, лимитов и копилок.',
+        title: l.onboardingExpensesControlsTitle,
+        text: l.onboardingExpensesControlsText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'expenses_summary',
         key: summaryKey,
-        title: 'Финансовая сводка месяца',
-        text: 'Карточка показывает доходы, расходы и свободный остаток за месяц — это база для анализа бюджета.',
+        title: l.onboardingExpensesSummaryTitle,
+        text: l.onboardingExpensesSummaryText,
         align: ContentAlign.bottom,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'expenses_transactions',
         key: transactionsKey,
-        title: 'Операции за выбранный день',
-        text: 'Здесь видны доходы и расходы за день. Нажми на операцию, чтобы изменить её, или свайпни влево для удаления.',
+        title: l.onboardingExpensesTransactionsTitle,
+        text: l.onboardingExpensesTransactionsText,
         align: ContentAlign.top,
         shape: ShapeLightFocus.RRect,
       ),
       _target(
         id: 'expenses_fab',
         key: fabKey,
-        title: 'Добавить доход или расход',
-        text: 'Нажми на плюс, чтобы открыть меню и быстро добавить новую финансовую операцию.',
+        title: l.onboardingExpensesFabTitle,
+        text: l.onboardingExpensesFabText,
         align: ContentAlign.top,
         shape: ShapeLightFocus.Circle,
       ),
@@ -654,6 +666,7 @@ class OnboardingTourService {
     required BuildContext context,
     required List<TargetFocus> targets,
   }) async {
+    final l = AppLocalizations.of(context)!;
     if (_isTourVisible || !context.mounted) return;
 
     await Future<void>.delayed(const Duration(milliseconds: 120));
@@ -674,7 +687,7 @@ class OnboardingTourService {
       focusAnimationDuration: const Duration(milliseconds: 350),
       unFocusAnimationDuration: const Duration(milliseconds: 250),
       pulseEnable: true,
-      textSkip: 'Пропустить',
+      textSkip: l.onboardingSkip,
       onClickTarget: (_) {},
       onClickOverlay: (_) {},
       onFinish: () {
@@ -745,6 +758,7 @@ class _CoachCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -802,7 +816,7 @@ class _CoachCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Нажми на экран, чтобы перейти дальше',
+            l.onboardingNextHint,
             style: tt.labelMedium?.copyWith(
               color: cs.primary,
               fontWeight: FontWeight.w700,

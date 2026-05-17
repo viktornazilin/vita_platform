@@ -166,7 +166,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                                             children: [
                                               Icon(m.icon, size: 16),
                                               const SizedBox(width: 8),
-                                              Text(m.label),
+                                              Text(ProfileUi.blockLabel(ctx, b)),
                                             ],
                                           ),
                                         );
@@ -542,7 +542,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            meta.label,
+                            ProfileUi.blockLabel(context, block),
                             style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w900,

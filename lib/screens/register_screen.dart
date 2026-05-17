@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
@@ -13,6 +14,40 @@ import '../services/user_service.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
 import '../widgets/nest/nest_pill.dart';
+
+
+enum _LegalDoc { terms, privacy, datenschutz, impressum }
+
+const Map<_LegalDoc, String> _legalDocUrls = {
+  _LegalDoc.terms: 'https://nest-landing-lemon.vercel.app/terms',
+  _LegalDoc.privacy: 'https://nest-landing-lemon.vercel.app/privacy',
+  _LegalDoc.datenschutz: 'https://nest-landing-lemon.vercel.app/datenschutz',
+  _LegalDoc.impressum: 'https://nest-landing-lemon.vercel.app/impressum',
+};
+
+const Set<_LegalDoc> _requiredLegalDocs = {
+  _LegalDoc.terms,
+  _LegalDoc.privacy,
+};
+
+String _legalDocTitle(AppLocalizations l, _LegalDoc doc) {
+  switch (doc) {
+    case _LegalDoc.terms:
+      return l.registerLegalTermsTitle;
+    case _LegalDoc.privacy:
+      return l.registerLegalPrivacyTitle;
+    case _LegalDoc.datenschutz:
+      return l.registerLegalDatenschutzTitle;
+    case _LegalDoc.impressum:
+      return l.registerLegalImpressumTitle;
+  }
+}
+
+String _legalDocChipTitle(AppLocalizations l, _LegalDoc doc) {
+  final title = _legalDocTitle(l, doc);
+  if (_requiredLegalDocs.contains(doc)) return title;
+  return l.registerLegalOptionalTitle(title);
+}
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -50,6 +85,10 @@ class _RegisterViewState extends State<_RegisterView> {
   bool _obscure1 = true;
   bool _obscure2 = true;
   bool _busy = false;
+  final Set<_LegalDoc> _openedLegalDocs = <_LegalDoc>{};
+
+  bool get _requiredLegalDocsOpened =>
+      _requiredLegalDocs.every(_openedLegalDocs.contains);
 
   bool get _isApplePlatform {
     if (kIsWeb) return false;
@@ -143,19 +182,63 @@ class _RegisterViewState extends State<_RegisterView> {
     return null;
   }
 
-  Future<void> _onRegister() async {
-    if (_busy) return;
-    if (!_formKey.currentState!.validate()) return;
-
+  bool _ensureLegalAccepted() {
     final l = AppLocalizations.of(context)!;
     final model = context.read<RegisterModel>();
+
+    if (!_requiredLegalDocsOpened) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.registerErrOpenRequiredLegalDocs),
+        ),
+      );
+      return false;
+    }
 
     if (!model.termsAccepted) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l.registerErrAcceptTerms)));
-      return;
+      return false;
     }
+
+    return true;
+  }
+
+  Future<void> _openLegalDoc(_LegalDoc doc) async {
+    if (_busy) return;
+
+    final url = _legalDocUrls[doc];
+    if (url == null) return;
+
+    final uri = Uri.parse(url);
+    final opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
+
+    if (!mounted) return;
+
+    if (opened) {
+      setState(() {
+        _openedLegalDocs.add(doc);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.registerLegalOpenFailed(
+              _legalDocTitle(AppLocalizations.of(context)!, doc),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onRegister() async {
+    if (_busy) return;
+    if (!_formKey.currentState!.validate()) return;
+    if (!_ensureLegalAccepted()) return;
+
+    final model = context.read<RegisterModel>();
 
     setState(() => _busy = true);
 
@@ -178,6 +261,8 @@ class _RegisterViewState extends State<_RegisterView> {
 
   Future<void> _registerWithGoogle() async {
     if (_busy) return;
+    if (!_ensureLegalAccepted()) return;
+
     setState(() => _busy = true);
     final model = context.read<RegisterModel>();
     await model.registerWithGoogle();
@@ -201,6 +286,8 @@ class _RegisterViewState extends State<_RegisterView> {
     }
 
     if (_busy) return;
+    if (!_ensureLegalAccepted()) return;
+
     setState(() => _busy = true);
     final model = context.read<RegisterModel>();
     await model.registerWithApple();
@@ -213,14 +300,13 @@ class _RegisterViewState extends State<_RegisterView> {
     }
   }
 
-  void _openTerms() => Navigator.pushNamed(context, '/terms');
-  void _openPrivacy() => Navigator.pushNamed(context, '/privacy');
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final model = context.watch<RegisterModel>();
     final isLoading = model.loading || _busy;
+    final canSubmitLegal = _requiredLegalDocsOpened && model.termsAccepted;
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -378,12 +464,14 @@ class _RegisterViewState extends State<_RegisterView> {
                                   _LegalRow(
                                     value: model.termsAccepted,
                                     enabled: !isLoading,
+                                    requiredDocsOpened: _requiredLegalDocsOpened,
+                                    openedDocs: _openedLegalDocs,
                                     onChanged: (v) {
+                                      if (!_requiredLegalDocsOpened) return;
                                       model.termsAccepted = v;
                                       model.notifyListeners();
                                     },
-                                    onOpenTerms: _openTerms,
-                                    onOpenPrivacy: _openPrivacy,
+                                    onOpenDoc: _openLegalDoc,
                                   ),
                                   if (model.error != null) ...[
                                     const SizedBox(height: 10),
@@ -409,7 +497,7 @@ class _RegisterViewState extends State<_RegisterView> {
                                             ),
                                           )
                                         : FilledButton.icon(
-                                            onPressed: _onRegister,
+                                            onPressed: canSubmitLegal ? _onRegister : null,
                                             icon: const Icon(
                                               Icons.person_add_alt_1_rounded,
                                             ),
@@ -440,15 +528,17 @@ class _RegisterViewState extends State<_RegisterView> {
                                   ),
                                   const SizedBox(height: 14),
                                   OutlinedButton.icon(
-                                    onPressed:
-                                        isLoading ? null : _registerWithGoogle,
+                                    onPressed: isLoading || !canSubmitLegal
+                                        ? null
+                                        : _registerWithGoogle,
                                     icon: const Icon(Icons.g_mobiledata_rounded),
                                     label: Text(l.registerContinueGoogle),
                                   ),
                                   const SizedBox(height: 10),
                                   OutlinedButton.icon(
-                                    onPressed:
-                                        isLoading ? null : _registerWithApple,
+                                    onPressed: isLoading || !canSubmitLegal
+                                        ? null
+                                        : _registerWithApple,
                                     icon: const Icon(Icons.apple),
                                     label: Text(
                                       _isApplePlatform
@@ -487,68 +577,121 @@ class _RegisterViewState extends State<_RegisterView> {
 class _LegalRow extends StatelessWidget {
   final bool value;
   final bool enabled;
+  final bool requiredDocsOpened;
+  final Set<_LegalDoc> openedDocs;
   final ValueChanged<bool> onChanged;
-  final VoidCallback onOpenTerms;
-  final VoidCallback onOpenPrivacy;
+  final ValueChanged<_LegalDoc> onOpenDoc;
 
   const _LegalRow({
     required this.value,
     required this.enabled,
+    required this.requiredDocsOpened,
+    required this.openedDocs,
     required this.onChanged,
-    required this.onOpenTerms,
-    required this.onOpenPrivacy,
+    required this.onOpenDoc,
   });
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final style = Theme.of(context).textTheme.bodyMedium;
+    final tt = Theme.of(context).textTheme;
 
-    Widget link(String text, VoidCallback onTap) {
+    Widget docLink(_LegalDoc doc) {
+      final opened = openedDocs.contains(doc);
+      final title = _legalDocChipTitle(l, doc);
+
       return InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-          child: Text(
-            text,
-            style: style?.copyWith(
-              color: scheme.primary,
-              fontWeight: FontWeight.w700,
+        onTap: enabled ? () => onOpenDoc(doc) : null,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          decoration: BoxDecoration(
+            color: opened
+                ? const Color(0xFF22C55E).withOpacity(0.10)
+                : scheme.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: opened
+                  ? const Color(0xFF22C55E).withOpacity(0.28)
+                  : scheme.primary.withOpacity(0.18),
             ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                opened ? Icons.check_circle_rounded : Icons.open_in_new_rounded,
+                size: 15,
+                color: opened ? const Color(0xFF22C55E) : scheme.primary,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                title,
+                style: tt.labelMedium?.copyWith(
+                  color: opened ? const Color(0xFF1E8E4D) : scheme.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 1),
-          child: Checkbox(
-            value: value,
-            onChanged: enabled ? (v) => onChanged(v ?? false) : null,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+      decoration: BoxDecoration(
+        color: scheme.surface.withOpacity(0.56),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
+            children: _LegalDoc.values.map(docLink).toList(),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l.registerLegalPrefix, style: style),
-              link(l.registerLegalTerms, onOpenTerms),
-              Text(l.registerLegalMiddle, style: style),
-              link(l.registerLegalPrivacy, onOpenPrivacy),
-              Text(l.registerLegalSuffix, style: style),
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Checkbox(
+                  value: value,
+                  onChanged: enabled && requiredDocsOpened
+                      ? (v) => onChanged(v ?? false)
+                      : null,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity:
+                      const VisualDensity(horizontal: -2, vertical: -2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  requiredDocsOpened
+                      ? l.registerLegalAcceptedText
+                      : l.registerLegalOpenRequiredDocsText,
+                  style: tt.bodyMedium?.copyWith(
+                    color: requiredDocsOpened
+                        ? scheme.onSurface
+                        : scheme.onSurfaceVariant,
+                    fontWeight: requiredDocsOpened ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

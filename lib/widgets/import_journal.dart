@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/day_goals_model.dart';
 import 'add_day_goal_sheet.dart'; // AddGoalResult
@@ -22,6 +23,8 @@ Future<void> importFromJournal(
   DayGoalsModel vm, {
   required String visionApiKey,
 }) async {
+  final l = AppLocalizations.of(context)!;
+
   try {
     final picker = ImagePicker();
     final platform = Theme.of(context).platform;
@@ -61,16 +64,19 @@ Future<void> importFromJournal(
     }
 
     // OCR -> текст
-    final ocrText = await _googleVisionOcr(bytes, visionApiKey: visionApiKey);
+    final ocrText = await _googleVisionOcr(
+      bytes,
+      visionApiKey: visionApiKey,
+      missingApiKeyMessage: l.importJournalVisionApiKeyMissing,
+      visionApiErrorMessage: l.importJournalVisionApiError,
+    );
 
     if (context.mounted) Navigator.of(context).pop(); // закрыть лоадер
 
     if (ocrText.trim().isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Текст не распознан. Попробуй другое фото.'),
-        ),
+        SnackBar(content: Text(l.importJournalTextNotRecognized)),
       );
       return;
     }
@@ -78,7 +84,11 @@ Future<void> importFromJournal(
     // ✅ AI-анализ OCR-текста (нормализация + задачи)
     JournalAiResult? ai;
     try {
-      ai = await _analyzeJournalWithAI(ocrText);
+      ai = await _analyzeJournalWithAI(
+        ocrText,
+        locale: l.localeName,
+        fallbackTitle: l.importJournalUntitled,
+      );
     } catch (_) {
       // молча падаем на fallback парсер
       ai = null;
@@ -90,7 +100,7 @@ Future<void> importFromJournal(
       await showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Распознанный текст'),
+          title: Text(l.importJournalRecognizedTextTitle),
           content: SizedBox(
             width: 520,
             child: SingleChildScrollView(
@@ -100,7 +110,7 @@ Future<void> importFromJournal(
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Продолжить'),
+              child: Text(l.importJournalContinue),
             ),
           ],
         ),
@@ -110,12 +120,12 @@ Future<void> importFromJournal(
     // ✅ Берём задачи от AI, иначе fallback к простому парсеру
     final parsed = (ai?.tasks != null && ai!.tasks!.isNotEmpty)
         ? ai!.tasks!
-        : _visionParse(ocrText);
+        : _visionParse(ocrText, fallbackTitle: l.importJournalUntitled);
 
     if (parsed.isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось выделить задачи из текста.')),
+        SnackBar(content: Text(l.importJournalNoTasksFound)),
       );
       return;
     }
@@ -151,7 +161,7 @@ Future<void> importFromJournal(
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Добавлено целей: ${accepted.length}')),
+      SnackBar(content: Text(l.importJournalAddedGoals(accepted.length))),
     );
   } catch (e) {
     if (!context.mounted) return;
@@ -159,7 +169,7 @@ Future<void> importFromJournal(
     Navigator.of(context, rootNavigator: true).maybePop();
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Не удалось импортировать: $e')));
+    ).showSnackBar(SnackBar(content: Text(l.importJournalImportFailed(e.toString()))));
   }
 }
 
@@ -169,9 +179,11 @@ Future<void> importFromJournal(
 Future<String> _googleVisionOcr(
   Uint8List bytes, {
   required String visionApiKey,
+  required String missingApiKeyMessage,
+  required String Function(int statusCode, String body) visionApiErrorMessage,
 }) async {
   if (visionApiKey.isEmpty) {
-    throw 'VISION_API_KEY не задан. Запусти с --dart-define=VISION_API_KEY=...';
+    throw missingApiKeyMessage;
   }
 
   final uri = Uri.parse(
@@ -199,7 +211,7 @@ Future<String> _googleVisionOcr(
   );
 
   if (resp.statusCode != 200) {
-    throw 'Vision API error ${resp.statusCode}: ${resp.body}';
+    throw visionApiErrorMessage(resp.statusCode, resp.body);
   }
 
   final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -224,7 +236,10 @@ class JournalAiResult {
 
   JournalAiResult({this.cleanedText, this.tasks});
 
-  factory JournalAiResult.fromMap(Map<String, dynamic> m) {
+  factory JournalAiResult.fromMap(
+    Map<String, dynamic> m, {
+    required String fallbackTitle,
+  }) {
     final cleanedText = (m['cleanedText'] as String?) ?? '';
     final rawTasks = (m['tasks'] as List?) ?? const [];
 
@@ -236,7 +251,7 @@ class JournalAiResult {
           final st = (t['startTime'] ?? '').toString().trim();
 
           return AddGoalResult(
-            title: title.isEmpty ? 'Без названия' : title,
+            title: title.isEmpty ? fallbackTitle : title,
             description: (t['description'] ?? '').toString(),
             lifeBlock: (t['lifeBlock'] ?? 'general').toString(),
             importance: _toIntOr(t['importance'], 2).clamp(1, 3),
@@ -271,7 +286,11 @@ TimeOfDay _parseTimeOfDay(String s) {
   return TimeOfDay(hour: h.clamp(0, 23), minute: min.clamp(0, 59));
 }
 
-Future<JournalAiResult> _analyzeJournalWithAI(String ocrText) async {
+Future<JournalAiResult> _analyzeJournalWithAI(
+  String ocrText, {
+  required String locale,
+  required String fallbackTitle,
+}) async {
   final txt = ocrText.trim();
   if (txt.isEmpty) return JournalAiResult(cleanedText: '', tasks: const []);
 
@@ -279,7 +298,7 @@ Future<JournalAiResult> _analyzeJournalWithAI(String ocrText) async {
 
   final res = await client.functions.invoke(
     'journal-analyze',
-    body: {'text': txt, 'locale': 'ru'},
+    body: {'text': txt, 'locale': locale},
   );
 
   // supabase_flutter возвращает FunctionsResponse
@@ -288,9 +307,14 @@ Future<JournalAiResult> _analyzeJournalWithAI(String ocrText) async {
   }
 
   final data = res.data;
-  if (data is Map<String, dynamic>) return JournalAiResult.fromMap(data);
+  if (data is Map<String, dynamic>) {
+    return JournalAiResult.fromMap(data, fallbackTitle: fallbackTitle);
+  }
   if (data is Map)
-    return JournalAiResult.fromMap(Map<String, dynamic>.from(data));
+    return JournalAiResult.fromMap(
+      Map<String, dynamic>.from(data),
+      fallbackTitle: fallbackTitle,
+    );
 
   return JournalAiResult(cleanedText: txt, tasks: const []);
 }
@@ -298,7 +322,10 @@ Future<JournalAiResult> _analyzeJournalWithAI(String ocrText) async {
 /// ─────────────────────────────────────────────────────────────
 /// Fallback парсер строк → AddGoalResult.
 /// ─────────────────────────────────────────────────────────────
-List<AddGoalResult> _visionParse(String fullText) {
+List<AddGoalResult> _visionParse(
+  String fullText, {
+  required String fallbackTitle,
+}) {
   if (fullText.trim().isEmpty) return const [];
 
   final now = TimeOfDay.now();
@@ -328,7 +355,7 @@ List<AddGoalResult> _visionParse(String fullText) {
     final t = parseTimeOr(now, raw);
     final title = stripTimePrefix(raw);
     return AddGoalResult(
-      title: title.isEmpty ? 'Без названия' : title,
+      title: title.isEmpty ? fallbackTitle : title,
       description: '',
       lifeBlock: 'general',
       importance: 2,
@@ -370,6 +397,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
   }
 
   Future<void> _editItem(int i) async {
+    final l = AppLocalizations.of(context)!;
     final cur = items[i].data;
     final titleCtrl = TextEditingController(text: cur.title);
     TimeOfDay time = cur.startTime;
@@ -378,18 +406,18 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Редактировать'),
+        title: Text(l.importJournalEditTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleCtrl,
-              decoration: const InputDecoration(labelText: 'Название'),
+              decoration: InputDecoration(labelText: l.importJournalNameLabel),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                const Text('Время:'),
+                Text(l.importJournalTimeColon),
                 const SizedBox(width: 8),
                 TextButton(
                   onPressed: () async {
@@ -405,7 +433,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
             ),
             Row(
               children: [
-                const Text('Часы:'),
+                Text(l.importJournalHoursColon),
                 Expanded(
                   child: Slider(
                     min: 0.5,
@@ -430,7 +458,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -438,7 +466,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                 items[i] = items[i].copyWith(
                   data: AddGoalResult(
                     title: titleCtrl.text.trim().isEmpty
-                        ? 'Без названия'
+                        ? l.importJournalUntitled
                         : titleCtrl.text.trim(),
                     description: cur.description,
                     lifeBlock: widget.fixedLifeBlock ?? cur.lifeBlock,
@@ -451,7 +479,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
               });
               Navigator.pop(ctx);
             },
-            child: const Text('Сохранить'),
+            child: Text(l.commonSave),
           ),
         ],
       ),
@@ -460,6 +488,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -481,7 +510,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Найденные задачи',
+              l.importJournalFoundTasksTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -502,7 +531,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                     ),
                     title: Text(d.title),
                     subtitle: Text(
-                      '${d.startTime.format(context)} • ${d.hours.toStringAsFixed(1)} ч',
+                      l.importJournalTaskSubtitle(d.startTime.format(context), d.hours.toStringAsFixed(1)),
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.edit_outlined),
@@ -521,7 +550,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Отмена'),
+                        child: Text(l.commonCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -534,7 +563,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
                               .toList();
                           Navigator.pop(context, accepted);
                         },
-                        child: const Text('Добавить выбранные'),
+                        child: Text(l.importJournalAddSelected)
                       ),
                     ),
                   ],

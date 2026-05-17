@@ -182,39 +182,43 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
     }
   }
 
-  String _lifeBlockLabel(String value) {
+  String _lifeBlockLabel(BuildContext context, String value) {
+    final t = AppLocalizations.of(context)!;
+
     switch (_normalizeBlock(value)) {
       case 'general':
-        return 'Общее';
+        return t.recurringGoalLifeBlockGeneral;
       case 'health':
-        return 'Здоровье';
+        return t.recurringGoalLifeBlockHealth;
       case 'career':
-        return 'Карьера';
+        return t.recurringGoalLifeBlockCareer;
       case 'finance':
-        return 'Финансы';
+        return t.recurringGoalLifeBlockFinance;
       case 'relationships':
-        return 'Отношения';
+        return t.recurringGoalLifeBlockRelationships;
       case 'self':
-        return 'Саморазвитие';
+        return t.recurringGoalLifeBlockSelf;
       case 'education':
-        return 'Образование';
+        return t.recurringGoalLifeBlockEducation;
       case 'travel':
-        return 'Путешествия';
+        return t.recurringGoalLifeBlockTravel;
       case 'home':
-        return 'Дом';
+        return t.recurringGoalLifeBlockHome;
       default:
         return value;
     }
   }
 
-  String _horizonLabel(String value) {
+  String _horizonLabel(BuildContext context, String value) {
+    final t = AppLocalizations.of(context)!;
+
     switch (value.trim().toLowerCase()) {
       case 'tactical':
-        return 'Тактическая';
+        return t.recurringGoalHorizonTactical;
       case 'mid':
-        return 'Среднесрочная';
+        return t.recurringGoalHorizonMid;
       case 'long':
-        return 'Долгосрочная';
+        return t.recurringGoalHorizonLong;
       default:
         return value;
     }
@@ -309,22 +313,24 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   String _fmtTime(TimeOfDay t) =>
       MaterialLocalizations.of(context).formatTimeOfDay(t);
 
-  String _weekdayLabel(int weekday) {
+  String _weekdayLabel(BuildContext context, int weekday) {
+    final t = AppLocalizations.of(context)!;
+
     switch (weekday) {
       case DateTime.monday:
-        return 'Пн';
+        return t.recurringGoalWeekdayMon;
       case DateTime.tuesday:
-        return 'Вт';
+        return t.recurringGoalWeekdayTue;
       case DateTime.wednesday:
-        return 'Ср';
+        return t.recurringGoalWeekdayWed;
       case DateTime.thursday:
-        return 'Чт';
+        return t.recurringGoalWeekdayThu;
       case DateTime.friday:
-        return 'Пт';
+        return t.recurringGoalWeekdayFri;
       case DateTime.saturday:
-        return 'Сб';
+        return t.recurringGoalWeekdaySat;
       case DateTime.sunday:
-        return 'Вс';
+        return t.recurringGoalWeekdaySun;
       default:
         return '$weekday';
     }
@@ -398,7 +404,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
 
     if (_type == RecurrenceType.weekly && _weekdays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Выберите хотя бы один день недели')),
+        SnackBar(content: Text(t.recurringGoalSelectAtLeastOneWeekday)),
       );
       return;
     }
@@ -489,7 +495,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Регулярная цель',
+                        t.recurringGoalTitle,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: scheme.onSurface,
@@ -501,14 +507,14 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Создаст задачи с сегодняшнего дня до выбранной даты.',
+                  t.recurringGoalSubtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                NestSectionTitle('Детали'),
+                NestSectionTitle(t.recurringGoalDetailsSection),
                 NestCard(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -518,8 +524,8 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                         controller: _titleCtrl,
                         textInputAction: TextInputAction.next,
                         decoration: _input(
-                          label: 'Название цели',
-                          hint: 'Например: Тренировка',
+                          label: t.recurringGoalTitleLabel,
+                          hint: t.recurringGoalTitleHint,
                           icon: Icons.flag_outlined,
                         ),
                       ),
@@ -528,8 +534,8 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                         controller: _emotionCtrl,
                         textInputAction: TextInputAction.done,
                         decoration: _input(
-                          label: 'Эмоция',
-                          hint: 'Например: 💪 мотивация',
+                          label: t.recurringGoalEmotionLabel,
+                          hint: t.recurringGoalEmotionHint,
                           icon: Icons.emoji_emotions_outlined,
                         ),
                       ),
@@ -538,7 +544,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                 ),
 
                 const SizedBox(height: 2),
-                NestSectionTitle('Регулярность'),
+                NestSectionTitle(t.recurringGoalRegularitySection),
                 NestCard(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -549,14 +555,14 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                         runSpacing: 8,
                         children: [
                           ChoiceChip(
-                            label: const Text('Каждые N дней'),
+                            label: Text(t.recurringGoalEveryNDays),
                             selected: _type == RecurrenceType.everyNDays,
                             onSelected: (_) {
                               setState(() => _type = RecurrenceType.everyNDays);
                             },
                           ),
                           ChoiceChip(
-                            label: const Text('По дням недели'),
+                            label: Text(t.recurringGoalByWeekdays),
                             selected: _type == RecurrenceType.weekly,
                             onSelected: (_) {
                               setState(() => _type = RecurrenceType.weekly);
@@ -570,7 +576,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Интервал',
+                                t.recurringGoalIntervalLabel,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: scheme.onSurface,
@@ -585,7 +591,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                             ),
                             NestPill(
   leading: const Icon(Icons.repeat_rounded, size: 16),
-  text: '$_everyNDays дн.',
+  text: t.recurringGoalEveryNDaysShort(_everyNDays),
 ),
                             IconButton(
                               onPressed: _everyNDays < 14
@@ -610,7 +616,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                               DateTime.sunday,
                             ])
                               FilterChip(
-                                label: Text(_weekdayLabel(wd)),
+                                label: Text(_weekdayLabel(context, wd)),
                                 selected: _weekdays.contains(wd),
                                 onSelected: (_) {
                                   setState(() {
@@ -631,7 +637,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                             child: OutlinedButton.icon(
                               onPressed: _pickTime,
                               icon: const Icon(Icons.schedule_rounded),
-                              label: Text('Время: ${_fmtTime(_time)}'),
+                              label: Text(t.recurringGoalTimeButton(_fmtTime(_time))),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -639,7 +645,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                             child: OutlinedButton.icon(
                               onPressed: _pickUntil,
                               icon: const Icon(Icons.calendar_month_rounded),
-                              label: Text('До: ${_fmtDate(_until)}'),
+                              label: Text(t.recurringGoalUntilButton(_fmtDate(_until))),
                             ),
                           ),
                         ],
@@ -649,7 +655,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                 ),
 
                 const SizedBox(height: 2),
-                NestSectionTitle('Параметры'),
+                NestSectionTitle(t.recurringGoalParametersSection),
                 NestCard(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -661,45 +667,45 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                             child: DropdownButtonFormField<String>(
                               value: _lifeBlock,
                               decoration: _input(
-                                label: 'Блок жизни',
+                                label: t.recurringGoalLifeBlockLabel,
                                 icon: Icons.grid_view_rounded,
                               ),
-                              items: const [
+                              items: [
                                 DropdownMenuItem(
                                   value: 'health',
-                                  child: Text('Здоровье'),
+                                  child: Text(t.recurringGoalLifeBlockHealth),
                                 ),
                                 DropdownMenuItem(
                                   value: 'career',
-                                  child: Text('Карьера'),
+                                  child: Text(t.recurringGoalLifeBlockCareer),
                                 ),
                                 DropdownMenuItem(
                                   value: 'finance',
-                                  child: Text('Финансы'),
+                                  child: Text(t.recurringGoalLifeBlockFinance),
                                 ),
                                 DropdownMenuItem(
                                   value: 'relationships',
-                                  child: Text('Отношения'),
+                                  child: Text(t.recurringGoalLifeBlockRelationships),
                                 ),
                                 DropdownMenuItem(
                                   value: 'self',
-                                  child: Text('Саморазвитие'),
+                                  child: Text(t.recurringGoalLifeBlockSelf),
                                 ),
                                 DropdownMenuItem(
                                   value: 'education',
-                                  child: Text('Образование'),
+                                  child: Text(t.recurringGoalLifeBlockEducation),
                                 ),
                                 DropdownMenuItem(
                                   value: 'travel',
-                                  child: Text('Путешествия'),
+                                  child: Text(t.recurringGoalLifeBlockTravel),
                                 ),
                                 DropdownMenuItem(
                                   value: 'home',
-                                  child: Text('Дом'),
+                                  child: Text(t.recurringGoalLifeBlockHome),
                                 ),
                                 DropdownMenuItem(
                                   value: 'general',
-                                  child: Text('Общее'),
+                                  child: Text(t.recurringGoalLifeBlockGeneral),
                                 ),
                               ],
                               onChanged: (v) async {
@@ -721,7 +727,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                             child: DropdownButtonFormField<int>(
                               value: _importance,
                               decoration: _input(
-                                label: 'Важность',
+                                label: t.recurringGoalImportanceLabel,
                                 icon: Icons.local_fire_department_rounded,
                               ),
                               items: const [
@@ -742,19 +748,19 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                       DropdownButtonFormField<String?>(
                         value: dropdownGoalValue,
                         decoration: _input(
-                          label: 'Большая цель',
+                          label: t.recurringGoalUserGoalLabel,
                           icon: Icons.link_rounded,
                         ),
                         items: [
-                          const DropdownMenuItem<String?>(
+                          DropdownMenuItem<String?>(
                             value: null,
-                            child: Text('Без связи'),
+                            child: Text(t.recurringGoalNoLink),
                           ),
                           ..._userGoalsForSelectedBlock.map(
                             (g) => DropdownMenuItem<String?>(
                               value: g.id,
                               child: Text(
-                                '${g.title} · ${_horizonLabel(g.horizon)}',
+                                '${g.title} · ${_horizonLabel(context, g.horizon)}',
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -782,7 +788,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Загружаю цели для блока "${_lifeBlockLabel(_lifeBlock)}"...',
+                                t.recurringGoalLoadingUserGoals(_lifeBlockLabel(context, _lifeBlock)),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: scheme.onSurfaceVariant,
                                 ),
@@ -793,7 +799,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                       ] else if (_userGoalsForSelectedBlock.isEmpty) ...[
                         const SizedBox(height: 8),
                         Text(
-                          'Для блока "${_lifeBlockLabel(_lifeBlock)}" пока нет доступных целей.',
+                          t.recurringGoalNoUserGoalsForBlock(_lifeBlockLabel(context, _lifeBlock)),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -806,7 +812,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                         children: [
                           Expanded(
                             child: Text(
-                              'План часов',
+                              t.recurringGoalPlannedHoursLabel,
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: scheme.onSurface,
@@ -859,7 +865,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Будет создано задач: ${occurrences.length}',
+                                t.recurringGoalOccurrencesCount(occurrences.length),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: scheme.onSurface,
@@ -886,7 +892,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                     Expanded(
                       child: FilledButton(
                         onPressed: _submit,
-                        child: const Text('Создать'),
+                        child: Text(t.recurringGoalCreate),
                       ),
                     ),
                   ],

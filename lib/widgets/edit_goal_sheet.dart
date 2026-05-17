@@ -147,39 +147,43 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     return out;
   }
 
-  String _lifeBlockLabel(String value) {
+  String _lifeBlockLabel(BuildContext context, String value) {
+    final t = AppLocalizations.of(context)!;
+
     switch (_normalizeBlock(value)) {
       case 'general':
-        return 'General';
+        return t.lifeBlockGeneral;
       case 'health':
-        return 'Health';
+        return t.lifeBlockHealth;
       case 'career':
-        return 'Career';
+        return t.lifeBlockCareer;
       case 'finance':
-        return 'Finance';
+        return t.lifeBlockFinance;
       case 'relationships':
-        return 'Relationships';
+        return t.lifeBlockRelations;
       case 'self':
-        return 'Self';
+        return t.lifeBlockSelf;
       case 'education':
-        return 'Education';
+        return t.lifeBlockEducation;
       case 'travel':
-        return 'Travel';
+        return t.lifeBlockTravel;
       case 'home':
-        return 'Home';
+        return t.lifeBlockHome;
       default:
         return value;
     }
   }
 
-  String _horizonLabel(String value) {
+  String _horizonLabel(BuildContext context, String value) {
+    final t = AppLocalizations.of(context)!;
+
     switch (value.trim().toLowerCase()) {
       case 'tactical':
-        return 'Тактическая';
+        return t.horizonTactical;
       case 'mid':
-        return 'Среднесрочная';
+        return t.horizonMid;
       case 'long':
-        return 'Долгосрочная';
+        return t.horizonLong;
       default:
         return value;
     }
@@ -463,7 +467,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                NestSectionTitle('Дата и время'),
+                NestSectionTitle(t.editGoalSectionDateTime),
                 NestCard(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -474,7 +478,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           onTap: _pickDate,
                           child: InputDecorator(
                             decoration: _nestInput(
-                              label: 'Дата',
+                              label: t.commonDate,
                               icon: Icons.calendar_today_rounded,
                             ),
                             child: Text(
@@ -494,7 +498,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           onTap: _pickTime,
                           child: InputDecorator(
                             decoration: _nestInput(
-                              label: 'Время',
+                              label: t.editGoalStartTime,
                               icon: Icons.schedule_rounded,
                             ),
                             child: Text(
@@ -525,7 +529,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           .map(
                             (b) => DropdownMenuItem<String>(
                               value: b,
-                              child: Text(_lifeBlockLabel(b)),
+                              child: Text(_lifeBlockLabel(context, b)),
                             ),
                           )
                           .toList(),
@@ -547,7 +551,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                   ),
                 ],
                 const SizedBox(height: 2),
-                NestSectionTitle('Связь с большой целью'),
+                NestSectionTitle(t.editGoalSectionUserGoalLink),
                 NestCard(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -556,19 +560,19 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                       DropdownButtonFormField<String?>(
                         value: dropdownGoalValue,
                         decoration: _nestInput(
-                          label: 'Большая цель',
+                          label: t.userGoalLinkFieldLabel,
                           icon: Icons.link_rounded,
                         ),
                         items: [
-                          const DropdownMenuItem<String?>(
+                          DropdownMenuItem<String?>(
                             value: null,
-                            child: Text('Без связи'),
+                            child: Text(t.userGoalLinkNone),
                           ),
                           ..._userGoalsForSelectedBlock.map(
                             (g) => DropdownMenuItem<String?>(
                               value: g.id,
                               child: Text(
-                                '${g.title} · ${_horizonLabel(g.horizon)}',
+                                '${g.title} · ${_horizonLabel(context, g.horizon)}',
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -595,7 +599,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Загружаю цели для блока "${_lifeBlockLabel(_lifeBlock)}"...',
+                                t.userGoalLinkLoadingForBlock(_lifeBlockLabel(context, _lifeBlock)),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: scheme.onSurfaceVariant,
                                 ),
@@ -606,7 +610,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                       ] else if (_userGoalsForSelectedBlock.isEmpty) ...[
                         const SizedBox(height: 8),
                         Text(
-                          'Для блока "${_lifeBlockLabel(_lifeBlock)}" пока нет доступных целей.',
+                          t.userGoalLinkNoGoalsForBlock(_lifeBlockLabel(context, _lifeBlock)),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -673,7 +677,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Часы: ${_hours.toStringAsFixed(1)}',
+                            t.editGoalHoursValue(_hours.toStringAsFixed(1)),
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: scheme.onSurface,
@@ -682,7 +686,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           const Spacer(),
                           NestPill(
                             leading: const Icon(Icons.schedule_rounded, size: 16),
-                            text: '${_hours.toStringAsFixed(1)} ч',
+                            text: t.commonHoursShort(_hours.toStringAsFixed(1)),
                           ),
                         ],
                       ),

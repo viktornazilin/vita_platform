@@ -302,9 +302,12 @@ class _ReportsBodyState extends State<_ReportsBody> {
   static bool _isHighHabits(double completion) =>
       completion >= _habitHighThreshold;
 
-  static String _fmtHours(double v) => '${v.toStringAsFixed(1)} ч';
-  static String _fmtEuro(double v) => '${v.toStringAsFixed(0)} €';
-  static String _fmtAvgTime(double v) => '${v.toStringAsFixed(1)} ч';
+  static String _fmtHours(AppLocalizations t, double v) =>
+      t.reportsHoursValue(v.toStringAsFixed(1));
+  static String _fmtEuro(AppLocalizations t, double v) =>
+      t.reportsEuroValue(v.toStringAsFixed(0));
+  static String _fmtAvgTime(AppLocalizations t, double v) =>
+      t.reportsHoursValue(v.toStringAsFixed(1));
 
   FlTitlesData _axisTitles(ColorScheme cs) {
     return FlTitlesData(
@@ -418,11 +421,11 @@ class _ReportsBodyState extends State<_ReportsBody> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: cs.outlineVariant),
                       ),
-                      tabs: const [
-                        Tab(text: 'Сводка'),
-                        Tab(text: 'Связи'),
-                        Tab(text: 'Продуктивность'),
-                        Tab(text: 'Расходы'),
+                      tabs: [
+                        Tab(text: t.reportsTabSummary),
+                        Tab(text: t.reportsTabRelations),
+                        Tab(text: t.reportsTabProductivity),
+                        Tab(text: t.reportsTabExpenses),
                       ],
                     ),
                   ),
@@ -443,17 +446,17 @@ class _ReportsBodyState extends State<_ReportsBody> {
                       child: _KpiStrip(
                         children: [
                           ReportStatCard(
-                            title: 'Выполнено задач',
+                            title: t.reportsCompletedTasks,
                             value: completedGoals.toString(),
                             icon: Icons.check_circle_outline_rounded,
                           ),
                           ReportStatCard(
-                            title: 'Затрачено часов',
+                            title: t.reportsSpentHours,
                             value: totalHours.toStringAsFixed(1),
                             icon: Icons.timer_outlined,
                           ),
                           ReportStatCard(
-                            title: 'Эффективность',
+                            title: t.reportsEfficiency,
                             value: '${(efficiency * 100).round()}%',
                             icon: Icons.trending_up_rounded,
                           ),
@@ -469,7 +472,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                       child: KeyedSubtree(
                         key: _chartKey,
                         child: ReportSectionCard(
-                          title: 'Эффективность периода',
+                          title: t.reportsPeriodEfficiency,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -484,7 +487,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'План: ${planned.toStringAsFixed(1)} ч • Факт: ${totalHours.toStringAsFixed(1)} ч',
+                              t.reportsPlanFactHours(planned.toStringAsFixed(1), totalHours.toStringAsFixed(1)),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: cs.onSurfaceVariant,
                               ),
@@ -501,7 +504,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
                       child: ReportSectionCard(
-                        title: 'Дополнительные метрики',
+                        title: t.reportsAdditionalMetrics,
                         child: _extraMetrics(
                           context: context,
                           avgTimePerGoal: model.avgTimePerGoal,
@@ -535,13 +538,12 @@ class _ReportsBodyState extends State<_ReportsBody> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                       child: ReportSectionCard(
-                        title: 'Связи между показателями',
-                        child: const Column(
+                        title: t.reportsCorrelations,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _HintPill(
-                              text:
-                                  'Это не “научная корреляция”, а понятные сравнения по периодам.',
+                              text: t.reportsCorrelationsHint,
                             ),
                           ],
                         ),
@@ -560,8 +562,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
                         builder: (context, moodsSnap) {
                           if (moodsSnap.connectionState ==
                               ConnectionState.waiting) {
-                            return const ReportSectionCard(
-                              title: 'Настроение → Продуктивность',
+                            return ReportSectionCard(
+                              title: t.reportsMoodProductivity,
                               child: SizedBox(
                                 height: 120,
                                 child: Center(
@@ -573,8 +575,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
 
                           final moodsByDay = moodsSnap.data ?? {};
                           if (moodsByDay.isEmpty || byDayHours.isEmpty) {
-                            return const ReportSectionCard(
-                              title: 'Настроение → Продуктивность',
+                            return ReportSectionCard(
+                              title: t.reportsMoodProductivity,
                               child: ReportEmptyChart(),
                             );
                           }
@@ -596,15 +598,15 @@ class _ReportsBodyState extends State<_ReportsBody> {
                           final badAvg = _avg(bad);
 
                           return ReportSectionCard(
-                            title: 'Настроение → Продуктивность',
+                            title: t.reportsMoodProductivity,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _CompareRow(
-                                  leftLabel: 'Хорошее',
-                                  leftValue: _fmtHours(goodAvg),
-                                  rightLabel: 'Плохое',
-                                  rightValue: _fmtHours(badAvg),
+                                  leftLabel: t.reportsGoodMood,
+                                  leftValue: _fmtHours(t, goodAvg),
+                                  rightLabel: t.reportsBadMood,
+                                  rightValue: _fmtHours(t, badAvg),
                                 ),
                                 const SizedBox(height: 12),
                                 SizedBox(
@@ -744,8 +746,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
                         }(),
                         builder: (context, snap) {
                           if (snap.connectionState == ConnectionState.waiting) {
-                            return const ReportSectionCard(
-                              title: 'Привычки → Настроение / Продуктивность',
+                            return ReportSectionCard(
+                              title: t.reportsHabitsMoodProductivity,
                               child: SizedBox(
                                 height: 140,
                                 child: Center(
@@ -757,40 +759,39 @@ class _ReportsBodyState extends State<_ReportsBody> {
 
                           final p = snap.data;
                           if (p == null) {
-                            return const ReportSectionCard(
-                              title: 'Привычки → Настроение / Продуктивность',
+                            return ReportSectionCard(
+                              title: t.reportsHabitsMoodProductivity,
                               child: ReportEmptyChart(),
                             );
                           }
 
                           String moodText(double v) {
-                            if (v >= 0.4) return 'скорее 😊';
-                            if (v <= -0.4) return 'скорее 😞';
-                            return 'скорее 😐';
+                            if (v >= 0.4) return t.reportsMoodMostlyHappy;
+                            if (v <= -0.4) return t.reportsMoodMostlySad;
+                            return t.reportsMoodMostlyNeutral;
                           }
 
                           return ReportSectionCard(
-                            title: 'Привычки → Настроение / Продуктивность',
+                            title: t.reportsHabitsMoodProductivity,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _HintPill(
-                                  text:
-                                      'Сравнение дней, где выполнено ≥ ${(_habitHighThreshold * 100).round()}% привычек, и остальных дней.',
+                                  text: t.reportsHabitsComparisonHint((_habitHighThreshold * 100).round()),
                                 ),
                                 const SizedBox(height: 12),
                                 _CompareRow(
-                                  leftLabel: 'Настроение (high)',
+                                  leftLabel: t.reportsMoodHigh,
                                   leftValue: moodText(p.avgMoodHigh),
-                                  rightLabel: 'Настроение (low)',
+                                  rightLabel: t.reportsMoodLow,
                                   rightValue: moodText(p.avgMoodLow),
                                 ),
                                 const SizedBox(height: 10),
                                 _CompareRow(
-                                  leftLabel: 'Часы (high)',
-                                  leftValue: _fmtHours(p.avgHoursHigh),
-                                  rightLabel: 'Часы (low)',
-                                  rightValue: _fmtHours(p.avgHoursLow),
+                                  leftLabel: t.reportsHoursHigh,
+                                  leftValue: _fmtHours(t, p.avgHoursHigh),
+                                  rightLabel: t.reportsHoursLow,
+                                  rightValue: _fmtHours(t, p.avgHoursLow),
                                 ),
                                 const SizedBox(height: 12),
                                 SizedBox(
@@ -814,8 +815,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
                                                 ),
                                                 child: Text(
                                                   idx == 0
-                                                      ? 'habits high'
-                                                      : 'habits low',
+                                                      ? t.reportsHabitsHighShort
+                                                      : t.reportsHabitsLowShort,
                                                   style: TextStyle(
                                                     fontSize: 10,
                                                     color: cs.onSurfaceVariant,
@@ -884,8 +885,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
                         }(),
                         builder: (context, snap) {
                           if (snap.connectionState == ConnectionState.waiting) {
-                            return const ReportSectionCard(
-                              title: 'Ментальное состояние → Настроение',
+                            return ReportSectionCard(
+                              title: t.reportsMentalMood,
                               child: SizedBox(
                                 height: 140,
                                 child: Center(
@@ -897,8 +898,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
 
                           final p = snap.data;
                           if (p == null || p.mental.isEmpty) {
-                            return const ReportSectionCard(
-                              title: 'Ментальное состояние → Настроение',
+                            return ReportSectionCard(
+                              title: t.reportsMentalMood,
                               child: ReportEmptyChart(),
                             );
                           }
@@ -915,7 +916,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                           }
 
                           return ReportSectionCard(
-                            title: 'Ментальное состояние → Настроение',
+                            title: t.reportsMentalMood,
                             child: SizedBox(
                               height: 230,
                               child: LineChart(
@@ -1013,8 +1014,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
                         }(),
                         builder: (context, snap) {
                           if (snap.connectionState == ConnectionState.waiting) {
-                            return const ReportSectionCard(
-                              title: 'Расходы → Настроение',
+                            return ReportSectionCard(
+                              title: t.reportsExpensesMood,
                               child: SizedBox(
                                 height: 140,
                                 child: Center(
@@ -1028,8 +1029,8 @@ class _ReportsBodyState extends State<_ReportsBody> {
                           if (p == null ||
                               p.expensesByDay.isEmpty ||
                               p.moods.isEmpty) {
-                            return const ReportSectionCard(
-                              title: 'Расходы → Настроение',
+                            return ReportSectionCard(
+                              title: t.reportsExpensesMood,
                               child: ReportEmptyChart(),
                             );
                           }
@@ -1050,15 +1051,15 @@ class _ReportsBodyState extends State<_ReportsBody> {
                           final badAvg = _avg(bad);
 
                           return ReportSectionCard(
-                            title: 'Расходы → Настроение',
+                            title: t.reportsExpensesMood,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _CompareRow(
-                                  leftLabel: '😊 дни',
-                                  leftValue: _fmtEuro(goodAvg),
-                                  rightLabel: '😞 дни',
-                                  rightValue: _fmtEuro(badAvg),
+                                  leftLabel: t.reportsHappyDays,
+                                  leftValue: _fmtEuro(t, goodAvg),
+                                  rightLabel: t.reportsSadDays,
+                                  rightValue: _fmtEuro(t, badAvg),
                                 ),
                                 const SizedBox(height: 12),
                                 SizedBox(
@@ -1142,13 +1143,13 @@ class _ReportsBodyState extends State<_ReportsBody> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                       child: ReportSectionCard(
-                        title: 'Выполнено по блокам',
+                        title: t.reportsCompletedByBlocks,
                         child: doneByBlock.isEmpty
                             ? const ReportEmptyChart()
                             : _InteractiveIntDonutChart(
                                 data: doneByBlock,
-                                emptyLabel: 'Нет выполненных задач',
-                                valueFormatter: (value) => '$value задач',
+                                emptyLabel: t.reportsNoCompletedTasks,
+                                valueFormatter: (value) => t.reportsTasksCount(value),
                               ),
                       ),
                     ),
@@ -1159,7 +1160,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
                       child: ReportSectionCard(
-                        title: 'Затрачено часов по дням',
+                        title: t.reportsHoursByDays,
                         child: byDayHours.isEmpty
                             ? const ReportEmptyChart()
                             : SizedBox(
@@ -1186,7 +1187,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                                             children: [
                                               TextSpan(
                                                 text:
-                                                    '${rod.toY.toStringAsFixed(1)} ч',
+                                                    t.reportsHoursValue(rod.toY.toStringAsFixed(1)),
                                               ),
                                             ],
                                           );
@@ -1249,7 +1250,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                       child: ReportSectionCard(
-                        title: 'Расходы за период',
+                        title: t.reportsExpensesForPeriod,
                         child: FutureBuilder<ExpenseAnalytics>(
                           future: loadExpenseAnalytics(
                             model.range.start,
@@ -1286,7 +1287,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Всего: ${data.total.toStringAsFixed(2)} €',
+                                  t.reportsTotalEuro(data.total.toStringAsFixed(2)),
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: cs.onSurface,
@@ -1294,7 +1295,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Средний расход/день: ${avgExpense.toStringAsFixed(2)} €',
+                                  t.reportsAvgExpensePerDay(avgExpense.toStringAsFixed(2)),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: cs.onSurfaceVariant,
                                   ),
@@ -1302,9 +1303,9 @@ class _ReportsBodyState extends State<_ReportsBody> {
                                 const SizedBox(height: 14),
                                 _InteractiveDoubleDonutChart(
                                   data: data.byCategory,
-                                  emptyLabel: 'Нет расходов по категориям',
+                                  emptyLabel: t.reportsNoExpensesByCategory,
                                   valueFormatter: (value) =>
-                                      '${value.toStringAsFixed(2)} €',
+                                      t.reportsEuroValue(value.toStringAsFixed(2)),
                                 ),
                                 const SizedBox(height: 14),
                                 SizedBox(
@@ -1380,21 +1381,22 @@ class _ReportsBodyState extends State<_ReportsBody> {
   }) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final t = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ReportMetricRow(
-          label: 'Среднее время на задачу',
-          value: _fmtAvgTime(avgTimePerGoal),
+          label: t.reportsAvgTimePerGoal,
+          value: _fmtAvgTime(t, avgTimePerGoal),
         ),
         ReportMetricRow(
-          label: '«В срок» (условно)',
+          label: t.reportsOnTimeConditional,
           value: '$percentOnTime %',
         ),
         const SizedBox(height: 12),
         Text(
-          'ТОП-3 продуктивных дня',
+          t.reportsTop3ProductiveDays,
           style: tt.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
             color: cs.onSurface,
@@ -1405,7 +1407,7 @@ class _ReportsBodyState extends State<_ReportsBody> {
           (e) => Padding(
             padding: const EdgeInsets.only(bottom: 7),
             child: Text(
-              '• ${e.key.day}.${e.key.month}.${e.key.year}: ${e.value.toStringAsFixed(1)} ч',
+              t.reportsTopDayLine(e.key.day, e.key.month, e.key.year, e.value.toStringAsFixed(1)),
               style: tt.bodyMedium?.copyWith(
                 color: cs.onSurfaceVariant,
               ),
@@ -1460,14 +1462,14 @@ class _PeriodBar extends StatelessWidget {
   final VoidCallback onPrev;
   final VoidCallback onNext;
 
-  String _periodLabel(ReportPeriod p) {
+  String _periodLabel(AppLocalizations t, ReportPeriod p) {
     switch (p) {
       case ReportPeriod.day:
-        return 'День';
+        return t.reportsPeriodDay;
       case ReportPeriod.week:
-        return 'Нед';
+        return t.reportsPeriodWeekShort;
       case ReportPeriod.month:
-        return 'Мес';
+        return t.reportsPeriodMonthShort;
     }
   }
 
@@ -1504,7 +1506,7 @@ class _PeriodBar extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              _periodLabel(value),
+              _periodLabel(AppLocalizations.of(context)!, value),
               maxLines: 1,
               softWrap: false,
               overflow: TextOverflow.visible,
@@ -1524,6 +1526,7 @@ class _PeriodBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final t = AppLocalizations.of(context)!;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1550,7 +1553,7 @@ class _PeriodBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _CircleIconButton(
-              tooltip: 'Назад',
+              tooltip: t.commonBack,
               icon: Icons.chevron_left_rounded,
               onTap: onPrev,
             ),
@@ -1578,7 +1581,7 @@ class _PeriodBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             _CircleIconButton(
-              tooltip: 'Вперёд',
+              tooltip: t.reportsForward,
               icon: Icons.chevron_right_rounded,
               onTap: onNext,
             ),
@@ -1713,6 +1716,7 @@ class _InteractiveIntDonutChartState extends State<_InteractiveIntDonutChart> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context)!;
     final entries = _entries;
     final total = entries.fold<int>(0, (sum, e) => sum + e.value);
 
@@ -1779,7 +1783,7 @@ class _InteractiveIntDonutChartState extends State<_InteractiveIntDonutChart> {
           child: _touchedIndex < 0
               ? _ChartHintCard(
                   key: const ValueKey('hint'),
-                  text: 'Нажмите на сектор диаграммы',
+                  text: t.reportsTapChartSector,
                   icon: Icons.touch_app_rounded,
                 )
               : _SelectedChartValueCard(
@@ -1832,6 +1836,7 @@ class _InteractiveDoubleDonutChartState extends State<_InteractiveDoubleDonutCha
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context)!;
     final entries = _entries;
     final total = entries.fold<double>(0, (sum, e) => sum + e.value);
 
@@ -1898,7 +1903,7 @@ class _InteractiveDoubleDonutChartState extends State<_InteractiveDoubleDonutCha
           child: _touchedIndex < 0
               ? _ChartHintCard(
                   key: const ValueKey('hint'),
-                  text: 'Нажмите на сектор диаграммы',
+                  text: t.reportsTapChartSector,
                   icon: Icons.touch_app_rounded,
                 )
               : _SelectedChartValueCard(
@@ -2292,10 +2297,11 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
     }
   }
 
-  String _periodLabel(String? v) => switch ((v ?? '').toLowerCase()) {
-        'last_7_days' => 'за 7 дней',
-        'last_30_days' => 'за 30 дней',
-        'last_90_days' => 'за 90 дней',
+  String _periodLabel(BuildContext context, String? v) =>
+      switch ((v ?? '').toLowerCase()) {
+        'last_7_days' => AppLocalizations.of(context)!.reportsAiPeriod7Days,
+        'last_30_days' => AppLocalizations.of(context)!.reportsAiPeriod30Days,
+        'last_90_days' => AppLocalizations.of(context)!.reportsAiPeriod90Days,
         _ => '',
       };
 
@@ -2324,9 +2330,10 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final t = AppLocalizations.of(context)!;
 
     return ReportSectionCard(
-      title: 'Последние AI-инсайты',
+      title: t.reportsLatestAiInsights,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2341,13 +2348,13 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
               ),
               const Spacer(),
               IconButton(
-                tooltip: 'Обновить',
+                tooltip: t.commonRefresh,
                 onPressed: _loading ? null : _load,
                 icon: const Icon(Icons.refresh_rounded),
               ),
               if (widget.onOpenAll != null)
                 IconButton(
-                  tooltip: 'Открыть все',
+                  tooltip: t.reportsOpenAll,
                   onPressed: widget.onOpenAll,
                   icon: const Icon(Icons.open_in_new_rounded),
                 ),
@@ -2367,7 +2374,7 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
                   border: Border.all(color: cs.outlineVariant),
                 ),
                 child: Text(
-                  _periodLabel(_period),
+                  _periodLabel(context, _period),
                   style: tt.labelSmall?.copyWith(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
@@ -2393,7 +2400,7 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Не удалось загрузить инсайты',
+                    t.reportsInsightsLoadFailed,
                     style: tt.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: cs.onErrorContainer,
@@ -2414,14 +2421,14 @@ class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Пока нет сохранённых инсайтов.',
+                  t.reportsNoSavedInsights,
                   style: tt.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Открой «AI-инсайты» и запусти анализ — после этого они появятся здесь.',
+                  t.reportsRunAiInsightsHint,
                   style: tt.bodySmall?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),

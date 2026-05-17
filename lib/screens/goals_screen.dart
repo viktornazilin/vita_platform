@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../main.dart'; // dbRepo
+import '../l10n/app_localizations.dart';
 
 import '../models/goals_calendar_model.dart';
 import '../models/life_block.dart';
@@ -123,63 +124,92 @@ class _GoalsViewState extends State<_GoalsView> {
     return 1 + (diff ~/ 7);
   }
 
-  String _rusMonth(int m) {
-    const months = [
-      'Январь',
-      'Февраль',
-      'Март',
-      'Апрель',
-      'Май',
-      'Июнь',
-      'Июль',
-      'Август',
-      'Сентябрь',
-      'Октябрь',
-      'Ноябрь',
-      'Декабрь',
-    ];
-    return months[m - 1];
+  String _monthName(BuildContext context, int month) {
+    final l = AppLocalizations.of(context)!;
+    switch (month) {
+      case DateTime.january:
+        return l.monthJanuary;
+      case DateTime.february:
+        return l.monthFebruary;
+      case DateTime.march:
+        return l.monthMarch;
+      case DateTime.april:
+        return l.monthApril;
+      case DateTime.may:
+        return l.monthMay;
+      case DateTime.june:
+        return l.monthJune;
+      case DateTime.july:
+        return l.monthJuly;
+      case DateTime.august:
+        return l.monthAugust;
+      case DateTime.september:
+        return l.monthSeptember;
+      case DateTime.october:
+        return l.monthOctober;
+      case DateTime.november:
+        return l.monthNovember;
+      case DateTime.december:
+        return l.monthDecember;
+      default:
+        return '';
+    }
   }
 
-  String _headerWeek(DateTime anchor) =>
-      '${_rusMonth(anchor.month)} ${anchor.year}, неделя ${_isoWeekNumber(anchor)}';
+  String _headerWeek(BuildContext context, DateTime anchor) {
+    final l = AppLocalizations.of(context)!;
+    return l.goalsHeaderWeek(
+      _monthName(context, anchor.month),
+      anchor.year,
+      _isoWeekNumber(anchor),
+    );
+  }
 
-  String _formatModelMonthTitle(String modelTitle) {
+  String _formatModelMonthTitle(BuildContext context, String modelTitle) {
     final parts = modelTitle.split(' ');
     if (parts.length == 2) {
       final eng = parts[0].toLowerCase();
       final year = parts[1];
-      const map = {
-        'january': 'Январь',
-        'february': 'Февраль',
-        'march': 'Март',
-        'april': 'Апрель',
-        'may': 'Май',
-        'june': 'Июнь',
-        'july': 'Июль',
-        'august': 'Август',
-        'september': 'Сентябрь',
-        'october': 'Октябрь',
-        'november': 'Ноябрь',
-        'december': 'Декабрь',
+      final month = switch (eng) {
+        'january' => DateTime.january,
+        'february' => DateTime.february,
+        'march' => DateTime.march,
+        'april' => DateTime.april,
+        'may' => DateTime.may,
+        'june' => DateTime.june,
+        'july' => DateTime.july,
+        'august' => DateTime.august,
+        'september' => DateTime.september,
+        'october' => DateTime.october,
+        'november' => DateTime.november,
+        'december' => DateTime.december,
+        _ => null,
       };
-      final ru = map[eng];
-      if (ru != null) return '$ru $year';
+      if (month != null) return '${_monthName(context, month)} $year';
     }
     return modelTitle;
   }
 
-  String _weekdayShortRu(int weekday) {
-    const map = {
-      DateTime.monday: 'Пн',
-      DateTime.tuesday: 'Вт',
-      DateTime.wednesday: 'Ср',
-      DateTime.thursday: 'Чт',
-      DateTime.friday: 'Пт',
-      DateTime.saturday: 'Сб',
-      DateTime.sunday: 'Вс',
-    };
-    return map[weekday] ?? '';
+  String _weekdayShort(BuildContext context, int weekday) {
+    final l = AppLocalizations.of(context)!;
+    switch (weekday) {
+      case DateTime.monday:
+        return l.weekdayMonShort;
+      case DateTime.tuesday:
+        return l.weekdayTueShort;
+      case DateTime.wednesday:
+        return l.weekdayWedShort;
+      case DateTime.thursday:
+        return l.weekdayThuShort;
+      case DateTime.friday:
+        return l.weekdayFriShort;
+      case DateTime.saturday:
+        return l.weekdaySatShort;
+      case DateTime.sunday:
+        return l.weekdaySunShort;
+      default:
+        return '';
+    }
   }
 
   void _openDay(BuildContext context, DateTime date) {
@@ -391,24 +421,25 @@ class _GoalsViewState extends State<_GoalsView> {
     }
   }
 
-  String _blockTitle(String key) {
+  String _blockTitle(BuildContext context, String key) {
+    final l = AppLocalizations.of(context)!;
     switch (_normalizeBlockKey(key)) {
       case 'health':
-        return 'Здоровье';
+        return l.lifeBlockHealth;
       case 'career':
-        return 'Карьера';
+        return l.lifeBlockCareer;
       case 'family':
-        return 'Семья';
+        return l.lifeBlockFamily;
       case 'relations':
-        return 'Отношения';
+        return l.lifeBlockRelations;
       case 'education':
-        return 'Образование';
+        return l.lifeBlockEducation;
       case 'finance':
-        return 'Финансы';
+        return l.lifeBlockFinance;
       case 'hobby':
-        return 'Хобби';
+        return l.lifeBlockHobbies;
       case 'spirituality':
-        return 'Духовность';
+        return l.lifeBlockSpirituality;
       default:
         return key;
     }
@@ -444,6 +475,7 @@ class _GoalsViewState extends State<_GoalsView> {
 
   Future<void> _openQuickActions(BuildContext context) async {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -464,9 +496,9 @@ class _GoalsViewState extends State<_GoalsView> {
             ),
             child: Column(
               children: [
-                const _NestSheetHeader(
-                  title: 'Быстрые функции',
-                  subtitle: 'Добавление и планирование в один тап',
+                _NestSheetHeader(
+                  title: l.goalsQuickActionsTitle,
+                  subtitle: l.goalsQuickActionsSubtitle,
                 ),
                 const SizedBox(height: 14),
 
@@ -474,8 +506,8 @@ class _GoalsViewState extends State<_GoalsView> {
                 _NestQuickActionTile(
                   icon: Icons.bolt,
                   color: cs.primary,
-                  title: 'Массовое добавление за день',
-                  subtitle: 'Расходы + Доходы + Задачи + Настроение + Привычки',
+                  title: l.goalsMassAddTitle,
+                  subtitle: l.goalsMassAddSubtitle,
                   onTap: () async {
                     final goalsModel = GoalsCalendarModel();
                     await goalsModel.loadBlocks();
@@ -630,12 +662,13 @@ class _GoalsViewState extends State<_GoalsView> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Сохранено: '
-                            '${result.expenses.length} расход(ов), '
-                            '${result.incomes.length} доход(ов), '
-                            '${result.goals.length} задач(и), '
-                            '${result.habits.length} привыч(ек)'
-                            '${result.mood != null ? ', настроение' : ''}',
+                            l.goalsMassAddSaved(
+                              result.expenses.length,
+                              result.incomes.length,
+                              result.goals.length,
+                              result.habits.length,
+                              result.mood != null ? l.goalsMassAddMoodSuffix : '',
+                            ),
                           ),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -647,7 +680,7 @@ class _GoalsViewState extends State<_GoalsView> {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Ошибка сохранения: $e'),
+                          content: Text(l.goalsSaveError('$e')),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -661,8 +694,8 @@ class _GoalsViewState extends State<_GoalsView> {
                 _NestQuickActionTile(
                   icon: Icons.event_repeat_rounded,
                   color: cs.primaryContainer,
-                  title: 'Регулярная цель',
-                  subtitle: 'Планирование на несколько дней вперёд',
+                  title: l.goalsRecurringGoalTitle,
+                  subtitle: l.goalsRecurringGoalSubtitle,
                   onTap: () async {
                     final plan = await showModalBottomSheet<RecurringGoalPlan>(
                       context: ctx,
@@ -728,10 +761,8 @@ class _GoalsViewState extends State<_GoalsView> {
                     if (occurrences.isEmpty) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Нет дат для создания (проверь дедлайн/настройки).',
-                          ),
+                        SnackBar(
+                          content: Text(l.goalsRecurringNoDates),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -751,7 +782,7 @@ class _GoalsViewState extends State<_GoalsView> {
                         );
 
                         final desc = plan.plannedHours > 0
-                            ? 'План: ${plan.plannedHours.toStringAsFixed(plan.plannedHours.truncateToDouble() == plan.plannedHours ? 0 : 1)} ч'
+                            ? l.goalsPlanHoursDescription(plan.plannedHours.toStringAsFixed(plan.plannedHours.truncateToDouble() == plan.plannedHours ? 0 : 1))
                             : '';
 
                         await dbRepo.createGoal(
@@ -769,7 +800,7 @@ class _GoalsViewState extends State<_GoalsView> {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Создано целей: ${occurrences.length}'),
+                          content: Text(l.goalsCreatedCount(occurrences.length)),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -779,7 +810,7 @@ class _GoalsViewState extends State<_GoalsView> {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Не удалось создать серию целей: $e'),
+                          content: Text(l.goalsRecurringCreateError('$e')),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -792,9 +823,8 @@ class _GoalsViewState extends State<_GoalsView> {
                 _NestQuickActionTile(
                   icon: Icons.edit_note_rounded,
                   color: cs.secondaryContainer,
-                  title: 'Простое добавление задачи',
-                  subtitle:
-                      'Только название, время опционально, категория General',
+                  title: l.goalsSimpleTaskTitle,
+                  subtitle: l.goalsSimpleTaskSubtitle,
                   onTap: () async {
                     final result = await showModalBottomSheet<_QuickSimpleGoalResult>(
                       context: ctx,
@@ -846,8 +876,8 @@ class _GoalsViewState extends State<_GoalsView> {
 
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Задача создана'),
+                        SnackBar(
+                          content: Text(l.goalsTaskCreated),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -857,7 +887,7 @@ class _GoalsViewState extends State<_GoalsView> {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Ошибка создания задачи: $e'),
+                          content: Text(l.goalsTaskCreateError('$e')),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -871,8 +901,8 @@ class _GoalsViewState extends State<_GoalsView> {
                 _NestQuickActionTile(
                   icon: Icons.calendar_month_rounded,
                   color: cs.primary,
-                  title: 'Синхронизация с Google Calendar',
-                  subtitle: 'Экспорт целей в календарь',
+                  title: l.launcherGoogleCalendarSyncTitle,
+                  subtitle: l.launcherGoogleCalendarSyncSubtitle,
                   onTap: () async {
                     Navigator.pop(ctx);
 
@@ -907,6 +937,7 @@ class _GoalsViewState extends State<_GoalsView> {
     final m = context.watch<GoalsCalendarModel>();
     final profile = context.watch<ProfileModel>();
     final textTheme = Theme.of(context).textTheme;
+    final l = AppLocalizations.of(context)!;
 
     final mq = MediaQuery.of(context);
     final isCompact = mq.size.width < 600;
@@ -918,10 +949,10 @@ class _GoalsViewState extends State<_GoalsView> {
     final weekDays = _weekDays(_anchor);
 
     final String headerTitle = _view == _ViewMode.dashboard
-        ? _headerWeek(_anchor)
+        ? _headerWeek(context, _anchor)
         : (_calMode == _CalMode.week
-              ? _headerWeek(_anchor)
-              : _formatModelMonthTitle(m.monthTitle));
+              ? _headerWeek(context, _anchor)
+              : _formatModelMonthTitle(context, m.monthTitle));
 
     final List<DateTime> daysList = _calMode == _CalMode.week
         ? weekDays
@@ -967,7 +998,7 @@ class _GoalsViewState extends State<_GoalsView> {
         key: _addGoalKey,
         onPressed: () => _openQuickActions(context),
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Добавить'),
+        label: Text(l.commonAdd),
       ),
       body: NestBackground(
         child: CustomScrollView(
@@ -984,7 +1015,7 @@ class _GoalsViewState extends State<_GoalsView> {
                     children: [
                       _LifeBlockIconChip(
                         icon: Icons.apps_rounded,
-                        label: 'Все',
+                        label: l.goalsAll,
                         selected: m.selectedBlock == 'all',
                         onTap: () => m.setSelectedBlock('all'),
                       ),
@@ -997,7 +1028,7 @@ class _GoalsViewState extends State<_GoalsView> {
                               padding: const EdgeInsets.only(right: 10),
                               child: _LifeBlockIconChip(
                                 icon: _blockIcon(normalized),
-                                label: _blockTitle(normalized),
+                                label: _blockTitle(context, normalized),
                                 selected: m.selectedBlock == b,
                                 onTap: () => m.setSelectedBlock(b),
                               ),
@@ -1033,16 +1064,16 @@ class _GoalsViewState extends State<_GoalsView> {
 
                           SegmentedButton<_ViewMode>(
                             key: _modeSwitchKey,
-                            segments: const [
+                            segments: [
                               ButtonSegment(
                                 value: _ViewMode.dashboard,
-                                label: Text('Дашборд'),
-                                icon: Icon(Icons.dashboard_outlined),
+                                label: Text(l.goalsViewDashboard),
+                                icon: const Icon(Icons.dashboard_outlined),
                               ),
                               ButtonSegment(
                                 value: _ViewMode.calendar,
-                                label: Text('Календарь'),
-                                icon: Icon(Icons.calendar_month),
+                                label: Text(l.goalsViewCalendar),
+                                icon: const Icon(Icons.calendar_month),
                               ),
                             ],
                             selected: {_view},
@@ -1055,16 +1086,16 @@ class _GoalsViewState extends State<_GoalsView> {
                           if (_view == _ViewMode.calendar) ...[
                             const SizedBox(height: 8),
                             SegmentedButton<_CalMode>(
-                              segments: const [
+                              segments: [
                                 ButtonSegment(
                                   value: _CalMode.week,
-                                  label: Text('Неделя'),
-                                  icon: Icon(Icons.view_week),
+                                  label: Text(l.goalsViewWeek),
+                                  icon: const Icon(Icons.view_week),
                                 ),
                                 ButtonSegment(
                                   value: _CalMode.month,
-                                  label: Text('Месяц'),
-                                  icon: Icon(Icons.calendar_month),
+                                  label: Text(l.goalsViewMonth),
+                                  icon: const Icon(Icons.calendar_month),
                                 ),
                               ],
                               selected: {_calMode},
@@ -1141,15 +1172,15 @@ class _GoalsViewState extends State<_GoalsView> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Цели по сферам',
+                                  l.goalsByBlocksTitle,
                                   style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(fontWeight: FontWeight.w900),
                                 ),
                               ),
                               IconButton(
                                 tooltip: _showGoalsByBlock
-                                    ? 'Скрыть'
-                                    : 'Показать',
+                                    ? l.commonCollapse
+                                    : l.goalsShow,
                                 onPressed: () => setState(
                                   () => _showGoalsByBlock = !_showGoalsByBlock,
                                 ),
@@ -1185,7 +1216,7 @@ class _GoalsViewState extends State<_GoalsView> {
                             secondChild: Padding(
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
-                                'Скрыто. Нажми 👁 чтобы показать.',
+                                l.goalsByBlocksHiddenHint,
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       color: Theme.of(
@@ -1217,7 +1248,7 @@ class _GoalsViewState extends State<_GoalsView> {
                     padding: EdgeInsets.symmetric(horizontal: 12 + sidePad),
                     child: _DayRowCard(
                       date: d,
-                      weekday: _weekdayShortRu(d.weekday),
+                      weekday: _weekdayShort(context, d.weekday),
                       isToday: DateUtils.isSameDay(d, DateTime.now()),
                       progress01: p,
                       hours: hours,
@@ -1240,15 +1271,15 @@ class _GoalsViewState extends State<_GoalsView> {
                     horizontal: 12 + sidePad,
                     vertical: 6,
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      _Weekday('Пн'),
-                      _Weekday('Вт'),
-                      _Weekday('Ср'),
-                      _Weekday('Чт'),
-                      _Weekday('Пт'),
-                      _Weekday('Сб'),
-                      _Weekday('Вс'),
+                      _Weekday(l.weekdayMonShort),
+                      _Weekday(l.weekdayTueShort),
+                      _Weekday(l.weekdayWedShort),
+                      _Weekday(l.weekdayThuShort),
+                      _Weekday(l.weekdayFriShort),
+                      _Weekday(l.weekdaySatShort),
+                      _Weekday(l.weekdaySunShort),
                     ],
                   ),
                 ),
@@ -1366,8 +1397,8 @@ class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Введите название задачи'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.goalsEnterTaskTitle),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -1385,6 +1416,7 @@ class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     return SafeArea(
       top: false,
@@ -1419,10 +1451,10 @@ class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
                   child: Icon(Icons.edit_note_rounded, color: cs.primary),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Простое добавление задачи',
-                    style: TextStyle(
+                    l.goalsSimpleTaskTitle,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                     ),
@@ -1434,7 +1466,7 @@ class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Только название, время опционально. Категория по умолчанию — General.',
+                l.goalsSimpleTaskSheetSubtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: cs.onSurfaceVariant,
                 ),
@@ -1448,8 +1480,8 @@ class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
               inputFormatters: [
                 FilteringTextInputFormatter.deny(RegExp(r'^\s+')),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Название задачи',
+              decoration: InputDecoration(
+                labelText: l.goalsTaskTitleLabel,
               ),
             ),
             const SizedBox(height: 12),
@@ -1461,15 +1493,15 @@ class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
                     icon: const Icon(Icons.schedule_rounded),
                     label: Text(
                       _time == null
-                          ? 'Добавить время'
-                          : 'Время: ${MaterialLocalizations.of(context).formatTimeOfDay(_time!)}',
+                          ? l.goalsAddTime
+                          : l.goalsTimeValue(MaterialLocalizations.of(context).formatTimeOfDay(_time!)),
                     ),
                   ),
                 ),
                 if (_time != null) ...[
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'Убрать время',
+                    tooltip: l.goalsRemoveTime,
                     onPressed: () => setState(() => _time = null),
                     icon: const Icon(Icons.close_rounded),
                   ),
@@ -1482,7 +1514,7 @@ class _SimpleGoalSheetState extends State<_SimpleGoalSheet> {
               child: FilledButton.icon(
                 onPressed: _submit,
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Создать задачу'),
+                label: Text(l.goalsCreateTask),
               ),
             ),
           ],
@@ -1538,7 +1570,7 @@ class _WeekSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Итог недели',
+              AppLocalizations.of(context)!.goalsWeekSummaryTitle,
               style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
@@ -1554,11 +1586,11 @@ class _WeekSummaryCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '${weekHours.toStringAsFixed(1)} ч',
+                  AppLocalizations.of(context)!.goalsHoursShort(weekHours.toStringAsFixed(1)),
                   style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 Text(
-                  ' / ${weekTarget.toStringAsFixed(0)} ч',
+                  AppLocalizations.of(context)!.goalsHoursTargetSuffix(weekTarget.toStringAsFixed(0)),
                   style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                 ),
                 const Spacer(),
@@ -1632,7 +1664,7 @@ class _BlockStatPill extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${hours.toStringAsFixed(hours.truncateToDouble() == hours ? 0 : 1)}ч',
+            AppLocalizations.of(context)!.goalsHoursShortNoSpace(hours.toStringAsFixed(hours.truncateToDouble() == hours ? 0 : 1)),
             style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],
@@ -1719,13 +1751,13 @@ class _DayRowCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            '${hours.toStringAsFixed(1)}ч',
+                            AppLocalizations.of(context)!.goalsHoursShortNoSpace(hours.toStringAsFixed(1)),
                             style: tt.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           Text(
-                            ' / ${targetHours.toStringAsFixed(0)}ч',
+                            AppLocalizations.of(context)!.goalsHoursTargetSuffixNoSpace(targetHours.toStringAsFixed(0)),
                             style: tt.bodyMedium?.copyWith(
                               color: cs.onSurfaceVariant,
                             ),

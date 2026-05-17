@@ -1,6 +1,7 @@
 // lib/screens/profile/profile_right_column.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
@@ -16,6 +17,26 @@ import '../../widgets/nest/nest_sheet.dart';
 
 class ProfileRightColumn extends StatelessWidget {
   const ProfileRightColumn({super.key});
+
+  Future<void> _openLegalDocument(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+
+    try {
+      final ok = await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+        webOnlyWindowName: '_blank',
+      );
+
+      if (!ok && context.mounted) {
+        ProfileUi.snack(context, AppLocalizations.of(context)!.profileOpenLinkFailed);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ProfileUi.snack(context, AppLocalizations.of(context)!.profileOpenLinkFailed);
+      }
+    }
+  }
 
   Future<bool> _confirmDeleteAccount(BuildContext context) async {
     final l = AppLocalizations.of(context)!;
@@ -169,6 +190,8 @@ class ProfileRightColumn extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          _LegalDocumentsSection(onOpen: (url) => _openLegalDocument(context, url)),
         ] else ...[
           NestCard(
             padding: const EdgeInsets.all(12),
@@ -256,6 +279,10 @@ class ProfileRightColumn extends StatelessWidget {
 
           const SizedBox(height: 12),
 
+          _LegalDocumentsSection(onOpen: (url) => _openLegalDocument(context, url)),
+
+          const SizedBox(height: 12),
+
           Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: NestCard(
@@ -281,7 +308,7 @@ class ProfileRightColumn extends StatelessWidget {
                       ),
                 ),
                 subtitle: Text(
-                  'Удаление аккаунта',
+                  l.profileDangerZoneSubtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF2E4B5A).withOpacity(0.65),
@@ -335,27 +362,171 @@ class ProfileRightColumn extends StatelessWidget {
   }
 }
 
+
+class _LegalDocumentsSection extends StatelessWidget {
+  final ValueChanged<String> onOpen;
+
+  const _LegalDocumentsSection({required this.onOpen});
+
+
+  List<_LegalDocument> _documents(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return <_LegalDocument>[
+      _LegalDocument(
+        title: l.profileLegalPrivacyTitle,
+        subtitle: l.profileLegalPrivacySubtitle,
+        url: 'https://nest-landing-lemon.vercel.app/privacy',
+        icon: Icons.privacy_tip_outlined,
+      ),
+      _LegalDocument(
+        title: l.profileLegalDatenschutzTitle,
+        subtitle: l.profileLegalDatenschutzSubtitle,
+        url: 'https://nest-landing-lemon.vercel.app/datenschutz',
+        icon: Icons.shield_outlined,
+      ),
+      _LegalDocument(
+        title: l.profileLegalTermsTitle,
+        subtitle: l.profileLegalTermsSubtitle,
+        url: 'https://nest-landing-lemon.vercel.app/terms',
+        icon: Icons.description_outlined,
+      ),
+      _LegalDocument(
+        title: l.profileLegalImpressumTitle,
+        subtitle: l.profileLegalImpressumSubtitle,
+        url: 'https://nest-landing-lemon.vercel.app/impressum',
+        icon: Icons.info_outline_rounded,
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final l = AppLocalizations.of(context)!;
+    final documents = _documents(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NestSectionTitle(l.profileLegalDocumentsTitle),
+        const SizedBox(height: 10),
+        NestCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+                child: Text(
+                  l.profileLegalDocumentsSubtitle,
+                  style: tt.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF2E4B5A).withOpacity(0.72),
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              for (var i = 0; i < documents.length; i++) ...[
+                _LegalDocumentTile(
+                  document: documents[i],
+                  onTap: () => onOpen(documents[i].url),
+                ),
+                if (i != documents.length - 1) const Divider(height: 1),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LegalDocument {
+  final String title;
+  final String subtitle;
+  final String url;
+  final IconData icon;
+
+  const _LegalDocument({
+    required this.title,
+    required this.subtitle,
+    required this.url,
+    required this.icon,
+  });
+}
+
+class _LegalDocumentTile extends StatelessWidget {
+  final _LegalDocument document;
+  final VoidCallback onTap;
+
+  const _LegalDocumentTile({
+    required this.document,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: cs.primary.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cs.primary.withOpacity(0.16)),
+        ),
+        child: Icon(document.icon, size: 20, color: cs.primary),
+      ),
+      title: Text(
+        document.title,
+        style: tt.titleSmall?.copyWith(
+          fontWeight: FontWeight.w900,
+          color: const Color(0xFF2E4B5A),
+        ),
+      ),
+      subtitle: Text(
+        document.subtitle,
+        style: tt.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF2E4B5A).withOpacity(0.62),
+        ),
+      ),
+      trailing: Icon(
+        Icons.open_in_new_rounded,
+        size: 18,
+        color: cs.primary,
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
 class _LanguageDropdown extends StatelessWidget {
   final Locale? value;
   final ValueChanged<Locale?> onChanged;
 
   const _LanguageDropdown({required this.value, required this.onChanged});
 
-  String _label(Locale? l) {
-    if (l == null) return 'Системный';
+  String _label(BuildContext context, Locale? l) {
+    final t = AppLocalizations.of(context)!;
+    if (l == null) return t.settingsLanguageSystem;
     switch (l.languageCode) {
       case 'ru':
-        return 'Русский';
+        return t.settingsLanguageRussian;
       case 'en':
-        return 'English';
+        return t.settingsLanguageEnglish;
       case 'de':
-        return 'Deutsch';
+        return t.settingsLanguageGerman;
       case 'fr':
-        return 'Français';
+        return t.settingsLanguageFrench;
       case 'es':
-        return 'Español';
+        return t.settingsLanguageSpanish;
       case 'tr':
-        return 'Türkçe';
+        return t.settingsLanguageTurkish;
       default:
         return l.languageCode;
     }
@@ -399,7 +570,7 @@ class _LanguageDropdown extends StatelessWidget {
                 (loc) => DropdownMenuItem<Locale?>(
                   value: loc,
                   child: Text(
-                    _label(loc),
+                    _label(context, loc),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF2E4B5A),

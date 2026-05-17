@@ -452,7 +452,7 @@ class _KanbanDaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _sectionMeta(section);
+    final meta = _sectionMeta(context, section);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(26),
@@ -523,9 +523,9 @@ class _KanbanDaySection extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                _MiniCounter(label: 'Ост.', value: openGoals.length, accent: const Color(0xFFF59E0B)),
+                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanOpenShort, value: openGoals.length, accent: const Color(0xFFF59E0B)),
                                 const SizedBox(width: 6),
-                                _MiniCounter(label: 'Гот.', value: doneGoals.length, accent: const Color(0xFF22C55E)),
+                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanDoneShort, value: doneGoals.length, accent: const Color(0xFF22C55E)),
                               ],
                             ),
                           ),
@@ -582,16 +582,18 @@ class _KanbanBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final openColumn = _KanbanColumn(
-          title: 'В работе',
+          title: l.dayGoalsKanbanOpenTitle,
           subtitle: '${openGoals.length}',
           icon: Icons.bolt_rounded,
           accent: accent,
           goals: openGoals,
           doneColumn: false,
-          emptyText: 'Нет активных задач',
+          emptyText: l.dayGoalsKanbanOpenEmpty,
           onToggleGoal: onToggleGoal,
           onDelete: onDelete,
           onEdit: onEdit,
@@ -599,13 +601,13 @@ class _KanbanBoard extends StatelessWidget {
         );
 
         final doneColumn = _KanbanColumn(
-          title: 'Готово',
+          title: l.dayGoalsKanbanDoneTitle,
           subtitle: '${doneGoals.length}',
           icon: Icons.check_circle_rounded,
           accent: const Color(0xFF22C55E),
           goals: doneGoals,
           doneColumn: true,
-          emptyText: 'Пока пусто',
+          emptyText: l.dayGoalsKanbanDoneEmpty,
           onToggleGoal: onToggleGoal,
           onDelete: onDelete,
           onEdit: onEdit,
@@ -723,23 +725,29 @@ class _KanbanColumn extends StatelessWidget {
                 ...goals.map(
                   (goal) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: LongPressDraggable<Goal>(
+                    child: Draggable<Goal>(
                       data: goal,
+                      affinity: Axis.horizontal,
+                      dragAnchorStrategy: pointerDragAnchorStrategy,
                       feedback: Material(
                         color: Colors.transparent,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 180),
-                          child: _KanbanGoalCard(
-                            goal: goal,
-                            compact: true,
-                            onToggle: () {},
-                            onEdit: () {},
-                            onDelete: () {},
+                        child: Transform.scale(
+                          scale: 1.03,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 190),
+                            child: _KanbanGoalCard(
+                              goal: goal,
+                              compact: true,
+                              dragging: true,
+                              onToggle: () {},
+                              onEdit: () {},
+                              onDelete: () {},
+                            ),
                           ),
                         ),
                       ),
                       childWhenDragging: Opacity(
-                        opacity: 0.35,
+                        opacity: 0.28,
                         child: _KanbanGoalCard(
                           goal: goal,
                           onToggle: () => onToggleGoal(goal),
@@ -747,11 +755,14 @@ class _KanbanColumn extends StatelessWidget {
                           onDelete: () => onDelete(goal),
                         ),
                       ),
-                      child: _KanbanGoalCard(
-                        goal: goal,
-                        onToggle: () => onToggleGoal(goal),
-                        onEdit: () => onEdit(goal),
-                        onDelete: () => onDelete(goal),
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.move,
+                        child: _KanbanGoalCard(
+                          goal: goal,
+                          onToggle: () => onToggleGoal(goal),
+                          onEdit: () => onEdit(goal),
+                          onDelete: () => onDelete(goal),
+                        ),
                       ),
                     ),
                   ),
@@ -767,6 +778,7 @@ class _KanbanColumn extends StatelessWidget {
 class _KanbanGoalCard extends StatelessWidget {
   final Goal goal;
   final bool compact;
+  final bool dragging;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -777,6 +789,7 @@ class _KanbanGoalCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     this.compact = false,
+    this.dragging = false,
   });
 
   @override
@@ -790,13 +803,17 @@ class _KanbanGoalCard extends StatelessWidget {
         color: Colors.white.withOpacity(isDone ? 0.58 : 0.82),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDone ? const Color(0xFFD8EAD8) : const Color(0xFFD6E6F5),
+          color: dragging
+              ? const Color(0xFF3AA8E6).withOpacity(0.58)
+              : isDone
+                  ? const Color(0xFFD8EAD8)
+                  : const Color(0xFFD6E6F5),
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0F2B5B7A),
-            blurRadius: 14,
-            offset: Offset(0, 8),
+            color: dragging ? const Color(0x243AA8E6) : const Color(0x0F2B5B7A),
+            blurRadius: dragging ? 24 : 14,
+            offset: Offset(0, dragging ? 14 : 8),
           ),
         ],
       ),
@@ -851,9 +868,9 @@ class _KanbanGoalCard extends StatelessWidget {
               runSpacing: 6,
               children: [
                 _GoalChip(icon: Icons.schedule_rounded, label: time),
-                _GoalChip(icon: Icons.timer_rounded, label: '${goal.hours.toStringAsFixed(1)} ч'),
+                _GoalChip(icon: Icons.timer_rounded, label: AppLocalizations.of(context)!.dayGoalsHoursShort(goal.hours.toStringAsFixed(1))),
                 if (goal.lifeBlock.trim().isNotEmpty)
-                  _GoalChip(icon: Icons.grid_view_rounded, label: goal.lifeBlock),
+                  _GoalChip(icon: Icons.grid_view_rounded, label: _localizedLifeBlock(context, goal.lifeBlock)),
               ],
             ),
             const SizedBox(height: 6),
@@ -1015,23 +1032,24 @@ class _SectionMeta {
   });
 }
 
-_SectionMeta _sectionMeta(_DaySection section) {
+_SectionMeta _sectionMeta(BuildContext context, _DaySection section) {
+  final l = AppLocalizations.of(context)!;
   switch (section) {
     case _DaySection.morning:
-      return const _SectionMeta(
-        title: 'Утро',
+      return _SectionMeta(
+        title: l.dayGoalsSectionMorning,
         icon: Icons.wb_sunny_rounded,
         accent: Color(0xFFF59E0B),
       );
     case _DaySection.day:
-      return const _SectionMeta(
-        title: 'День',
+      return _SectionMeta(
+        title: l.dayGoalsSectionDay,
         icon: Icons.light_mode_rounded,
         accent: Color(0xFF3AA8E6),
       );
     case _DaySection.evening:
-      return const _SectionMeta(
-        title: 'Вечер',
+      return _SectionMeta(
+        title: l.dayGoalsSectionEvening,
         icon: Icons.nights_stay_rounded,
         accent: Color(0xFF7C83FD),
       );
@@ -1042,6 +1060,51 @@ String _formatGoalTime(DateTime dateTime) {
   final h = dateTime.hour.toString().padLeft(2, '0');
   final m = dateTime.minute.toString().padLeft(2, '0');
   return '$h:$m';
+}
+
+
+String _localizedLifeBlock(BuildContext context, String rawKey) {
+  final l = AppLocalizations.of(context)!;
+  final key = rawKey.trim().toLowerCase();
+
+  switch (key) {
+    case 'health':
+    case 'здоровье':
+      return l.lifeBlockHealth;
+    case 'career':
+    case 'work':
+    case 'карьера':
+      return l.lifeBlockCareer;
+    case 'family':
+    case 'семья':
+      return l.lifeBlockFamily;
+    case 'relations':
+    case 'relationship':
+    case 'relationships':
+    case 'отношения':
+      return l.lifeBlockRelations;
+    case 'education':
+    case 'study':
+    case 'обучение':
+    case 'образование':
+      return l.lifeBlockEducation;
+    case 'finance':
+    case 'finances':
+    case 'финансы':
+      return l.lifeBlockFinance;
+    case 'hobby':
+    case 'hobbies':
+    case 'хобби':
+      return l.lifeBlockHobbies;
+    case 'spirituality':
+    case 'spirit':
+    case 'духовность':
+      return l.lifeBlockSpirituality;
+    case 'general':
+      return l.lifeBlockGeneral;
+    default:
+      return rawKey;
+  }
 }
 
 class _DaySummaryCard extends StatelessWidget {
@@ -1084,7 +1147,7 @@ class _DaySummaryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Сводка дня',
+                AppLocalizations.of(context)!.dayGoalsSummaryTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF2E4B5A),
@@ -1092,7 +1155,7 @@ class _DaySummaryCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Держи фокус на главном и не перегружай день.',
+                AppLocalizations.of(context)!.dayGoalsSummarySubtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: const Color(0xFF587282),
                     ),
@@ -1113,7 +1176,7 @@ class _DaySummaryCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _SummaryStat(
-                      label: 'Всего',
+                      label: AppLocalizations.of(context)!.dayGoalsSummaryTotal,
                       value: '$totalGoals',
                       accent: const Color(0xFF3AA8E6),
                     ),
@@ -1121,7 +1184,7 @@ class _DaySummaryCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _SummaryStat(
-                      label: 'Готово',
+                      label: AppLocalizations.of(context)!.dayGoalsSummaryDone,
                       value: '$completedGoals',
                       accent: const Color(0xFF22C55E),
                     ),
@@ -1129,7 +1192,7 @@ class _DaySummaryCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _SummaryStat(
-                      label: 'Осталось',
+                      label: AppLocalizations.of(context)!.dayGoalsSummaryRemaining,
                       value: '$remainingGoals',
                       accent: const Color(0xFFF59E0B),
                     ),
@@ -1213,7 +1276,7 @@ class _HoursPill extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            'Осталось часов: ${hours.toStringAsFixed(1)}',
+            AppLocalizations.of(context)!.dayGoalsRemainingHours(hours.toStringAsFixed(1)),
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF385262),
@@ -1254,7 +1317,7 @@ class _HideCompletedToggle extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Скрыть выполненные',
+              AppLocalizations.of(context)!.dayGoalsHideCompleted,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF2E4B5A),
@@ -1328,7 +1391,7 @@ class _NestEmptyState extends StatelessWidget {
 
   const _NestEmptyState({
     String? message,
-  }) : message = message ?? 'На этот день пока нет целей';
+  }) : message = message ?? '';
 
   @override
   Widget build(BuildContext context) {
@@ -1349,7 +1412,7 @@ class _NestEmptyState extends StatelessWidget {
           ],
         ),
         child: Text(
-          message,
+          message.trim().isEmpty ? AppLocalizations.of(context)!.dayGoalsEmpty : message,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,

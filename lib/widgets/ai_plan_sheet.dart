@@ -1,6 +1,8 @@
 // lib/widgets/ai_plan_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../main.dart'; // dbRepo
 
@@ -49,6 +51,9 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
   bool _applying = false;
   String? _error;
 
+  bool _checkingConsent = true;
+  bool _aiConsentGranted = false;
+
   List<_PlanItem> _items = [];
 
   DateTime? _createdAt;
@@ -59,12 +64,34 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
   @override
   void initState() {
     super.initState();
-    _run(generateFresh: true, showSnack: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    final ok = await _ensureAiProcessingConsent();
+    if (!mounted) return;
+
+    if (!ok) {
+      setState(() {
+        _checkingConsent = false;
+        _loading = false;
+        _aiConsentGranted = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _checkingConsent = false;
+      _aiConsentGranted = true;
+    });
+
+    await _run(generateFresh: true, showSnack: false);
   }
 
   String get _horizonValue => _horizon == _PlanHorizon.week ? 'week' : 'month';
 
-  String get _horizonLabel => _horizon == _PlanHorizon.week ? 'Неделя' : 'Месяц';
+  String _horizonLabel(AppLocalizations l) =>
+      _horizon == _PlanHorizon.week ? l.goalsViewWeek : l.goalsViewMonth;
 
   DateTime get _periodStart => DateTime(
         widget.date.year,
@@ -83,8 +110,154 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
   String _isoDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+
+  Future<bool> _ensureAiProcessingConsent({bool forceDialog = false}) async {
+    if (!mounted) return false;
+
+    try {
+      final alreadyAccepted = await _hasStoredAiProcessingConsent();
+      if (!mounted) return false;
+
+      if (alreadyAccepted && !forceDialog) {
+        setState(() => _aiConsentGranted = true);
+        return true;
+      }
+
+      final accepted = await _showAiProcessingConsentDialog();
+      if (accepted != true) {
+        if (mounted) setState(() => _aiConsentGranted = false);
+        return false;
+      }
+
+      await _saveAiProcessingConsent();
+
+      if (!mounted) return false;
+      setState(() => _aiConsentGranted = true);
+
+      final l = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.aiPlanConsentSaved)),
+      );
+
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      final l = AppLocalizations.of(context)!;
+      setState(() {
+        _error = l.aiPlanConsentCheckFailed(e.toString());
+      });
+      return false;
+    }
+  }
+
+  Future<bool> _hasStoredAiProcessingConsent() async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id ?? dbRepo.uid;
+
+    if (userId.trim().isEmpty) return false;
+
+    final row = await client
+        .from('users')
+        .select('ai_processing_consent')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (row == null) return false;
+    return row['ai_processing_consent'] == true;
+  }
+
+  Future<void> _saveAiProcessingConsent() async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id ?? dbRepo.uid;
+
+    if (userId.trim().isEmpty) {
+      throw Exception('User is not authenticated');
+    }
+
+    await client.from('users').update({
+      'ai_processing_consent': true,
+      'ai_processing_consent_at': DateTime.now().toUtc().toIso8601String(),
+      'ai_processing_consent_version': '2026-05-17',
+    }).eq('id', userId);
+  }
+
+  Future<bool?> _showAiProcessingConsentDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final tt = Theme.of(ctx).textTheme;
+        final cs = Theme.of(ctx).colorScheme;
+        final l = AppLocalizations.of(ctx)!;
+
+        return AlertDialog(
+          title: Text(
+            l.aiPlanConsentTitle,
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.aiPlanConsentBody,
+                  style: tt.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l.aiPlanConsentDeclineBody,
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _AiConsentLegalLinks(onOpen: _openLegalUrl),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l.aiPlanConsentNotNow),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.check_rounded),
+              label: Text(l.aiPlanConsentAgree),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openLegalUrl(String url) async {
+    final uri = Uri.parse(url);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      final l = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.aiPlanOpenLinkFailed(url))),
+      );
+    }
+  }
+
   Future<void> _run({required bool generateFresh, required bool showSnack}) async {
     if (!mounted) return;
+
+    if (!_aiConsentGranted) {
+      final ok = await _ensureAiProcessingConsent();
+      if (!mounted) return;
+      if (!ok) {
+        setState(() {
+          _checkingConsent = false;
+          _loading = false;
+        });
+        return;
+      }
+    }
 
     setState(() {
       _loading = true;
@@ -103,7 +276,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
           setState(() => _loading = false);
           if (showSnack && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('AI-план обновлён')),
+              SnackBar(content: Text(AppLocalizations.of(context)!.aiPlanUpdated)),
             );
           }
           return;
@@ -117,8 +290,8 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
 
       if (showSnack && _items.isEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('План пуст. Проверь Edge Function ai-plan.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.aiPlanEmptyEdgeFunction),
           ),
         );
       }
@@ -288,11 +461,12 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
     return DateTime.tryParse(v.toString())?.toLocal();
   }
 
-  String _desc(_PlanItem it) {
+  String _desc(BuildContext context, _PlanItem it) {
+    final l = AppLocalizations.of(context)!;
     final parts = <String>[];
     if (it.lifeBlock.trim().isNotEmpty) parts.add(it.lifeBlock.trim());
-    if (it.hours > 0) parts.add('${it.hours.toStringAsFixed(1)} ч');
-    parts.add('важность ${it.importance}/5');
+    if (it.hours > 0) parts.add(l.aiPlanHoursShort(it.hours.toStringAsFixed(1)));
+    parts.add(l.aiPlanImportanceMeta(it.importance));
     if (it.startTime != null) {
       final d = it.startTime!;
       final dd = d.day.toString().padLeft(2, '0');
@@ -300,7 +474,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
       parts.add('$dd.$mm');
     }
     if ((it.userGoalId ?? '').trim().isNotEmpty) {
-      parts.add('связано с целью');
+      parts.add(l.aiPlanLinkedToGoal);
     }
     if (it.recurring != null && it.recurring!.trim().isNotEmpty) {
       parts.add(it.recurring!.trim());
@@ -315,7 +489,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
     if (accepted.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Нечего применять — выбери пункты')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.aiPlanNothingToApply)),
       );
       return;
     }
@@ -341,7 +515,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
 
         final payload = <String, dynamic>{
           'user_id': userId,
-          'title': it.title.trim().isEmpty ? 'AI-задача' : it.title.trim(),
+          'title': it.title.trim().isEmpty ? AppLocalizations.of(context)!.aiPlanDefaultTaskTitle : it.title.trim(),
           'description': (it.note ?? '').trim(),
           'deadline': start.toUtc().toIso8601String(),
           'life_block': safeLifeBlock.isEmpty ? 'other' : safeLifeBlock,
@@ -376,12 +550,12 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Добавлено задач: ${accepted.length}')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.aiPlanTasksAdded(accepted.length))),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = _friendlyApplyError(e);
+        _error = _friendlyApplyError(AppLocalizations.of(context)!, e);
         _loading = false;
         _applying = false;
       });
@@ -395,10 +569,10 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
     return int.tryParse('${value ?? ''}') ?? fallback;
   }
 
-  String _friendlyApplyError(Object e) {
+  String _friendlyApplyError(AppLocalizations l, Object e) {
     final text = e.toString();
     if (text.contains("type 'bool'") && text.contains("int")) {
-      return 'Ошибка типа данных при добавлении задач: одно из полей пришло как true/false вместо числа. Обнови файл ещё раз: в этой версии bool-значения дополнительно приводятся к числам, а поле is_completed больше не отправляется вручную.';
+      return l.aiPlanApplyTypeError;
     }
     return text;
   }
@@ -425,6 +599,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final acceptedCount = _items.where((x) => x.accepted).length;
 
@@ -442,14 +617,16 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'AI-план на ${_horizon == _PlanHorizon.week ? 'неделю' : 'месяц'}',
+                      _horizon == _PlanHorizon.week
+                          ? l.aiPlanTitleWeek
+                          : l.aiPlanTitleMonth,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Сгенерировать заново',
+                    tooltip: l.aiPlanRegenerateTooltip,
                     onPressed: _loading || _applying
                         ? null
                         : () => _run(generateFresh: true, showSnack: true),
@@ -464,16 +641,16 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                 children: [
                   Expanded(
                     child: SegmentedButton<_PlanHorizon>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: _PlanHorizon.week,
-                          label: Text('Неделя'),
-                          icon: Icon(Icons.view_week_rounded),
+                          label: Text(l.goalsViewWeek),
+                          icon: const Icon(Icons.view_week_rounded),
                         ),
                         ButtonSegment(
                           value: _PlanHorizon.month,
-                          label: Text('Месяц'),
-                          icon: Icon(Icons.calendar_month_rounded),
+                          label: Text(l.goalsViewMonth),
+                          icon: const Icon(Icons.calendar_month_rounded),
                         ),
                       ],
                       selected: {_horizon},
@@ -495,7 +672,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                     children: [
                       if (_createdAt != null)
                         Text(
-                          'Обновлено: ${MaterialLocalizations.of(context).formatShortDate(_createdAt!)}',
+                          l.aiPlanUpdatedAt(MaterialLocalizations.of(context).formatShortDate(_createdAt!)),
                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                 color: cs.onSurfaceVariant,
                               ),
@@ -522,7 +699,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                   ),
                 ),
 
-              if (_loading)
+              if (_checkingConsent)
                 SizedBox(
                   height: 180,
                   child: Center(
@@ -531,7 +708,33 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                       children: [
                         const CircularProgressIndicator.adaptive(),
                         const SizedBox(height: 14),
-                        Text(_applying ? 'Добавляю задачи...' : 'Генерирую AI-план...'),
+                        Text(l.aiPlanCheckingConsent),
+                      ],
+                    ),
+                  ),
+                )
+              else if (!_aiConsentGranted)
+                _ConsentRequiredBox(
+                  onAccept: () async {
+                    setState(() => _checkingConsent = true);
+                    final ok = await _ensureAiProcessingConsent(forceDialog: true);
+                    if (!mounted) return;
+                    setState(() => _checkingConsent = false);
+                    if (ok) {
+                      await _run(generateFresh: true, showSnack: false);
+                    }
+                  },
+                )
+              else if (_loading)
+                SizedBox(
+                  height: 180,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator.adaptive(),
+                        const SizedBox(height: 14),
+                        Text(_applying ? l.aiPlanApplyingTasks : l.aiPlanGenerating),
                       ],
                     ),
                   ),
@@ -555,7 +758,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                       final it = _items[i];
                       return _PlanCard(
                         item: it,
-                        description: _desc(it),
+                        description: _desc(context, it),
                         onChanged: () => setState(() {}),
                       );
                     },
@@ -569,7 +772,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _loading ? null : () => Navigator.pop(context),
-                      child: const Text('Закрыть'),
+                      child: Text(l.commonClose),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -577,7 +780,7 @@ class _AiPlanSheetState extends State<AiPlanSheet> {
                     child: FilledButton.icon(
                       onPressed: _loading || _items.isEmpty ? null : _applyAccepted,
                       icon: const Icon(Icons.check_rounded),
-                      label: Text('Применить ($acceptedCount)'),
+                      label: Text(l.aiPlanApplyCount(acceptedCount)),
                     ),
                   ),
                 ],
@@ -608,6 +811,7 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
     final safeLifeBlock = _PlanItem.normalizeLifeBlock(item.lifeBlock);
 
     return Container(
@@ -638,7 +842,7 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: item.accepted ? 'Отклонить' : 'Принять',
+                tooltip: item.accepted ? l.aiPlanRejectTooltip : l.aiPlanAcceptTooltip,
                 onPressed: () {
                   item.accepted = !item.accepted;
                   onChanged();
@@ -667,12 +871,12 @@ class _PlanCard extends StatelessWidget {
                 child: DropdownButtonFormField<String>(
                   value: safeLifeBlock.isEmpty ? null : safeLifeBlock,
                   isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Блок',
+                  decoration: InputDecoration(
+                    labelText: l.aiPlanFieldBlock,
                     isDense: true,
                   ),
                   items: _PlanItem.lifeBlocks
-                      .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                      .map((b) => DropdownMenuItem(value: b, child: Text(_localizedLifeBlock(l, b))))
                       .toList(),
                   onChanged: (v) {
                     item.lifeBlock = _PlanItem.normalizeLifeBlock(v ?? '');
@@ -700,8 +904,8 @@ class _PlanCard extends StatelessWidget {
                 width: 135,
                 child: DropdownButtonFormField<int>(
                   value: item.importance.clamp(1, 5).toInt(),
-                  decoration: const InputDecoration(
-                    labelText: 'Важность',
+                  decoration: InputDecoration(
+                    labelText: l.aiPlanFieldImportance,
                     isDense: true,
                   ),
                   items: const [1, 2, 3, 4, 5]
@@ -730,6 +934,100 @@ class _PlanCard extends StatelessWidget {
   }
 }
 
+
+class _ConsentRequiredBox extends StatelessWidget {
+  const _ConsentRequiredBox({required this.onAccept});
+
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.primary.withOpacity(0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.aiPlanConsentRequiredTitle,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            AppLocalizations.of(context)!.aiPlanConsentRequiredBody,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: onAccept,
+            icon: const Icon(Icons.verified_user_rounded),
+            label: Text(AppLocalizations.of(context)!.aiPlanGiveConsent),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiConsentLegalLinks extends StatelessWidget {
+  const _AiConsentLegalLinks({required this.onOpen});
+
+  final Future<void> Function(String url) onOpen;
+
+  static const _privacyUrl = 'https://nest-landing-lemon.vercel.app/privacy';
+  static const _datenschutzUrl = 'https://nest-landing-lemon.vercel.app/datenschutz';
+  static const _termsUrl = 'https://nest-landing-lemon.vercel.app/terms';
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
+
+    Widget link(String label, String url) {
+      return InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => onOpen(url),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: cs.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: cs.primary.withOpacity(0.16)),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        link(l.aiPlanPrivacyPolicy, _privacyUrl),
+        link(l.aiPlanDatenschutz, _datenschutzUrl),
+        link(l.aiPlanTermsOfUse, _termsUrl),
+      ],
+    );
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Helper widgets
 // -----------------------------------------------------------------------------
@@ -754,14 +1052,14 @@ class _EmptyBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'План пока пуст',
+            AppLocalizations.of(context)!.aiPlanEmptyTitle,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Нажми кнопку ниже, чтобы сгенерировать план на основе AI-инсайтов, целей, задач, привычек и настроения.',
+            AppLocalizations.of(context)!.aiPlanEmptyBody,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: cs.onSurfaceVariant,
                 ),
@@ -770,7 +1068,7 @@ class _EmptyBox extends StatelessWidget {
           FilledButton.icon(
             onPressed: onGenerate,
             icon: const Icon(Icons.auto_awesome_rounded),
-            label: const Text('Сгенерировать план'),
+            label: Text(AppLocalizations.of(context)!.aiPlanGeneratePlan),
           ),
         ],
       ),
@@ -799,7 +1097,7 @@ class _ErrorBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Ошибка',
+            AppLocalizations.of(context)!.commonError,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                   color: cs.onErrorContainer,
@@ -820,7 +1118,7 @@ class _ErrorBox extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Повторить'),
+              label: Text(AppLocalizations.of(context)!.commonRetry),
             ),
           ),
         ],
@@ -870,10 +1168,10 @@ class _HoursFieldState extends State<_HoursField> {
     return TextFormField(
       controller: _ctrl,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: const InputDecoration(
-        labelText: 'Часы',
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)!.aiPlanFieldHours,
         isDense: true,
-        prefixIcon: Icon(Icons.timer_outlined),
+        prefixIcon: const Icon(Icons.timer_outlined),
       ),
       onChanged: (t) {
         final v = double.tryParse(t.replaceAll(',', '.')) ?? 0.0;
@@ -893,26 +1191,28 @@ class _RecurringControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final values = <String?>[null, 'daily', 'weekly', 'weekdays'];
 
+    final l = AppLocalizations.of(context)!;
+
     String label(String? v) {
       switch (v) {
         case null:
-          return 'Без повтора';
+          return l.aiPlanRepeatNone;
         case 'daily':
-          return 'Каждый день';
+          return l.aiPlanRepeatDaily;
         case 'weekdays':
-          return 'По будням';
+          return l.aiPlanRepeatWeekdays;
         case 'weekly':
-          return 'Раз в неделю';
+          return l.aiPlanRepeatWeekly;
         default:
-          return 'Без повтора';
+          return l.aiPlanRepeatNone;
       }
     }
 
     return DropdownButtonFormField<String?>(
       value: values.contains(item.recurring) ? item.recurring : null,
       isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'Повтор',
+      decoration: InputDecoration(
+        labelText: l.aiPlanFieldRepeat,
         isDense: true,
       ),
       items: values
@@ -928,6 +1228,30 @@ class _RecurringControls extends StatelessWidget {
         onChanged();
       },
     );
+  }
+}
+
+
+String _localizedLifeBlock(AppLocalizations l, String key) {
+  switch (key.trim().toLowerCase()) {
+    case 'health':
+      return l.lifeBlockHealth;
+    case 'career':
+      return l.lifeBlockCareer;
+    case 'family':
+      return l.lifeBlockFamily;
+    case 'finance':
+      return l.lifeBlockFinance;
+    case 'education':
+      return l.lifeBlockEducation;
+    case 'hobbies':
+      return l.lifeBlockHobbies;
+    case 'general':
+      return l.lifeBlockGeneral;
+    case 'other':
+      return l.aiPlanLifeBlockOther;
+    default:
+      return key;
   }
 }
 

@@ -237,29 +237,30 @@ class _WebNotificationsCardState extends State<_WebNotificationsCard> {
       hour: _hour,
       minute: _minute,
       title: l.profileWebNotificationsEveningTitle,
-      // body пока не вынес в ключи (ты не просил) — оставляю как было
-      body: 'Отметь привычки и подведи итоги дня 👌',
+      body: l.profileWebNotificationsEveningBody,
     );
   }
 
   Future<void> _requestPermission() async {
+    final l = AppLocalizations.of(context)!;
     final ok = await webNotifs.requestPermission();
     if (!mounted) return;
 
     if (!ok) {
       ProfileUi.snack(
         context,
-        'Разрешение не выдано. Проверь настройки уведомлений в браузере.',
+        l.profileWebNotificationsPermissionDeniedToast,
       );
       return;
     }
 
-    ProfileUi.snack(context, 'Уведомления в браузере разрешены ✅');
+    ProfileUi.snack(context, l.profileWebNotificationsPermissionGrantedToast);
     // если включено — сразу применим (теперь покажется, когда наступит время)
     await _apply();
   }
 
   Future<void> _pickTime() async {
+    final l = AppLocalizations.of(context)!;
     final t = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: _hour, minute: _minute),
@@ -275,7 +276,7 @@ class _WebNotificationsCardState extends State<_WebNotificationsCard> {
     await _apply();
 
     if (!mounted) return;
-    ProfileUi.snack(context, 'Время уведомления: ${_hhmm()}');
+    ProfileUi.snack(context, l.profileWebNotificationsTimeChangedToast(_hhmm()));
   }
 
   @override
@@ -287,14 +288,14 @@ class _WebNotificationsCardState extends State<_WebNotificationsCard> {
       return NestCard(
         padding: const EdgeInsets.all(14),
         child: Row(
-          children: const [
-            SizedBox(
+          children: [
+            const SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 10),
-            Text('Загрузка настроек...'),
+            const SizedBox(width: 10),
+            Text(l.profileWebNotificationsLoadingSettings),
           ],
         ),
       );
@@ -327,10 +328,10 @@ class _WebNotificationsCardState extends State<_WebNotificationsCard> {
               if (v) {
                 ProfileUi.snack(
                   context,
-                  'Включено. Не забудь разрешить уведомления в браузере.',
+                  l.profileWebNotificationsEnabledToast,
                 );
               } else {
-                ProfileUi.snack(context, 'Выключено.');
+                ProfileUi.snack(context, l.profileWebNotificationsDisabledToast);
               }
             },
           ),

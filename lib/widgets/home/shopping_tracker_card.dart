@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../services/home_trackers_repo.dart';
 import '../report_section_card.dart';
@@ -39,10 +40,21 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
     }
   }
 
+  String _formatDate(DateTime date) {
+    final dd = date.day.toString().padLeft(2, '0');
+    final mm = date.month.toString().padLeft(2, '0');
+    return '$dd.$mm.${date.year}';
+  }
+
+  String _dueDateLabel(AppLocalizations l, DateTime date) {
+    return l.shoppingDueDatePrefix(_formatDate(date));
+  }
+
   Future<void> _copyBasket() async {
+    final l = AppLocalizations.of(context)!;
     final basket = _items.where((e) => !e.isWishlist).toList();
     final text = [
-      '🛒 Список покупок\n',
+      '${l.shoppingBasketCopyHeader}\n',
       ...basket.map((e) {
         final buffer = StringBuffer();
         buffer.writeln('• ${e.title}${e.price > 0 ? ' — ${e.price.toStringAsFixed(2)} €' : ''}');
@@ -50,11 +62,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
           buffer.writeln('  🏬 ${e.storeName}');
         }
         if (e.dueDate != null) {
-          buffer.writeln(
-            '  📅 до ${e.dueDate!.day.toString().padLeft(2, '0')}.'
-            '${e.dueDate!.month.toString().padLeft(2, '0')}.'
-            '${e.dueDate!.year}',
-          );
+          buffer.writeln('  📅 ${_dueDateLabel(l, e.dueDate!)}');
         }
         return buffer.toString();
       }),
@@ -63,7 +71,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Список покупок скопирован')),
+      SnackBar(content: Text(l.shoppingBasketCopied)),
     );
   }
 
@@ -85,6 +93,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
+        final l = AppLocalizations.of(ctx)!;
         return StatefulBuilder(
           builder: (ctx, setLocal) => Padding(
             padding: EdgeInsets.only(
@@ -106,8 +115,8 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                   children: [
                     Text(
                       item == null
-                          ? (isWishlist ? 'Новый wish item' : 'Новая покупка')
-                          : 'Редактировать позицию',
+                          ? (isWishlist ? l.shoppingNewWishlistItem : l.shoppingNewPurchase)
+                          : l.shoppingEditItem,
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -115,34 +124,34 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: titleCtrl,
-                      decoration: const InputDecoration(labelText: 'Название'),
+                      decoration: InputDecoration(labelText: l.shoppingFieldTitle),
                       validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Введите название' : null,
+                          (v == null || v.trim().isEmpty) ? l.shoppingEnterTitle : null,
                     ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: descCtrl,
-                      decoration: const InputDecoration(labelText: 'Описание'),
+                      decoration: InputDecoration(labelText: l.shoppingFieldDescription),
                     ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: priceCtrl,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'Стоимость'),
+                      decoration: InputDecoration(labelText: l.shoppingFieldPrice),
                     ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: storeCtrl,
-                      decoration: const InputDecoration(labelText: 'Магазин'),
+                      decoration: InputDecoration(labelText: l.shoppingFieldStore),
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String?>(
                       value: categoryId,
-                      decoration: const InputDecoration(labelText: 'Категория расхода'),
+                      decoration: InputDecoration(labelText: l.shoppingFieldExpenseCategory),
                       items: [
-                        const DropdownMenuItem<String?>(
+                        DropdownMenuItem<String?>(
                           value: null,
-                          child: Text('Без категории'),
+                          child: Text(l.shoppingNoCategory),
                         ),
                         ..._categories.map(
                           (c) => DropdownMenuItem<String?>(
@@ -158,7 +167,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                       value: isBought,
                       onChanged: (v) => setLocal(() => isBought = v),
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Уже куплено'),
+                      title: Text(l.shoppingAlreadyBought),
                     ),
                     Align(
                       alignment: Alignment.centerLeft,
@@ -180,14 +189,14 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                             icon: const Icon(Icons.event_rounded),
                             label: Text(
                               dueDate == null
-                                  ? 'Дата покупки'
+                                  ? l.shoppingPurchaseDate
                                   : '${dueDate!.day.toString().padLeft(2, '0')}.${dueDate!.month.toString().padLeft(2, '0')}.${dueDate!.year}',
                             ),
                           ),
                           if (dueDate != null)
                             TextButton(
                               onPressed: () => setLocal(() => dueDate = null),
-                              child: const Text('Сбросить'),
+                              child: Text(l.shoppingReset),
                             ),
                         ],
                       ),
@@ -230,7 +239,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                           await _load();
                         },
                         icon: const Icon(Icons.save_rounded),
-                        label: const Text('Сохранить'),
+                        label: Text(l.commonSave),
                       ),
                     ),
                   ],
@@ -244,6 +253,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
   }
 
   Widget _listSection(String title, List<ShoppingItemData> items, bool isWishlist) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -268,14 +278,14 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
               FilledButton.tonalIcon(
                 onPressed: () => _showItemSheet(isWishlist: isWishlist),
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Добавить'),
+                label: Text(l.commonAdd),
               ),
             ],
           ),
           const SizedBox(height: 8),
           if (items.isEmpty)
             Text(
-              'Пока пусто.',
+              l.shoppingEmpty,
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
           for (final item in items) ...[
@@ -306,19 +316,19 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                     item.expenseCategoryName!,
                   if (item.price > 0) '${item.price.toStringAsFixed(2)} €',
                   if (item.dueDate != null)
-                    'до ${item.dueDate!.day.toString().padLeft(2, '0')}.${item.dueDate!.month.toString().padLeft(2, '0')}.${item.dueDate!.year}',
+                    _dueDateLabel(l, item.dueDate!),
                 ].join(' • '),
               ),
               secondary: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    tooltip: 'Редактировать',
+                    tooltip: l.commonEdit,
                     onPressed: () => _showItemSheet(item: item, isWishlist: isWishlist),
                     icon: const Icon(Icons.edit_outlined),
                   ),
                   IconButton(
-                    tooltip: 'Удалить',
+                    tooltip: l.commonDelete,
                     onPressed: () async {
                       await _repo.deleteShoppingItem(item.id);
                       await _load();
@@ -337,18 +347,19 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final basket = _items.where((e) => !e.isWishlist).toList();
     final wishlist = _items.where((e) => e.isWishlist).toList();
 
     return ReportSectionCard(
-      title: 'Трекер покупок',
+      title: l.shoppingTrackerTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Align(
             alignment: Alignment.centerRight,
             child: IconButton(
-              tooltip: 'Копировать корзину',
+              tooltip: l.shoppingCopyBasket,
               onPressed: basket.isEmpty ? null : _copyBasket,
               icon: const Icon(Icons.content_copy_rounded),
             ),
@@ -359,9 +370,9 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
               child: Center(child: CircularProgressIndicator.adaptive()),
             )
           else ...[
-            _listSection('Список покупок', basket, false),
+            _listSection(l.shoppingBasketTitle, basket, false),
             const SizedBox(height: 10),
-            _listSection('Wishlist', wishlist, true),
+            _listSection(l.shoppingWishlistTitle, wishlist, true),
           ],
         ],
       ),

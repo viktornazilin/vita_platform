@@ -1,10 +1,10 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
-import '../widgets/nest_sheet.dart';
-import '../widgets/nest_card.dart';
-import '../widgets/nest_pill.dart';
-import '../widgets/nest_section_title.dart';
+import 'nest/nest_sheet.dart';
+import 'nest/nest_card.dart';
+import 'nest/nest_pill.dart';
+import 'nest/nest_section_title.dart';
 
 class ParsedGoalDraft {
   final String title;
@@ -148,6 +148,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final selected = _checked.where((e) => e).length;
@@ -210,7 +211,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Импортировать цели',
+                          l.importGoalsReviewTitle,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w900,
                             height: 1.05,
@@ -232,7 +233,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
 
                   const SizedBox(height: 8),
                   Text(
-                    'Отметь, что импортировать, и при необходимости поправь название/описание.',
+                    l.importGoalsReviewSubtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: const Color(0xFF2E4B5A).withOpacity(0.75),
                       height: 1.25,
@@ -247,7 +248,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Выбрать всё',
+                            l.importGoalsReviewSelectAll,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF2E4B5A),
@@ -256,18 +257,18 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                         ),
                         TextButton(
                           onPressed: () => _toggleAll(true),
-                          child: const Text('Да'),
+                          child: Text(l.importGoalsReviewYes),
                         ),
                         TextButton(
                           onPressed: () => _toggleAll(false),
-                          child: const Text('Нет'),
+                          child: Text(l.importGoalsReviewNo),
                         ),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 10),
-                  const NestSectionTitle('Список'),
+                  NestSectionTitle(l.importGoalsReviewListSection),
 
                   ListView.separated(
                     controller: controller,
@@ -295,7 +296,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                     children: [
                       Expanded(
                         child: _SoftButton(
-                          label: 'Отмена',
+                          label: l.commonCancel,
                           kind: _SoftButtonKind.secondary,
                           onTap: () => Navigator.pop(context),
                         ),
@@ -303,7 +304,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _SoftButton(
-                          label: 'Импортировать',
+                          label: l.importGoalsReviewImport,
                           kind: _SoftButtonKind.primary,
                           onTap: _submit,
                         ),
@@ -353,6 +354,7 @@ class _DraftTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return NestCard(
@@ -366,9 +368,9 @@ class _DraftTile extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: titleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Название',
-                    prefixIcon: Icon(Icons.flag_outlined),
+                  decoration: InputDecoration(
+                    labelText: l.importGoalsReviewFieldTitle,
+                    prefixIcon: const Icon(Icons.flag_outlined),
                   ),
                   onChanged: onTitleChanged,
                 ),
@@ -380,9 +382,9 @@ class _DraftTile extends StatelessWidget {
             controller: descCtrl,
             minLines: 2,
             maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Описание',
-              prefixIcon: Icon(Icons.notes_outlined),
+            decoration: InputDecoration(
+              labelText: l.importGoalsReviewFieldDescription,
+              prefixIcon: const Icon(Icons.notes_outlined),
             ),
             onChanged: onDescChanged,
           ),
@@ -391,13 +393,13 @@ class _DraftTile extends StatelessWidget {
             children: [
               NestPill(
                 leading: const Icon(Icons.schedule_rounded, size: 16),
-                text: 'Время: $timeText',
+                text: l.importGoalsReviewTime(timeText),
               ),
               const Spacer(),
               TextButton.icon(
                 onPressed: onTimeTap,
                 icon: const Icon(Icons.edit_rounded, size: 18),
-                label: const Text('Изменить'),
+                label: Text(l.importGoalsReviewChange),
               ),
             ],
           ),

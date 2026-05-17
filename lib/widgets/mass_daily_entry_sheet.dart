@@ -2,13 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../domain/category.dart' as dm;
 import '../main.dart';
-import '../models/life_block.dart';
 import '../models/mental_question.dart';
 import '../widgets/add_day_goal_sheet.dart';
-import '../widgets/block_chip.dart';
 
 class MassDailyEntrySheet extends StatefulWidget {
   final List<String> availableBlocks;
@@ -182,7 +181,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       if (!mounted) return;
       setState(() {
         _habitsLoading = false;
-        _habitsError = 'Не удалось загрузить привычки: $e';
+        _habitsError = AppLocalizations.of(context)!.massDailyHabitsLoadFailed(e.toString());
         _habits = [];
       });
     }
@@ -219,7 +218,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
       if (!mounted) return;
       setState(() {
         _mentalLoading = false;
-        _mentalError = 'Не удалось загрузить вопросы: $e';
+        _mentalError = AppLocalizations.of(context)!.massDailyMentalLoadFailed(e.toString());
       });
     }
   }
@@ -346,6 +345,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     final canGoBack = _step > 0;
     final isLast = _step == _stepsCount - 1;
@@ -368,7 +368,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _TopHeader(
-                  title: 'Массовое добавление за день',
+                  title: l.massDailyTitle,
                   step: _step + 1,
                   totalSteps: _stepsCount,
                 ),
@@ -408,7 +408,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                               ? Icons.arrow_back_rounded
                               : Icons.close_rounded,
                         ),
-                        label: Text(canGoBack ? 'Назад' : 'Отмена'),
+                        label: Text(canGoBack ? l.massDailyBack : l.massDailyCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -420,14 +420,14 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                               ? Icons.check_rounded
                               : Icons.arrow_forward_rounded,
                         ),
-                        label: Text(isLast ? 'Сохранить всё' : 'Далее'),
+                        label: Text(isLast ? l.massDailySaveAll : l.massDailyNext),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Пустые строки игнорируются.',
+                  l.massDailyEmptyRowsIgnored,
                   style: tt.bodySmall?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
@@ -444,13 +444,14 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   Widget _buildStepMoodHabits(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 6),
       children: [
         _SectionCard(
-          title: 'Настроение',
-          subtitle: 'Необязательная запись о том, как прошёл день.',
+          title: l.massDailyMoodTitle,
+          subtitle: l.massDailyMoodSubtitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -463,8 +464,8 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
               TextField(
                 controller: _moodNote,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Заметка',
+                decoration: InputDecoration(
+                  labelText: l.massDailyNote,
                 ),
               ),
             ],
@@ -472,8 +473,8 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
         ),
         const SizedBox(height: 12),
         _SectionCard(
-          title: 'Привычки',
-          subtitle: 'Отметь выполнение и при необходимости укажи количество.',
+          title: l.massDailyHabitsTitle,
+          subtitle: l.massDailyHabitsSubtitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -487,7 +488,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                   ),
                 ),
               _InlineIconButton(
-                tooltip: 'Обновить',
+                tooltip: l.massDailyRefresh,
                 onTap: () => _loadHabitsForDay(_date),
                 icon: Icons.refresh_rounded,
               ),
@@ -506,7 +507,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                 ),
               if (_habits.isEmpty && !_habitsLoading)
                 Text(
-                  'Пока нет привычек. Добавь их в профиле.',
+                  l.massDailyNoHabits,
                   style: tt.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
@@ -528,14 +529,14 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   Widget _buildStepMental(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 6),
       children: [
         _SectionCard(
-          title: 'Ментальное здоровье',
-          subtitle:
-              'Короткая ежедневная фиксация состояния для дальнейшей аналитики.',
+          title: l.massDailyMentalTitle,
+          subtitle: l.massDailyMentalSubtitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -549,7 +550,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                   ),
                 ),
               _InlineIconButton(
-                tooltip: 'Обновить',
+                tooltip: l.massDailyRefresh,
                 onTap: () => _loadMentalForDay(_date),
                 icon: Icons.refresh_rounded,
               ),
@@ -559,7 +560,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ответь на несколько вопросов — это поможет отслеживать состояние.',
+                l.massDailyMentalIntro,
                 style: tt.bodyMedium?.copyWith(
                   color: cs.onSurfaceVariant,
                 ),
@@ -575,7 +576,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                 ),
               if (_mentalQuestions.isEmpty && !_mentalLoading)
                 Text(
-                  'Пока нет вопросов. Добавь их в таблицу mental_questions.',
+                  l.massDailyNoMentalQuestions,
                   style: tt.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
@@ -596,12 +597,14 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   }
 
   Widget _buildStepFinance(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 6),
       children: [
         _SectionCard(
-          title: 'Расходы',
-          subtitle: 'Добавь траты за выбранный день.',
+          title: l.massDailyExpensesTitle,
+          subtitle: l.massDailyExpensesSubtitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -615,7 +618,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                   ),
                 ),
               _InlineIconButton(
-                tooltip: 'Добавить строку',
+                tooltip: l.massDailyAddRow,
                 onTap: _addExpenseRow,
                 icon: Icons.add_rounded,
               ),
@@ -635,8 +638,8 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
         ),
         const SizedBox(height: 12),
         _SectionCard(
-          title: 'Доходы',
-          subtitle: 'Добавь поступления за выбранный день.',
+          title: l.massDailyIncomesTitle,
+          subtitle: l.massDailyIncomesSubtitle,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -650,7 +653,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
                   ),
                 ),
               _InlineIconButton(
-                tooltip: 'Добавить строку',
+                tooltip: l.massDailyAddRow,
                 onTap: _addIncomeRow,
                 icon: Icons.add_rounded,
               ),
@@ -673,17 +676,17 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   }
 
   Widget _buildStepGoals(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final lifeBlocks = _goalLifeBlocks();
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 6),
       children: [
         _SectionCard(
-          title: 'Задачи',
-          subtitle:
-              'Зафиксируй, над чем ты работал в этот день, и сколько времени это заняло.',
+          title: l.massDailyGoalsTitle,
+          subtitle: l.massDailyGoalsSubtitle,
           trailing: _InlineIconButton(
-            tooltip: 'Добавить строку',
+            tooltip: l.massDailyAddRow,
             onTap: _addGoalRow,
             icon: Icons.add_rounded,
           ),
@@ -810,7 +813,7 @@ class _SubHeader extends StatelessWidget {
                 style: tt.bodyMedium?.copyWith(color: cs.onSurface),
                 children: [
                   TextSpan(
-                    text: 'Дата: ',
+                    text: AppLocalizations.of(context)!.massDailyDatePrefix,
                     style: tt.bodyMedium?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
@@ -829,7 +832,7 @@ class _SubHeader extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onPickDate,
             icon: const Icon(Icons.calendar_month_rounded),
-            label: const Text('Выбрать'),
+            label: Text(AppLocalizations.of(context)!.massDailyChoose),
           ),
         ],
       ),
@@ -1028,7 +1031,7 @@ class _EmojiPicker extends StatelessWidget {
             size: 16,
             color: cs.onSurfaceVariant,
           ),
-          label: const Text('Без настроения'),
+          label: Text(AppLocalizations.of(context)!.massDailyNoMood),
           onPressed: onClear,
         ),
       ],
@@ -1124,8 +1127,8 @@ class _HabitTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     vm.isNegative
-                        ? 'Количество (например, сигареты)'
-                        : 'Количество (необязательно)',
+                        ? AppLocalizations.of(context)!.massDailyQuantityExample
+                        : AppLocalizations.of(context)!.massDailyQuantityOptional,
                     style: tt.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
@@ -1137,8 +1140,8 @@ class _HabitTile extends StatelessWidget {
                   child: TextField(
                     controller: vm.qtyCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Кол-во',
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.massDailyQuantityShort,
                       isDense: true,
                     ),
                     onChanged: (_) => onChanged(),
@@ -1174,7 +1177,7 @@ class _TypePill extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Text(
-        isNegative ? 'Негативная' : 'Позитивная',
+        isNegative ? AppLocalizations.of(context)!.massDailyHabitNegative : AppLocalizations.of(context)!.massDailyHabitPositive,
         style: tt.labelSmall?.copyWith(
           color: fg,
           fontWeight: FontWeight.w600,
@@ -1310,8 +1313,8 @@ class _MentalQuestionTile extends StatelessWidget {
             TextFormField(
               initialValue: vm.textVal ?? '',
               maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Ответ',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.massDailyAnswer,
               ),
               onChanged: (v) {
                 vm.textVal = v;
@@ -1441,8 +1444,8 @@ class _ExpenseRowViewState extends State<_ExpenseRowView> {
               controller: widget.row._amountCtrl,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Сумма',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.massDailyAmount,
                 prefixText: '€',
                 isDense: true,
               ),
@@ -1469,9 +1472,9 @@ class _ExpenseRowViewState extends State<_ExpenseRowView> {
                 ? (v) => setState(() => widget.row._categoryId = v)
                 : null,
             decoration: InputDecoration(
-              labelText: 'Категория',
+              labelText: AppLocalizations.of(context)!.massDailyCategory,
               isDense: true,
-              hintText: hasCats ? null : 'Нет категорий',
+              hintText: hasCats ? null : AppLocalizations.of(context)!.massDailyNoCategories,
             ),
           );
 
@@ -1498,7 +1501,7 @@ class _ExpenseRowViewState extends State<_ExpenseRowView> {
                 controller: textCtrl,
                 focusNode: focusNode,
                 decoration: InputDecoration(
-                  labelText: 'Заметка',
+                  labelText: AppLocalizations.of(context)!.massDailyNote,
                   isDense: true,
                   suffixIcon: _noteSugLoading
                       ? const Padding(
@@ -1659,8 +1662,8 @@ class _IncomeRowViewState extends State<_IncomeRowView> {
               controller: widget.row._amountCtrl,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Сумма',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.massDailyAmount,
                 prefixText: '€',
                 isDense: true,
               ),
@@ -1687,9 +1690,9 @@ class _IncomeRowViewState extends State<_IncomeRowView> {
                 ? (v) => setState(() => widget.row._categoryId = v)
                 : null,
             decoration: InputDecoration(
-              labelText: 'Категория',
+              labelText: AppLocalizations.of(context)!.massDailyCategory,
               isDense: true,
-              hintText: hasCats ? null : 'Нет категорий',
+              hintText: hasCats ? null : AppLocalizations.of(context)!.massDailyNoCategories,
             ),
           );
 
@@ -1716,7 +1719,7 @@ class _IncomeRowViewState extends State<_IncomeRowView> {
                 controller: textCtrl,
                 focusNode: focusNode,
                 decoration: InputDecoration(
-                  labelText: 'Заметка',
+                  labelText: AppLocalizations.of(context)!.massDailyNote,
                   isDense: true,
                   suffixIcon: _noteSugLoading
                       ? const Padding(
@@ -2016,14 +2019,14 @@ class _GoalRowViewState extends State<_GoalRowView> {
     }
   }
 
-  String _horizonLabel(String value) {
+  String _horizonLabel(BuildContext context, String value) {
     switch (value) {
       case 'tactical':
-        return 'Тактическая';
+        return AppLocalizations.of(context)!.massDailyHorizonTactical;
       case 'mid':
-        return 'Среднесрочная';
+        return AppLocalizations.of(context)!.massDailyHorizonMid;
       case 'long':
-        return 'Долгосрочная';
+        return AppLocalizations.of(context)!.massDailyHorizonLong;
       default:
         return value;
     }
@@ -2074,7 +2077,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
               ),
             ActionChip(
               avatar: const Icon(Icons.close_rounded, size: 18),
-              label: const Text('Без эмоции'),
+              label: Text(AppLocalizations.of(context)!.massDailyNoEmotion),
               onPressed: () => Navigator.pop(ctx, ''),
             ),
           ],
@@ -2088,22 +2091,36 @@ class _GoalRowViewState extends State<_GoalRowView> {
 
   String _labelForBlock(String b) {
     final key = b.trim().toLowerCase();
-    if (key == 'general') return 'Общее';
+    if (key == 'general') return AppLocalizations.of(context)!.massDailyLifeBlockGeneral;
 
-    final lb = LifeBlock.values.firstWhere(
-      (e) => e.name == key,
-      orElse: () => LifeBlock.health,
-    );
-    return getBlockLabel(lb);
+    switch (key) {
+      case 'health':
+        return AppLocalizations.of(context)!.massDailyLifeBlockHealth;
+      case 'career':
+        return AppLocalizations.of(context)!.massDailyLifeBlockCareer;
+      case 'family':
+      case 'relationships':
+      case 'relations':
+        return AppLocalizations.of(context)!.massDailyLifeBlockFamily;
+      case 'finance':
+        return AppLocalizations.of(context)!.massDailyLifeBlockFinance;
+      case 'education':
+        return AppLocalizations.of(context)!.massDailyLifeBlockEducation;
+      case 'hobbies':
+      case 'hobby':
+        return AppLocalizations.of(context)!.massDailyLifeBlockHobbies;
+      default:
+        return key;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final timeLabel = widget.row._time == null
-        ? 'Время'
+        ? AppLocalizations.of(context)!.massDailyTime
         : widget.row._time!.format(context);
-    final emotionLabel = widget.row._emotion ?? 'Эмоция';
+    final emotionLabel = widget.row._emotion ?? AppLocalizations.of(context)!.massDailyEmotion;
 
     final goals = _userGoalsForSelectedBlock;
     final dropdownGoalValue =
@@ -2145,7 +2162,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 controller: textCtrl,
                 focusNode: focusNode,
                 decoration: InputDecoration(
-                  labelText: 'Название задачи',
+                  labelText: AppLocalizations.of(context)!.massDailyTaskTitle,
                   isDense: true,
                   suffixIcon: _titleSugLoading
                       ? const Padding(
@@ -2179,8 +2196,8 @@ class _GoalRowViewState extends State<_GoalRowView> {
                   controller: widget.row._hoursCtrl,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Часы',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.massDailyHours,
                     isDense: true,
                   ),
                 ),
@@ -2226,8 +2243,8 @@ class _GoalRowViewState extends State<_GoalRowView> {
 
               await _loadUserGoalsForCurrentBlock();
             },
-            decoration: const InputDecoration(
-              labelText: 'Категория',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.massDailyCategory,
               isDense: true,
             ),
           );
@@ -2246,14 +2263,14 @@ class _GoalRowViewState extends State<_GoalRowView> {
 
           final importanceField = DropdownButtonFormField<int>(
             value: widget.row._importance,
-            items: const [
+            items: [
               DropdownMenuItem(value: 1, child: Text('1')),
               DropdownMenuItem(value: 2, child: Text('2')),
               DropdownMenuItem(value: 3, child: Text('3')),
             ],
             onChanged: (v) => setState(() => widget.row._importance = v ?? 1),
-            decoration: const InputDecoration(
-              labelText: 'Важность',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.massDailyImportance,
               isDense: true,
             ),
           );
@@ -2261,20 +2278,20 @@ class _GoalRowViewState extends State<_GoalRowView> {
           final userGoalField = DropdownButtonFormField<String?>(
             value: dropdownGoalValue,
             isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Большая цель',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.massDailyBigGoal,
               isDense: true,
             ),
             items: [
-              const DropdownMenuItem<String?>(
+              DropdownMenuItem<String?>(
                 value: null,
-                child: Text('Без связи'),
+                child: Text(AppLocalizations.of(context)!.massDailyNoLink),
               ),
               ...goals.map(
                 (g) => DropdownMenuItem<String?>(
                   value: g.id,
                   child: Text(
-                    '${g.title} · ${_horizonLabel(g.horizon)}',
+                    '${g.title} · ${_horizonLabel(context, g.horizon)}',
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -2318,7 +2335,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Загружаю большие цели...',
+                            AppLocalizations.of(context)!.massDailyLoadingUserGoals,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -2335,7 +2352,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Для этой категории пока нет больших целей.',
+                      AppLocalizations.of(context)!.massDailyNoUserGoalsForCategory,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context)
                                 .colorScheme
@@ -2380,7 +2397,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Загружаю большие цели...',
+                          AppLocalizations.of(context)!.massDailyLoadingUserGoals,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context)
                                     .colorScheme
@@ -2397,7 +2414,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Для этой категории пока нет больших целей.',
+                    AppLocalizations.of(context)!.massDailyNoUserGoalsForCategory,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme

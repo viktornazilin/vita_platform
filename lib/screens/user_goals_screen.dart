@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,11 +5,51 @@ import '../main.dart';
 import '../models/profile_model.dart';
 import '../models/user_goal.dart';
 import '../models/user_goals_model.dart';
-import '../models/life_block.dart';
 import '../widgets/block_chip.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
 import '../services/onboarding_tour_service.dart';
+import '../l10n/app_localizations.dart';
+
+
+String _localizedLifeBlockLabel(BuildContext context, String key) {
+  final l = AppLocalizations.of(context)!;
+
+  switch (key.toLowerCase()) {
+    case 'health':
+      return l.lifeBlockHealth;
+    case 'career':
+      return l.lifeBlockCareer;
+    case 'family':
+      return l.lifeBlockFamily;
+    case 'finance':
+      return l.lifeBlockFinance;
+    case 'education':
+      return l.lifeBlockEducation;
+    case 'hobbies':
+    case 'hobby':
+      return l.lifeBlockHobbies;
+    case 'general':
+      return l.lifeBlockGeneral;
+    default:
+      return key;
+  }
+}
+
+String _localizedHorizonLabel(BuildContext context, GoalHorizon horizon) {
+  final l = AppLocalizations.of(context)!;
+
+  switch (horizon.name) {
+    case 'tactical':
+      return l.goalsHorizonTacticalShort;
+    case 'mid':
+      return l.goalsHorizonMidShort;
+    case 'long':
+      return l.goalsHorizonLongShort;
+    default:
+      return horizon.labelRu;
+  }
+}
 
 class UserGoalsScreen extends StatelessWidget {
   const UserGoalsScreen({super.key});
@@ -107,7 +145,13 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
     }
   }
 
-  String _horizonLabel(GoalHorizon h) => h.labelRu;
+  String _horizonLabel(BuildContext context, GoalHorizon h) {
+    return _localizedHorizonLabel(context, h);
+  }
+
+  String _lifeBlockLabel(BuildContext context, String key) {
+    return _localizedLifeBlockLabel(context, key);
+  }
 
   String _formatDate(BuildContext context, DateTime d) {
     return MaterialLocalizations.of(context).formatMediumDate(d);
@@ -118,6 +162,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
     List<String> allowedBlocks,
   ) async {
     final model = context.read<UserGoalsModel>();
+    final l = AppLocalizations.of(context)!;
 
     final result = await showDialog<_GoalFormResult>(
       context: context,
@@ -139,8 +184,8 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Цель создана'),
+        SnackBar(
+          content: Text(l.userGoalsCreated),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -148,7 +193,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка создания цели: $e'),
+          content: Text(l.userGoalsCreateError('$e')),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -161,6 +206,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
     List<String> allowedBlocks,
   ) async {
     final model = context.read<UserGoalsModel>();
+    final l = AppLocalizations.of(context)!;
 
     final result = await showDialog<_GoalFormResult>(
       context: context,
@@ -185,8 +231,8 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Цель обновлена'),
+        SnackBar(
+          content: Text(l.userGoalsUpdated),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -194,7 +240,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка обновления цели: $e'),
+          content: Text(l.userGoalsUpdateError('$e')),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -207,6 +253,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
     List<String> allowedBlocks,
   ) async {
     final model = context.read<UserGoalsModel>();
+    final l = AppLocalizations.of(context)!;
     final action = await showModalBottomSheet<_GoalAction>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -214,7 +261,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
       builder: (_) => _GoalDetailsSheet(
         goal: goal,
         blockColor: _blockColor(goal.lifeBlock),
-        horizonLabel: _horizonLabel(goal.horizon),
+        horizonLabel: _horizonLabel(context, goal.horizon),
         formattedDate: goal.targetDate == null
             ? null
             : _formatDate(context, goal.targetDate!),
@@ -234,7 +281,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Ошибка изменения статуса: $e'),
+              content: Text(l.userGoalsStatusChangeError('$e')),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -248,16 +295,16 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(22),
                 ),
-                title: const Text('Удалить цель?'),
+                title: Text(l.userGoalsDeleteConfirmTitle),
                 content: Text(goal.title),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Отмена'),
+                    child: Text(l.commonCancel),
                   ),
                   FilledButton.tonal(
                     onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Удалить'),
+                    child: Text(l.commonDelete),
                   ),
                 ],
               ),
@@ -272,7 +319,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Ошибка удаления: $e'),
+              content: Text(l.userGoalsDeleteError('$e')),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -285,6 +332,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
   Widget build(BuildContext context) {
     final profile = context.watch<ProfileModel>();
     final goals = context.watch<UserGoalsModel>();
+    final l = AppLocalizations.of(context)!;
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
@@ -299,7 +347,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
               key: _addKey,
               onPressed: () => _openCreateDialog(context, allowedBlocks),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Новая цель'),
+              label: Text(l.userGoalsNewTitle),
             ),
       body: NestBackground(
         child: RefreshIndicator.adaptive(
@@ -319,14 +367,14 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Мои цели',
+                            l.userGoalsTitle,
                             style: tt.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Стратегические цели по сферам жизни: краткосрочные, среднесрочные и долгосрочные.',
+                            l.userGoalsSubtitle,
                             style: tt.bodyMedium?.copyWith(
                               color: cs.onSurfaceVariant,
                             ),
@@ -351,7 +399,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                       scrollDirection: Axis.horizontal,
                       children: [
                         BlockChip(
-                          label: 'Все',
+                          label: l.userGoalsAllBlocks,
                           selected: goals.selectedBlock == 'all',
                           onTap: () => goals.setSelectedBlock('all'),
                         ),
@@ -359,12 +407,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                           (b) => Padding(
                             padding: const EdgeInsets.only(left: 8),
                             child: BlockChip(
-                              label: getBlockLabel(
-                                LifeBlock.values.firstWhere(
-                                  (e) => e.name == b,
-                                  orElse: () => LifeBlock.health,
-                                ),
-                              ),
+                              label: _lifeBlockLabel(context, b),
                               selected: goals.selectedBlock == b,
                               onTap: () => goals.setSelectedBlock(b),
                             ),
@@ -386,13 +429,13 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                     runSpacing: 8,
                     children: [
                       _HorizonChip(
-                        label: 'Все горизонты',
+                        label: l.userGoalsAllHorizons,
                         selected: goals.selectedHorizon == null,
                         onTap: () => goals.setSelectedHorizon(null),
                       ),
                       for (final h in GoalHorizon.values)
                         _HorizonChip(
-                          label: h.labelRu,
+                          label: _horizonLabel(context, h),
                           selected: goals.selectedHorizon == h,
                           onTap: () => goals.setSelectedHorizon(h),
                         ),
@@ -411,17 +454,17 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                   hasScrollBody: false,
                   child: _EmptyState(
                     emoji: '⚠️',
-                    title: 'Ошибка загрузки',
+                    title: l.userGoalsLoadErrorTitle,
                     subtitle: goals.error,
                   ),
                 )
               else if (allowedBlocks.isEmpty)
-                const SliverFillRemaining(
+                SliverFillRemaining(
                   hasScrollBody: false,
                   child: _EmptyState(
                     emoji: '🧩',
-                    title: 'Нет активных сфер жизни',
-                    subtitle: 'Сначала настрой блоки, которые пользователь отслеживает.',
+                    title: l.userGoalsNoActiveBlocksTitle,
+                    subtitle: l.userGoalsNoActiveBlocksSubtitle,
                   ),
                 )
               else if (goals.items.isEmpty)
@@ -429,8 +472,8 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                   hasScrollBody: false,
                   child: _EmptyState(
                     emoji: '🎯',
-                    title: 'Пока нет целей',
-                    subtitle: 'Создай первую стратегическую цель для одной из сфер жизни.',
+                    title: l.userGoalsEmptyTitle,
+                    subtitle: l.userGoalsEmptySubtitle,
                     onAdd: () => _openCreateDialog(context, allowedBlocks),
                   ),
                 )
@@ -438,7 +481,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                 for (final horizon in GoalHorizon.values)
                   _buildSection(
                     context: context,
-                    title: _horizonLabel(horizon),
+                    title: _horizonLabel(context, horizon),
                     items: goals.goalsByHorizon(horizon),
                     allowedBlocks: allowedBlocks,
                     blockColor: _blockColor,
@@ -469,6 +512,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
 
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     return SliverToBoxAdapter(
       child: Padding(
@@ -491,7 +535,7 @@ class _UserGoalsViewState extends State<_UserGoalsView> {
                   subtitle: [
                     goal.description?.trim() ?? '',
                     if (goal.targetDate != null)
-                      'Дедлайн: ${MaterialLocalizations.of(context).formatMediumDate(goal.targetDate!)}',
+                      l.userGoalsDeadline(MaterialLocalizations.of(context).formatMediumDate(goal.targetDate!)),
                   ].where((e) => e.trim().isNotEmpty).join(' • '),
                   trailingIcon: goal.isCompleted
                       ? Icons.check_circle_rounded
@@ -528,6 +572,7 @@ class _GoalDetailsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -569,7 +614,7 @@ class _GoalDetailsSheet extends StatelessWidget {
                 children: [
                   _MetaPill(label: horizonLabel),
                   _MetaPill(
-                    label: goal.isCompleted ? 'Выполнено' : 'Активно',
+                    label: goal.isCompleted ? l.userGoalsStatusCompleted : l.userGoalsStatusActive,
                   ),
                   if (formattedDate != null)
                     _MetaPill(label: formattedDate!),
@@ -597,7 +642,7 @@ class _GoalDetailsSheet extends StatelessWidget {
                     child: FilledButton.tonalIcon(
                       onPressed: () => Navigator.pop(context, _GoalAction.edit),
                       icon: const Icon(Icons.edit_rounded),
-                      label: const Text('Редактировать'),
+                      label: Text(l.commonEdit),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -612,7 +657,7 @@ class _GoalDetailsSheet extends StatelessWidget {
                             ? Icons.radio_button_unchecked_rounded
                             : Icons.check_circle_outline_rounded,
                       ),
-                      label: Text(goal.isCompleted ? 'Вернуть' : 'Завершить'),
+                      label: Text(goal.isCompleted ? l.userGoalsReopen : l.userGoalsComplete),
                     ),
                   ),
                 ],
@@ -623,7 +668,7 @@ class _GoalDetailsSheet extends StatelessWidget {
                 child: FilledButton.tonalIcon(
                   onPressed: () => Navigator.pop(context, _GoalAction.delete),
                   icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('Удалить'),
+                  label: Text(l.commonDelete),
                   style: FilledButton.styleFrom(
                     backgroundColor: cs.errorContainer.withOpacity(0.75),
                     foregroundColor: cs.onErrorContainer,
@@ -870,24 +915,25 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.initial != null;
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text(isEdit ? 'Редактировать цель' : 'Новая цель'),
+      title: Text(isEdit ? l.userGoalsEditTitle : l.userGoalsNewTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
               value: _lifeBlock,
-              decoration: const InputDecoration(
-                labelText: 'Сфера жизни',
+              decoration: InputDecoration(
+                labelText: l.userGoalsFieldLifeBlock,
               ),
               items: widget.allowedBlocks
                   .map(
                     (b) => DropdownMenuItem(
                       value: b,
-                      child: Text(b),
+                      child: Text(_localizedLifeBlockLabel(context, b)),
                     ),
                   )
                   .toList(),
@@ -898,14 +944,14 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
             const SizedBox(height: 12),
             DropdownButtonFormField<GoalHorizon>(
               value: _horizon,
-              decoration: const InputDecoration(
-                labelText: 'Горизонт',
+              decoration: InputDecoration(
+                labelText: l.userGoalsFieldHorizon,
               ),
               items: GoalHorizon.values
                   .map(
                     (h) => DropdownMenuItem(
                       value: h,
-                      child: Text(h.labelRu),
+                      child: Text(_localizedHorizonLabel(context, h)),
                     ),
                   )
                   .toList(),
@@ -917,16 +963,16 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
             TextField(
               controller: _titleCtrl,
               maxLength: 120,
-              decoration: const InputDecoration(
-                labelText: 'Название цели',
+              decoration: InputDecoration(
+                labelText: l.userGoalsFieldTitle,
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _descCtrl,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Описание',
+              decoration: InputDecoration(
+                labelText: l.userGoalsFieldDescription,
                 alignLabelWithHint: true,
               ),
             ),
@@ -944,7 +990,7 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
                 ),
                 child: Text(
                   _targetDate == null
-                      ? 'Выбрать target date'
+                      ? l.userGoalsPickTargetDate
                       : MaterialLocalizations.of(context).formatMediumDate(_targetDate!),
                 ),
               ),
@@ -955,7 +1001,7 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () => setState(() => _targetDate = null),
-                  child: const Text('Очистить дату'),
+                  child: Text(l.userGoalsClearDate),
                 ),
               ),
             ],
@@ -965,11 +1011,11 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
+          child: Text(l.commonCancel),
         ),
         FilledButton(
           onPressed: _submit,
-          child: Text(isEdit ? 'Сохранить' : 'Создать'),
+          child: Text(isEdit ? l.commonSave : l.commonCreate),
         ),
       ],
     );
@@ -1029,7 +1075,7 @@ class _EmptyState extends StatelessWidget {
               FilledButton.icon(
                 onPressed: onAdd,
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Создать цель'),
+                label: Text(AppLocalizations.of(context)!.userGoalsCreateGoal),
               ),
             ],
           ],

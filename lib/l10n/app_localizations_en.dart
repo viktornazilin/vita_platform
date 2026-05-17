@@ -1758,4 +1758,1930 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileWebNotificationsUnsupported =>
       'Browser notifications are not available in this build. They work only in the Web version (and only while the tab is open).';
+
+  @override
+  String get lifeBlockEducation => 'Education';
+
+  @override
+  String get lifeBlockHobbies => 'Hobbies';
+
+  @override
+  String get userGoalsTitle => 'My goals';
+
+  @override
+  String get userGoalsSubtitle =>
+      'Strategic goals by life area: short-term, mid-term, and long-term.';
+
+  @override
+  String get userGoalsNewTitle => 'New goal';
+
+  @override
+  String get userGoalsEditTitle => 'Edit goal';
+
+  @override
+  String get userGoalsCreateGoal => 'Create goal';
+
+  @override
+  String get userGoalsCreated => 'Goal created';
+
+  @override
+  String userGoalsCreateError(Object error) {
+    return 'Could not create goal: $error';
+  }
+
+  @override
+  String get userGoalsUpdated => 'Goal updated';
+
+  @override
+  String userGoalsUpdateError(Object error) {
+    return 'Could not update goal: $error';
+  }
+
+  @override
+  String userGoalsStatusChangeError(Object error) {
+    return 'Could not change status: $error';
+  }
+
+  @override
+  String userGoalsDeleteError(Object error) {
+    return 'Could not delete goal: $error';
+  }
+
+  @override
+  String get userGoalsDeleteConfirmTitle => 'Delete goal?';
+
+  @override
+  String get userGoalsAllBlocks => 'All';
+
+  @override
+  String get userGoalsAllHorizons => 'All horizons';
+
+  @override
+  String get userGoalsLoadErrorTitle => 'Loading error';
+
+  @override
+  String get userGoalsNoActiveBlocksTitle => 'No active life areas';
+
+  @override
+  String get userGoalsNoActiveBlocksSubtitle =>
+      'First, choose the life areas the user tracks.';
+
+  @override
+  String get userGoalsEmptyTitle => 'No goals yet';
+
+  @override
+  String get userGoalsEmptySubtitle =>
+      'Create your first strategic goal for one of your life areas.';
+
+  @override
+  String userGoalsDeadline(Object date) {
+    return 'Deadline: $date';
+  }
+
+  @override
+  String get userGoalsStatusCompleted => 'Completed';
+
+  @override
+  String get userGoalsStatusActive => 'Active';
+
+  @override
+  String get userGoalsReopen => 'Reopen';
+
+  @override
+  String get userGoalsComplete => 'Complete';
+
+  @override
+  String get userGoalsFieldLifeBlock => 'Life area';
+
+  @override
+  String get userGoalsFieldHorizon => 'Horizon';
+
+  @override
+  String get userGoalsFieldTitle => 'Goal title';
+
+  @override
+  String get userGoalsFieldDescription => 'Description';
+
+  @override
+  String get userGoalsPickTargetDate => 'Choose target date';
+
+  @override
+  String get userGoalsClearDate => 'Clear date';
+
+  @override
+  String get monthJanuary => 'January';
+
+  @override
+  String get monthFebruary => 'February';
+
+  @override
+  String get monthMarch => 'March';
+
+  @override
+  String get monthApril => 'April';
+
+  @override
+  String get monthMay => 'May';
+
+  @override
+  String get monthJune => 'June';
+
+  @override
+  String get monthJuly => 'July';
+
+  @override
+  String get monthAugust => 'August';
+
+  @override
+  String get monthSeptember => 'September';
+
+  @override
+  String get monthOctober => 'October';
+
+  @override
+  String get monthNovember => 'November';
+
+  @override
+  String get monthDecember => 'December';
+
+  @override
+  String get weekdayMonShort => 'Mon';
+
+  @override
+  String get weekdayTueShort => 'Tue';
+
+  @override
+  String get weekdayWedShort => 'Wed';
+
+  @override
+  String get weekdayThuShort => 'Thu';
+
+  @override
+  String get weekdayFriShort => 'Fri';
+
+  @override
+  String get weekdaySatShort => 'Sat';
+
+  @override
+  String get weekdaySunShort => 'Sun';
+
+  @override
+  String get lifeBlockRelations => 'Relationships';
+
+  @override
+  String get lifeBlockSpirituality => 'Spirituality';
+
+  @override
+  String goalsHeaderWeek(Object month, Object year, Object week) {
+    return '$month $year, week $week';
+  }
+
+  @override
+  String get goalsQuickActionsTitle => 'Quick actions';
+
+  @override
+  String get goalsQuickActionsSubtitle => 'Add and plan in one tap';
+
+  @override
+  String get goalsMassAddTitle => 'Mass daily entry';
+
+  @override
+  String get goalsMassAddSubtitle =>
+      'Expenses + Income + Tasks + Mood + Habits';
+
+  @override
+  String goalsMassAddSaved(
+    Object expenses,
+    Object incomes,
+    Object goals,
+    Object habits,
+    Object moodSuffix,
+  ) {
+    return 'Saved: $expenses expense(s), $incomes income item(s), $goals task(s), $habits habit(s)$moodSuffix';
+  }
+
+  @override
+  String get goalsMassAddMoodSuffix => ', mood';
+
+  @override
+  String goalsSaveError(Object error) {
+    return 'Save error: $error';
+  }
+
+  @override
+  String get goalsRecurringGoalTitle => 'Recurring goal';
+
+  @override
+  String get goalsRecurringGoalSubtitle => 'Plan several days ahead';
+
+  @override
+  String get goalsRecurringNoDates =>
+      'No dates to create. Check the deadline or settings.';
+
+  @override
+  String goalsPlanHoursDescription(Object hours) {
+    return 'Plan: $hours h';
+  }
+
+  @override
+  String goalsCreatedCount(Object count) {
+    return 'Goals created: $count';
+  }
+
+  @override
+  String goalsRecurringCreateError(Object error) {
+    return 'Could not create the goal series: $error';
+  }
+
+  @override
+  String get goalsSimpleTaskTitle => 'Quick task';
+
+  @override
+  String get goalsSimpleTaskSubtitle =>
+      'Title only, optional time, General category';
+
+  @override
+  String get goalsSimpleTaskSheetSubtitle =>
+      'Title only, optional time. The default category is General.';
+
+  @override
+  String get goalsTaskCreated => 'Task created';
+
+  @override
+  String goalsTaskCreateError(Object error) {
+    return 'Task creation error: $error';
+  }
+
+  @override
+  String get goalsAll => 'All';
+
+  @override
+  String get goalsViewDashboard => 'Dashboard';
+
+  @override
+  String get goalsViewCalendar => 'Calendar';
+
+  @override
+  String get goalsViewWeek => 'Week';
+
+  @override
+  String get goalsViewMonth => 'Month';
+
+  @override
+  String get goalsByBlocksTitle => 'Goals by life area';
+
+  @override
+  String get goalsShow => 'Show';
+
+  @override
+  String get goalsByBlocksHiddenHint => 'Hidden. Tap 👁 to show.';
+
+  @override
+  String get goalsEnterTaskTitle => 'Enter a task title';
+
+  @override
+  String get goalsTaskTitleLabel => 'Task title';
+
+  @override
+  String get goalsAddTime => 'Add time';
+
+  @override
+  String goalsTimeValue(Object time) {
+    return 'Time: $time';
+  }
+
+  @override
+  String get goalsRemoveTime => 'Remove time';
+
+  @override
+  String get goalsCreateTask => 'Create task';
+
+  @override
+  String get goalsWeekSummaryTitle => 'Week summary';
+
+  @override
+  String goalsHoursShort(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String goalsHoursTargetSuffix(Object hours) {
+    return ' / $hours h';
+  }
+
+  @override
+  String goalsHoursShortNoSpace(Object hours) {
+    return '${hours}h';
+  }
+
+  @override
+  String goalsHoursTargetSuffixNoSpace(Object hours) {
+    return ' / ${hours}h';
+  }
+
+  @override
+  String get dayGoalsHiddenCompletedEmpty =>
+      'All visible goals are hidden. Turn off the “Hide completed” filter.';
+
+  @override
+  String get dayGoalsKanbanOpenShort => 'Open';
+
+  @override
+  String get dayGoalsKanbanDoneShort => 'Done';
+
+  @override
+  String get dayGoalsKanbanOpenTitle => 'In progress';
+
+  @override
+  String get dayGoalsKanbanDoneTitle => 'Done';
+
+  @override
+  String get dayGoalsKanbanOpenEmpty => 'No active tasks';
+
+  @override
+  String get dayGoalsKanbanDoneEmpty => 'Nothing here yet';
+
+  @override
+  String dayGoalsHoursShort(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String get dayGoalsSectionMorning => 'Morning';
+
+  @override
+  String get dayGoalsSectionDay => 'Day';
+
+  @override
+  String get dayGoalsSectionEvening => 'Evening';
+
+  @override
+  String get dayGoalsSummaryTitle => 'Day summary';
+
+  @override
+  String get dayGoalsSummarySubtitle =>
+      'Stay focused on what matters and keep the day manageable.';
+
+  @override
+  String get dayGoalsSummaryTotal => 'Total';
+
+  @override
+  String get dayGoalsSummaryDone => 'Done';
+
+  @override
+  String get dayGoalsSummaryRemaining => 'Remaining';
+
+  @override
+  String dayGoalsRemainingHours(Object hours) {
+    return 'Hours remaining: $hours';
+  }
+
+  @override
+  String get dayGoalsHideCompleted => 'Hide completed';
+
+  @override
+  String get reportsTabSummary => 'Summary';
+
+  @override
+  String get reportsTabRelations => 'Relations';
+
+  @override
+  String get reportsTabProductivity => 'Productivity';
+
+  @override
+  String get reportsTabExpenses => 'Expenses';
+
+  @override
+  String get reportsCompletedTasks => 'Completed tasks';
+
+  @override
+  String get reportsSpentHours => 'Hours spent';
+
+  @override
+  String get reportsEfficiency => 'Efficiency';
+
+  @override
+  String get reportsPeriodEfficiency => 'Period efficiency';
+
+  @override
+  String reportsPlanFactHours(Object planned, Object actual) {
+    return 'Plan: $planned h • Actual: $actual h';
+  }
+
+  @override
+  String get reportsAdditionalMetrics => 'Additional metrics';
+
+  @override
+  String get reportsCorrelations => 'Relations between metrics';
+
+  @override
+  String get reportsCorrelationsHint =>
+      'This is not a scientific correlation, but clear period-based comparisons.';
+
+  @override
+  String get reportsMoodProductivity => 'Mood → Productivity';
+
+  @override
+  String get reportsGoodMood => 'Good';
+
+  @override
+  String get reportsBadMood => 'Bad';
+
+  @override
+  String get reportsHabitsMoodProductivity => 'Habits → Mood / Productivity';
+
+  @override
+  String get reportsMoodMostlyHappy => 'mostly 😊';
+
+  @override
+  String get reportsMoodMostlySad => 'mostly 😞';
+
+  @override
+  String get reportsMoodMostlyNeutral => 'mostly 😐';
+
+  @override
+  String reportsHabitsComparisonHint(int percent) {
+    return 'Comparison of days with ≥ $percent% habits completed and all other days.';
+  }
+
+  @override
+  String get reportsMoodHigh => 'Mood (high)';
+
+  @override
+  String get reportsMoodLow => 'Mood (low)';
+
+  @override
+  String get reportsHoursHigh => 'Hours (high)';
+
+  @override
+  String get reportsHoursLow => 'Hours (low)';
+
+  @override
+  String get reportsHabitsHighShort => 'habits high';
+
+  @override
+  String get reportsHabitsLowShort => 'habits low';
+
+  @override
+  String get reportsMentalMood => 'Mental state → Mood';
+
+  @override
+  String get reportsExpensesMood => 'Expenses → Mood';
+
+  @override
+  String get reportsHappyDays => '😊 days';
+
+  @override
+  String get reportsSadDays => '😞 days';
+
+  @override
+  String get reportsCompletedByBlocks => 'Completed by blocks';
+
+  @override
+  String get reportsNoCompletedTasks => 'No completed tasks';
+
+  @override
+  String reportsTasksCount(int count) {
+    return '$count tasks';
+  }
+
+  @override
+  String get reportsHoursByDays => 'Hours spent by day';
+
+  @override
+  String get reportsExpensesForPeriod => 'Expenses for period';
+
+  @override
+  String reportsTotalEuro(Object amount) {
+    return 'Total: $amount €';
+  }
+
+  @override
+  String reportsAvgExpensePerDay(Object amount) {
+    return 'Average expense/day: $amount €';
+  }
+
+  @override
+  String get reportsNoExpensesByCategory => 'No expenses by category';
+
+  @override
+  String get reportsAvgTimePerGoal => 'Average time per task';
+
+  @override
+  String get reportsOnTimeConditional => '“On time” (approx.)';
+
+  @override
+  String get reportsTop3ProductiveDays => 'TOP 3 productive days';
+
+  @override
+  String reportsTopDayLine(int day, int month, int year, Object hours) {
+    return '• $day.$month.$year: $hours h';
+  }
+
+  @override
+  String get reportsPeriodDay => 'Day';
+
+  @override
+  String get reportsPeriodWeekShort => 'Week';
+
+  @override
+  String get reportsPeriodMonthShort => 'Month';
+
+  @override
+  String get reportsForward => 'Forward';
+
+  @override
+  String get reportsTapChartSector => 'Tap a chart segment';
+
+  @override
+  String get reportsLatestAiInsights => 'Latest AI insights';
+
+  @override
+  String get reportsOpenAll => 'Open all';
+
+  @override
+  String get reportsInsightsLoadFailed => 'Could not load insights';
+
+  @override
+  String get reportsNoSavedInsights => 'No saved insights yet.';
+
+  @override
+  String get reportsRunAiInsightsHint =>
+      'Open “AI insights” and run an analysis — then they will appear here.';
+
+  @override
+  String get reportsAiPeriod7Days => 'last 7 days';
+
+  @override
+  String get reportsAiPeriod30Days => 'last 30 days';
+
+  @override
+  String get reportsAiPeriod90Days => 'last 90 days';
+
+  @override
+  String reportsHoursValue(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String reportsEuroValue(Object amount) {
+    return '$amount €';
+  }
+
+  @override
+  String get commonError => 'Error';
+
+  @override
+  String get aiPlanConsentSaved => 'AI processing consent saved';
+
+  @override
+  String aiPlanConsentCheckFailed(Object error) {
+    return 'Could not check or save AI processing consent. Make sure the users table has the fields ai_processing_consent, ai_processing_consent_at and ai_processing_consent_version. Details: $error';
+  }
+
+  @override
+  String get aiPlanConsentTitle => 'AI processing consent';
+
+  @override
+  String get aiPlanConsentBody =>
+      'To generate an AI plan, Nest will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.';
+
+  @override
+  String get aiPlanConsentDeclineBody =>
+      'You can decline consent — in that case, the AI feature will not run.';
+
+  @override
+  String get aiPlanConsentNotNow => 'Not now';
+
+  @override
+  String get aiPlanConsentAgree => 'I agree';
+
+  @override
+  String aiPlanOpenLinkFailed(Object url) {
+    return 'Could not open link: $url';
+  }
+
+  @override
+  String get aiPlanUpdated => 'AI plan updated';
+
+  @override
+  String get aiPlanEmptyEdgeFunction =>
+      'The plan is empty. Check the ai-plan Edge Function.';
+
+  @override
+  String aiPlanHoursShort(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String aiPlanImportanceMeta(int importance) {
+    return 'importance $importance/5';
+  }
+
+  @override
+  String get aiPlanLinkedToGoal => 'linked to a goal';
+
+  @override
+  String get aiPlanNothingToApply => 'Nothing to apply — select some items';
+
+  @override
+  String get aiPlanDefaultTaskTitle => 'AI task';
+
+  @override
+  String aiPlanTasksAdded(int count) {
+    return 'Tasks added: $count';
+  }
+
+  @override
+  String get aiPlanApplyTypeError =>
+      'Data type error while adding tasks: one of the fields came as true/false instead of a number. Update the file again: in this version, bool values are additionally converted to numbers and the is_completed field is no longer sent manually.';
+
+  @override
+  String get aiPlanTitleWeek => 'AI plan for the week';
+
+  @override
+  String get aiPlanTitleMonth => 'AI plan for the month';
+
+  @override
+  String get aiPlanRegenerateTooltip => 'Generate again';
+
+  @override
+  String aiPlanUpdatedAt(Object date) {
+    return 'Updated: $date';
+  }
+
+  @override
+  String get aiPlanCheckingConsent => 'Checking AI processing consent...';
+
+  @override
+  String get aiPlanApplyingTasks => 'Adding tasks...';
+
+  @override
+  String get aiPlanGenerating => 'Generating AI plan...';
+
+  @override
+  String aiPlanApplyCount(int count) {
+    return 'Apply ($count)';
+  }
+
+  @override
+  String get aiPlanRejectTooltip => 'Reject';
+
+  @override
+  String get aiPlanAcceptTooltip => 'Accept';
+
+  @override
+  String get aiPlanFieldBlock => 'Block';
+
+  @override
+  String get aiPlanFieldImportance => 'Importance';
+
+  @override
+  String get aiPlanFieldHours => 'Hours';
+
+  @override
+  String get aiPlanFieldRepeat => 'Repeat';
+
+  @override
+  String get aiPlanConsentRequiredTitle => 'AI processing consent is required';
+
+  @override
+  String get aiPlanConsentRequiredBody =>
+      'Before generating an AI plan, you need to confirm that Nest may analyze app data for personal recommendations.';
+
+  @override
+  String get aiPlanGiveConsent => 'Give consent';
+
+  @override
+  String get aiPlanPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get aiPlanDatenschutz => 'Data Protection Policy';
+
+  @override
+  String get aiPlanTermsOfUse => 'Terms of Use';
+
+  @override
+  String get aiPlanEmptyTitle => 'The plan is empty';
+
+  @override
+  String get aiPlanEmptyBody =>
+      'Press the button below to generate a plan based on AI insights, goals, tasks, habits and mood.';
+
+  @override
+  String get aiPlanGeneratePlan => 'Generate plan';
+
+  @override
+  String get aiPlanRepeatNone => 'No repeat';
+
+  @override
+  String get aiPlanRepeatDaily => 'Every day';
+
+  @override
+  String get aiPlanRepeatWeekdays => 'Weekdays';
+
+  @override
+  String get aiPlanRepeatWeekly => 'Once a week';
+
+  @override
+  String get aiPlanLifeBlockOther => 'Other';
+
+  @override
+  String get aiInsightsConsentTitle => 'AI processing consent';
+
+  @override
+  String get aiInsightsConsentBody =>
+      'To generate AI insights, Nest will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.';
+
+  @override
+  String get aiInsightsConsentDeclineBody =>
+      'You can decline consent — in that case, the AI feature will not run.';
+
+  @override
+  String get aiInsightsConsentNotNow => 'Not now';
+
+  @override
+  String get aiInsightsConsentAgree => 'I agree';
+
+  @override
+  String get aiInsightsConsentSaved => 'AI processing consent saved';
+
+  @override
+  String aiInsightsConsentCheckFailed(Object error) {
+    return 'Could not check or save AI processing consent. Make sure the users table has the fields ai_processing_consent, ai_processing_consent_at and ai_processing_consent_version. Details: $error';
+  }
+
+  @override
+  String get aiInsightsCheckingConsent => 'Checking AI processing consent...';
+
+  @override
+  String get aiInsightsUserNotAuthorized => 'User is not authenticated';
+
+  @override
+  String aiInsightsOpenLinkFailed(Object url) {
+    return 'Could not open link: $url';
+  }
+
+  @override
+  String get aiInsightsDefaultTitle => 'AI insight';
+
+  @override
+  String get aiInsightsConsentRequiredTitle =>
+      'AI processing consent is required';
+
+  @override
+  String get aiInsightsConsentRequiredBody =>
+      'Before generating AI insights, you need to confirm that Nest may analyze app data for personal recommendations.';
+
+  @override
+  String get aiInsightsGiveConsent => 'Give consent';
+
+  @override
+  String get aiInsightsPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get aiInsightsDatenschutz => 'Data Protection Policy';
+
+  @override
+  String get aiInsightsTermsOfUse => 'Terms of Use';
+
+  @override
+  String get massDailyTitle => 'Mass daily entry';
+
+  @override
+  String get massDailyDatePrefix => 'Date: ';
+
+  @override
+  String get massDailyChoose => 'Choose';
+
+  @override
+  String get massDailyBack => 'Back';
+
+  @override
+  String get massDailyCancel => 'Cancel';
+
+  @override
+  String get massDailyNext => 'Next';
+
+  @override
+  String get massDailySaveAll => 'Save all';
+
+  @override
+  String get massDailyEmptyRowsIgnored => 'Empty rows are ignored.';
+
+  @override
+  String get massDailyMoodTitle => 'Mood';
+
+  @override
+  String get massDailyMoodSubtitle => 'Optional note about how the day went.';
+
+  @override
+  String get massDailyNote => 'Note';
+
+  @override
+  String get massDailyHabitsTitle => 'Habits';
+
+  @override
+  String get massDailyHabitsSubtitle =>
+      'Mark completion and add a quantity if needed.';
+
+  @override
+  String get massDailyRefresh => 'Refresh';
+
+  @override
+  String get massDailyNoHabits => 'No habits yet. Add them in your profile.';
+
+  @override
+  String massDailyHabitsLoadFailed(Object error) {
+    return 'Could not load habits: $error';
+  }
+
+  @override
+  String get massDailyMentalTitle => 'Mental health';
+
+  @override
+  String get massDailyMentalSubtitle =>
+      'A short daily state check-in for later analytics.';
+
+  @override
+  String get massDailyMentalIntro =>
+      'Answer a few questions — this helps track your state.';
+
+  @override
+  String get massDailyNoMentalQuestions =>
+      'No questions yet. Add them to the mental_questions table.';
+
+  @override
+  String massDailyMentalLoadFailed(Object error) {
+    return 'Could not load questions: $error';
+  }
+
+  @override
+  String get massDailyExpensesTitle => 'Expenses';
+
+  @override
+  String get massDailyExpensesSubtitle => 'Add expenses for the selected day.';
+
+  @override
+  String get massDailyIncomesTitle => 'Income';
+
+  @override
+  String get massDailyIncomesSubtitle => 'Add income for the selected day.';
+
+  @override
+  String get massDailyGoalsTitle => 'Tasks';
+
+  @override
+  String get massDailyGoalsSubtitle =>
+      'Record what you worked on that day and how much time it took.';
+
+  @override
+  String get massDailyAddRow => 'Add row';
+
+  @override
+  String get massDailyNoMood => 'No mood';
+
+  @override
+  String get massDailyQuantityExample => 'Quantity (for example, cigarettes)';
+
+  @override
+  String get massDailyQuantityOptional => 'Quantity (optional)';
+
+  @override
+  String get massDailyQuantityShort => 'Qty';
+
+  @override
+  String get massDailyHabitNegative => 'Negative';
+
+  @override
+  String get massDailyHabitPositive => 'Positive';
+
+  @override
+  String get massDailyAnswer => 'Answer';
+
+  @override
+  String get massDailyAmount => 'Amount';
+
+  @override
+  String get massDailyCategory => 'Category';
+
+  @override
+  String get massDailyNoCategories => 'No categories';
+
+  @override
+  String get massDailyTaskTitle => 'Task title';
+
+  @override
+  String get massDailyHours => 'Hours';
+
+  @override
+  String get massDailyTime => 'Time';
+
+  @override
+  String get massDailyEmotion => 'Emotion';
+
+  @override
+  String get massDailyNoEmotion => 'No emotion';
+
+  @override
+  String get massDailyImportance => 'Importance';
+
+  @override
+  String get massDailyBigGoal => 'Big goal';
+
+  @override
+  String get massDailyNoLink => 'Not linked';
+
+  @override
+  String get massDailyLoadingUserGoals => 'Loading big goals...';
+
+  @override
+  String get massDailyNoUserGoalsForCategory =>
+      'There are no big goals for this category yet.';
+
+  @override
+  String get massDailyHorizonTactical => 'Tactical';
+
+  @override
+  String get massDailyHorizonMid => 'Mid-term';
+
+  @override
+  String get massDailyHorizonLong => 'Long-term';
+
+  @override
+  String get massDailyLifeBlockGeneral => 'General';
+
+  @override
+  String get massDailyLifeBlockHealth => 'Health';
+
+  @override
+  String get massDailyLifeBlockCareer => 'Career';
+
+  @override
+  String get massDailyLifeBlockFamily => 'Family';
+
+  @override
+  String get massDailyLifeBlockFinance => 'Finance';
+
+  @override
+  String get massDailyLifeBlockEducation => 'Education';
+
+  @override
+  String get massDailyLifeBlockHobbies => 'Hobbies';
+
+  @override
+  String get importJournalTextNotRecognized =>
+      'Text was not recognized. Try another photo.';
+
+  @override
+  String get importJournalRecognizedTextTitle => 'Recognized text';
+
+  @override
+  String get importJournalContinue => 'Continue';
+
+  @override
+  String get importJournalUntitled => 'Untitled';
+
+  @override
+  String get importJournalNoTasksFound =>
+      'Could not extract tasks from the text.';
+
+  @override
+  String importJournalAddedGoals(Object count) {
+    return 'Added goals: $count';
+  }
+
+  @override
+  String importJournalImportFailed(Object error) {
+    return 'Could not import: $error';
+  }
+
+  @override
+  String get importJournalVisionApiKeyMissing =>
+      'VISION_API_KEY is not set. Run the app with --dart-define=VISION_API_KEY=...';
+
+  @override
+  String importJournalVisionApiError(Object statusCode, Object body) {
+    return 'Vision API returned error $statusCode: $body';
+  }
+
+  @override
+  String get importJournalEditTitle => 'Edit';
+
+  @override
+  String get importJournalNameLabel => 'Name';
+
+  @override
+  String get importJournalTimeColon => 'Time:';
+
+  @override
+  String get importJournalHoursColon => 'Hours:';
+
+  @override
+  String get importJournalFoundTasksTitle => 'Found tasks';
+
+  @override
+  String importJournalTaskSubtitle(Object time, Object hours) {
+    return '$time • $hours h';
+  }
+
+  @override
+  String get importJournalAddSelected => 'Add selected';
+
+  @override
+  String get recurringGoalSelectAtLeastOneWeekday =>
+      'Select at least one weekday';
+
+  @override
+  String get recurringGoalTitle => 'Recurring goal';
+
+  @override
+  String get recurringGoalSubtitle =>
+      'Creates tasks from today until the selected date.';
+
+  @override
+  String get recurringGoalDetailsSection => 'Details';
+
+  @override
+  String get recurringGoalTitleLabel => 'Goal title';
+
+  @override
+  String get recurringGoalTitleHint => 'For example: Workout';
+
+  @override
+  String get recurringGoalEmotionLabel => 'Emotion';
+
+  @override
+  String get recurringGoalEmotionHint => 'For example: 💪 motivation';
+
+  @override
+  String get recurringGoalRegularitySection => 'Recurrence';
+
+  @override
+  String get recurringGoalEveryNDays => 'Every N days';
+
+  @override
+  String get recurringGoalByWeekdays => 'By weekdays';
+
+  @override
+  String get recurringGoalIntervalLabel => 'Interval';
+
+  @override
+  String recurringGoalEveryNDaysShort(Object count) {
+    return '$count d';
+  }
+
+  @override
+  String get recurringGoalWeekdayMon => 'Mon';
+
+  @override
+  String get recurringGoalWeekdayTue => 'Tue';
+
+  @override
+  String get recurringGoalWeekdayWed => 'Wed';
+
+  @override
+  String get recurringGoalWeekdayThu => 'Thu';
+
+  @override
+  String get recurringGoalWeekdayFri => 'Fri';
+
+  @override
+  String get recurringGoalWeekdaySat => 'Sat';
+
+  @override
+  String get recurringGoalWeekdaySun => 'Sun';
+
+  @override
+  String recurringGoalTimeButton(Object time) {
+    return 'Time: $time';
+  }
+
+  @override
+  String recurringGoalUntilButton(Object date) {
+    return 'Until: $date';
+  }
+
+  @override
+  String get recurringGoalParametersSection => 'Parameters';
+
+  @override
+  String get recurringGoalLifeBlockLabel => 'Life block';
+
+  @override
+  String get recurringGoalImportanceLabel => 'Importance';
+
+  @override
+  String get recurringGoalUserGoalLabel => 'Big goal';
+
+  @override
+  String get recurringGoalNoLink => 'No link';
+
+  @override
+  String recurringGoalLoadingUserGoals(Object block) {
+    return 'Loading goals for “$block”...';
+  }
+
+  @override
+  String recurringGoalNoUserGoalsForBlock(Object block) {
+    return 'There are no available goals for “$block” yet.';
+  }
+
+  @override
+  String get recurringGoalPlannedHoursLabel => 'Planned hours';
+
+  @override
+  String recurringGoalOccurrencesCount(Object count) {
+    return 'Tasks to be created: $count';
+  }
+
+  @override
+  String get recurringGoalCreate => 'Create';
+
+  @override
+  String get recurringGoalLifeBlockGeneral => 'General';
+
+  @override
+  String get recurringGoalLifeBlockHealth => 'Health';
+
+  @override
+  String get recurringGoalLifeBlockCareer => 'Career';
+
+  @override
+  String get recurringGoalLifeBlockFinance => 'Finance';
+
+  @override
+  String get recurringGoalLifeBlockRelationships => 'Relationships';
+
+  @override
+  String get recurringGoalLifeBlockSelf => 'Self-development';
+
+  @override
+  String get recurringGoalLifeBlockEducation => 'Education';
+
+  @override
+  String get recurringGoalLifeBlockTravel => 'Travel';
+
+  @override
+  String get recurringGoalLifeBlockHome => 'Home';
+
+  @override
+  String get recurringGoalHorizonTactical => 'Tactical';
+
+  @override
+  String get recurringGoalHorizonMid => 'Mid-term';
+
+  @override
+  String get recurringGoalHorizonLong => 'Long-term';
+
+  @override
+  String get addDayGoalLinkSectionTitle => 'Link to a goal';
+
+  @override
+  String get addDayGoalUserGoalLabel => 'Big goal';
+
+  @override
+  String get addDayGoalNoLinkedGoal => 'No link';
+
+  @override
+  String addDayGoalLoadingUserGoals(Object block) {
+    return 'Loading goals for “$block”...';
+  }
+
+  @override
+  String addDayGoalNoUserGoalsForBlock(Object block) {
+    return 'There are no available goals for “$block” yet.';
+  }
+
+  @override
+  String get addDayGoalLifeBlockGeneral => 'General';
+
+  @override
+  String get addDayGoalLifeBlockHealth => 'Health';
+
+  @override
+  String get addDayGoalLifeBlockCareer => 'Career';
+
+  @override
+  String get addDayGoalLifeBlockFinance => 'Finance';
+
+  @override
+  String get addDayGoalLifeBlockRelationships => 'Relationships';
+
+  @override
+  String get addDayGoalLifeBlockSelf => 'Self-development';
+
+  @override
+  String get addDayGoalLifeBlockEducation => 'Education';
+
+  @override
+  String get addDayGoalLifeBlockTravel => 'Travel';
+
+  @override
+  String get addDayGoalLifeBlockHome => 'Home';
+
+  @override
+  String get addDayGoalHorizonTactical => 'Tactical';
+
+  @override
+  String get addDayGoalHorizonMid => 'Mid-term';
+
+  @override
+  String get addDayGoalHorizonLong => 'Long-term';
+
+  @override
+  String get lifeBlockSelf => 'Self-development';
+
+  @override
+  String get lifeBlockTravel => 'Travel';
+
+  @override
+  String get lifeBlockHome => 'Home';
+
+  @override
+  String get horizonTactical => 'Tactical';
+
+  @override
+  String get horizonMid => 'Mid-term';
+
+  @override
+  String get horizonLong => 'Long-term';
+
+  @override
+  String get editGoalSectionDateTime => 'Date and time';
+
+  @override
+  String get editGoalSectionUserGoalLink => 'Link to a larger goal';
+
+  @override
+  String get userGoalLinkFieldLabel => 'Larger goal';
+
+  @override
+  String get userGoalLinkNone => 'No link';
+
+  @override
+  String userGoalLinkLoadingForBlock(Object block) {
+    return 'Loading goals for “$block”...';
+  }
+
+  @override
+  String userGoalLinkNoGoalsForBlock(Object block) {
+    return 'No available goals for “$block” yet.';
+  }
+
+  @override
+  String editGoalHoursValue(Object hours) {
+    return 'Hours: $hours';
+  }
+
+  @override
+  String commonHoursShort(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String get healthTrackerTitle => 'Health tracker';
+
+  @override
+  String get healthCalorieTargetTitle => 'Calorie target';
+
+  @override
+  String get healthDailyCaloriesLabel => 'Kcal per day';
+
+  @override
+  String get healthAddMealTitle => 'Add meal';
+
+  @override
+  String get healthMealTypeLabel => 'Meal';
+
+  @override
+  String get healthMealBreakfast => 'Breakfast';
+
+  @override
+  String get healthMealLunch => 'Lunch';
+
+  @override
+  String get healthMealDinner => 'Dinner';
+
+  @override
+  String get healthMealSnack => 'Snack';
+
+  @override
+  String get healthCaloriesLabel => 'Calories';
+
+  @override
+  String get healthEnterCalories => 'Enter calories';
+
+  @override
+  String get healthMealDescriptionLabel => 'What did you eat?';
+
+  @override
+  String get healthAddDescription => 'Add a description';
+
+  @override
+  String get healthAddBurnTitle => 'Add calories burned';
+
+  @override
+  String get healthCaloriesBurnedLabel => 'Calories burned';
+
+  @override
+  String get healthCommentLabel => 'Comment';
+
+  @override
+  String get healthWaterTodayTitle => 'How much water did you drink today?';
+
+  @override
+  String get healthSaveWater => 'Save water';
+
+  @override
+  String get healthSetTarget => 'Set target';
+
+  @override
+  String healthTargetCalories(Object calories) {
+    return 'Target $calories kcal';
+  }
+
+  @override
+  String get healthAddMealButton => 'Add food';
+
+  @override
+  String get healthAddBurnButton => 'Add burn';
+
+  @override
+  String healthWaterButton(Object liters) {
+    return 'Water $liters L';
+  }
+
+  @override
+  String get healthConsumed => 'Consumed';
+
+  @override
+  String get healthBurned => 'Burned';
+
+  @override
+  String get healthBalance => 'Balance';
+
+  @override
+  String get healthDeltaVsTarget => 'Delta vs target';
+
+  @override
+  String get healthWaterDrunk => 'Water drunk';
+
+  @override
+  String healthKcalValue(Object value) {
+    return '$value kcal';
+  }
+
+  @override
+  String healthKcalValueWithSign(Object value) {
+    return '$value kcal';
+  }
+
+  @override
+  String healthLitersValue(Object value) {
+    return '$value L';
+  }
+
+  @override
+  String get healthMealsTodayTitle => 'Meals today';
+
+  @override
+  String get healthNoMeals => 'No meal entries yet.';
+
+  @override
+  String get healthBurnsTitle => 'Calories burned';
+
+  @override
+  String get healthNoBurns => 'No burned-calorie entries yet.';
+
+  @override
+  String get healthNoComment => 'No comment';
+
+  @override
+  String get hobbyTrackerTitle => 'Hobby tracker';
+
+  @override
+  String get hobbyTrackerNewHobbyTitle => 'New hobby';
+
+  @override
+  String get hobbyTrackerHobbyNameLabel => 'Hobby name';
+
+  @override
+  String get hobbyTrackerEnterHobbyValidator => 'Enter a hobby';
+
+  @override
+  String get hobbyTrackerWeeklyGoalMinutesLabel => 'Weekly goal, minutes';
+
+  @override
+  String get hobbyTrackerEnterGoalValidator => 'Enter a goal';
+
+  @override
+  String get hobbyTrackerCreateButton => 'Create';
+
+  @override
+  String hobbyTrackerAddTimeTitle(Object title) {
+    return 'Add time: $title';
+  }
+
+  @override
+  String get hobbyTrackerMinutesSpentLabel => 'Minutes spent';
+
+  @override
+  String get hobbyTrackerNoteLabel => 'Note';
+
+  @override
+  String get hobbyTrackerDeleteConfirmTitle => 'Delete hobby?';
+
+  @override
+  String hobbyTrackerDeleteConfirmBody(Object title) {
+    return 'Hobby \"$title\" will be deleted together with all entries.';
+  }
+
+  @override
+  String get hobbyTrackerAddHobbyTooltip => 'Add hobby';
+
+  @override
+  String get hobbyTrackerEmptyText =>
+      'No hobbies yet. Add your first activity and start tracking time.';
+
+  @override
+  String get hobbyTrackerCreateHobbyButton => 'Create hobby';
+
+  @override
+  String get hobbyTrackerDeleteHobbyTooltip => 'Delete hobby';
+
+  @override
+  String get hobbyTrackerAddEntryButton => 'Add entry';
+
+  @override
+  String hobbyTrackerToday(Object value) {
+    return 'Today $value';
+  }
+
+  @override
+  String hobbyTrackerWeek(Object value) {
+    return 'Week $value';
+  }
+
+  @override
+  String hobbyTrackerGoal(Object value) {
+    return 'Goal: $value';
+  }
+
+  @override
+  String hobbyTrackerMinutesShort(Object minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String hobbyTrackerHoursShort(Object hours) {
+    return '${hours}h';
+  }
+
+  @override
+  String hobbyTrackerHoursMinutesShort(Object hours, Object minutes) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String get importGoalsReviewTitle => 'Import goals';
+
+  @override
+  String get importGoalsReviewSubtitle =>
+      'Select what to import and adjust the title or description if needed.';
+
+  @override
+  String get importGoalsReviewSelectAll => 'Select all';
+
+  @override
+  String get importGoalsReviewYes => 'Yes';
+
+  @override
+  String get importGoalsReviewNo => 'No';
+
+  @override
+  String get importGoalsReviewListSection => 'List';
+
+  @override
+  String get importGoalsReviewImport => 'Import';
+
+  @override
+  String get importGoalsReviewFieldTitle => 'Title';
+
+  @override
+  String get importGoalsReviewFieldDescription => 'Description';
+
+  @override
+  String importGoalsReviewTime(Object time) {
+    return 'Time: $time';
+  }
+
+  @override
+  String get importGoalsReviewChange => 'Change';
+
+  @override
+  String get shoppingBasketCopyHeader => '🛒 Shopping list';
+
+  @override
+  String shoppingDueDatePrefix(Object date) {
+    return 'by $date';
+  }
+
+  @override
+  String get shoppingBasketCopied => 'Shopping list copied';
+
+  @override
+  String get shoppingNewWishlistItem => 'New wish item';
+
+  @override
+  String get shoppingNewPurchase => 'New purchase';
+
+  @override
+  String get shoppingEditItem => 'Edit item';
+
+  @override
+  String get shoppingFieldTitle => 'Title';
+
+  @override
+  String get shoppingEnterTitle => 'Enter a title';
+
+  @override
+  String get shoppingFieldDescription => 'Description';
+
+  @override
+  String get shoppingFieldPrice => 'Price';
+
+  @override
+  String get shoppingFieldStore => 'Store';
+
+  @override
+  String get shoppingFieldExpenseCategory => 'Expense category';
+
+  @override
+  String get shoppingNoCategory => 'No category';
+
+  @override
+  String get shoppingAlreadyBought => 'Already bought';
+
+  @override
+  String get shoppingPurchaseDate => 'Purchase date';
+
+  @override
+  String get shoppingReset => 'Reset';
+
+  @override
+  String get shoppingEmpty => 'Empty for now.';
+
+  @override
+  String get shoppingTrackerTitle => 'Shopping tracker';
+
+  @override
+  String get shoppingCopyBasket => 'Copy basket';
+
+  @override
+  String get shoppingBasketTitle => 'Shopping list';
+
+  @override
+  String get shoppingWishlistTitle => 'Wishlist';
+
+  @override
+  String get profileOpenLinkFailed => 'Could not open the link.';
+
+  @override
+  String get profileDangerZoneSubtitle => 'Account deletion';
+
+  @override
+  String get profileLegalDocumentsTitle => 'Legal documents';
+
+  @override
+  String get profileLegalDocumentsSubtitle =>
+      'You can open the Privacy Policy, Datenschutz, Terms of Use, and Impressum at any time.';
+
+  @override
+  String get profileLegalPrivacyTitle => 'Privacy Policy';
+
+  @override
+  String get profileLegalPrivacySubtitle =>
+      'English version of the privacy policy';
+
+  @override
+  String get profileLegalDatenschutzTitle => 'Datenschutzerklärung';
+
+  @override
+  String get profileLegalDatenschutzSubtitle =>
+      'German version of the privacy policy';
+
+  @override
+  String get profileLegalTermsTitle => 'Terms of Use';
+
+  @override
+  String get profileLegalTermsSubtitle => 'Rules and conditions for using Nest';
+
+  @override
+  String get profileLegalImpressumTitle => 'Impressum';
+
+  @override
+  String get profileLegalImpressumSubtitle =>
+      'Legal notice and provider information';
+
+  @override
+  String get settingsLanguageSystem => 'System';
+
+  @override
+  String get settingsLanguageRussian => 'Русский';
+
+  @override
+  String get settingsLanguageEnglish => 'English';
+
+  @override
+  String get settingsLanguageGerman => 'Deutsch';
+
+  @override
+  String get settingsLanguageFrench => 'Français';
+
+  @override
+  String get settingsLanguageSpanish => 'Español';
+
+  @override
+  String get settingsLanguageTurkish => 'Türkçe';
+
+  @override
+  String get profileWebNotificationsEveningBody =>
+      'Mark your habits and wrap up your day 👌';
+
+  @override
+  String get profileWebNotificationsPermissionDeniedToast =>
+      'Permission was not granted. Check your browser notification settings.';
+
+  @override
+  String get profileWebNotificationsPermissionGrantedToast =>
+      'Browser notifications are enabled ✅';
+
+  @override
+  String profileWebNotificationsTimeChangedToast(Object time) {
+    return 'Notification time: $time';
+  }
+
+  @override
+  String get profileWebNotificationsLoadingSettings => 'Loading settings...';
+
+  @override
+  String get profileWebNotificationsEnabledToast =>
+      'Enabled. Remember to allow notifications in your browser.';
+
+  @override
+  String get profileWebNotificationsDisabledToast => 'Disabled.';
+
+  @override
+  String get profileEditChipsDefaultHint => 'Enter values separated by commas';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to Nest';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'I’ll quickly show you the main features: quick actions, tasks, big goals, profile, reports, and finances.';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingStart => 'Start';
+
+  @override
+  String get onboardingFinishTitle => 'Done';
+
+  @override
+  String get onboardingFinishBody =>
+      'Now you know where the main Nest features are. You can restart the tutorial later from the help icon on the home screen.';
+
+  @override
+  String get onboardingGotIt => 'Got it';
+
+  @override
+  String get onboardingMainQuickActionsTitle => 'Quick actions';
+
+  @override
+  String get onboardingMainQuickActionsText =>
+      'Use this button to quickly add tasks, mood, expenses, habits, and launch the AI plan.';
+
+  @override
+  String get onboardingMainNavigationTitle => 'Nest navigation';
+
+  @override
+  String get onboardingMainNavigationText =>
+      'Here you’ll find the main sections: home, tasks, big goals, profile, reports, and finances.';
+
+  @override
+  String get onboardingMainHelpTitle => 'Open the guide again';
+
+  @override
+  String get onboardingMainHelpText =>
+      'Tap this icon whenever you want to repeat the interactive How-To later.';
+
+  @override
+  String get onboardingGoalsFilterTitle => 'Life area filter';
+
+  @override
+  String get onboardingGoalsFilterText =>
+      'Choose career, health, finance, and other areas to view tasks in the right context.';
+
+  @override
+  String get onboardingGoalsModeTitle => 'Dashboard or calendar';
+
+  @override
+  String get onboardingGoalsModeText =>
+      'The dashboard shows the big picture, while the calendar helps you plan tasks by day and week.';
+
+  @override
+  String get onboardingGoalsAddTitle => 'Add actions';
+
+  @override
+  String get onboardingGoalsAddText =>
+      'Here you can quickly add a task, a task series, or fill a whole day with several entries.';
+
+  @override
+  String get onboardingReportsPeriodTitle => 'Analysis period';
+
+  @override
+  String get onboardingReportsPeriodText =>
+      'Switch between day, week, and month to compare goals, mood, habits, and finances over time.';
+
+  @override
+  String get onboardingReportsChartTitle => 'Interactive charts';
+
+  @override
+  String get onboardingReportsChartText =>
+      'Tap chart segments and points — the app will show details for the selected element only.';
+
+  @override
+  String get onboardingUserGoalsHeaderTitle => 'Big goals';
+
+  @override
+  String get onboardingUserGoalsHeaderText =>
+      'This is where strategic goals are stored: short-term, mid-term, and long-term. Later, you can link daily tasks to them.';
+
+  @override
+  String get onboardingUserGoalsFiltersTitle => 'Goal filters';
+
+  @override
+  String get onboardingUserGoalsFiltersText =>
+      'Filter goals by life area and horizon to quickly focus on the direction you need.';
+
+  @override
+  String get onboardingUserGoalsAddTitle => 'Create a big goal';
+
+  @override
+  String get onboardingUserGoalsAddText =>
+      'Tap here to add a goal, choose a life area, horizon, and deadline.';
+
+  @override
+  String get onboardingProfileHeaderTitle => 'Profile';
+
+  @override
+  String get onboardingProfileHeaderText =>
+      'This is the center for personal Nest settings: account, focus, habits, and app preferences.';
+
+  @override
+  String get onboardingProfileCardTitle => 'Personal data';
+
+  @override
+  String get onboardingProfileCardText =>
+      'Name, age, and basic parameters are used to personalize the interface and future AI recommendations.';
+
+  @override
+  String get onboardingProfileFocusTitle => 'Focus and settings';
+
+  @override
+  String get onboardingProfileFocusText =>
+      'These parameters influence day planning, analytics, and recommendations in the app.';
+
+  @override
+  String get onboardingBudgetIncomeTitle => 'Income categories';
+
+  @override
+  String get onboardingBudgetIncomeText =>
+      'Add income sources so financial analytics can understand the structure of your inflows.';
+
+  @override
+  String get onboardingBudgetExpenseTitle => 'Expense categories';
+
+  @override
+  String get onboardingBudgetExpenseText =>
+      'Set up expense categories and limits here. This helps you see where your budget is going fastest.';
+
+  @override
+  String get onboardingBudgetJarsTitle => 'Jars and allocation';
+
+  @override
+  String get onboardingBudgetJarsText =>
+      'Use jars for savings goals: travel, emergency fund, investments, or large purchases.';
+
+  @override
+  String get onboardingBudgetSaveTitle => 'Save settings';
+
+  @override
+  String get onboardingBudgetSaveText =>
+      'After making changes, don’t forget to save your budget so categories and limits are stored in the database.';
+
+  @override
+  String get onboardingDayGoalsSummaryTitle => 'Day summary';
+
+  @override
+  String get onboardingDayGoalsSummaryText =>
+      'This card shows your day progress: how many tasks are done, what remains, and how much time is still planned.';
+
+  @override
+  String get onboardingDayGoalsFilterTitle => 'Hide completed';
+
+  @override
+  String get onboardingDayGoalsFilterText =>
+      'Turn on this filter to keep only active tasks on the screen.';
+
+  @override
+  String get onboardingDayGoalsFabTitle => 'Add activity';
+
+  @override
+  String get onboardingDayGoalsFabText =>
+      'Use this button to add a task, recognize a journal entry, or sync Google Calendar.';
+
+  @override
+  String get onboardingQuestionnaireProgressTitle => 'Setup progress';
+
+  @override
+  String get onboardingQuestionnaireProgressText =>
+      'Here you can see which step of the initial setup you’re currently on.';
+
+  @override
+  String get onboardingQuestionnaireNextTitle => 'Move forward';
+
+  @override
+  String get onboardingQuestionnaireNextText =>
+      'After completing the current step, tap here. At the end, Nest will save your profile, life areas, and goals.';
+
+  @override
+  String get onboardingExpensesControlsTitle => 'Day and budget settings';
+
+  @override
+  String get onboardingExpensesControlsText =>
+      'Choose the operation date here and open settings for categories, limits, and jars.';
+
+  @override
+  String get onboardingExpensesSummaryTitle => 'Monthly finance summary';
+
+  @override
+  String get onboardingExpensesSummaryText =>
+      'This card shows monthly income, expenses, and free balance — the foundation for budget analysis.';
+
+  @override
+  String get onboardingExpensesTransactionsTitle =>
+      'Transactions for the selected day';
+
+  @override
+  String get onboardingExpensesTransactionsText =>
+      'Here you can see income and expenses for the day. Tap a transaction to edit it, or swipe left to delete it.';
+
+  @override
+  String get onboardingExpensesFabTitle => 'Add income or expense';
+
+  @override
+  String get onboardingExpensesFabText =>
+      'Tap plus to open the menu and quickly add a new financial transaction.';
+
+  @override
+  String get onboardingNextHint => 'Tap the screen to continue';
+
+  @override
+  String get registerLegalTermsTitle => 'Terms of Use';
+
+  @override
+  String get registerLegalPrivacyTitle => 'Privacy Policy';
+
+  @override
+  String get registerLegalDatenschutzTitle => 'Datenschutzerklärung';
+
+  @override
+  String get registerLegalImpressumTitle => 'Impressum';
+
+  @override
+  String registerLegalOptionalTitle(Object title) {
+    return '$title · optional';
+  }
+
+  @override
+  String get registerErrOpenRequiredLegalDocs =>
+      'Please open and read Terms of Use and Privacy Policy first.';
+
+  @override
+  String registerLegalOpenFailed(Object document) {
+    return 'Could not open $document.';
+  }
+
+  @override
+  String get registerLegalAcceptedText =>
+      'I have read and accept the Terms of Use and Privacy Policy.';
+
+  @override
+  String get registerLegalOpenRequiredDocsText =>
+      'Open and read Terms of Use and Privacy Policy first. Datenschutzerklärung and Impressum are available as additional legal information.';
 }

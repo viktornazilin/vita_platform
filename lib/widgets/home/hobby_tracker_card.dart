@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../services/home_trackers_repo.dart';
 import '../report_section_card.dart';
@@ -33,15 +33,17 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
     }
   }
 
-  String _fmtMinutes(int m) {
-    final h = m ~/ 60;
-    final min = m % 60;
-    if (h == 0) return '${min}м';
-    if (min == 0) return '${h}ч';
-    return '${h}ч ${min}м';
+  String _fmtMinutes(BuildContext context, int minutesTotal) {
+    final l = AppLocalizations.of(context)!;
+    final h = minutesTotal ~/ 60;
+    final min = minutesTotal % 60;
+    if (h == 0) return l.hobbyTrackerMinutesShort(min);
+    if (min == 0) return l.hobbyTrackerHoursShort(h);
+    return l.hobbyTrackerHoursMinutesShort(h, min);
   }
 
   Future<void> _showCreateHobbySheet() async {
+    final l = AppLocalizations.of(context)!;
     final titleCtrl = TextEditingController();
     final targetCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -71,7 +73,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Новое хобби',
+                    l.hobbyTrackerNewHobbyTitle,
                     style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
@@ -79,21 +81,23 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Название хобби',
+                    decoration: InputDecoration(
+                      labelText: l.hobbyTrackerHobbyNameLabel,
                     ),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Введите хобби' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? l.hobbyTrackerEnterHobbyValidator
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: targetCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Цель на неделю, минут',
+                    decoration: InputDecoration(
+                      labelText: l.hobbyTrackerWeeklyGoalMinutesLabel,
                     ),
-                    validator: (v) =>
-                        (int.tryParse(v ?? '') ?? 0) <= 0 ? 'Введите цель' : null,
+                    validator: (v) => (int.tryParse(v ?? '') ?? 0) <= 0
+                        ? l.hobbyTrackerEnterGoalValidator
+                        : null,
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
@@ -110,7 +114,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                         await _load();
                       },
                       icon: const Icon(Icons.add_rounded),
-                      label: const Text('Создать'),
+                      label: Text(l.hobbyTrackerCreateButton),
                     ),
                   ),
                 ],
@@ -123,6 +127,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
   }
 
   Future<void> _showAddEntrySheet(HobbySummary hobby) async {
+    final l = AppLocalizations.of(context)!;
     final minutesCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
 
@@ -149,7 +154,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Добавить время: ${hobby.hobbyTitle}',
+                  l.hobbyTrackerAddTimeTitle(hobby.hobbyTitle),
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -158,15 +163,15 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                 TextField(
                   controller: minutesCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Сколько минут потратил',
+                  decoration: InputDecoration(
+                    labelText: l.hobbyTrackerMinutesSpentLabel,
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: noteCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Заметка',
+                  decoration: InputDecoration(
+                    labelText: l.hobbyTrackerNoteLabel,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -187,7 +192,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                       await _load();
                     },
                     icon: const Icon(Icons.timer_rounded),
-                    label: const Text('Сохранить'),
+                    label: Text(l.commonSave),
                   ),
                 ),
               ],
@@ -199,19 +204,21 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
   }
 
   Future<void> _deleteHobby(HobbySummary hobby) async {
+    final l = AppLocalizations.of(context)!;
+
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Удалить хобби?'),
-            content: Text('Хобби "${hobby.hobbyTitle}" будет удалено вместе со всеми записями.'),
+            title: Text(l.hobbyTrackerDeleteConfirmTitle),
+            content: Text(l.hobbyTrackerDeleteConfirmBody(hobby.hobbyTitle)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Отмена'),
+                child: Text(l.commonCancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Удалить'),
+                child: Text(l.commonDelete),
               ),
             ],
           ),
@@ -225,18 +232,19 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     return ReportSectionCard(
-      title: 'Трекер хобби',
+      title: l.hobbyTrackerTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Align(
             alignment: Alignment.centerRight,
             child: IconButton(
-              tooltip: 'Добавить хобби',
+              tooltip: l.hobbyTrackerAddHobbyTooltip,
               onPressed: _showCreateHobbySheet,
               icon: const Icon(Icons.add_circle_outline_rounded),
             ),
@@ -251,7 +259,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Пока нет хобби. Добавь первое направление и начни трекать время.',
+                  l.hobbyTrackerEmptyText,
                   style: tt.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
@@ -260,7 +268,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                 FilledButton.icon(
                   onPressed: _showCreateHobbySheet,
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('Создать хобби'),
+                  label: Text(l.hobbyTrackerCreateHobbyButton),
                 ),
               ],
             )
@@ -293,12 +301,12 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                             IconButton(
                               onPressed: () => _deleteHobby(hobby),
                               icon: const Icon(Icons.delete_outline_rounded),
-                              tooltip: 'Удалить хобби',
+                              tooltip: l.hobbyTrackerDeleteHobbyTooltip,
                             ),
                             FilledButton.tonalIcon(
                               onPressed: () => _showAddEntrySheet(hobby),
                               icon: const Icon(Icons.add_rounded),
-                              label: const Text('Внести'),
+                              label: Text(l.hobbyTrackerAddEntryButton),
                             ),
                           ],
                         ),
@@ -309,11 +317,15 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                           children: [
                             _InfoPill(
                               icon: Icons.today_rounded,
-                              text: 'Сегодня ${_fmtMinutes(hobby.spentMinutesToday)}',
+                              text: l.hobbyTrackerToday(
+                                _fmtMinutes(context, hobby.spentMinutesToday),
+                              ),
                             ),
                             _InfoPill(
                               icon: Icons.date_range_rounded,
-                              text: 'Неделя ${_fmtMinutes(hobby.spentMinutesWeek)}',
+                              text: l.hobbyTrackerWeek(
+                                _fmtMinutes(context, hobby.spentMinutesWeek),
+                              ),
                             ),
                           ],
                         ),
@@ -325,7 +337,9 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Цель: ${_fmtMinutes(hobby.targetMinutesWeek)}',
+                          l.hobbyTrackerGoal(
+                            _fmtMinutes(context, hobby.targetMinutesWeek),
+                          ),
                           style: tt.bodySmall?.copyWith(
                             color: cs.onSurfaceVariant,
                           ),

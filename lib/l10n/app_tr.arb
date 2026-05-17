@@ -1,990 +1,1772 @@
 {
-    "appTitle": "Nest App",
-    "login": "Giriş yap",
-    "register": "Hesap oluştur",
-    "home": "Ana sayfa",
-  
-    "budgetSetupTitle": "Bütçe ve kavanozlar",
-    "budgetSetupSaved": "Ayarlar kaydedildi",
-    "budgetSetupSaveError": "Kaydetme hatası",
-  
-    "budgetIncomeCategoriesTitle": "Gelir kategorileri",
-    "budgetIncomeCategoriesSubtitle": "Gelir eklerken kullanılır",
-  
-    "budgetExpenseCategoriesTitle": "Gider kategorileri",
-    "budgetExpenseCategoriesSubtitle": "Limitler, harcamayı kontrol altında tutmana yardımcı olur",
-  
-    "budgetJarsTitle": "Birikim kavanozları",
-    "budgetJarsSubtitle": "Yüzde, otomatik eklenen serbest fon payını ifade eder",
-  
-    "budgetAddJar": "Kavanoz ekle",
-    "budgetJarAdded": "Kavanoz eklendi",
-    "budgetJarAddFailed": "Eklenemedi: {error}",
-    "@budgetJarAddFailed": {
-      "placeholders": {
-        "error": {}
+  "@@locale": "tr",
+  "appTitle": "Nest App",
+  "login": "Giriş yap",
+  "register": "Hesap oluştur",
+  "home": "Ev",
+  "budgetSetupTitle": "Bütçe ve kumbaralar",
+  "budgetSetupSaved": "Ayarlar kaydedildi",
+  "budgetSetupSaveError": "Kaydetme hatası",
+  "budgetIncomeCategoriesTitle": "Gelir kategorileri",
+  "budgetIncomeCategoriesSubtitle": "Gelir eklerken kullanılır",
+  "budgetExpenseCategoriesTitle": "Gider kategorileri",
+  "budgetExpenseCategoriesSubtitle": "Limitler harcamaları kontrol altında tutmana yardımcı olur",
+  "budgetJarsTitle": "Birikim kumbaraları",
+  "budgetJarsSubtitle": "Yüzde, serbest bakiyeden otomatik eklenecek paydır",
+  "budgetAddJar": "Kumbara ekle",
+  "budgetJarAdded": "Kumbara eklendi",
+  "budgetJarAddFailed": "Eklenemedi: {error}",
+  "@budgetJarAddFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "budgetJarDeleted": "Kumbara silindi",
+  "budgetJarDeleteFailed": "Silinemedi: {error}",
+  "@budgetJarDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "budgetNoJarsTitle": "Henüz kumbara yok",
+  "budgetNoJarsSubtitle": "İlk birikim hedefini oluştur — ona ulaşmana yardımcı olalım.",
+  "budgetSetOrChangeLimit": "Limit belirle/değiştir",
+  "budgetDeleteCategoryTitle": "Kategori silinsin mi?",
+  "budgetCategoryLabel": "Kategori: {name}",
+  "@budgetCategoryLabel": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "budgetDeleteJarTitle": "Kumbara silinsin mi?",
+  "budgetJarLabel": "Kumbara: {title}",
+  "@budgetJarLabel": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "budgetJarSummary": "Birikmiş: {saved} ₽ • Yüzde: %{percent}{targetPart}",
+  "@budgetJarSummary": {
+    "placeholders": {
+      "saved": {},
+      "percent": {},
+      "targetPart": {}
+    }
+  },
+  "budgetNewIncomeCategory": "Yeni gelir kategorisi",
+  "budgetNewExpenseCategory": "Yeni gider kategorisi",
+  "budgetCategoryNameHint": "Kategori adı",
+  "budgetCategoryNameLabel": "Kategori adı",
+  "commonAdd": "Ekle",
+  "commonDelete": "Sil",
+  "commonCancel": "İptal",
+  "commonLoading": "yükleniyor…",
+  "commonSaving": "Kaydediliyor…",
+  "commonSave": "Kaydet",
+  "commonRetry": "Tekrar dene",
+  "commonUpdate": "Güncelle",
+  "commonCollapse": "Daralt",
+  "commonDots": "...",
+  "commonEdit": "Düzenle",
+  "commonBack": "Geri",
+  "commonNext": "İleri",
+  "commonDone": "Tamamlandı",
+  "commonRefresh": "Yenile",
+  "commonChange": "Değiştir",
+  "commonDate": "Tarih",
+  "commonRemove": "Kaldır",
+  "commonPick": "Seç",
+  "commonClose": "Kapat",
+  "commonCreate": "Oluştur",
+  "commonTitle": "Başlık",
+  "commonDash": "—",
+  "commonOr": "veya",
+  "dayGoalsAllLifeBlocks": "Tüm alanlar",
+  "dayGoalsEmpty": "Bu gün için hedef yok",
+  "dayGoalsAddFailed": "Hedef eklenemedi: {error}",
+  "@dayGoalsAddFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "dayGoalsUpdated": "Hedef güncellendi",
+  "dayGoalsUpdateFailed": "Hedef güncellenemedi: {error}",
+  "@dayGoalsUpdateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "dayGoalsDeleted": "Hedef silindi",
+  "dayGoalsDeleteFailed": "Silinemedi: {error}",
+  "@dayGoalsDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "dayGoalsToggleFailed": "Durum değiştirilemedi: {error}",
+  "@dayGoalsToggleFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "dayGoalsDeleteConfirmTitle": "Hedef silinsin mi?",
+  "dayGoalsFabAddTitle": "Hedef ekle",
+  "dayGoalsFabAddSubtitle": "Manuel oluştur",
+  "dayGoalsFabScanTitle": "Tara",
+  "dayGoalsFabScanSubtitle": "Günlük fotoğrafı",
+  "dayGoalsFabCalendarTitle": "Google Calendar",
+  "dayGoalsFabCalendarSubtitle": "Bugünün hedeflerini içe/dışa aktar",
+  "epicIntroSkip": "Atla",
+  "epicIntroSubtitle": "Düşünceler için bir yuva. Hedeflerin,\nhayallerin ve planların sakin ve bilinçli şekilde büyüdüğü yer.",
+  "epicIntroPrimaryCta": "Yolculuğuma başla",
+  "epicIntroLater": "Daha sonra",
+  "epicIntroSecondaryCta": "Giriş yap",
+  "epicIntroFooter": "Prologa Ayarlar’dan her zaman dönebilirsin.",
+  "homeMoodSaved": "Ruh hali kaydedildi",
+  "homeMoodSaveFailed": "Kaydedilemedi: {error}",
+  "@homeMoodSaveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "homeTodayAndWeekTitle": "Bugün ve hafta",
+  "homeTodayAndWeekSubtitle": "Hızlı bir özet — tüm temel metrikler burada",
+  "homeMetricMoodTitle": "Ruh hali",
+  "homeMoodNoEntry": "kayıt yok",
+  "homeMoodNoNote": "not yok",
+  "homeMoodHasNote": "not var",
+  "homeMetricTasksTitle": "Görevler",
+  "homeMetricHoursPerDayTitle": "Saat/gün",
+  "homeMetricEfficiencyTitle": "Verimlilik",
+  "homeEfficiencyPlannedHours": "plan {hours} sa",
+  "@homeEfficiencyPlannedHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "homeMoodTodayTitle": "Bugünkü ruh hali",
+  "homeMoodNoTodayEntry": "Bugün için kayıt yok",
+  "homeMoodEntryNoNote": "Kayıt var (not yok)",
+  "homeMoodQuickHint": "Hızlı bir check-in ekle — 10 saniye sürer",
+  "homeMoodUpdateHint": "Güncelleyebilirsin — bugünkü kaydın üzerine yazılır",
+  "homeMoodNoteLabel": "Not (isteğe bağlı)",
+  "homeMoodNoteHint": "Durumunu ne etkiledi?",
+  "homeOpenMoodHistoryCta": "Ruh hali geçmişini aç",
+  "homeWeekSummaryTitle": "Hafta özeti",
+  "homeOpenReportsCta": "Detaylı raporları aç",
+  "homeWeekExpensesTitle": "Haftalık giderler",
+  "homeNoExpensesThisWeek": "Bu hafta gider yok",
+  "homeOpenExpensesCta": "Giderleri aç",
+  "homeExpensesTotal": "Toplam: {total} €",
+  "@homeExpensesTotal": {
+    "placeholders": {
+      "total": {}
+    }
+  },
+  "homeExpensesAvgPerDay": "Ort./gün: {avg} €",
+  "@homeExpensesAvgPerDay": {
+    "placeholders": {
+      "avg": {}
+    }
+  },
+  "homeInsightsTitle": "İçgörüler",
+  "homeTopCategory": "• En yüksek kategori: {category} — {amount} €",
+  "@homeTopCategory": {
+    "placeholders": {
+      "category": {},
+      "amount": {}
+    }
+  },
+  "homePeakExpense": "• En yüksek harcama: {day} — {amount} €",
+  "@homePeakExpense": {
+    "placeholders": {
+      "day": {},
+      "amount": {}
+    }
+  },
+  "homeOpenDetailedExpensesCta": "Detaylı giderleri aç",
+  "homeWeekCardTitle": "Hafta",
+  "homeWeekLoadFailedTitle": "İstatistikler yüklenemedi",
+  "homeWeekLoadFailedSubtitle": "İnternet bağlantını kontrol et veya daha sonra tekrar dene.",
+  "homeTitleHome": "Ev",
+  "homeTitleGoals": "Hedefler",
+  "homeTitleMood": "Ruh hali",
+  "homeTitleProfile": "Profil",
+  "homeTitleReports": "Raporlar",
+  "homeTitleExpenses": "Giderler",
+  "homeTitleApp": "MyNEST",
+  "homeSignOutTooltip": "Çıkış yap",
+  "homeSignOutTitle": "Çıkış yapılsın mı?",
+  "homeSignOutSubtitle": "Mevcut oturumun sonlandırılacak.",
+  "homeSignOutConfirm": "Çıkış yap",
+  "homeSignOutFailed": "Çıkış yapılamadı: {error}",
+  "@homeSignOutFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "homeQuickActionsTooltip": "Hızlı işlemler",
+  "expensesTitle": "Giderler",
+  "expensesPickDate": "Tarih seç",
+  "expensesCommitTooltip": "Kumbara dağılımını kilitle",
+  "expensesCommitUndoTooltip": "Kilidi geri al",
+  "expensesBudgetSettings": "Bütçe ayarları",
+  "expensesCommitDone": "Dağılım kilitlendi",
+  "expensesCommitUndone": "Kilit kaldırıldı",
+  "expensesMonthSummary": "Aylık özet",
+  "expensesIncomeLegend": "Gelir {value} €",
+  "@expensesIncomeLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesExpenseLegend": "Giderler {value} €",
+  "@expensesExpenseLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesFreeLegend": "Serbest {value} €",
+  "@expensesFreeLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesDaySum": "Gün toplamı: {value} €",
+  "@expensesDaySum": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesNoTxForDay": "Bu gün için işlem yok",
+  "expensesDeleteTxTitle": "İşlem silinsin mi?",
+  "expensesDeleteTxBody": "{category} — {amount} €",
+  "@expensesDeleteTxBody": {
+    "placeholders": {
+      "category": {},
+      "amount": {}
+    }
+  },
+  "expensesCategoriesMonthTitle": "Aylık gider kategorileri",
+  "expensesNoCategoryData": "Henüz kategori verisi yok",
+  "expensesJarsTitle": "Birikim kumbaraları",
+  "expensesNoJars": "Henüz kumbara yok",
+  "expensesCommitShort": "Kilitle",
+  "expensesCommitUndoShort": "Kilidi geri al",
+  "expensesAddIncome": "Gelir ekle",
+  "expensesAddExpense": "Gider ekle",
+  "addExpenseNewTitle": "Yeni gider",
+  "addExpenseEditTitle": "Gideri düzenle",
+  "addExpenseAmountLabel": "Tutar",
+  "addExpenseAmountInvalid": "Geçerli bir tutar gir",
+  "addExpenseCategoryLabel": "Kategori",
+  "addExpenseCategoryRequired": "Bir kategori seç",
+  "addExpenseCreateCategoryTooltip": "Kategori oluştur",
+  "addExpenseNoteLabel": "Not",
+  "addExpenseNewCategoryTitle": "Yeni kategori",
+  "addExpenseCategoryNameLabel": "Ad",
+  "addIncomeNewTitle": "Yeni gelir",
+  "addIncomeEditTitle": "Geliri düzenle",
+  "addIncomeSubtitle": "Tutar, kategori ve not",
+  "addIncomeAmountLabel": "Tutar",
+  "addIncomeAmountHint": "örn. 1200.50",
+  "addIncomeAmountInvalid": "Geçerli bir tutar gir",
+  "addIncomeCategoryLabel": "Kategori",
+  "addIncomeCategoryRequired": "Bir kategori seç",
+  "addIncomeNoteLabel": "Not",
+  "addIncomeNoteHint": "İsteğe bağlı",
+  "addIncomeNewCategoryTitle": "Yeni gelir kategorisi",
+  "addIncomeCategoryNameHint": "örn. Maaş, Serbest iş…",
+  "addIncomeCategoryNameEmpty": "Kategori adı gir",
+  "commonCloseTooltip": "Kapat",
+  "addJarNewTitle": "Yeni kumbara",
+  "addJarEditTitle": "Kumbarayı düzenle",
+  "addJarSubtitle": "Hedefi ve serbest paradan ayrılacak payı belirle",
+  "addJarNameLabel": "Ad",
+  "addJarNameHint": "örn. Seyahat, Acil durum fonu, Ev",
+  "addJarNameRequired": "Bir ad gir",
+  "addJarPercentLabel": "Serbest paranın payı, %",
+  "addJarPercentHint": "Elle ekliyorsan 0",
+  "addJarPercentRange": "Yüzde 0 ile 100 arasında olmalı",
+  "addJarTargetLabel": "Hedef tutar",
+  "addJarTargetHint": "örn. 5000",
+  "addJarTargetHelper": "Zorunlu",
+  "addJarTargetRequired": "Bir hedef gir (pozitif sayı)",
+  "loginTitle": "Giriş yap",
+  "loginEmailLabel": "E-posta",
+  "loginPasswordLabel": "Şifre",
+  "loginShowPassword": "Şifreyi göster",
+  "loginHidePassword": "Şifreyi gizle",
+  "loginForgotPassword": "Şifreni mi unuttun?",
+  "loginCreateAccount": "Hesap oluştur",
+  "loginBtnSignIn": "Giriş yap",
+  "loginOr": "veya",
+  "loginContinueGoogle": "Google ile devam et",
+  "loginContinueApple": "Apple ID ile devam et",
+  "loginErrEmailRequired": "E-posta gir",
+  "loginErrEmailInvalid": "Geçersiz e-posta",
+  "loginErrPassRequired": "Şifre gir",
+  "loginErrPassMin6": "En az 6 karakter",
+  "loginResetTitle": "Şifre kurtarma",
+  "loginResetSend": "Gönder",
+  "loginResetSent": "Şifre sıfırlama e-postası gönderildi. Gelen kutunu kontrol et.",
+  "loginResetFailed": "E-posta gönderilemedi: {error}",
+  "@loginResetFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "registerTitle": "Hesap oluştur",
+  "registerNameLabel": "Ad",
+  "registerEmailLabel": "E-posta",
+  "registerPasswordLabel": "Şifre",
+  "registerConfirmPasswordLabel": "Şifreyi onayla",
+  "registerShowPassword": "Şifreyi göster",
+  "registerHidePassword": "Şifreyi gizle",
+  "registerBtnSignUp": "Kaydol",
+  "registerContinueGoogle": "Google ile devam et",
+  "registerContinueApple": "Apple ID ile devam et",
+  "registerContinueAppleIos": "Apple ID ile devam et (iOS)",
+  "registerHaveAccountCta": "Zaten hesabın var mı? Giriş yap",
+  "registerErrNameRequired": "Adını gir",
+  "registerErrEmailRequired": "E-postanı gir",
+  "registerErrEmailInvalid": "Geçersiz e-posta",
+  "registerErrPassRequired": "Şifre gir",
+  "registerErrPassMin8": "En az 8 karakter",
+  "registerErrPassNeedLower": "Küçük harf ekle (a-z)",
+  "registerErrPassNeedUpper": "Büyük harf ekle (A-Z)",
+  "registerErrPassNeedDigit": "Rakam ekle (0-9)",
+  "registerErrConfirmRequired": "Şifreyi tekrar gir",
+  "registerErrPasswordsMismatch": "Şifreler eşleşmiyor",
+  "registerErrAcceptTerms": "Şartları ve Gizlilik Politikasını kabul etmelisin",
+  "registerAppleOnlyIos": "Apple ID iPhone/iPad’de kullanılabilir (yalnızca iOS)",
+  "welcomeAppName": "VitaPlatform",
+  "welcomeSubtitle": "Hedeflerini, ruh halini ve zamanını yönet\n— hepsi tek yerde",
+  "welcomeSignIn": "Giriş yap",
+  "welcomeCreateAccount": "Hesap oluştur",
+  "moodTitle": "Ruh hali",
+  "moodOnePerDay": "1 kayıt = 1 gün",
+  "moodHowDoYouFeel": "Nasıl hissediyorsun?",
+  "moodNoteLabel": "Not (isteğe bağlı)",
+  "moodNoteHint": "Ruh halini ne etkiledi?",
+  "moodSaved": "Ruh hali kaydedildi",
+  "moodUpdated": "Kayıt güncellendi",
+  "moodHistoryTitle": "Ruh hali geçmişi",
+  "moodTapToEdit": "Düzenlemek için dokun",
+  "moodNoNote": "Not yok",
+  "moodEditTitle": "Kaydı düzenle",
+  "moodEmptyTitle": "Henüz kayıt yok",
+  "moodEmptySubtitle": "Bir tarih seç, ruh halini belirle ve kaydet.",
+  "moodErrSaveFailed": "Ruh hali kaydedilemedi: {error}",
+  "@moodErrSaveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "moodErrUpdateFailed": "Kayıt güncellenemedi: {error}",
+  "@moodErrUpdateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "moodErrDeleteFailed": "Kayıt silinemedi: {error}",
+  "@moodErrDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "commonDeleteConfirmTitle": "Kayıt silinsin mi?",
+  "onbTopTitle": "",
+  "onbErrSaveFailed": "Yanıtların kaydedilemedi",
+  "onbProfileTitle": "Birbirimizi tanıyalım",
+  "onbProfileSubtitle": "Bu, profil ve kişiselleştirme için yardımcı olur",
+  "onbNameLabel": "Ad",
+  "onbNameHint": "Örneğin: Viktor",
+  "onbAgeLabel": "Yaş",
+  "onbAgeHint": "Örneğin: 26",
+  "onbNameNote": "Adını daha sonra profilinden değiştirebilirsin.",
+  "onbBlocksTitle": "Hangi yaşam alanlarını takip etmek istiyorsun?",
+  "onbBlocksSubtitle": "Bu, hedeflerinin ve görevlerinin temeli olacak",
+  "onbPrioritiesTitle": "Önümüzdeki 3–6 ayda senin için en önemli şey ne?",
+  "onbPrioritiesSubtitle": "En fazla üç tane seç — bu önerileri etkiler",
+  "onbPriorityHealth": "Sağlık",
+  "onbPriorityCareer": "Kariyer",
+  "onbPriorityMoney": "Para",
+  "onbPriorityFamily": "Aile",
+  "onbPriorityGrowth": "Gelişim",
+  "onbPriorityLove": "Aşk",
+  "onbPriorityCreativity": "Yaratıcılık",
+  "onbPriorityBalance": "Denge",
+  "onbGoalsBlockTitle": "“{block}” alanındaki hedefler",
+  "@onbGoalsBlockTitle": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "onbGoalsBlockSubtitle": "Odak: taktik → orta vadeli → uzun vadeli",
+  "onbGoalLongLabel": "Uzun vadeli hedef (6–24 ay)",
+  "onbGoalLongHint": "Örneğin: Almanca B2 seviyesine ulaşmak",
+  "onbGoalMidLabel": "Orta vadeli hedef (2–6 ay)",
+  "onbGoalMidHint": "Örneğin: A2→B1’i bitirmek ve sınavı geçmek",
+  "onbGoalTacticalLabel": "Taktik hedef (2–4 hafta)",
+  "onbGoalTacticalHint": "Örneğin: 12×30 dk seans + 2 konuşma kulübü",
+  "onbWhyLabel": "Bu neden önemli? (isteğe bağlı)",
+  "onbWhyHint": "Motivasyon/anlam — yolda kalmana yardımcı olur",
+  "onbOptionalNote": "Boş bırakıp “İleri”ye dokunabilirsin.",
+  "habitsTitle": "Alışkanlıklar",
+  "habitsEmptyHint": "Henüz alışkanlık yok. İlkini ekle.",
+  "habitsEditorNewTitle": "Yeni alışkanlık",
+  "habitsEditorEditTitle": "Alışkanlığı düzenle",
+  "habitsEditorTitleLabel": "Başlık",
+  "habitsEditorTitleHint": "örn. Sabah antrenmanı",
+  "habitsNegativeLabel": "Negatif alışkanlık",
+  "habitsNegativeHint": "Takip edip azaltmak istiyorsan işaretle.",
+  "habitsPositiveHint": "Güçlendirmek için pozitif/nötr bir alışkanlık.",
+  "habitsNegativeShort": "Negatif",
+  "habitsPositiveShort": "Pozitif/nötr",
+  "habitsDeleteConfirmTitle": "Alışkanlık silinsin mi?",
+  "habitsDeleteConfirmBody": "“{title}” silinecek ve geri alınamayacak.",
+  "@habitsDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "habitsFooterHint": "Daha sonra ana ekrana alışkanlık “filtreleme” ekleyeceğiz.",
+  "habitsWeekTitle": "Alışkanlıklar",
+  "habitsWeekTopTitle": "Alışkanlıklar (bu haftanın öne çıkanları)",
+  "habitsWeekEmptyHint": "En az bir alışkanlık ekle — ilerlemen burada görünecek.",
+  "habitsWeekFooterHint": "Son 7 gündeki en aktif alışkanlıklarını gösteriyoruz.",
+  "mentalWeekTitle": "Ruh sağlığı",
+  "mentalWeekLoadError": "Yükleme hatası: {error}",
+  "@mentalWeekLoadError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "mentalWeekNoAnswers": "Bu hafta için yanıt bulunamadı (mevcut user_id için).",
+  "mentalWeekYesNoHeader": "Evet/Hayır (hafta)",
+  "mentalWeekScalesHeader": "Ölçekler (trend)",
+  "mentalWeekFooterHint": "Ekranı sade tutmak için yalnızca birkaç soru gösteriyoruz.",
+  "mentalWeekNoData": "Veri yok",
+  "mentalWeekYesCount": "Evet: {yes}/{total}",
+  "@mentalWeekYesCount": {
+    "placeholders": {
+      "yes": {},
+      "total": {}
+    }
+  },
+  "moodWeekTitle": "Haftalık ruh hali",
+  "moodWeekMarkedCount": "Kaydedildi: {filled}/{total}",
+  "@moodWeekMarkedCount": {
+    "placeholders": {
+      "filled": {},
+      "total": {}
+    }
+  },
+  "moodWeekAverageDash": "Ortalama: —",
+  "moodWeekAverageValue": "Ortalama: {avg}/5",
+  "@moodWeekAverageValue": {
+    "placeholders": {
+      "avg": {}
+    }
+  },
+  "moodWeekFooterHint": "Bu hızlı bir özettir. Detaylar aşağıdaki geçmişte.",
+  "goalsByBlockTitle": "Alana göre hedefler",
+  "goalsAddTooltip": "Hedef ekle",
+  "goalsHorizonTacticalShort": "Taktik",
+  "goalsHorizonMidShort": "Orta vadeli",
+  "goalsHorizonLongShort": "Uzun vadeli",
+  "goalsHorizonTacticalLong": "2–6 hafta",
+  "goalsHorizonMidLong": "3–6 ay",
+  "goalsHorizonLongLong": "1+ yıl",
+  "goalsEditorNewTitle": "Yeni hedef",
+  "goalsEditorEditTitle": "Hedefi düzenle",
+  "goalsEditorLifeBlockLabel": "Alan",
+  "goalsEditorHorizonLabel": "Ufuk",
+  "goalsEditorTitleLabel": "Başlık",
+  "goalsEditorTitleHint": "örn. İngilizceni B2 seviyesine çıkar",
+  "goalsEditorDescLabel": "Açıklama (isteğe bağlı)",
+  "goalsEditorDescHint": "Kısaca: tam olarak ne yapılacak ve başarı nasıl ölçülecek",
+  "goalsEditorDeadlineLabel": "Son tarih: {date}",
+  "@goalsEditorDeadlineLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "goalsDeadlineInline": "Son tarih: {date}",
+  "@goalsDeadlineInline": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "goalsEmptyAllHint": "Henüz hedef yok. Seçili alanlar için ilk hedefini ekle.",
+  "goalsNoBlocksToShow": "Gösterilecek uygun alan yok.",
+  "goalsNoGoalsForBlock": "Seçili alan için hedef yok.",
+  "goalsDeleteConfirmTitle": "Hedef silinsin mi?",
+  "goalsDeleteConfirmBody": "“{title}” silinecek ve geri alınamayacak.",
+  "@goalsDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "profileTitle": "Profilim",
+  "profileNameLabel": "Ad",
+  "profileNameTitle": "Ad",
+  "profileNamePrompt": "Sana nasıl hitap edelim?",
+  "profileAgeLabel": "Yaş",
+  "profileAgeTitle": "Yaş",
+  "profileAgePrompt": "Yaşını gir",
+  "profileAccountSection": "Hesap",
+  "profileSeenPrologueTitle": "Prolog tamamlandı",
+  "profileSeenPrologueSubtitle": "Bunu manuel olarak değiştirebilirsin",
+  "profileFocusSection": "Odak",
+  "profileTargetHoursLabel": "Günlük hedef saat",
+  "profileTargetHoursValue": "{hours} sa",
+  "@profileTargetHoursValue": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "profileTargetHoursTitle": "Günlük saat hedefi",
+  "profileTargetHoursFieldLabel": "Saat",
+  "profileQuestionnaireSection": "Anket ve yaşam alanları",
+  "profileQuestionnaireNotDoneTitle": "Anketi henüz tamamlamadın.",
+  "profileQuestionnaireCta": "Şimdi tamamla",
+  "profileLifeBlocksTitle": "Yaşam alanları",
+  "profileLifeBlocksHint": "örn. sağlık, kariyer, aile",
+  "profilePrioritiesTitle": "Öncelikler",
+  "profilePrioritiesHint": "örn. spor, finans, okuma",
+  "profileDangerZoneTitle": "Tehlikeli bölge",
+  "profileDeleteAccountTitle": "Hesap silinsin mi?",
+  "profileDeleteAccountBody": "Bu işlem geri alınamaz.\nŞunlar silinecek: hedefler, alışkanlıklar, ruh hali, gider/gelir, kumbaralar, AI planları, XP ve profilin.",
+  "profileDeleteAccountConfirm": "Kalıcı olarak sil",
+  "profileDeleteAccountCta": "Hesabı ve tüm verileri sil",
+  "profileDeletingAccount": "Siliniyor…",
+  "profileDeleteAccountFootnote": "Silme işlemi geri alınamaz. Verilerin Supabase’den kalıcı olarak kaldırılacak.",
+  "profileAccountDeletedToast": "Hesap silindi",
+  "lifeBlockHealth": "Sağlık",
+  "lifeBlockCareer": "Kariyer",
+  "lifeBlockFamily": "Aile",
+  "lifeBlockFinance": "Finans",
+  "lifeBlockLearning": "Gelişim",
+  "lifeBlockSocial": "Sosyal",
+  "lifeBlockRest": "Dinlenme",
+  "lifeBlockBalance": "Denge",
+  "lifeBlockLove": "Aşk",
+  "lifeBlockCreativity": "Yaratıcılık",
+  "lifeBlockGeneral": "Genel",
+  "aiInsightTypeDataQuality": "Veri kalitesi",
+  "aiInsightTypeRisk": "Risk",
+  "aiInsightTypeEmotional": "Duygular",
+  "aiInsightTypeHabit": "Alışkanlıklar",
+  "aiInsightTypeGoal": "Hedefler",
+  "aiInsightTypeDefault": "İçgörü",
+  "aiInsightStrengthStrong": "Güçlü etki",
+  "aiInsightStrengthNoticeable": "Belirgin etki",
+  "aiInsightStrengthWeak": "Zayıf etki",
+  "aiInsightStrengthLowConfidence": "Düşük güven",
+  "aiInsightStrengthPercent": "%{value}",
+  "@aiInsightStrengthPercent": {
+    "placeholders": {
+      "value": {
+        "type": "int"
       }
-    },
-  
-    "budgetJarDeleted": "Kavanoz silindi",
-    "budgetJarDeleteFailed": "Silinemedi: {error}",
-    "@budgetJarDeleteFailed": {
-      "placeholders": {
-        "error": {}
+    }
+  },
+  "aiInsightEvidenceTitle": "Kanıt",
+  "aiInsightImpactPositive": "Pozitif",
+  "aiInsightImpactNegative": "Negatif",
+  "aiInsightImpactMixed": "Karma",
+  "aiInsightsTitle": "AI içgörüleri",
+  "aiInsightsConfirmTitle": "AI analizi çalıştırılsın mı?",
+  "aiInsightsConfirmBody": "AI, seçilen dönem için görevlerini, alışkanlıklarını ve iyi oluşunu analiz edip içgörüleri kaydedecek. Bu birkaç saniye sürebilir.",
+  "aiInsightsConfirmRun": "Çalıştır",
+  "aiInsightsPeriod7": "7 gün",
+  "aiInsightsPeriod30": "30 gün",
+  "aiInsightsPeriod90": "90 gün",
+  "aiInsightsLastRun": "Son çalıştırma: {date}",
+  "@aiInsightsLastRun": {
+    "placeholders": {
+      "date": {
+        "type": "String"
       }
-    },
-  
-    "budgetNoJarsTitle": "Henüz kavanoz yok",
-    "budgetNoJarsSubtitle": "İlk birikim hedefini oluştur — sana ulaşmanda yardımcı olacağız.",
-  
-    "budgetSetOrChangeLimit": "Limit belirle/değiştir",
-  
-    "budgetDeleteCategoryTitle": "Kategori silinsin mi?",
-    "budgetCategoryLabel": "Kategori: {name}",
-    "@budgetCategoryLabel": {
-      "placeholders": {
-        "name": {}
+    }
+  },
+  "aiInsightsEmptyNotRunTitle": "AI henüz çalıştırılmadı",
+  "aiInsightsEmptyNotRunSubtitle": "Bir dönem seç ve “Çalıştır”a dokun. İçgörüler kaydedilecek ve uygulamada görünecek.",
+  "aiInsightsCtaRun": "Analizi çalıştır",
+  "aiInsightsEmptyNoInsightsTitle": "Henüz içgörü yok",
+  "aiInsightsEmptyNoInsightsSubtitle": "Daha fazla veri ekle (görevler, alışkanlıklar, soru yanıtları) ve analizi tekrar çalıştır.",
+  "aiInsightsCtaRunAgain": "Tekrar çalıştır",
+  "aiInsightsErrorAi": "AI hatası: {error}",
+  "@aiInsightsErrorAi": {
+    "placeholders": {
+      "error": {
+        "type": "String"
       }
-    },
-  
-    "budgetDeleteJarTitle": "Kavanoz silinsin mi?",
-    "budgetJarLabel": "Kavanoz: {title}",
-    "@budgetJarLabel": {
-      "placeholders": {
-        "title": {}
+    }
+  },
+  "navGoals": "Hedefler",
+  "navMood": "Ruh hali",
+  "navProfile": "Profil",
+  "navReports": "Raporlar",
+  "navExpenses": "Giderler",
+  "gcalTitle": "Google Calendar",
+  "gcalHeaderImport": "Takvimindeki etkinlikleri bul ve hedef olarak içe aktar.",
+  "gcalHeaderExport": "Bir dönem seç ve uygulamadaki hedefleri Google Calendar’a aktar.",
+  "gcalModeImport": "İçe aktar",
+  "gcalModeExport": "Dışa aktar",
+  "gcalCalendarLabel": "Takvim",
+  "gcalPrimaryCalendar": "Birincil (varsayılan)",
+  "gcalPeriodLabel": "Dönem",
+  "gcalRangeToday": "Bugün",
+  "gcalRangeNext7": "Sonraki 7 gün",
+  "gcalRangeNext30": "Sonraki 30 gün",
+  "gcalRangeCustom": "Dönem seç...",
+  "gcalDefaultLifeBlockLabel": "Varsayılan yaşam bloğu (içe aktarma için)",
+  "gcalLifeBlockForGoalLabel": "Bu hedef için yaşam bloğu",
+  "gcalEventsNotLoaded": "Etkinlikler yüklenmedi",
+  "gcalConnectToLoadEvents": "Etkinlikleri yüklemek için hesabını bağla",
+  "gcalExportHint": "Dışa aktarma, seçilen takvimde seçilen dönem için etkinlikler oluşturur.",
+  "gcalConnect": "Bağlan",
+  "gcalConnected": "Bağlandı",
+  "gcalFindEvents": "Etkinlikleri bul",
+  "gcalImport": "İçe aktar",
+  "gcalExport": "Dışa aktar",
+  "gcalNoTitle": "Başlıksız",
+  "gcalImportedGoalsCount": "İçe aktarılan hedefler: {count}",
+  "@gcalImportedGoalsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "gcalExportedGoalsCount": "Dışa aktarılan hedefler: {count}",
+  "@gcalExportedGoalsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "gcTitleDaySync": "Google Calendar • gün senkronizasyonu",
+  "gcSubtitleImport": "Bu günün etkinliklerini hedeflere içe aktar.",
+  "gcSubtitleExport": "Bu günün hedeflerini takvime aktar.",
+  "gcModeImport": "İçe aktar",
+  "gcModeExport": "Dışa aktar",
+  "gcCalendarLabel": "Takvim",
+  "gcCalendarPrimary": "Birincil (varsayılan)",
+  "gcDefaultLifeBlockLabel": "Varsayılan yaşam bloğu (içe aktarma için)",
+  "gcLifeBlockForThisGoalLabel": "Bu hedef için yaşam bloğu",
+  "gcEventsNotLoaded": "Etkinlikler yüklenmedi",
+  "gcConnectToLoadEvents": "Etkinlikleri yüklemek için hesabını bağla",
+  "gcExportHint": "Dışa aktarma, seçilen takvimde bu günün hedefleri için etkinlikler oluşturur.",
+  "gcConnect": "Bağlan",
+  "gcConnected": "Bağlandı",
+  "gcFindForDay": "Gün için bul",
+  "gcImport": "İçe aktar",
+  "gcExport": "Dışa aktar",
+  "gcNoTitle": "Başlık yok",
+  "gcLoadingDots": "...",
+  "gcImportedGoals": "İçe aktarılan hedefler: {count}",
+  "@gcImportedGoals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
-    },
-  
-    "budgetJarSummary": "Biriken: {saved} ₽ • Yüzde: %{percent}{targetPart}",
-    "@budgetJarSummary": {
-      "placeholders": {
-        "saved": {},
-        "percent": {},
-        "targetPart": {}
+    }
+  },
+  "gcExportedGoals": "Dışa aktarılan hedefler: {count}",
+  "@gcExportedGoals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
-    },
-  
-    "commonAdd": "Ekle",
-    "commonDelete": "Sil",
-    "commonCancel": "İptal",
-    "commonEdit": "Düzenle",
-    "commonLoading": "yükleniyor…",
-    "commonSaving": "Kaydediliyor…",
-    "commonSave": "Kaydet",
-    "commonRetry": "Tekrar dene",
-    "commonUpdate": "Güncelle",
-    "commonCollapse": "Daralt",
-    "commonDots": "...",
-    "commonBack": "Geri",
-    "commonNext": "İleri",
-    "commonDone": "Bitti",
-    "commonChange": "Değiştir",
-    "commonDate": "Tarih",
-    "commonRefresh": "Yenile",
-    "commonDash": "—",
-    "commonPick": "Seç",
-    "commonRemove": "Kaldır",
-    "commonOr": "veya",
-    "commonCreate": "Oluştur",
-    "commonClose": "Kapat",
-    "commonCloseTooltip": "Kapat",
-    "commonTitle": "Başlık",
-    "commonDeleteConfirmTitle": "Girdi silinsin mi?",
-  
-    "dayGoalsAllLifeBlocks": "Tüm alanlar",
-    "dayGoalsEmpty": "Bu gün için hedef yok",
-  
-    "dayGoalsAddFailed": "Hedef eklenemedi: {error}",
-    "@dayGoalsAddFailed": {
-      "placeholders": {
-        "error": {}
+    }
+  },
+  "launcherQuickFunctionsTitle": "Hızlı işlemler",
+  "launcherQuickFunctionsSubtitle": "Tek dokunuşla navigasyon ve işlemler",
+  "launcherSectionsTitle": "Bölümler",
+  "launcherQuickTitle": "Hızlı",
+  "launcherHome": "Ev",
+  "launcherGoals": "Hedefler",
+  "launcherMood": "Ruh hali",
+  "launcherProfile": "Profil",
+  "launcherInsights": "İçgörüler",
+  "launcherReports": "Raporlar",
+  "launcherMassAddTitle": "Gün için toplu ekleme",
+  "launcherMassAddSubtitle": "Giderler + Hedefler + Ruh hali",
+  "launcherAiPlanTitle": "Hafta/ay için AI planı",
+  "launcherAiPlanSubtitle": "Hedefler, anket ve ilerleme analizi",
+  "launcherAiInsightsTitle": "AI içgörüleri",
+  "launcherAiInsightsSubtitle": "Olayların hedefleri ve ilerlemeyi nasıl etkilediği",
+  "launcherRecurringGoalTitle": "Tekrarlayan hedef",
+  "launcherRecurringGoalSubtitle": "Birden çok gün için önceden planla",
+  "launcherGoogleCalendarSyncTitle": "Google Calendar senkronizasyonu",
+  "launcherGoogleCalendarSyncSubtitle": "Hedefleri takvime aktar",
+  "launcherNoDatesToCreate": "Oluşturulacak tarih yok (son tarih/ayarları kontrol et).",
+  "launcherCreateSeriesFailed": "Hedef serisi oluşturulamadı: {error}",
+  "@launcherCreateSeriesFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "launcherSaveError": "Kaydetme hatası: {error}",
+  "@launcherSaveError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "launcherCreatedGoalsCount": "Oluşturulan hedefler: {count}",
+  "@launcherCreatedGoalsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "launcherSavedSummary": "Kaydedildi: {expenses} gider, {incomes} gelir, {goals} hedef, {habits} alışkanlık{moodPart}",
+  "@launcherSavedSummary": {
+    "placeholders": {
+      "expenses": {},
+      "incomes": {},
+      "goals": {},
+      "habits": {},
+      "moodPart": {}
+    }
+  },
+  "addDayGoalTitle": "Yeni günlük hedef",
+  "addDayGoalFieldTitle": "Başlık *",
+  "addDayGoalTitleHint": "Örn.: Antrenman / İş / Ders",
+  "addDayGoalFieldDescription": "Açıklama",
+  "addDayGoalDescriptionHint": "Kısaca: tam olarak ne yapılmalı",
+  "addDayGoalStartTime": "Başlangıç saati",
+  "addDayGoalLifeBlock": "Yaşam alanı",
+  "addDayGoalImportance": "Önem",
+  "addDayGoalEmotion": "Duygu",
+  "addDayGoalHours": "Saat",
+  "addDayGoalEnterTitle": "Başlık gir",
+  "goalsDeleteConfirmBodyShort": "Bu işlem geri alınamaz.",
+  "editGoalTitle": "Hedefi düzenle",
+  "editGoalSectionDetails": "Detaylar",
+  "editGoalSectionLifeBlock": "Yaşam bloğu",
+  "editGoalSectionParams": "Ayarlar",
+  "editGoalFieldTitleLabel": "Başlık",
+  "editGoalFieldTitleHint": "Örnek: 3 km koşu",
+  "editGoalFieldDescLabel": "Açıklama",
+  "editGoalFieldDescHint": "Tam olarak ne yapılmalı?",
+  "editGoalFieldLifeBlockLabel": "Yaşam bloğu",
+  "editGoalFieldImportanceLabel": "Önem",
+  "editGoalImportanceLow": "Düşük",
+  "editGoalImportanceMedium": "Orta",
+  "editGoalImportanceHigh": "Yüksek",
+  "editGoalFieldEmotionLabel": "Duygu",
+  "editGoalFieldEmotionHint": "😊",
+  "editGoalDurationHours": "Süre (sa)",
+  "editGoalStartTime": "Başla",
+  "editGoalUntitled": "Başlıksız",
+  "expenseCategoryOther": "Diğer",
+  "goalStatusDone": "Tamamlandı",
+  "goalStatusInProgress": "Devam ediyor",
+  "actionDelete": "Sil",
+  "goalImportanceChip": "Öncelik {value}/5",
+  "@goalImportanceChip": {
+    "placeholders": {
+      "value": {
+        "type": "int"
       }
-    },
-  
-    "dayGoalsUpdated": "Hedef güncellendi",
-  
-    "dayGoalsUpdateFailed": "Hedef güncellenemedi: {error}",
-    "@dayGoalsUpdateFailed": {
-      "placeholders": {
-        "error": {}
+    }
+  },
+  "goalHoursChip": "Saat {value}",
+  "@goalHoursChip": {
+    "placeholders": {
+      "value": {
+        "type": "String"
       }
-    },
-  
-    "dayGoalsDeleted": "Hedef silindi",
-  
-    "dayGoalsDeleteFailed": "Silinemedi: {error}",
-    "@dayGoalsDeleteFailed": {
-      "placeholders": {
-        "error": {}
+    }
+  },
+  "goalPathEmpty": "Yolda hedef yok",
+  "timelineActionEdit": "Düzenle",
+  "timelineActionDelete": "Sil",
+  "settingsLanguageTitle": "Dil",
+  "settingsLanguageSubtitle": "Uygulama dilini seç. “Sistem”, cihaz dilini kullanır.",
+  "saveBarSaving": "Kaydediliyor…",
+  "saveBarSave": "Kaydet",
+  "reportEmptyChartNotEnoughData": "Yeterli veri yok",
+  "limitSheetTitle": "“{categoryName}” için limit",
+  "@limitSheetTitle": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
       }
-    },
-  
-    "dayGoalsToggleFailed": "Durum değiştirilemedi: {error}",
-    "@dayGoalsToggleFailed": {
-      "placeholders": {
-        "error": {}
+    }
+  },
+  "limitSheetHintNoLimit": "Boş bırak — limit yok",
+  "limitSheetFieldLabel": "Aylık limit",
+  "limitSheetFieldHint": "örn. 15000",
+  "limitSheetCtaNoLimit": "Limitsiz",
+  "profileWebNotificationsSection": "Bildirimler (Web)",
+  "profileWebNotificationsPermissionTitle": "Bildirimlere izin ver",
+  "profileWebNotificationsPermissionSubtitle": "Web’de ve yalnızca sekme açıkken çalışır.",
+  "profileWebNotificationsEveningTitle": "Akşam check-in’i",
+  "profileWebNotificationsEveningSubtitle": "Her gün {time}",
+  "profileWebNotificationsChangeTime": "Saati değiştir",
+  "profileWebNotificationsUnsupported": "Tarayıcı bildirimleri bu sürümde kullanılamaz. Yalnızca Web sürümünde çalışır (ve sadece sekme açıkken).",
+  "lifeBlockEducation": "Eğitim",
+  "lifeBlockHobbies": "Hobiler",
+  "userGoalsTitle": "Hedeflerim",
+  "userGoalsSubtitle": "Yaşam alanlarına göre stratejik hedefler: kısa, orta ve uzun vadeli.",
+  "userGoalsNewTitle": "Yeni hedef",
+  "userGoalsEditTitle": "Hedefi düzenle",
+  "userGoalsCreateGoal": "Hedef oluştur",
+  "userGoalsCreated": "Hedef oluşturuldu",
+  "userGoalsCreateError": "Hedef oluşturulamadı: {error}",
+  "@userGoalsCreateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsUpdated": "Hedef güncellendi",
+  "userGoalsUpdateError": "Hedef güncellenemedi: {error}",
+  "@userGoalsUpdateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsStatusChangeError": "Durum değiştirilemedi: {error}",
+  "@userGoalsStatusChangeError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsDeleteError": "Hedef silinemedi: {error}",
+  "@userGoalsDeleteError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsDeleteConfirmTitle": "Hedef silinsin mi?",
+  "userGoalsAllBlocks": "Tümü",
+  "userGoalsAllHorizons": "Tüm ufuklar",
+  "userGoalsLoadErrorTitle": "Yükleme hatası",
+  "userGoalsNoActiveBlocksTitle": "Aktif yaşam alanı yok",
+  "userGoalsNoActiveBlocksSubtitle": "Önce kullanıcının takip ettiği yaşam alanlarını seç.",
+  "userGoalsEmptyTitle": "Henüz hedef yok",
+  "userGoalsEmptySubtitle": "Yaşam alanlarından biri için ilk stratejik hedefini oluştur.",
+  "userGoalsDeadline": "Son tarih: {date}",
+  "@userGoalsDeadline": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "userGoalsStatusCompleted": "Tamamlandı",
+  "userGoalsStatusActive": "Aktif",
+  "userGoalsReopen": "Yeniden aç",
+  "userGoalsComplete": "Tamamla",
+  "userGoalsFieldLifeBlock": "Yaşam alanı",
+  "userGoalsFieldHorizon": "Ufuk",
+  "userGoalsFieldTitle": "Hedef başlığı",
+  "userGoalsFieldDescription": "Açıklama",
+  "userGoalsPickTargetDate": "Hedef tarihi seç",
+  "userGoalsClearDate": "Tarihi temizle",
+  "monthJanuary": "Ocak",
+  "monthFebruary": "Şubat",
+  "monthMarch": "Mart",
+  "monthApril": "Nisan",
+  "monthMay": "Mayıs",
+  "monthJune": "Haziran",
+  "monthJuly": "Temmuz",
+  "monthAugust": "Ağustos",
+  "monthSeptember": "Eylül",
+  "monthOctober": "Ekim",
+  "monthNovember": "Kasım",
+  "monthDecember": "Aralık",
+  "weekdayMonShort": "Pzt",
+  "weekdayTueShort": "Sal",
+  "weekdayWedShort": "Çar",
+  "weekdayThuShort": "Per",
+  "weekdayFriShort": "Cum",
+  "weekdaySatShort": "Cmt",
+  "weekdaySunShort": "Paz",
+  "lifeBlockRelations": "İlişkiler",
+  "lifeBlockSpirituality": "Maneviyat",
+  "goalsHeaderWeek": "{month} {year}, {week}. hafta",
+  "@goalsHeaderWeek": {
+    "placeholders": {
+      "month": {},
+      "year": {},
+      "week": {}
+    }
+  },
+  "goalsQuickActionsTitle": "Hızlı işlemler",
+  "goalsQuickActionsSubtitle": "Tek dokunuşla ekle ve planla",
+  "goalsMassAddTitle": "Toplu günlük giriş",
+  "goalsMassAddSubtitle": "Giderler + Gelir + Görevler + Ruh hali + Alışkanlıklar",
+  "goalsMassAddSaved": "Kaydedildi: {expenses} gider, {incomes} gelir, {goals} görev, {habits} alışkanlık{moodSuffix}",
+  "@goalsMassAddSaved": {
+    "placeholders": {
+      "expenses": {},
+      "incomes": {},
+      "goals": {},
+      "habits": {},
+      "moodSuffix": {}
+    }
+  },
+  "goalsMassAddMoodSuffix": ", ruh hali",
+  "goalsSaveError": "Kaydetme hatası: {error}",
+  "@goalsSaveError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "goalsRecurringGoalTitle": "Tekrarlayan hedef",
+  "goalsRecurringGoalSubtitle": "Birkaç gün sonrasını planla",
+  "goalsRecurringNoDates": "Oluşturulacak tarih yok. Son tarihi veya ayarları kontrol et.",
+  "goalsPlanHoursDescription": "Plan: {hours} sa",
+  "@goalsPlanHoursDescription": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsCreatedCount": "Oluşturulan hedefler: {count}",
+  "@goalsCreatedCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "goalsRecurringCreateError": "Hedef serisi oluşturulamadı: {error}",
+  "@goalsRecurringCreateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "goalsSimpleTaskTitle": "Hızlı görev",
+  "goalsSimpleTaskSubtitle": "Sadece başlık, isteğe bağlı saat, Genel kategori",
+  "goalsSimpleTaskSheetSubtitle": "Sadece başlık, isteğe bağlı saat. Varsayılan kategori Genel.",
+  "goalsTaskCreated": "Görev oluşturuldu",
+  "goalsTaskCreateError": "Görev oluşturma hatası: {error}",
+  "@goalsTaskCreateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "goalsAll": "Tümü",
+  "goalsViewDashboard": "Panel",
+  "goalsViewCalendar": "Takvim",
+  "goalsViewWeek": "Hafta",
+  "goalsViewMonth": "Ay",
+  "goalsByBlocksTitle": "Yaşam alanına göre hedefler",
+  "goalsShow": "Göster",
+  "goalsByBlocksHiddenHint": "Gizli. Göstermek için 👁 simgesine dokun.",
+  "goalsEnterTaskTitle": "Görev başlığı gir",
+  "goalsTaskTitleLabel": "Görev başlığı",
+  "goalsAddTime": "Saat ekle",
+  "goalsTimeValue": "Saat: {time}",
+  "@goalsTimeValue": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "goalsRemoveTime": "Saati kaldır",
+  "goalsCreateTask": "Görev oluştur",
+  "goalsWeekSummaryTitle": "Hafta özeti",
+  "goalsHoursShort": "{hours} sa",
+  "@goalsHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsHoursTargetSuffix": " / {hours} sa",
+  "@goalsHoursTargetSuffix": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsHoursShortNoSpace": "{hours} sa",
+  "@goalsHoursShortNoSpace": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsHoursTargetSuffixNoSpace": " / {hours} sa",
+  "@goalsHoursTargetSuffixNoSpace": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "dayGoalsHiddenCompletedEmpty": "Tüm görünür hedefler gizlenmiş. “Tamamlananları gizle” filtresini kapat.",
+  "dayGoalsKanbanOpenShort": "Açık",
+  "dayGoalsKanbanDoneShort": "Tamamlandı",
+  "dayGoalsKanbanOpenTitle": "Devam ediyor",
+  "dayGoalsKanbanDoneTitle": "Tamamlandı",
+  "dayGoalsKanbanOpenEmpty": "Aktif görev yok",
+  "dayGoalsKanbanDoneEmpty": "Burada henüz bir şey yok",
+  "dayGoalsHoursShort": "{hours} sa",
+  "@dayGoalsHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "dayGoalsSectionMorning": "Sabah",
+  "dayGoalsSectionDay": "Gün",
+  "dayGoalsSectionEvening": "Akşam",
+  "dayGoalsSummaryTitle": "Gün özeti",
+  "dayGoalsSummarySubtitle": "Önemli olana odaklan ve günü yönetilebilir tut.",
+  "dayGoalsSummaryTotal": "Toplam",
+  "dayGoalsSummaryDone": "Tamamlandı",
+  "dayGoalsSummaryRemaining": "Kalan",
+  "dayGoalsRemainingHours": "Kalan saat: {hours}",
+  "@dayGoalsRemainingHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "dayGoalsHideCompleted": "Tamamlananları gizle",
+  "reportsTabSummary": "Özet",
+  "reportsTabRelations": "İlişkiler",
+  "reportsTabProductivity": "Üretkenlik",
+  "reportsTabExpenses": "Giderler",
+  "reportsCompletedTasks": "Tamamlanan görevler",
+  "reportsSpentHours": "Harcanan saat",
+  "reportsEfficiency": "Verimlilik",
+  "reportsPeriodEfficiency": "Dönem verimliliği",
+  "reportsPlanFactHours": "Plan: {planned} sa • Gerçek: {actual} sa",
+  "@reportsPlanFactHours": {
+    "placeholders": {
+      "planned": {},
+      "actual": {}
+    }
+  },
+  "reportsAdditionalMetrics": "Ek metrikler",
+  "reportsCorrelations": "Metrikler arası ilişkiler",
+  "reportsCorrelationsHint": "Bu bilimsel bir korelasyon değil; dönem bazlı anlaşılır karşılaştırmalardır.",
+  "reportsMoodProductivity": "Ruh hali → Üretkenlik",
+  "reportsGoodMood": "İyi",
+  "reportsBadMood": "Kötü",
+  "reportsHabitsMoodProductivity": "Alışkanlıklar → Ruh hali / Üretkenlik",
+  "reportsMoodMostlyHappy": "çoğunlukla 😊",
+  "reportsMoodMostlySad": "çoğunlukla 😞",
+  "reportsMoodMostlyNeutral": "çoğunlukla 😐",
+  "reportsHabitsComparisonHint": "Alışkanlıkların ≥ %{percent} tamamlandığı günlerle diğer günlerin karşılaştırması.",
+  "@reportsHabitsComparisonHint": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
       }
-    },
-  
-    "dayGoalsDeleteConfirmTitle": "Hedef silinsin mi?",
-  
-    "dayGoalsFabAddTitle": "Hedef ekle",
-    "dayGoalsFabAddSubtitle": "Manuel oluştur",
-    "dayGoalsFabScanTitle": "Tara",
-    "dayGoalsFabScanSubtitle": "Günlük fotoğrafı",
-    "dayGoalsFabCalendarTitle": "Google Calendar",
-    "dayGoalsFabCalendarSubtitle": "Bugünkü hedefleri içe/dışa aktar",
-  
-    "epicIntroSkip": "Geç",
-    "epicIntroSubtitle": "Düşünceler için bir yuva. Hedeflerin,\nhayallerin ve planların — sakin ve farkındalıkla — büyüdüğü bir yer.",
-    "epicIntroPrimaryCta": "Yolculuğumu başlat",
-    "epicIntroLater": "Sonra",
-    "epicIntroSecondaryCta": "Giriş yap",
-    "epicIntroFooter": "Ayarlar’dan prologa her zaman geri dönebilirsin.",
-  
-    "homeMoodSaved": "Ruh hali kaydedildi",
-    "homeMoodSaveFailed": "Kaydedilemedi: {error}",
-    "@homeMoodSaveFailed": {
-      "placeholders": {
-        "error": {}
+    }
+  },
+  "reportsMoodHigh": "Ruh hali (yüksek)",
+  "reportsMoodLow": "Ruh hali (düşük)",
+  "reportsHoursHigh": "Saat (yüksek)",
+  "reportsHoursLow": "Saat (düşük)",
+  "reportsHabitsHighShort": "alışkanlık yüksek",
+  "reportsHabitsLowShort": "alışkanlık düşük",
+  "reportsMentalMood": "Ruhsal durum → Ruh hali",
+  "reportsExpensesMood": "Giderler → Ruh hali",
+  "reportsHappyDays": "😊 günler",
+  "reportsSadDays": "😞 günler",
+  "reportsCompletedByBlocks": "Bloklara göre tamamlananlar",
+  "reportsNoCompletedTasks": "Tamamlanan görev yok",
+  "reportsTasksCount": "{count} görev",
+  "@reportsTasksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
-    },
-  
-    "homeTodayAndWeekTitle": "Bugün ve hafta",
-    "homeTodayAndWeekSubtitle": "Hızlı bir özet — tüm önemli metrikler burada",
-  
-    "homeMetricMoodTitle": "Ruh hali",
-    "homeMoodNoEntry": "kayıt yok",
-    "homeMoodNoNote": "not yok",
-    "homeMoodHasNote": "not var",
-  
-    "homeMetricTasksTitle": "Görevler",
-    "homeMetricHoursPerDayTitle": "Saat/gün",
-    "homeMetricEfficiencyTitle": "Verimlilik",
-  
-    "homeEfficiencyPlannedHours": "plan {hours} sa",
-    "@homeEfficiencyPlannedHours": {
-      "placeholders": {
-        "hours": {}
+    }
+  },
+  "reportsHoursByDays": "Güne göre harcanan saat",
+  "reportsExpensesForPeriod": "Dönem giderleri",
+  "reportsTotalEuro": "Toplam: {amount} €",
+  "@reportsTotalEuro": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "reportsAvgExpensePerDay": "Ortalama gider/gün: {amount} €",
+  "@reportsAvgExpensePerDay": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "reportsNoExpensesByCategory": "Kategoriye göre gider yok",
+  "reportsAvgTimePerGoal": "Görev başına ortalama süre",
+  "reportsOnTimeConditional": "“Zamanında” (yaklaşık)",
+  "reportsTop3ProductiveDays": "EN üretken 3 gün",
+  "reportsTopDayLine": "• {day}.{month}.{year}: {hours} sa",
+  "@reportsTopDayLine": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      },
+      "year": {
+        "type": "int"
+      },
+      "hours": {}
+    }
+  },
+  "reportsPeriodDay": "Gün",
+  "reportsPeriodWeekShort": "Hafta",
+  "reportsPeriodMonthShort": "Ay",
+  "reportsForward": "İleri",
+  "reportsTapChartSector": "Grafik segmentine dokun",
+  "reportsLatestAiInsights": "Son AI içgörüleri",
+  "reportsOpenAll": "Tümünü aç",
+  "reportsInsightsLoadFailed": "İçgörüler yüklenemedi",
+  "reportsNoSavedInsights": "Henüz kayıtlı içgörü yok.",
+  "reportsRunAiInsightsHint": "“AI içgörüleri”ni aç ve analiz çalıştır — sonra burada görünecekler.",
+  "reportsAiPeriod7Days": "son 7 gün",
+  "reportsAiPeriod30Days": "son 30 gün",
+  "reportsAiPeriod90Days": "son 90 gün",
+  "reportsHoursValue": "{hours} sa",
+  "@reportsHoursValue": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "reportsEuroValue": "{amount} €",
+  "@reportsEuroValue": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "commonError": "Hata",
+  "aiPlanConsentSaved": "AI işleme onayı kaydedildi",
+  "aiPlanConsentCheckFailed": "AI işleme onayı kontrol edilemedi veya kaydedilemedi. users tablosunda ai_processing_consent, ai_processing_consent_at ve ai_processing_consent_version alanlarının olduğundan emin ol. Detaylar: {error}",
+  "@aiPlanConsentCheckFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "aiPlanConsentTitle": "AI işleme onayı",
+  "aiPlanConsentBody": "AI planı oluşturmak için Nest hedeflerini, görevlerini, alışkanlıklarını, ruh halini ve diğer uygulama verilerini analiz edecek. Bu veriler yalnızca kişisel öneriler, planlar ve içgörüler oluşturmak için kullanılır.",
+  "aiPlanConsentDeclineBody": "Onay vermeyebilirsin — bu durumda AI özelliği çalışmaz.",
+  "aiPlanConsentNotNow": "Şimdi değil",
+  "aiPlanConsentAgree": "Kabul ediyorum",
+  "aiPlanOpenLinkFailed": "Bağlantı açılamadı: {url}",
+  "@aiPlanOpenLinkFailed": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "aiPlanUpdated": "AI planı güncellendi",
+  "aiPlanEmptyEdgeFunction": "Plan boş. ai-plan Edge Function’ı kontrol et.",
+  "aiPlanHoursShort": "{hours} sa",
+  "@aiPlanHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "aiPlanImportanceMeta": "önem {importance}/5",
+  "@aiPlanImportanceMeta": {
+    "placeholders": {
+      "importance": {
+        "type": "int"
       }
-    },
-  
-    "homeMoodTodayTitle": "Bugünkü ruh hali",
-    "homeMoodNoTodayEntry": "Bugün için kayıt yok",
-    "homeMoodEntryNoNote": "Kayıt var (not yok)",
-    "homeMoodQuickHint": "Hızlı bir check-in ekle — 10 saniye sürer",
-    "homeMoodUpdateHint": "Güncelleyebilirsin — bugünkü kaydı üzerine yazar",
-  
-    "homeMoodNoteLabel": "Not (isteğe bağlı)",
-    "homeMoodNoteHint": "Ruh halini ne etkiledi?",
-  
-    "homeOpenMoodHistoryCta": "Ruh hali geçmişini aç",
-  
-    "homeWeekSummaryTitle": "Hafta özeti",
-    "homeOpenReportsCta": "Detaylı raporları aç",
-  
-    "homeWeekExpensesTitle": "Haftalık harcamalar",
-    "homeNoExpensesThisWeek": "Bu hafta harcama yok",
-    "homeOpenExpensesCta": "Harcamaları aç",
-  
-    "homeExpensesTotal": "Toplam: {total} €",
-    "@homeExpensesTotal": {
-      "placeholders": {
-        "total": {}
+    }
+  },
+  "aiPlanLinkedToGoal": "bir hedefe bağlı",
+  "aiPlanNothingToApply": "Uygulanacak bir şey yok — bazı öğeleri seç",
+  "aiPlanDefaultTaskTitle": "AI görevi",
+  "aiPlanTasksAdded": "Eklenen görevler: {count}",
+  "@aiPlanTasksAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
-    },
-  
-    "homeExpensesAvgPerDay": "Ort/gün: {avg} €",
-    "@homeExpensesAvgPerDay": {
-      "placeholders": {
-        "avg": {}
+    }
+  },
+  "aiPlanApplyTypeError": "Görev eklerken veri tipi hatası: alanlardan biri sayı yerine true/false olarak geldi. Dosyayı tekrar güncelle: bu sürümde bool değerler ayrıca sayılara dönüştürülür ve is_completed alanı artık manuel gönderilmez.",
+  "aiPlanTitleWeek": "Haftalık AI planı",
+  "aiPlanTitleMonth": "Aylık AI planı",
+  "aiPlanRegenerateTooltip": "Tekrar oluştur",
+  "aiPlanUpdatedAt": "Güncellendi: {date}",
+  "@aiPlanUpdatedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "aiPlanCheckingConsent": "AI işleme onayı kontrol ediliyor...",
+  "aiPlanApplyingTasks": "Görevler ekleniyor...",
+  "aiPlanGenerating": "AI planı oluşturuluyor...",
+  "aiPlanApplyCount": "Uygula ({count})",
+  "@aiPlanApplyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
-    },
-  
-    "homeInsightsTitle": "İçgörüler",
-    "homeTopCategory": "• En yüksek kategori: {category} — {amount} €",
-    "@homeTopCategory": {
-      "placeholders": {
-        "category": {},
-        "amount": {}
-      }
-    },
-  
-    "homePeakExpense": "• En yüksek harcama: {day} — {amount} €",
-    "@homePeakExpense": {
-      "placeholders": {
-        "day": {},
-        "amount": {}
-      }
-    },
-  
-    "homeOpenDetailedExpensesCta": "Detaylı harcamaları aç",
-  
-    "homeWeekCardTitle": "Hafta",
-    "homeWeekLoadFailedTitle": "İstatistikler yüklenemedi",
-    "homeWeekLoadFailedSubtitle": "İnternetini kontrol et veya daha sonra tekrar dene.",
-  
-    "gcalTitle": "Google Calendar",
-    "gcalHeaderImport": "Takvimindeki etkinlikleri bul ve hedef olarak içe aktar.",
-    "gcalHeaderExport": "Bir dönem seç ve uygulamadaki hedefleri Google Calendar’a dışa aktar.",
-  
-    "gcalModeImport": "İçe aktar",
-    "gcalModeExport": "Dışa aktar",
-  
-    "gcalCalendarLabel": "Takvim",
-    "gcalPrimaryCalendar": "Birincil (varsayılan)",
-  
-    "gcalPeriodLabel": "Dönem",
-    "gcalRangeToday": "Bugün",
-    "gcalRangeNext7": "Sonraki 7 gün",
-    "gcalRangeNext30": "Sonraki 30 gün",
-    "gcalRangeCustom": "Dönem seç...",
-  
-    "gcalDefaultLifeBlockLabel": "Varsayılan yaşam alanı (içe aktarma için)",
-    "gcalLifeBlockForGoalLabel": "Bu hedef için yaşam alanı",
-  
-    "gcalEventsNotLoaded": "Etkinlikler yüklenmedi",
-    "gcalConnectToLoadEvents": "Etkinlikleri yüklemek için hesabını bağla",
-  
-    "gcalExportHint": "Dışa aktarma, seçilen takvimde seçilen dönem için etkinlikler oluşturur.",
-  
-    "gcalConnect": "Bağlan",
-    "gcalConnected": "Bağlandı",
-  
-    "gcalFindEvents": "Etkinlikleri bul",
-    "gcalImport": "İçe aktar",
-    "gcalExport": "Dışa aktar",
-  
-    "gcalNoTitle": "Başlıksız",
-  
-    "gcalImportedGoalsCount": "İçe aktarılan hedefler: {count}",
-    "@gcalImportedGoalsCount": {
-      "placeholders": {
-        "count": {}
-      }
-    },
-  
-    "gcalExportedGoalsCount": "Dışa aktarılan hedefler: {count}",
-    "@gcalExportedGoalsCount": {
-      "placeholders": {
-        "count": {}
-      }
-    },
-  
-    "launcherQuickFunctionsTitle": "Hızlı işlemler",
-    "launcherQuickFunctionsSubtitle": "Tek dokunuşla gezinme ve işlemler",
-  
-    "launcherSectionsTitle": "Bölümler",
-    "launcherQuickTitle": "Hızlı",
-  
-    "launcherHome": "Ana sayfa",
-    "launcherGoals": "Hedefler",
-    "launcherMood": "Ruh hali",
-    "launcherProfile": "Profil",
-    "launcherInsights": "İçgörüler",
-    "launcherReports": "Raporlar",
-  
-    "launcherMassAddTitle": "Gün için toplu ekle",
-    "launcherMassAddSubtitle": "Harcamalar + Hedefler + Ruh hali",
-  
-    "launcherAiPlanTitle": "Hafta/ay için AI planı",
-    "launcherAiPlanSubtitle": "Hedefler, anket ve ilerleme analizi",
-  
-    "launcherAiInsightsTitle": "AI içgörüleri",
-    "launcherAiInsightsSubtitle": "Etkinliklerin hedefleri ve ilerlemeyi nasıl etkilediği",
-  
-    "launcherRecurringGoalTitle": "Tekrarlayan hedef",
-    "launcherRecurringGoalSubtitle": "Birden fazla gün için plan yap",
-  
-    "launcherGoogleCalendarSyncTitle": "Google Calendar senkronizasyonu",
-    "launcherGoogleCalendarSyncSubtitle": "Hedefleri takvime aktar",
-  
-    "launcherNoDatesToCreate": "Oluşturulacak tarih yok (son tarih/ayarları kontrol et).",
-  
-    "launcherCreateSeriesFailed": "Hedef serisi oluşturulamadı: {error}",
-    "@launcherCreateSeriesFailed": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "launcherSaveError": "Kaydetme hatası: {error}",
-    "@launcherSaveError": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "launcherCreatedGoalsCount": "Oluşturulan hedefler: {count}",
-    "@launcherCreatedGoalsCount": {
-      "placeholders": {
-        "count": {}
-      }
-    },
-  
-    "launcherSavedSummary": "Kaydedildi: {expenses} gider, {incomes} gelir, {goals} hedef, {habits} alışkanlık{moodPart}",
-    "@launcherSavedSummary": {
-      "placeholders": {
-        "expenses": {},
-        "incomes": {},
-        "goals": {},
-        "habits": {},
-        "moodPart": {}
-      }
-    },
-  
-    "homeTitleHome": "Ana sayfa",
-    "homeTitleGoals": "Hedefler",
-    "homeTitleMood": "Ruh hali",
-    "homeTitleProfile": "Profil",
-    "homeTitleReports": "Raporlar",
-    "homeTitleExpenses": "Harcamalar",
-    "homeTitleApp": "MyNEST",
-  
-    "homeSignOutTooltip": "Çıkış yap",
-    "homeSignOutTitle": "Çıkış yapılsın mı?",
-    "homeSignOutSubtitle": "Mevcut oturumun sonlandırılacak.",
-    "homeSignOutConfirm": "Çıkış yap",
-    "homeSignOutFailed": "Çıkış yapılamadı: {error}",
-    "@homeSignOutFailed": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "homeQuickActionsTooltip": "Hızlı işlemler",
-  
-    "expensesTitle": "Harcamalar",
-    "expensesPickDate": "Tarih seç",
-    "expensesCommitTooltip": "Kavanoz dağıtımını kilitle",
-    "expensesCommitUndoTooltip": "Kilidi geri al",
-    "expensesBudgetSettings": "Bütçe ayarları",
-  
-    "expensesCommitDone": "Dağıtım kilitlendi",
-    "expensesCommitUndone": "Kilit kaldırıldı",
-  
-    "expensesMonthSummary": "Aylık özet",
-  
-    "expensesIncomeLegend": "Gelir {value} €",
-    "@expensesIncomeLegend": {
-      "placeholders": {
-        "value": {}
-      }
-    },
-  
-    "expensesExpenseLegend": "Gider {value} €",
-    "@expensesExpenseLegend": {
-      "placeholders": {
-        "value": {}
-      }
-    },
-  
-    "expensesFreeLegend": "Serbest {value} €",
-    "@expensesFreeLegend": {
-      "placeholders": {
-        "value": {}
-      }
-    },
-  
-    "expensesDaySum": "Gün toplamı: {value} €",
-    "@expensesDaySum": {
-      "placeholders": {
-        "value": {}
-      }
-    },
-  
-    "expensesNoTxForDay": "Bu gün için işlem yok",
-    "expensesDeleteTxTitle": "İşlem silinsin mi?",
-    "expensesDeleteTxBody": "{category} — {amount} €",
-    "@expensesDeleteTxBody": {
-      "placeholders": {
-        "category": {},
-        "amount": {}
-      }
-    },
-  
-    "expensesCategoriesMonthTitle": "Aylık gider kategorileri",
-    "expensesNoCategoryData": "Henüz kategori verisi yok",
-  
-    "expensesJarsTitle": "Birikim kavanozları",
-    "expensesNoJars": "Henüz kavanoz yok",
-    "expensesCommitShort": "Kilitle",
-    "expensesCommitUndoShort": "Geri al",
-  
-    "expensesAddIncome": "Gelir ekle",
-    "expensesAddExpense": "Gider ekle",
-  
-    "loginTitle": "Giriş yap",
-    "loginEmailLabel": "E-posta",
-    "loginPasswordLabel": "Şifre",
-    "loginShowPassword": "Şifreyi göster",
-    "loginHidePassword": "Şifreyi gizle",
-  
-    "loginForgotPassword": "Şifreni mi unuttun?",
-    "loginCreateAccount": "Hesap oluştur",
-    "loginBtnSignIn": "Giriş yap",
-  
-    "loginContinueGoogle": "Google ile devam et",
-    "loginContinueApple": "Apple ID ile devam et",
-  
-    "loginErrEmailRequired": "E-postayı gir",
-    "loginErrEmailInvalid": "Geçersiz e-posta",
-    "loginErrPassRequired": "Şifreyi gir",
-    "loginErrPassMin6": "En az 6 karakter",
-  
-    "loginResetTitle": "Şifre kurtarma",
-    "loginResetSend": "Gönder",
-    "loginResetSent": "Şifre sıfırlama e-postası gönderildi. Gelen kutunu kontrol et.",
-    "loginResetFailed": "E-posta gönderilemedi: {error}",
-    "@loginResetFailed": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "moodTitle": "Ruh hali",
-    "moodOnePerDay": "1 kayıt = 1 gün",
-    "moodHowDoYouFeel": "Nasıl hissediyorsun?",
-    "moodNoteLabel": "Not (isteğe bağlı)",
-    "moodNoteHint": "Ruh halini ne etkiledi?",
-    "moodSaved": "Ruh hali kaydedildi",
-    "moodUpdated": "Kayıt güncellendi",
-    "moodHistoryTitle": "Ruh hali geçmişi",
-    "moodTapToEdit": "Düzenlemek için dokun",
-    "moodNoNote": "Not yok",
-    "moodEditTitle": "Kaydı düzenle",
-    "moodEmptyTitle": "Henüz kayıt yok",
-    "moodEmptySubtitle": "Bir tarih seç, ruh halini seç ve kaydet.",
-  
-    "moodErrSaveFailed": "Ruh hali kaydedilemedi: {error}",
-    "@moodErrSaveFailed": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "moodErrUpdateFailed": "Kayıt güncellenemedi: {error}",
-    "@moodErrUpdateFailed": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "moodErrDeleteFailed": "Kayıt silinemedi: {error}",
-    "@moodErrDeleteFailed": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "onbTopTitle": "",
-    "onbErrSaveFailed": "Yanıtların kaydedilemedi",
-  
-    "onbProfileTitle": "Seni tanıyalım",
-    "onbProfileSubtitle": "Bu, profilin ve kişiselleştirme için yardımcı olur",
-    "onbNameLabel": "İsim",
-    "onbNameHint": "Örneğin: Viktor",
-    "onbAgeLabel": "Yaş",
-    "onbAgeHint": "Örneğin: 26",
-    "onbNameNote": "İsmini daha sonra profilinden değiştirebilirsin.",
-  
-    "onbBlocksTitle": "Hangi yaşam alanlarını takip etmek istiyorsun?",
-    "onbBlocksSubtitle": "Bu, hedeflerin ve görevlerin temelini oluşturacak",
-  
-    "onbPrioritiesTitle": "Önümüzdeki 3–6 ayda senin için en önemli olan nedir?",
-    "onbPrioritiesSubtitle": "En fazla üç tane seç — bu, önerileri etkiler",
-    "onbPriorityHealth": "Sağlık",
-    "onbPriorityCareer": "Kariyer",
-    "onbPriorityMoney": "Para",
-    "onbPriorityFamily": "Aile",
-    "onbPriorityGrowth": "Gelişim",
-    "onbPriorityLove": "Aşk",
-    "onbPriorityCreativity": "Yaratıcılık",
-    "onbPriorityBalance": "Denge",
-  
-    "onbGoalsBlockTitle": "“{block}” alanındaki hedefler",
-    "@onbGoalsBlockTitle": {
-      "placeholders": {
-        "block": {}
-      }
-    },
-  
-    "onbGoalsBlockSubtitle": "Odak: taktik → orta vadeli → uzun vadeli",
-  
-    "onbGoalLongLabel": "Uzun vadeli hedef (6–24 ay)",
-    "onbGoalLongHint": "Örneğin: Almanca seviyesini B2’ye çıkarmak",
-  
-    "onbGoalMidLabel": "Orta vadeli hedef (2–6 ay)",
-    "onbGoalMidHint": "Örneğin: A2→B1’i bitirip sınavı geçmek",
-  
-    "onbGoalTacticalLabel": "Taktik hedef (2–4 hafta)",
-    "onbGoalTacticalHint": "Örneğin: 12×30 dk + 2 konuşma kulübü",
-  
-    "onbWhyLabel": "Bu neden önemli? (isteğe bağlı)",
-    "onbWhyHint": "Motivasyon/anlam — yolda kalmana yardımcı olur",
-    "onbOptionalNote": "Boş bırakıp “İleri”ye dokunabilirsin.",
-  
-    "registerTitle": "Hesap oluştur",
-    "registerNameLabel": "İsim",
-    "registerEmailLabel": "E-posta",
-    "registerPasswordLabel": "Şifre",
-    "registerConfirmPasswordLabel": "Şifreyi doğrula",
-    "registerShowPassword": "Şifreyi göster",
-    "registerHidePassword": "Şifreyi gizle",
-  
-    "registerBtnSignUp": "Kayıt ol",
-    "registerContinueGoogle": "Google ile devam et",
-    "registerContinueApple": "Apple ID ile devam et",
-    "registerContinueAppleIos": "Apple ID ile devam et (iOS)",
-    "registerHaveAccountCta": "Zaten hesabın var mı? Giriş yap",
-  
-    "registerErrNameRequired": "İsmini gir",
-    "registerErrEmailRequired": "E-postanı gir",
-    "registerErrEmailInvalid": "Geçersiz e-posta",
-    "registerErrPassRequired": "Bir şifre gir",
-    "registerErrPassMin8": "En az 8 karakter",
-    "registerErrPassNeedLower": "Küçük harf ekle (a-z)",
-    "registerErrPassNeedUpper": "Büyük harf ekle (A-Z)",
-    "registerErrPassNeedDigit": "Rakam ekle (0-9)",
-    "registerErrConfirmRequired": "Şifreyi tekrar gir",
-    "registerErrPasswordsMismatch": "Şifreler eşleşmiyor",
-    "registerErrAcceptTerms": "Şartlar ve Gizlilik Politikasını kabul etmelisin",
-  
-    "registerAppleOnlyIos": "Apple ID yalnızca iPhone/iPad’de kullanılabilir (sadece iOS)",
-  
-    "welcomeAppName": "VitaPlatform",
-    "welcomeSubtitle": "Hedeflerini, ruh halini ve zamanını yönet\n— hepsi tek yerde",
-    "welcomeSignIn": "Giriş yap",
-    "welcomeCreateAccount": "Hesap oluştur",
-  
-    "habitsWeekTitle": "Alışkanlıklar",
-    "habitsWeekTopTitle": "Alışkanlıklar (bu hafta öne çıkan)",
-    "habitsWeekEmptyHint": "En az bir alışkanlık ekle — ilerlemen burada görünecek.",
-    "habitsWeekFooterHint": "Son 7 gündeki en aktif alışkanlıklarını gösteriyoruz.",
-  
-    "mentalWeekTitle": "Ruh sağlığı",
-    "mentalWeekLoadError": "Yükleme hatası: {error}",
-    "@mentalWeekLoadError": {
-      "placeholders": {
-        "error": {}
-      }
-    },
-  
-    "mentalWeekNoAnswers": "Bu hafta için yanıt bulunamadı (mevcut user_id için).",
-    "mentalWeekYesNoHeader": "Evet/Hayır (hafta)",
-    "mentalWeekScalesHeader": "Ölçekler (trend)",
-    "mentalWeekFooterHint": "Ekranı sade tutmak için sadece birkaç soru gösteriyoruz.",
-    "mentalWeekNoData": "Veri yok",
-  
-    "mentalWeekYesCount": "Evet: {yes}/{total}",
-    "@mentalWeekYesCount": {
-      "placeholders": {
-        "yes": {},
-        "total": {}
-      }
-    },
-  
-    "moodWeekTitle": "Haftalık ruh hali",
-    "moodWeekMarkedCount": "Kaydedilen: {filled}/{total}",
-    "@moodWeekMarkedCount": {
-      "placeholders": {
-        "filled": {},
-        "total": {}
-      }
-    },
-  
-    "moodWeekAverageDash": "Ortalama: —",
-    "moodWeekAverageValue": "Ortalama: {avg}/5",
-    "@moodWeekAverageValue": {
-      "placeholders": {
-        "avg": {}
-      }
-    },
-  
-    "moodWeekFooterHint": "Bu hızlı bir özet. Detaylar aşağıda, geçmişte.",
-  
-    "goalsByBlockTitle": "Alana göre hedefler",
-    "goalsAddTooltip": "Hedef ekle",
-  
-    "goalsHorizonTacticalShort": "Taktik",
-    "goalsHorizonMidShort": "Orta vadeli",
-    "goalsHorizonLongShort": "Uzun vadeli",
-  
-    "goalsHorizonTacticalLong": "2–6 hafta",
-    "goalsHorizonMidLong": "3–6 ay",
-    "goalsHorizonLongLong": "1+ yıl",
-  
-    "goalsEditorNewTitle": "Yeni hedef",
-    "goalsEditorEditTitle": "Hedefi düzenle",
-    "goalsEditorLifeBlockLabel": "Alan",
-    "goalsEditorHorizonLabel": "Ufuk",
-  
-    "goalsEditorTitleLabel": "Başlık",
-    "goalsEditorTitleHint": "Örn. İngilizceyi B2’ye yükseltmek",
-  
-    "goalsEditorDescLabel": "Açıklama (isteğe bağlı)",
-    "goalsEditorDescHint": "Kısaca: tam olarak ne ve başarıyı nasıl ölçeceğiz",
-  
-    "goalsEditorDeadlineLabel": "Son tarih: {date}",
-    "@goalsEditorDeadlineLabel": {
-      "placeholders": {
-        "date": {}
-      }
-    },
-  
-    "goalsDeadlineInline": "Son tarih: {date}",
-    "@goalsDeadlineInline": {
-      "placeholders": {
-        "date": {}
-      }
-    },
-  
-    "goalsEmptyAllHint": "Henüz hedef yok. Seçilen alanlar için ilk hedefini ekle.",
-    "goalsNoBlocksToShow": "Gösterilecek uygun alan yok.",
-    "goalsNoGoalsForBlock": "Seçilen alan için hedef yok.",
-  
-    "goalsDeleteConfirmTitle": "Hedef silinsin mi?",
-    "goalsDeleteConfirmBody": "“{title}” silinecek ve geri alınamayacak.",
-    "@goalsDeleteConfirmBody": {
-      "placeholders": {
-        "title": {}
-      }
-    },
-  
-    "habitsTitle": "Alışkanlıklar",
-    "habitsEmptyHint": "Henüz alışkanlık yok. İlkini ekle.",
-  
-    "habitsEditorNewTitle": "Yeni alışkanlık",
-    "habitsEditorEditTitle": "Alışkanlığı düzenle",
-    "habitsEditorTitleLabel": "Başlık",
-    "habitsEditorTitleHint": "Örn. Sabah antrenmanı",
-  
-    "habitsNegativeLabel": "Olumsuz alışkanlık",
-    "habitsNegativeHint": "Takip edip azaltmak istiyorsan işaretle.",
-    "habitsPositiveHint": "Güçlendirmek için olumlu/nötr bir alışkanlık.",
-  
-    "habitsNegativeShort": "Olumsuz",
-    "habitsPositiveShort": "Olumlu/nötr",
-  
-    "habitsDeleteConfirmTitle": "Alışkanlık silinsin mi?",
-    "habitsDeleteConfirmBody": "“{title}” silinecek ve geri alınamayacak.",
-    "@habitsDeleteConfirmBody": {
-      "placeholders": {
-        "title": {}
-      }
-    },
-  
-    "habitsFooterHint": "Daha sonra ana ekranda alışkanlık “filtreleme” ekleyeceğiz.",
-  
-    "profileTitle": "Profilim",
-  
-    "profileNameLabel": "İsim",
-    "profileNameTitle": "İsim",
-    "profileNamePrompt": "Sana nasıl hitap edelim?",
-  
-    "profileAgeLabel": "Yaş",
-    "profileAgeTitle": "Yaş",
-    "profileAgePrompt": "Yaşını gir",
-  
-    "profileAccountSection": "Hesap",
-    "profileSeenPrologueTitle": "Prolog tamamlandı",
-    "profileSeenPrologueSubtitle": "Bunu manuel olarak değiştirebilirsin",
-  
-    "profileFocusSection": "Odak",
-    "profileTargetHoursLabel": "Günlük hedef saat",
-    "profileTargetHoursValue": "{hours} sa",
-    "@profileTargetHoursValue": {
-      "placeholders": {
-        "hours": {}
-      }
-    },
-  
-    "profileTargetHoursTitle": "Günlük saat hedefi",
-    "profileTargetHoursFieldLabel": "Saat",
-  
-    "profileQuestionnaireSection": "Anket ve yaşam alanları",
-    "profileQuestionnaireNotDoneTitle": "Henüz anketi tamamlamadın.",
-    "profileQuestionnaireCta": "Şimdi tamamla",
-  
-    "profileLifeBlocksTitle": "Yaşam alanları",
-    "profileLifeBlocksHint": "örn. sağlık, kariyer, aile",
-  
-    "profilePrioritiesTitle": "Öncelikler",
-    "profilePrioritiesHint": "örn. spor, finans, okuma",
-  
-    "profileDangerZoneTitle": "Tehlike bölgesi",
-  
-    "profileDeleteAccountTitle": "Hesap silinsin mi?",
-    "profileDeleteAccountBody": "Bu işlem geri alınamaz.\nŞunlar silinecek: hedefler, alışkanlıklar, ruh hali, gider/gelir, kavanozlar, AI planları, XP ve profilin.",
-    "profileDeleteAccountConfirm": "Kalıcı olarak sil",
-    "profileDeleteAccountCta": "Hesabı ve tüm verileri sil",
-    "profileDeletingAccount": "Siliniyor…",
-    "profileDeleteAccountFootnote": "Silme işlemi geri alınamaz. Verilerin Supabase’den kalıcı olarak silinecek.",
-    "profileAccountDeletedToast": "Hesap silindi",
-  
-    "lifeBlockHealth": "Sağlık",
-    "lifeBlockCareer": "Kariyer",
-    "lifeBlockFamily": "Aile",
-    "lifeBlockFinance": "Finans",
-    "lifeBlockLearning": "Gelişim",
-    "lifeBlockSocial": "Sosyal",
-    "lifeBlockRest": "Dinlenme",
-    "lifeBlockBalance": "Denge",
-    "lifeBlockLove": "Aşk",
-    "lifeBlockCreativity": "Yaratıcılık",
-    "lifeBlockGeneral": "Genel",
-  
-    "addDayGoalTitle": "Yeni günlük hedef",
-    "addDayGoalFieldTitle": "Başlık *",
-    "addDayGoalTitleHint": "Örn.: Antrenman / İş / Çalışma",
-    "addDayGoalFieldDescription": "Açıklama",
-    "addDayGoalDescriptionHint": "Kısaca: tam olarak ne yapılmalı",
-    "addDayGoalStartTime": "Başlangıç saati",
-    "addDayGoalLifeBlock": "Yaşam alanı",
-    "addDayGoalImportance": "Önem",
-    "addDayGoalEmotion": "Duygu",
-    "addDayGoalHours": "Saat",
-    "addDayGoalEnterTitle": "Bir başlık gir",
-  
-    "addExpenseNewTitle": "Yeni gider",
-    "addExpenseEditTitle": "Gideri düzenle",
-  
-    "addExpenseAmountLabel": "Tutar",
-    "addExpenseAmountInvalid": "Geçerli bir tutar gir",
-  
-    "addExpenseCategoryLabel": "Kategori",
-    "addExpenseCategoryRequired": "Bir kategori seç",
-    "addExpenseCreateCategoryTooltip": "Kategori oluştur",
-  
-    "addExpenseNoteLabel": "Not",
-  
-    "addExpenseNewCategoryTitle": "Yeni kategori",
-    "addExpenseCategoryNameLabel": "İsim",
-  
-    "addIncomeNewTitle": "Yeni gelir",
-    "addIncomeEditTitle": "Geliri düzenle",
-    "addIncomeSubtitle": "Tutar, kategori ve not",
-  
-    "addIncomeAmountLabel": "Tutar",
-    "addIncomeAmountHint": "örn. 1200.50",
-    "addIncomeAmountInvalid": "Geçerli bir tutar gir",
-  
-    "addIncomeCategoryLabel": "Kategori",
-    "addIncomeCategoryRequired": "Bir kategori seç",
-  
-    "addIncomeNoteLabel": "Not",
-    "addIncomeNoteHint": "İsteğe bağlı",
-  
-    "addIncomeNewCategoryTitle": "Yeni gelir kategorisi",
-    "addIncomeCategoryNameLabel": "İsim",
-    "addIncomeCategoryNameHint": "örn. Maaş, Freelance…",
-    "addIncomeCategoryNameEmpty": "Bir kategori adı gir",
-  
-    "addJarNewTitle": "Yeni kavanoz",
-    "addJarEditTitle": "Kavanozu düzenle",
-    "addJarSubtitle": "Hedefi ve serbest paranın payını belirle",
-  
-    "addJarNameLabel": "İsim",
-    "addJarNameHint": "örn. Seyahat, Acil durum fonu, Ev",
-    "addJarNameRequired": "Bir isim gir",
-  
-    "addJarPercentLabel": "Serbest paranın payı, %",
-    "addJarPercentHint": "Manuel ekliyorsan 0",
-    "addJarPercentRange": "Yüzde 0 ile 100 arasında olmalı",
-  
-    "addJarTargetLabel": "Hedef tutar",
-    "addJarTargetHint": "örn. 5000",
-    "addJarTargetHelper": "Zorunlu",
-    "addJarTargetRequired": "Bir hedef gir (pozitif sayı)",
-  
-    "aiInsightTypeDataQuality": "Veri kalitesi",
-    "aiInsightTypeRisk": "Risk",
-    "aiInsightTypeEmotional": "Duygular",
-    "aiInsightTypeHabit": "Alışkanlıklar",
-    "aiInsightTypeGoal": "Hedefler",
-    "aiInsightTypeDefault": "İçgörü",
-  
-    "aiInsightStrengthStrong": "Güçlü etki",
-    "aiInsightStrengthNoticeable": "Belirgin etki",
-    "aiInsightStrengthWeak": "Zayıf etki",
-    "aiInsightStrengthLowConfidence": "Düşük güven",
-  
-    "aiInsightStrengthPercent": "{value}%",
-    "@aiInsightStrengthPercent": {
-      "placeholders": {
-        "value": {
-          "type": "int"
-        }
-      }
-    },
-  
-    "aiInsightEvidenceTitle": "Kanıt",
-  
-    "aiInsightImpactPositive": "Pozitif",
-    "aiInsightImpactNegative": "Negatif",
-    "aiInsightImpactMixed": "Karışık",
-  
-    "aiInsightsTitle": "AI içgörüleri",
-  
-    "aiInsightsConfirmTitle": "AI analizi çalıştırılsın mı?",
-    "aiInsightsConfirmBody": "AI, seçilen dönem için görevlerini, alışkanlıklarını ve iyilik halini analiz eder ve içgörüleri kaydeder. Bu birkaç saniye sürebilir.",
-    "aiInsightsConfirmRun": "Çalıştır",
-  
-    "aiInsightsPeriod7": "7 gün",
-    "aiInsightsPeriod30": "30 gün",
-    "aiInsightsPeriod90": "90 gün",
-  
-    "aiInsightsLastRun": "Son çalışma: {date}",
-    "@aiInsightsLastRun": {
-      "placeholders": {
-        "date": {
-          "type": "String"
-        }
-      }
-    },
-  
-    "aiInsightsEmptyNotRunTitle": "AI henüz çalıştırılmadı",
-    "aiInsightsEmptyNotRunSubtitle": "Bir dönem seç ve “Çalıştır”a dokun. İçgörüler kaydedilecek ve uygulamada kullanılabilir olacak.",
-    "aiInsightsCtaRun": "Analizi çalıştır",
-  
-    "aiInsightsEmptyNoInsightsTitle": "Henüz içgörü yok",
-    "aiInsightsEmptyNoInsightsSubtitle": "Daha fazla veri ekle (görevler, alışkanlıklar, yanıtlar) ve analizi tekrar çalıştır.",
-    "aiInsightsCtaRunAgain": "Tekrar çalıştır",
-  
-    "aiInsightsErrorAi": "AI hatası: {error}",
-    "@aiInsightsErrorAi": {
-      "placeholders": {
-        "error": {
-          "type": "String"
-        }
-      }
-    },
-  
-    "gcTitleDaySync": "Google Calendar • gün senkronu",
-    "gcSubtitleImport": "Bu günün etkinliklerini hedef olarak içe aktar.",
-    "gcSubtitleExport": "Bu günün hedeflerini takvime dışa aktar.",
-  
-    "gcModeImport": "İçe aktar",
-    "gcModeExport": "Dışa aktar",
-  
-    "gcCalendarLabel": "Takvim",
-    "gcCalendarPrimary": "Birincil (varsayılan)",
-  
-    "gcDefaultLifeBlockLabel": "Varsayılan yaşam alanı (içe aktarma için)",
-    "gcLifeBlockForThisGoalLabel": "Bu hedef için yaşam alanı",
-  
-    "gcEventsNotLoaded": "Etkinlikler yüklenmedi",
-    "gcConnectToLoadEvents": "Etkinlikleri yüklemek için hesabını bağla",
-  
-    "gcExportHint": "Dışa aktarma, seçilen takvimde bu günün hedefleri için etkinlikler oluşturur.",
-  
-    "gcConnect": "Bağlan",
-    "gcConnected": "Bağlandı",
-    "gcFindForDay": "Gün için bul",
-    "gcImport": "İçe aktar",
-    "gcExport": "Dışa aktar",
-  
-    "gcNoTitle": "Başlık yok",
-    "gcLoadingDots": "...",
-  
-    "gcImportedGoals": "İçe aktarılan hedefler: {count}",
-    "@gcImportedGoals": {
-      "placeholders": {
-        "count": {
-          "type": "int"
-        }
-      }
-    },
-  
-    "gcExportedGoals": "Dışa aktarılan hedefler: {count}",
-    "@gcExportedGoals": {
-      "placeholders": {
-        "count": {
-          "type": "int"
-        }
-      }
-    },
-  
-    "editGoalTitle": "Hedefi düzenle",
-  
-    "editGoalSectionDetails": "Detaylar",
-    "editGoalSectionLifeBlock": "Yaşam alanı",
-    "editGoalSectionParams": "Ayarlar",
-  
-    "editGoalFieldTitleLabel": "Başlık",
-    "editGoalFieldTitleHint": "Örnek: 3 km koşu",
-  
-    "editGoalFieldDescLabel": "Açıklama",
-    "editGoalFieldDescHint": "Tam olarak ne yapılmalı?",
-  
-    "editGoalFieldLifeBlockLabel": "Yaşam alanı",
-  
-    "editGoalFieldImportanceLabel": "Önem",
-    "editGoalImportanceLow": "Düşük",
-    "editGoalImportanceMedium": "Orta",
-    "editGoalImportanceHigh": "Yüksek",
-  
-    "editGoalFieldEmotionLabel": "Duygu",
-    "editGoalFieldEmotionHint": "😊",
-  
-    "editGoalDurationHours": "Süre (sa)",
-    "editGoalStartTime": "Başlangıç",
-  
-    "editGoalUntitled": "Başlıksız",
-  
-    "expenseCategoryOther": "Diğer",
-  
-    "goalStatusDone": "Tamamlandı",
-    "goalStatusInProgress": "Devam ediyor",
-    "actionDelete": "Sil",
-  
-    "goalImportanceChip": "Öncelik {value}/5",
-    "@goalImportanceChip": {
-      "placeholders": {
-        "value": {
-          "type": "int"
-        }
-      }
-    },
-  
-    "goalHoursChip": "Saat {value}",
-    "@goalHoursChip": {
-      "placeholders": {
-        "value": {
-          "type": "String"
-        }
-      }
-    },
-  
-    "goalPathEmpty": "Yolda hedef yok",
-  
-    "timelineActionEdit": "Düzenle",
-    "timelineActionDelete": "Sil",
-  
-    "saveBarSaving": "Kaydediliyor…",
-    "saveBarSave": "Kaydet",
-    "settingsLanguageTitle": "Dil",
-    "settingsLanguageSubtitle": "Uygulama dilini seç. “Sistem” cihaz dilini kullanır.",
-    "reportEmptyChartNotEnoughData": "Yeterli veri yok",
-  
-    "limitSheetTitle": "“{categoryName}” için limit",
-    "@limitSheetTitle": {
-      "placeholders": {
-        "categoryName": {
-          "type": "String"
-        }
-      }
-    },
-    "profileWebNotificationsSection": "Bildirimler (Web)",
-    "profileWebNotificationsPermissionTitle": "Bildirimlere izin ver",
-    "profileWebNotificationsPermissionSubtitle": "Web’de çalışır ve yalnızca sekme açıkken.",
-    "profileWebNotificationsEveningTitle": "Akşam check-in",
-    "profileWebNotificationsEveningSubtitle": "Her gün {time} saatinde",
-    "profileWebNotificationsChangeTime": "Saati değiştir",
-    "profileWebNotificationsUnsupported": "Tarayıcı bildirimleri bu derlemede kullanılamıyor. Yalnızca Web sürümünde çalışır (ve sadece sekme açıkken).",
-    "limitSheetHintNoLimit": "Boş bırak — limit yok",
-    "limitSheetFieldLabel": "Aylık limit",
-    "limitSheetFieldHint": "örn. 15000",
-    "limitSheetCtaNoLimit": "Limit yok"
-  }
-  
+    }
+  },
+  "aiPlanRejectTooltip": "Reddet",
+  "aiPlanAcceptTooltip": "Kabul et",
+  "aiPlanFieldBlock": "Blok",
+  "aiPlanFieldImportance": "Önem",
+  "aiPlanFieldHours": "Saat",
+  "aiPlanFieldRepeat": "Tekrar",
+  "aiPlanConsentRequiredTitle": "AI işleme onayı gerekli",
+  "aiPlanConsentRequiredBody": "AI planı oluşturmadan önce Nest’in kişisel öneriler için uygulama verilerini analiz edebileceğini onaylamalısın.",
+  "aiPlanGiveConsent": "Onay ver",
+  "aiPlanPrivacyPolicy": "Gizlilik Politikası",
+  "aiPlanDatenschutz": "Veri Koruma Politikası",
+  "aiPlanTermsOfUse": "Kullanım Şartları",
+  "aiPlanEmptyTitle": "Plan boş",
+  "aiPlanEmptyBody": "AI içgörüleri, hedefler, görevler, alışkanlıklar ve ruh haline dayalı plan oluşturmak için aşağıdaki düğmeye bas.",
+  "aiPlanGeneratePlan": "Plan oluştur",
+  "aiPlanRepeatNone": "Tekrar yok",
+  "aiPlanRepeatDaily": "Her gün",
+  "aiPlanRepeatWeekdays": "Hafta içi",
+  "aiPlanRepeatWeekly": "Haftada bir",
+  "aiPlanLifeBlockOther": "Diğer",
+  "aiInsightsConsentTitle": "AI işleme onayı",
+  "aiInsightsConsentBody": "AI içgörüleri oluşturmak için Nest hedeflerini, görevlerini, alışkanlıklarını, ruh halini ve diğer uygulama verilerini analiz edecek. Bu veriler yalnızca kişisel öneriler, planlar ve içgörüler oluşturmak için kullanılır.",
+  "aiInsightsConsentDeclineBody": "Onay vermeyebilirsin — bu durumda AI özelliği çalışmaz.",
+  "aiInsightsConsentNotNow": "Şimdi değil",
+  "aiInsightsConsentAgree": "Kabul ediyorum",
+  "aiInsightsConsentSaved": "AI işleme onayı kaydedildi",
+  "aiInsightsConsentCheckFailed": "AI işleme onayı kontrol edilemedi veya kaydedilemedi. users tablosunda ai_processing_consent, ai_processing_consent_at ve ai_processing_consent_version alanlarının olduğundan emin ol. Detaylar: {error}",
+  "aiInsightsCheckingConsent": "AI işleme onayı kontrol ediliyor...",
+  "aiInsightsUserNotAuthorized": "Kullanıcı kimliği doğrulanmamış",
+  "aiInsightsOpenLinkFailed": "Bağlantı açılamadı: {url}",
+  "aiInsightsDefaultTitle": "AI içgörüsü",
+  "aiInsightsConsentRequiredTitle": "AI işleme onayı gerekli",
+  "aiInsightsConsentRequiredBody": "AI içgörüleri oluşturmadan önce Nest’in kişisel öneriler için uygulama verilerini analiz edebileceğini onaylamalısın.",
+  "aiInsightsGiveConsent": "Onay ver",
+  "aiInsightsPrivacyPolicy": "Gizlilik Politikası",
+  "aiInsightsDatenschutz": "Veri Koruma Politikası",
+  "aiInsightsTermsOfUse": "Kullanım Şartları",
+  "@aiInsightsConsentCheckFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@aiInsightsOpenLinkFailed": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "massDailyTitle": "Toplu günlük giriş",
+  "massDailyDatePrefix": "Tarih: ",
+  "massDailyChoose": "Seç",
+  "massDailyBack": "Geri",
+  "massDailyCancel": "İptal",
+  "massDailyNext": "İleri",
+  "massDailySaveAll": "Tümünü kaydet",
+  "massDailyEmptyRowsIgnored": "Boş satırlar yok sayılır.",
+  "massDailyMoodTitle": "Ruh hali",
+  "massDailyMoodSubtitle": "Günün nasıl geçtiğine dair isteğe bağlı not.",
+  "massDailyNote": "Not",
+  "massDailyHabitsTitle": "Alışkanlıklar",
+  "massDailyHabitsSubtitle": "Tamamlanmayı işaretle ve gerekiyorsa miktar ekle.",
+  "massDailyRefresh": "Yenile",
+  "massDailyNoHabits": "Henüz alışkanlık yok. Profilinden ekle.",
+  "massDailyHabitsLoadFailed": "Alışkanlıklar yüklenemedi: {error}",
+  "@massDailyHabitsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "massDailyMentalTitle": "Ruh sağlığı",
+  "massDailyMentalSubtitle": "Sonraki analizler için kısa günlük durum kontrolü.",
+  "massDailyMentalIntro": "Birkaç soruya yanıt ver — bu durumunu takip etmeye yardımcı olur.",
+  "massDailyNoMentalQuestions": "Henüz soru yok. Bunları mental_questions tablosuna ekle.",
+  "massDailyMentalLoadFailed": "Sorular yüklenemedi: {error}",
+  "@massDailyMentalLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "massDailyExpensesTitle": "Giderler",
+  "massDailyExpensesSubtitle": "Seçilen gün için giderleri ekle.",
+  "massDailyIncomesTitle": "Gelir",
+  "massDailyIncomesSubtitle": "Seçilen gün için gelir ekle.",
+  "massDailyGoalsTitle": "Görevler",
+  "massDailyGoalsSubtitle": "O gün ne üzerinde çalıştığını ve ne kadar zaman aldığını kaydet.",
+  "massDailyAddRow": "Satır ekle",
+  "massDailyNoMood": "Ruh hali yok",
+  "massDailyQuantityExample": "Miktar (örneğin, sigara)",
+  "massDailyQuantityOptional": "Miktar (isteğe bağlı)",
+  "massDailyQuantityShort": "Adet",
+  "massDailyHabitNegative": "Negatif",
+  "massDailyHabitPositive": "Pozitif",
+  "massDailyAnswer": "Yanıt",
+  "massDailyAmount": "Tutar",
+  "massDailyCategory": "Kategori",
+  "massDailyNoCategories": "Kategori yok",
+  "massDailyTaskTitle": "Görev başlığı",
+  "massDailyHours": "Saat",
+  "massDailyTime": "Saat",
+  "massDailyEmotion": "Duygu",
+  "massDailyNoEmotion": "Duygu yok",
+  "massDailyImportance": "Önem",
+  "massDailyBigGoal": "Büyük hedef",
+  "massDailyNoLink": "Bağlı değil",
+  "massDailyLoadingUserGoals": "Büyük hedefler yükleniyor...",
+  "massDailyNoUserGoalsForCategory": "Bu kategori için henüz büyük hedef yok.",
+  "massDailyHorizonTactical": "Taktik",
+  "massDailyHorizonMid": "Orta vadeli",
+  "massDailyHorizonLong": "Uzun vadeli",
+  "massDailyLifeBlockGeneral": "Genel",
+  "massDailyLifeBlockHealth": "Sağlık",
+  "massDailyLifeBlockCareer": "Kariyer",
+  "massDailyLifeBlockFamily": "Aile",
+  "massDailyLifeBlockFinance": "Finans",
+  "massDailyLifeBlockEducation": "Eğitim",
+  "massDailyLifeBlockHobbies": "Hobiler",
+  "importJournalTextNotRecognized": "Metin tanınmadı. Başka bir fotoğraf dene.",
+  "importJournalRecognizedTextTitle": "Tanınan metin",
+  "importJournalContinue": "Devam",
+  "importJournalUntitled": "Başlıksız",
+  "importJournalNoTasksFound": "Metinden görevler çıkarılamadı.",
+  "importJournalAddedGoals": "Eklenen hedefler: {count}",
+  "@importJournalAddedGoals": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importJournalImportFailed": "İçe aktarılamadı: {error}",
+  "@importJournalImportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importJournalVisionApiKeyMissing": "VISION_API_KEY ayarlanmamış. Uygulamayı --dart-define=VISION_API_KEY=... ile çalıştır.",
+  "importJournalVisionApiError": "Vision API hata döndürdü {statusCode}: {body}",
+  "@importJournalVisionApiError": {
+    "placeholders": {
+      "statusCode": {},
+      "body": {}
+    }
+  },
+  "importJournalEditTitle": "Düzenle",
+  "importJournalNameLabel": "Ad",
+  "importJournalTimeColon": "Saat:",
+  "importJournalHoursColon": "Saat:",
+  "importJournalFoundTasksTitle": "Bulunan görevler",
+  "importJournalTaskSubtitle": "{time} • {hours} sa",
+  "@importJournalTaskSubtitle": {
+    "placeholders": {
+      "time": {},
+      "hours": {}
+    }
+  },
+  "importJournalAddSelected": "Seçilenleri ekle",
+  "recurringGoalSelectAtLeastOneWeekday": "En az bir hafta günü seç",
+  "recurringGoalTitle": "Tekrarlayan hedef",
+  "recurringGoalSubtitle": "Bugünden seçilen tarihe kadar görevler oluşturur.",
+  "recurringGoalDetailsSection": "Detaylar",
+  "recurringGoalTitleLabel": "Hedef başlığı",
+  "recurringGoalTitleHint": "Örneğin: Antrenman",
+  "recurringGoalEmotionLabel": "Duygu",
+  "recurringGoalEmotionHint": "Örneğin: 💪 motivasyon",
+  "recurringGoalRegularitySection": "Tekrar",
+  "recurringGoalEveryNDays": "Her N günde bir",
+  "recurringGoalByWeekdays": "Hafta günlerine göre",
+  "recurringGoalIntervalLabel": "Aralık",
+  "recurringGoalEveryNDaysShort": "{count} g",
+  "@recurringGoalEveryNDaysShort": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "recurringGoalWeekdayMon": "Pzt",
+  "recurringGoalWeekdayTue": "Sal",
+  "recurringGoalWeekdayWed": "Çar",
+  "recurringGoalWeekdayThu": "Per",
+  "recurringGoalWeekdayFri": "Cum",
+  "recurringGoalWeekdaySat": "Cmt",
+  "recurringGoalWeekdaySun": "Paz",
+  "recurringGoalTimeButton": "Saat: {time}",
+  "@recurringGoalTimeButton": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "recurringGoalUntilButton": "Şu tarihe kadar: {date}",
+  "@recurringGoalUntilButton": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "recurringGoalParametersSection": "Parametreler",
+  "recurringGoalLifeBlockLabel": "Yaşam bloğu",
+  "recurringGoalImportanceLabel": "Önem",
+  "recurringGoalUserGoalLabel": "Büyük hedef",
+  "recurringGoalNoLink": "Bağlantı yok",
+  "recurringGoalLoadingUserGoals": "“{block}” için hedefler yükleniyor...",
+  "@recurringGoalLoadingUserGoals": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "recurringGoalNoUserGoalsForBlock": "“{block}” için henüz uygun hedef yok.",
+  "@recurringGoalNoUserGoalsForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "recurringGoalPlannedHoursLabel": "Planlanan saat",
+  "recurringGoalOccurrencesCount": "Oluşturulacak görevler: {count}",
+  "@recurringGoalOccurrencesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "recurringGoalCreate": "Oluştur",
+  "recurringGoalLifeBlockGeneral": "Genel",
+  "recurringGoalLifeBlockHealth": "Sağlık",
+  "recurringGoalLifeBlockCareer": "Kariyer",
+  "recurringGoalLifeBlockFinance": "Finans",
+  "recurringGoalLifeBlockRelationships": "İlişkiler",
+  "recurringGoalLifeBlockSelf": "Kişisel gelişim",
+  "recurringGoalLifeBlockEducation": "Eğitim",
+  "recurringGoalLifeBlockTravel": "Seyahat",
+  "recurringGoalLifeBlockHome": "Ev",
+  "recurringGoalHorizonTactical": "Taktik",
+  "recurringGoalHorizonMid": "Orta vadeli",
+  "recurringGoalHorizonLong": "Uzun vadeli",
+  "addDayGoalLinkSectionTitle": "Bir hedefe bağla",
+  "addDayGoalUserGoalLabel": "Büyük hedef",
+  "addDayGoalNoLinkedGoal": "Bağlantı yok",
+  "addDayGoalLoadingUserGoals": "“{block}” için hedefler yükleniyor...",
+  "@addDayGoalLoadingUserGoals": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "addDayGoalNoUserGoalsForBlock": "“{block}” için henüz uygun hedef yok.",
+  "@addDayGoalNoUserGoalsForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "addDayGoalLifeBlockGeneral": "Genel",
+  "addDayGoalLifeBlockHealth": "Sağlık",
+  "addDayGoalLifeBlockCareer": "Kariyer",
+  "addDayGoalLifeBlockFinance": "Finans",
+  "addDayGoalLifeBlockRelationships": "İlişkiler",
+  "addDayGoalLifeBlockSelf": "Kişisel gelişim",
+  "addDayGoalLifeBlockEducation": "Eğitim",
+  "addDayGoalLifeBlockTravel": "Seyahat",
+  "addDayGoalLifeBlockHome": "Ev",
+  "addDayGoalHorizonTactical": "Taktik",
+  "addDayGoalHorizonMid": "Orta vadeli",
+  "addDayGoalHorizonLong": "Uzun vadeli",
+  "lifeBlockSelf": "Kişisel gelişim",
+  "lifeBlockTravel": "Seyahat",
+  "lifeBlockHome": "Ev",
+  "horizonTactical": "Taktik",
+  "horizonMid": "Orta vadeli",
+  "horizonLong": "Uzun vadeli",
+  "editGoalSectionDateTime": "Tarih ve saat",
+  "editGoalSectionUserGoalLink": "Daha büyük bir hedefe bağla",
+  "userGoalLinkFieldLabel": "Daha büyük hedef",
+  "userGoalLinkNone": "Bağlantı yok",
+  "userGoalLinkLoadingForBlock": "“{block}” için hedefler yükleniyor...",
+  "@userGoalLinkLoadingForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "userGoalLinkNoGoalsForBlock": "“{block}” için henüz uygun hedef yok.",
+  "@userGoalLinkNoGoalsForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "editGoalHoursValue": "Saat: {hours}",
+  "@editGoalHoursValue": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "commonHoursShort": "{hours} sa",
+  "@commonHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "healthTrackerTitle": "Sağlık takipçisi",
+  "healthCalorieTargetTitle": "Kalori hedefi",
+  "healthDailyCaloriesLabel": "Günlük kcal",
+  "healthAddMealTitle": "Öğün ekle",
+  "healthMealTypeLabel": "Öğün",
+  "healthMealBreakfast": "Kahvaltı",
+  "healthMealLunch": "Öğle yemeği",
+  "healthMealDinner": "Akşam yemeği",
+  "healthMealSnack": "Ara öğün",
+  "healthCaloriesLabel": "Kalori",
+  "healthEnterCalories": "Kalori gir",
+  "healthMealDescriptionLabel": "Ne yedin?",
+  "healthAddDescription": "Açıklama ekle",
+  "healthAddBurnTitle": "Yakılan kalori ekle",
+  "healthCaloriesBurnedLabel": "Yakılan kalori",
+  "healthCommentLabel": "Yorum",
+  "healthWaterTodayTitle": "Bugün ne kadar su içtin?",
+  "healthSaveWater": "Suyu kaydet",
+  "healthSetTarget": "Hedef belirle",
+  "healthTargetCalories": "Hedef {calories} kcal",
+  "@healthTargetCalories": {
+    "placeholders": {
+      "calories": {}
+    }
+  },
+  "healthAddMealButton": "Yemek ekle",
+  "healthAddBurnButton": "Yakım ekle",
+  "healthWaterButton": "Su {liters} L",
+  "@healthWaterButton": {
+    "placeholders": {
+      "liters": {}
+    }
+  },
+  "healthConsumed": "Alınan",
+  "healthBurned": "Yakılan",
+  "healthBalance": "Denge",
+  "healthDeltaVsTarget": "Hedefe göre fark",
+  "healthWaterDrunk": "İçilen su",
+  "healthKcalValue": "{value} kcal",
+  "@healthKcalValue": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthKcalValueWithSign": "{value} kcal",
+  "@healthKcalValueWithSign": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthLitersValue": "{value} L",
+  "@healthLitersValue": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthMealsTodayTitle": "Bugünkü öğünler",
+  "healthNoMeals": "Henüz öğün kaydı yok.",
+  "healthBurnsTitle": "Yakılan kalori",
+  "healthNoBurns": "Henüz yakılan kalori kaydı yok.",
+  "healthNoComment": "Yorum yok",
+  "hobbyTrackerTitle": "Hobi takipçisi",
+  "hobbyTrackerNewHobbyTitle": "Yeni hobi",
+  "hobbyTrackerHobbyNameLabel": "Hobi adı",
+  "hobbyTrackerEnterHobbyValidator": "Bir hobi gir",
+  "hobbyTrackerWeeklyGoalMinutesLabel": "Haftalık hedef, dakika",
+  "hobbyTrackerEnterGoalValidator": "Bir hedef gir",
+  "hobbyTrackerCreateButton": "Oluştur",
+  "hobbyTrackerAddTimeTitle": "Süre ekle: {title}",
+  "@hobbyTrackerAddTimeTitle": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "hobbyTrackerMinutesSpentLabel": "Harcanan dakika",
+  "hobbyTrackerNoteLabel": "Not",
+  "hobbyTrackerDeleteConfirmTitle": "Hobi silinsin mi?",
+  "hobbyTrackerDeleteConfirmBody": "\"{title}\" hobisi tüm kayıtlarıyla birlikte silinecek.",
+  "@hobbyTrackerDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "hobbyTrackerAddHobbyTooltip": "Hobi ekle",
+  "hobbyTrackerEmptyText": "Henüz hobi yok. İlk aktiviteni ekle ve zamanı takip etmeye başla.",
+  "hobbyTrackerCreateHobbyButton": "Hobi oluştur",
+  "hobbyTrackerDeleteHobbyTooltip": "Hobiyi sil",
+  "hobbyTrackerAddEntryButton": "Kayıt ekle",
+  "hobbyTrackerToday": "Bugün {value}",
+  "@hobbyTrackerToday": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "hobbyTrackerWeek": "Hafta {value}",
+  "@hobbyTrackerWeek": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "hobbyTrackerGoal": "Hedef: {value}",
+  "@hobbyTrackerGoal": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "hobbyTrackerMinutesShort": "{minutes} dk",
+  "@hobbyTrackerMinutesShort": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "hobbyTrackerHoursShort": "{hours} sa",
+  "@hobbyTrackerHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "hobbyTrackerHoursMinutesShort": "{hours} sa {minutes} dk",
+  "@hobbyTrackerHoursMinutesShort": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  },
+  "importGoalsReviewTitle": "Hedefleri içe aktar",
+  "importGoalsReviewSubtitle": "İçe aktarılacakları seç ve gerekirse başlık veya açıklamayı düzenle.",
+  "importGoalsReviewSelectAll": "Tümünü seç",
+  "importGoalsReviewYes": "Evet",
+  "importGoalsReviewNo": "Hayır",
+  "importGoalsReviewListSection": "Liste",
+  "importGoalsReviewImport": "İçe aktar",
+  "importGoalsReviewFieldTitle": "Başlık",
+  "importGoalsReviewFieldDescription": "Açıklama",
+  "importGoalsReviewTime": "Saat: {time}",
+  "@importGoalsReviewTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "importGoalsReviewChange": "Değiştir",
+  "shoppingBasketCopyHeader": "🛒 Alışveriş listesi",
+  "shoppingDueDatePrefix": "{date} tarihine kadar",
+  "@shoppingDueDatePrefix": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "shoppingBasketCopied": "Alışveriş listesi kopyalandı",
+  "shoppingNewWishlistItem": "Yeni istek öğesi",
+  "shoppingNewPurchase": "Yeni alışveriş",
+  "shoppingEditItem": "Öğeyi düzenle",
+  "shoppingFieldTitle": "Başlık",
+  "shoppingEnterTitle": "Başlık gir",
+  "shoppingFieldDescription": "Açıklama",
+  "shoppingFieldPrice": "Fiyat",
+  "shoppingFieldStore": "Mağaza",
+  "shoppingFieldExpenseCategory": "Gider kategorisi",
+  "shoppingNoCategory": "Kategori yok",
+  "shoppingAlreadyBought": "Zaten alındı",
+  "shoppingPurchaseDate": "Alışveriş tarihi",
+  "shoppingReset": "Sıfırla",
+  "shoppingEmpty": "Şimdilik boş.",
+  "shoppingTrackerTitle": "Alışveriş takipçisi",
+  "shoppingCopyBasket": "Sepeti kopyala",
+  "shoppingBasketTitle": "Alışveriş listesi",
+  "shoppingWishlistTitle": "İstek listesi",
+  "profileOpenLinkFailed": "Bağlantı açılamadı.",
+  "profileDangerZoneSubtitle": "Hesap silme",
+  "profileLegalDocumentsTitle": "Yasal belgeler",
+  "profileLegalDocumentsSubtitle": "Gizlilik Politikası, Veri Koruma Beyanı, Kullanım Şartları ve Künyeyi istediğin zaman açabilirsin.",
+  "profileLegalPrivacyTitle": "Gizlilik Politikası",
+  "profileLegalPrivacySubtitle": "Gizlilik politikasının İngilizce sürümü",
+  "profileLegalDatenschutzTitle": "Veri Koruma Beyanı",
+  "profileLegalDatenschutzSubtitle": "Gizlilik politikasının Almanca sürümü",
+  "profileLegalTermsTitle": "Kullanım Şartları",
+  "profileLegalTermsSubtitle": "Nest kullanımına ilişkin kurallar ve koşullar",
+  "profileLegalImpressumTitle": "Künye",
+  "profileLegalImpressumSubtitle": "Yasal bildirim ve sağlayıcı bilgileri",
+  "settingsLanguageSystem": "Sistem",
+  "settingsLanguageRussian": "Rusça",
+  "settingsLanguageEnglish": "İngilizce",
+  "settingsLanguageGerman": "Almanca",
+  "settingsLanguageFrench": "Fransızca",
+  "settingsLanguageSpanish": "İspanyolca",
+  "settingsLanguageTurkish": "Türkçe",
+  "profileWebNotificationsEveningBody": "Alışkanlıklarını işaretle ve gününü kapat 👌",
+  "profileWebNotificationsPermissionDeniedToast": "İzin verilmedi. Tarayıcı bildirim ayarlarını kontrol et.",
+  "profileWebNotificationsPermissionGrantedToast": "Tarayıcı bildirimleri etkin ✅",
+  "profileWebNotificationsTimeChangedToast": "Bildirim saati: {time}",
+  "@profileWebNotificationsTimeChangedToast": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "profileWebNotificationsLoadingSettings": "Ayarlar yükleniyor...",
+  "profileWebNotificationsEnabledToast": "Etkinleştirildi. Tarayıcıda bildirimlere izin vermeyi unutma.",
+  "profileWebNotificationsDisabledToast": "Devre dışı.",
+  "profileEditChipsDefaultHint": "Değerleri virgülle ayırarak gir",
+  "onboardingWelcomeTitle": "Nest’e hoş geldin",
+  "onboardingWelcomeBody": "Sana ana özellikleri hızlıca göstereceğim: hızlı işlemler, görevler, büyük hedefler, profil, raporlar ve finans.",
+  "onboardingSkip": "Atla",
+  "onboardingStart": "Başla",
+  "onboardingFinishTitle": "Tamamlandı",
+  "onboardingFinishBody": "Artık Nest’in ana özelliklerinin nerede olduğunu biliyorsun. Eğitimi daha sonra ana ekrandaki yardım simgesinden tekrar başlatabilirsin.",
+  "onboardingGotIt": "Anladım",
+  "onboardingMainQuickActionsTitle": "Hızlı işlemler",
+  "onboardingMainQuickActionsText": "Bu düğmeyle hızlıca görev, ruh hali, gider, alışkanlık ekleyebilir ve AI planını başlatabilirsin.",
+  "onboardingMainNavigationTitle": "Nest navigasyonu",
+  "onboardingMainNavigationText": "Ana bölümler burada: ana sayfa, görevler, büyük hedefler, profil, raporlar ve finans.",
+  "onboardingMainHelpTitle": "Kılavuzu tekrar aç",
+  "onboardingMainHelpText": "Etkileşimli How-To’yu daha sonra tekrar görmek istediğinde bu simgeye dokun.",
+  "onboardingGoalsFilterTitle": "Yaşam alanı filtresi",
+  "onboardingGoalsFilterText": "Görevleri doğru bağlamda görmek için kariyer, sağlık, finans ve diğer alanları seç.",
+  "onboardingGoalsModeTitle": "Panel veya takvim",
+  "onboardingGoalsModeText": "Panel genel resmi gösterir; takvim ise görevleri gün ve haftaya göre planlamana yardımcı olur.",
+  "onboardingGoalsAddTitle": "İşlem ekle",
+  "onboardingGoalsAddText": "Buradan hızlıca görev, görev serisi ekleyebilir veya bir günü birden çok kayıtla doldurabilirsin.",
+  "onboardingReportsPeriodTitle": "Analiz dönemi",
+  "onboardingReportsPeriodText": "Zaman içinde hedefleri, ruh halini, alışkanlıkları ve finansı karşılaştırmak için gün, hafta ve ay arasında geçiş yap.",
+  "onboardingReportsChartTitle": "Etkileşimli grafikler",
+  "onboardingReportsChartText": "Grafik segmentlerine ve noktalara dokun — uygulama yalnızca seçilen öğenin detaylarını gösterir.",
+  "onboardingUserGoalsHeaderTitle": "Büyük hedefler",
+  "onboardingUserGoalsHeaderText": "Stratejik hedeflerin burada saklanır: kısa, orta ve uzun vadeli. Daha sonra günlük görevleri bunlara bağlayabilirsin.",
+  "onboardingUserGoalsFiltersTitle": "Hedef filtreleri",
+  "onboardingUserGoalsFiltersText": "İhtiyacın olan yöne hızlıca odaklanmak için hedefleri yaşam alanı ve ufka göre filtrele.",
+  "onboardingUserGoalsAddTitle": "Büyük hedef oluştur",
+  "onboardingUserGoalsAddText": "Hedef eklemek, yaşam alanı, ufuk ve son tarih seçmek için buraya dokun.",
+  "onboardingProfileHeaderTitle": "Profil",
+  "onboardingProfileHeaderText": "Bu, kişisel Nest ayarlarının merkezidir: hesap, odak, alışkanlıklar ve uygulama tercihleri.",
+  "onboardingProfileCardTitle": "Kişisel veriler",
+  "onboardingProfileCardText": "Ad, yaş ve temel parametreler arayüzü ve gelecekteki AI önerilerini kişiselleştirmek için kullanılır.",
+  "onboardingProfileFocusTitle": "Odak ve ayarlar",
+  "onboardingProfileFocusText": "Bu parametreler uygulamadaki günlük planlama, analiz ve önerileri etkiler.",
+  "onboardingBudgetIncomeTitle": "Gelir kategorileri",
+  "onboardingBudgetIncomeText": "Finansal analizin gelir yapını anlayabilmesi için gelir kaynakları ekle.",
+  "onboardingBudgetExpenseTitle": "Gider kategorileri",
+  "onboardingBudgetExpenseText": "Gider kategorilerini ve limitleri burada ayarla. Bu, bütçenin en hızlı nereye gittiğini görmene yardımcı olur.",
+  "onboardingBudgetJarsTitle": "Kumbaralar ve dağıtım",
+  "onboardingBudgetJarsText": "Birikim hedefleri için kumbaraları kullan: seyahat, acil durum fonu, yatırımlar veya büyük alışverişler.",
+  "onboardingBudgetSaveTitle": "Ayarları kaydet",
+  "onboardingBudgetSaveText": "Değişikliklerden sonra bütçeni kaydetmeyi unutma; böylece kategoriler ve limitler veritabanına kaydedilir.",
+  "onboardingDayGoalsSummaryTitle": "Gün özeti",
+  "onboardingDayGoalsSummaryText": "Bu kart gün ilerlemeni gösterir: kaç görev tamamlandı, ne kaldı ve hâlâ ne kadar süre planlandı.",
+  "onboardingDayGoalsFilterTitle": "Tamamlananları gizle",
+  "onboardingDayGoalsFilterText": "Ekranda yalnızca aktif görevleri bırakmak için bu filtreyi aç.",
+  "onboardingDayGoalsFabTitle": "Aktivite ekle",
+  "onboardingDayGoalsFabText": "Bu düğmeyle görev ekleyebilir, günlük kaydını tanıyabilir veya Google Calendar’ı senkronize edebilirsin.",
+  "onboardingQuestionnaireProgressTitle": "Kurulum ilerlemesi",
+  "onboardingQuestionnaireProgressText": "İlk kurulumda hangi adımda olduğunu burada görebilirsin.",
+  "onboardingQuestionnaireNextTitle": "Devam et",
+  "onboardingQuestionnaireNextText": "Mevcut adımı tamamladıktan sonra buraya dokun. Sonunda Nest profilini, yaşam alanlarını ve hedeflerini kaydedecek.",
+  "onboardingExpensesControlsTitle": "Gün ve bütçe ayarları",
+  "onboardingExpensesControlsText": "İşlem tarihini burada seç ve kategoriler, limitler ve kumbaralar için ayarları aç.",
+  "onboardingExpensesSummaryTitle": "Aylık finans özeti",
+  "onboardingExpensesSummaryText": "Bu kart aylık gelir, gider ve serbest bakiyeyi gösterir — bütçe analizinin temelidir.",
+  "onboardingExpensesTransactionsTitle": "Seçilen günün işlemleri",
+  "onboardingExpensesTransactionsText": "Burada günün gelir ve giderlerini görebilirsin. Düzenlemek için bir işleme dokun veya silmek için sola kaydır.",
+  "onboardingExpensesFabTitle": "Gelir veya gider ekle",
+  "onboardingExpensesFabText": "Menüyü açıp hızlıca yeni finansal işlem eklemek için artıya dokun.",
+  "onboardingNextHint": "Devam etmek için ekrana dokun",
+  "registerLegalTermsTitle": "Kullanım Şartları",
+  "registerLegalPrivacyTitle": "Gizlilik Politikası",
+  "registerLegalDatenschutzTitle": "Veri Koruma Beyanı",
+  "registerLegalImpressumTitle": "Künye",
+  "registerLegalOptionalTitle": "{title} · isteğe bağlı",
+  "@registerLegalOptionalTitle": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "registerErrOpenRequiredLegalDocs": "Lütfen önce Kullanım Şartlarını ve Gizlilik Politikasını açıp oku.",
+  "registerLegalOpenFailed": "{document} açılamadı.",
+  "@registerLegalOpenFailed": {
+    "placeholders": {
+      "document": {}
+    }
+  },
+  "registerLegalAcceptedText": "Kullanım Şartlarını ve Gizlilik Politikasını okudum ve kabul ediyorum.",
+  "registerLegalOpenRequiredDocsText": "Önce Kullanım Şartlarını ve Gizlilik Politikasını açıp oku. Veri Koruma Beyanı ve Künye ek yasal bilgi olarak mevcuttur.",
+  "registerLegalPrefix": "Kayıt olarak ",
+  "registerLegalTerms": "Kullanım Şartları",
+  "registerLegalMiddle": " ve ",
+  "registerLegalPrivacy": "Gizlilik Politikası",
+  "registerLegalSuffix": "nı kabul etmiş olursun.",
+  "addIncomeCategoryNameLabel": "Kategori adı"
+}

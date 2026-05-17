@@ -96,14 +96,14 @@ class ProfileUi {
       case 'хобби':
         return const LifeBlockMeta(
           key: 'hobbies',
-          labelKey: 'lifeBlockHobby',
+          labelKey: 'lifeBlockHobbies',
           icon: Icons.palette_rounded,
         );
 
       default:
         return const LifeBlockMeta(
           key: 'hobbies',
-          labelKey: 'lifeBlockHobby',
+          labelKey: 'lifeBlockHobbies',
           icon: Icons.palette_rounded,
         );
     }
@@ -123,11 +123,11 @@ class ProfileUi {
       case 'lifeBlockFinance':
         return l.lifeBlockFinance;
       case 'lifeBlockEducation':
-        return 'Образование';
-      case 'lifeBlockHobby':
-        return 'Хобби';
+        return l.lifeBlockEducation;
+      case 'lifeBlockHobbies':
+        return l.lifeBlockHobbies;
       default:
-        return 'Хобби';
+        return l.lifeBlockHobbies;
     }
   }
 
@@ -362,10 +362,11 @@ class ProfileUi {
     BuildContext context, {
     required String title,
     required List<String> initial,
-    String hint = 'Введите через запятую',
+    String? hint,
   }) async {
     final l = AppLocalizations.of(context)!;
     final ctrl = TextEditingController(text: initial.join(', '));
+    final effectiveHint = hint ?? l.profileEditChipsDefaultHint;
 
     final res = await showModalBottomSheet<List<String>>(
       context: context,
@@ -389,7 +390,7 @@ class ProfileUi {
               TextField(
                 controller: ctrl,
                 maxLines: 3,
-                decoration: InputDecoration(hintText: hint),
+                decoration: InputDecoration(hintText: effectiveHint),
               ),
               const SizedBox(height: 10),
               Row(

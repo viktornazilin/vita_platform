@@ -1,44 +1,36 @@
 {
+  "@@locale": "de",
   "appTitle": "Nest App",
   "login": "Anmelden",
-  "register": "Registrieren",
-  "home": "Start",
-
-  "budgetSetupTitle": "Budget & Spargläser",
+  "register": "Konto erstellen",
+  "home": "Startseite",
+  "budgetSetupTitle": "Budget & Spartöpfe",
   "budgetSetupSaved": "Einstellungen gespeichert",
   "budgetSetupSaveError": "Fehler beim Speichern",
-
-  "budgetIncomeCategoriesTitle": "Einnahmenkategorien",
-  "budgetIncomeCategoriesSubtitle": "Werden beim Hinzufügen von Einnahmen verwendet",
-
+  "budgetIncomeCategoriesTitle": "Einnahmekategorien",
+  "budgetIncomeCategoriesSubtitle": "Wird beim Erfassen von Einnahmen verwendet",
   "budgetExpenseCategoriesTitle": "Ausgabenkategorien",
-  "budgetExpenseCategoriesSubtitle": "Limits helfen dir, Ausgaben im Griff zu behalten",
-
-  "budgetJarsTitle": "Sparziele",
-  "budgetJarsSubtitle": "Prozent = Anteil der freien Mittel, der automatisch zugewiesen wird",
-
-  "budgetAddJar": "Sparziel hinzufügen",
-  "budgetJarAdded": "Sparziel hinzugefügt",
-  "budgetJarAddFailed": "Hinzufügen fehlgeschlagen: {error}",
+  "budgetExpenseCategoriesSubtitle": "Limits helfen dir, Ausgaben im Blick zu behalten",
+  "budgetJarsTitle": "Spartöpfe",
+  "budgetJarsSubtitle": "Der Prozentsatz ist der Anteil freier Mittel, der automatisch hinzugefügt wird",
+  "budgetAddJar": "Spartopf hinzufügen",
+  "budgetJarAdded": "Spartopf hinzugefügt",
+  "budgetJarAddFailed": "Konnte nicht hinzugefügt werden: {error}",
   "@budgetJarAddFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
-  "budgetJarDeleted": "Sparziel gelöscht",
-  "budgetJarDeleteFailed": "Löschen fehlgeschlagen: {error}",
+  "budgetJarDeleted": "Spartopf gelöscht",
+  "budgetJarDeleteFailed": "Konnte nicht gelöscht werden: {error}",
   "@budgetJarDeleteFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
-  "budgetNoJarsTitle": "Noch keine Sparziele",
-  "budgetNoJarsSubtitle": "Erstelle dein erstes Sparziel — wir helfen dir dabei.",
-
-  "budgetSetOrChangeLimit": "Limit festlegen/ändern",
-
+  "budgetNoJarsTitle": "Noch keine Spartöpfe",
+  "budgetNoJarsSubtitle": "Erstelle dein erstes Sparziel — wir helfen dir, es zu erreichen.",
+  "budgetSetOrChangeLimit": "Limit setzen/ändern",
   "budgetDeleteCategoryTitle": "Kategorie löschen?",
   "budgetCategoryLabel": "Kategorie: {name}",
   "@budgetCategoryLabel": {
@@ -46,16 +38,14 @@
       "name": {}
     }
   },
-
-  "budgetDeleteJarTitle": "Sparziel löschen?",
-  "budgetJarLabel": "Sparziel: {title}",
+  "budgetDeleteJarTitle": "Spartopf löschen?",
+  "budgetJarLabel": "Spartopf: {title}",
   "@budgetJarLabel": {
     "placeholders": {
       "title": {}
     }
   },
-
-  "budgetJarSummary": "Gespart: {saved} ₽ • Prozent: {percent}%{targetPart}",
+  "budgetJarSummary": "Gespart: {saved} ₽ • Anteil: {percent}%{targetPart}",
   "@budgetJarSummary": {
     "placeholders": {
       "saved": {},
@@ -63,16 +53,15 @@
       "targetPart": {}
     }
   },
-
-  "budgetNewIncomeCategory": "Neue Einnahmenkategorie",
+  "budgetNewIncomeCategory": "Neue Einnahmekategorie",
   "budgetNewExpenseCategory": "Neue Ausgabenkategorie",
-  "budgetCategoryNameHint": "Z. B.: Gehalt / Essen / Verkehr",
-
+  "budgetCategoryNameHint": "Kategoriename",
+  "budgetCategoryNameLabel": "Kategoriename",
   "commonAdd": "Hinzufügen",
   "commonDelete": "Löschen",
   "commonCancel": "Abbrechen",
-  "commonLoading": "lädt…",
-  "commonSaving": "Speichern…",
+  "commonLoading": "Lädt…",
+  "commonSaving": "Wird gespeichert…",
   "commonSave": "Speichern",
   "commonRetry": "Erneut versuchen",
   "commonUpdate": "Aktualisieren",
@@ -82,128 +71,104 @@
   "commonBack": "Zurück",
   "commonNext": "Weiter",
   "commonDone": "Fertig",
+  "commonRefresh": "Aktualisieren",
   "commonChange": "Ändern",
   "commonDate": "Datum",
-  "commonRefresh": "Aktualisieren",
   "commonRemove": "Entfernen",
   "commonPick": "Auswählen",
-  "commonCreate": "Erstellen",
   "commonClose": "Schließen",
+  "commonCreate": "Erstellen",
   "commonTitle": "Titel",
-  "commonCloseTooltip": "Schließen",
   "commonDash": "—",
   "commonOr": "oder",
-
   "dayGoalsAllLifeBlocks": "Alle Bereiche",
   "dayGoalsEmpty": "Keine Ziele für diesen Tag",
-
   "dayGoalsAddFailed": "Ziel konnte nicht hinzugefügt werden: {error}",
   "@dayGoalsAddFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
   "dayGoalsUpdated": "Ziel aktualisiert",
-
   "dayGoalsUpdateFailed": "Ziel konnte nicht aktualisiert werden: {error}",
   "@dayGoalsUpdateFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
   "dayGoalsDeleted": "Ziel gelöscht",
-
-  "dayGoalsDeleteFailed": "Löschen fehlgeschlagen: {error}",
+  "dayGoalsDeleteFailed": "Konnte nicht gelöscht werden: {error}",
   "@dayGoalsDeleteFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
   "dayGoalsToggleFailed": "Status konnte nicht geändert werden: {error}",
   "@dayGoalsToggleFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
   "dayGoalsDeleteConfirmTitle": "Ziel löschen?",
-
   "dayGoalsFabAddTitle": "Ziel hinzufügen",
   "dayGoalsFabAddSubtitle": "Manuell erstellen",
-  "dayGoalsFabScanTitle": "Scan",
-  "dayGoalsFabScanSubtitle": "Foto des Planers",
-  "dayGoalsFabCalendarTitle": "Google Calendar",
-  "dayGoalsFabCalendarSubtitle": "Import/Export der heutigen Ziele",
-
+  "dayGoalsFabScanTitle": "Scannen",
+  "dayGoalsFabScanSubtitle": "Foto des Journals",
+  "dayGoalsFabCalendarTitle": "Google Kalender",
+  "dayGoalsFabCalendarSubtitle": "Heutige Ziele importieren/exportieren",
   "epicIntroSkip": "Überspringen",
-  "epicIntroSubtitle": "Ein Zuhause für Gedanken. Ein Ort, an dem Ziele,\nTräume und Pläne wachsen — achtsam und behutsam.",
+  "epicIntroSubtitle": "Ein Zuhause für Gedanken. Ein Ort, an dem Ziele,\nTräume und Pläne wachsen — ruhig und bewusst.",
   "epicIntroPrimaryCta": "Meine Reise starten",
   "epicIntroLater": "Später",
-  "epicIntroSecondaryCta": "Zum Login",
+  "epicIntroSecondaryCta": "Anmelden",
   "epicIntroFooter": "Du kannst jederzeit in den Einstellungen zum Prolog zurückkehren.",
-
   "homeMoodSaved": "Stimmung gespeichert",
-  "homeMoodSaveFailed": "Speichern fehlgeschlagen: {error}",
+  "homeMoodSaveFailed": "Konnte nicht gespeichert werden: {error}",
   "@homeMoodSaveFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
   "homeTodayAndWeekTitle": "Heute & Woche",
-  "homeTodayAndWeekSubtitle": "Kurzer Überblick — alle wichtigen Kennzahlen auf einen Blick",
-
+  "homeTodayAndWeekSubtitle": "Ein schneller Überblick — alle wichtigen Kennzahlen hier",
   "homeMetricMoodTitle": "Stimmung",
   "homeMoodNoEntry": "kein Eintrag",
   "homeMoodNoNote": "keine Notiz",
   "homeMoodHasNote": "mit Notiz",
-
   "homeMetricTasksTitle": "Aufgaben",
   "homeMetricHoursPerDayTitle": "Stunden/Tag",
   "homeMetricEfficiencyTitle": "Effizienz",
-
-  "homeEfficiencyPlannedHours": "Plan {hours}h",
+  "homeEfficiencyPlannedHours": "Plan {hours} Std.",
   "@homeEfficiencyPlannedHours": {
     "placeholders": {
       "hours": {}
     }
   },
-
   "homeMoodTodayTitle": "Stimmung heute",
-  "homeMoodNoTodayEntry": "Kein Eintrag für heute",
+  "homeMoodNoTodayEntry": "Heute noch kein Eintrag",
   "homeMoodEntryNoNote": "Eintrag vorhanden (ohne Notiz)",
-  "homeMoodQuickHint": "Kurzer Check-in — dauert 10 Sekunden",
-  "homeMoodUpdateHint": "Du kannst aktualisieren — der Eintrag für heute wird überschrieben",
-
+  "homeMoodQuickHint": "Füge einen schnellen Check-in hinzu — dauert 10 Sekunden",
+  "homeMoodUpdateHint": "Du kannst aktualisieren — der heutige Eintrag wird überschrieben",
   "homeMoodNoteLabel": "Notiz (optional)",
   "homeMoodNoteHint": "Was hat deinen Zustand beeinflusst?",
-
   "homeOpenMoodHistoryCta": "Stimmungsverlauf öffnen",
-
   "homeWeekSummaryTitle": "Wochenübersicht",
   "homeOpenReportsCta": "Detaillierte Berichte öffnen",
-
   "homeWeekExpensesTitle": "Wochenausgaben",
-  "homeNoExpensesThisWeek": "Keine Ausgaben diese Woche",
+  "homeNoExpensesThisWeek": "Diese Woche keine Ausgaben",
   "homeOpenExpensesCta": "Ausgaben öffnen",
-
   "homeExpensesTotal": "Gesamt: {total} €",
   "@homeExpensesTotal": {
     "placeholders": {
       "total": {}
     }
   },
-
-  "homeExpensesAvgPerDay": "Ø pro Tag: {avg} €",
+  "homeExpensesAvgPerDay": "Ø/Tag: {avg} €",
   "@homeExpensesAvgPerDay": {
     "placeholders": {
       "avg": {}
     }
   },
-
   "homeInsightsTitle": "Insights",
   "homeTopCategory": "• Top-Kategorie: {category} — {amount} €",
   "@homeTopCategory": {
@@ -212,120 +177,550 @@
       "amount": {}
     }
   },
-
-  "homePeakExpense": "• Ausgaben-Peak: {day} — {amount} €",
+  "homePeakExpense": "• Höchste Ausgabe: {day} — {amount} €",
   "@homePeakExpense": {
     "placeholders": {
       "day": {},
       "amount": {}
     }
   },
-
   "homeOpenDetailedExpensesCta": "Detaillierte Ausgaben öffnen",
-
   "homeWeekCardTitle": "Woche",
-  "homeWeekLoadFailedTitle": "Statistik konnte nicht geladen werden",
-  "homeWeekLoadFailedSubtitle": "Bitte Internet prüfen oder später erneut versuchen.",
-
+  "homeWeekLoadFailedTitle": "Statistiken konnten nicht geladen werden",
+  "homeWeekLoadFailedSubtitle": "Prüfe deine Internetverbindung oder versuche es später erneut.",
+  "homeTitleHome": "Startseite",
+  "homeTitleGoals": "Ziele",
+  "homeTitleMood": "Stimmung",
+  "homeTitleProfile": "Profil",
+  "homeTitleReports": "Berichte",
+  "homeTitleExpenses": "Ausgaben",
+  "homeTitleApp": "MyNEST",
+  "homeSignOutTooltip": "Abmelden",
+  "homeSignOutTitle": "Abmelden?",
+  "homeSignOutSubtitle": "Deine aktuelle Sitzung wird beendet.",
+  "homeSignOutConfirm": "Abmelden",
+  "homeSignOutFailed": "Abmeldung fehlgeschlagen: {error}",
+  "@homeSignOutFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "homeQuickActionsTooltip": "Schnellaktionen",
+  "expensesTitle": "Ausgaben",
+  "expensesPickDate": "Datum auswählen",
+  "expensesCommitTooltip": "Topf-Verteilung sperren",
+  "expensesCommitUndoTooltip": "Sperre aufheben",
+  "expensesBudgetSettings": "Budgeteinstellungen",
+  "expensesCommitDone": "Verteilung gesperrt",
+  "expensesCommitUndone": "Sperre aufgehoben",
+  "expensesMonthSummary": "Monatsübersicht",
+  "expensesIncomeLegend": "Einnahmen {value} €",
+  "@expensesIncomeLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesExpenseLegend": "Ausgaben {value} €",
+  "@expensesExpenseLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesFreeLegend": "Frei {value} €",
+  "@expensesFreeLegend": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesDaySum": "Tagessumme: {value} €",
+  "@expensesDaySum": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "expensesNoTxForDay": "Keine Transaktionen für diesen Tag",
+  "expensesDeleteTxTitle": "Transaktion löschen?",
+  "expensesDeleteTxBody": "{category} — {amount} €",
+  "@expensesDeleteTxBody": {
+    "placeholders": {
+      "category": {},
+      "amount": {}
+    }
+  },
+  "expensesCategoriesMonthTitle": "Ausgabenkategorien im Monat",
+  "expensesNoCategoryData": "Noch keine Kategoriedaten",
+  "expensesJarsTitle": "Spartöpfe",
+  "expensesNoJars": "Noch keine Spartöpfe",
+  "expensesCommitShort": "Sperren",
+  "expensesCommitUndoShort": "Sperre aufheben",
+  "expensesAddIncome": "Einnahme hinzufügen",
+  "expensesAddExpense": "Ausgabe hinzufügen",
+  "addExpenseNewTitle": "Neue Ausgabe",
+  "addExpenseEditTitle": "Ausgabe bearbeiten",
+  "addExpenseAmountLabel": "Betrag",
+  "addExpenseAmountInvalid": "Gib einen gültigen Betrag ein",
+  "addExpenseCategoryLabel": "Kategorie",
+  "addExpenseCategoryRequired": "Wähle eine Kategorie",
+  "addExpenseCreateCategoryTooltip": "Kategorie erstellen",
+  "addExpenseNoteLabel": "Notiz",
+  "addExpenseNewCategoryTitle": "Neue Kategorie",
+  "addExpenseCategoryNameLabel": "Name",
+  "addIncomeNewTitle": "Neue Einnahme",
+  "addIncomeEditTitle": "Einnahme bearbeiten",
+  "addIncomeSubtitle": "Betrag, Kategorie und Notiz",
+  "addIncomeAmountLabel": "Betrag",
+  "addIncomeAmountHint": "z. B. 1200,50",
+  "addIncomeAmountInvalid": "Gib einen gültigen Betrag ein",
+  "addIncomeCategoryLabel": "Kategorie",
+  "addIncomeCategoryRequired": "Wähle eine Kategorie",
+  "addIncomeNoteLabel": "Notiz",
+  "addIncomeNoteHint": "Optional",
+  "addIncomeNewCategoryTitle": "Neue Einnahmekategorie",
+  "addIncomeCategoryNameHint": "z. B. Gehalt, Freelance…",
+  "addIncomeCategoryNameEmpty": "Gib einen Kategorienamen ein",
+  "commonCloseTooltip": "Schließen",
+  "addJarNewTitle": "Neuer Spartopf",
+  "addJarEditTitle": "Spartopf bearbeiten",
+  "addJarSubtitle": "Lege Ziel und Anteil des freien Geldes fest",
+  "addJarNameLabel": "Name",
+  "addJarNameHint": "z. B. Reise, Notgroschen, Wohnung",
+  "addJarNameRequired": "Gib einen Namen ein",
+  "addJarPercentLabel": "Anteil des freien Geldes, %",
+  "addJarPercentHint": "0, wenn du manuell auffüllst",
+  "addJarPercentRange": "Der Prozentsatz muss zwischen 0 und 100 liegen",
+  "addJarTargetLabel": "Zielbetrag",
+  "addJarTargetHint": "z. B. 5000",
+  "addJarTargetHelper": "Erforderlich",
+  "addJarTargetRequired": "Gib ein Ziel ein (positive Zahl)",
+  "loginTitle": "Anmelden",
+  "loginEmailLabel": "E-Mail",
+  "loginPasswordLabel": "Passwort",
+  "loginShowPassword": "Passwort anzeigen",
+  "loginHidePassword": "Passwort verbergen",
+  "loginForgotPassword": "Passwort vergessen?",
+  "loginCreateAccount": "Konto erstellen",
+  "loginBtnSignIn": "Anmelden",
+  "loginOr": "oder",
+  "loginContinueGoogle": "Mit Google fortfahren",
+  "loginContinueApple": "Mit Apple ID fortfahren",
+  "loginErrEmailRequired": "E-Mail eingeben",
+  "loginErrEmailInvalid": "Ungültige E-Mail",
+  "loginErrPassRequired": "Passwort eingeben",
+  "loginErrPassMin6": "Mindestens 6 Zeichen",
+  "loginResetTitle": "Passwort wiederherstellen",
+  "loginResetSend": "Senden",
+  "loginResetSent": "E-Mail zum Zurücksetzen des Passworts wurde gesendet. Prüfe deinen Posteingang.",
+  "loginResetFailed": "E-Mail konnte nicht gesendet werden: {error}",
+  "@loginResetFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "registerTitle": "Konto erstellen",
+  "registerNameLabel": "Name",
+  "registerEmailLabel": "E-Mail",
+  "registerPasswordLabel": "Passwort",
+  "registerConfirmPasswordLabel": "Passwort bestätigen",
+  "registerShowPassword": "Passwort anzeigen",
+  "registerHidePassword": "Passwort verbergen",
+  "registerBtnSignUp": "Registrieren",
+  "registerContinueGoogle": "Mit Google fortfahren",
+  "registerContinueApple": "Mit Apple ID fortfahren",
+  "registerContinueAppleIos": "Mit Apple ID fortfahren (iOS)",
+  "registerHaveAccountCta": "Du hast schon ein Konto? Anmelden",
+  "registerErrNameRequired": "Gib deinen Namen ein",
+  "registerErrEmailRequired": "Gib deine E-Mail ein",
+  "registerErrEmailInvalid": "Ungültige E-Mail",
+  "registerErrPassRequired": "Gib ein Passwort ein",
+  "registerErrPassMin8": "Mindestens 8 Zeichen",
+  "registerErrPassNeedLower": "Füge einen Kleinbuchstaben hinzu (a-z)",
+  "registerErrPassNeedUpper": "Füge einen Großbuchstaben hinzu (A-Z)",
+  "registerErrPassNeedDigit": "Füge eine Ziffer hinzu (0-9)",
+  "registerErrConfirmRequired": "Wiederhole das Passwort",
+  "registerErrPasswordsMismatch": "Passwörter stimmen nicht überein",
+  "registerErrAcceptTerms": "Du musst die Nutzungsbedingungen und die Datenschutzerklärung akzeptieren",
+  "registerAppleOnlyIos": "Apple ID ist auf iPhone/iPad verfügbar (nur iOS)",
+  "welcomeAppName": "VitaPlatform",
+  "welcomeSubtitle": "Verwalte deine Ziele, Stimmung und Zeit\n— alles an einem Ort",
+  "welcomeSignIn": "Anmelden",
+  "welcomeCreateAccount": "Konto erstellen",
+  "moodTitle": "Stimmung",
+  "moodOnePerDay": "1 Eintrag = 1 Tag",
+  "moodHowDoYouFeel": "Wie fühlst du dich?",
+  "moodNoteLabel": "Notiz (optional)",
+  "moodNoteHint": "Was hat deine Stimmung beeinflusst?",
+  "moodSaved": "Stimmung gespeichert",
+  "moodUpdated": "Eintrag aktualisiert",
+  "moodHistoryTitle": "Stimmungsverlauf",
+  "moodTapToEdit": "Zum Bearbeiten tippen",
+  "moodNoNote": "Keine Notiz",
+  "moodEditTitle": "Eintrag bearbeiten",
+  "moodEmptyTitle": "Noch keine Einträge",
+  "moodEmptySubtitle": "Wähle ein Datum, eine Stimmung und speichere.",
+  "moodErrSaveFailed": "Stimmung konnte nicht gespeichert werden: {error}",
+  "@moodErrSaveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "moodErrUpdateFailed": "Eintrag konnte nicht aktualisiert werden: {error}",
+  "@moodErrUpdateFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "moodErrDeleteFailed": "Eintrag konnte nicht gelöscht werden: {error}",
+  "@moodErrDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "commonDeleteConfirmTitle": "Eintrag löschen?",
+  "onbTopTitle": "",
+  "onbErrSaveFailed": "Deine Antworten konnten nicht gespeichert werden",
+  "onbProfileTitle": "Lass uns einander kennenlernen",
+  "onbProfileSubtitle": "Das hilft deinem Profil und der Personalisierung",
+  "onbNameLabel": "Name",
+  "onbNameHint": "Zum Beispiel: Viktor",
+  "onbAgeLabel": "Alter",
+  "onbAgeHint": "Zum Beispiel: 26",
+  "onbNameNote": "Du kannst deinen Namen später im Profil ändern.",
+  "onbBlocksTitle": "Welche Lebensbereiche möchtest du verfolgen?",
+  "onbBlocksSubtitle": "Das ist die Grundlage für deine Ziele und Quests",
+  "onbPrioritiesTitle": "Was ist dir in den nächsten 3–6 Monaten am wichtigsten?",
+  "onbPrioritiesSubtitle": "Wähle bis zu drei — das beeinflusst Empfehlungen",
+  "onbPriorityHealth": "Gesundheit",
+  "onbPriorityCareer": "Karriere",
+  "onbPriorityMoney": "Geld",
+  "onbPriorityFamily": "Familie",
+  "onbPriorityGrowth": "Wachstum",
+  "onbPriorityLove": "Liebe",
+  "onbPriorityCreativity": "Kreativität",
+  "onbPriorityBalance": "Balance",
+  "onbGoalsBlockTitle": "Ziele in „{block}“",
+  "@onbGoalsBlockTitle": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "onbGoalsBlockSubtitle": "Fokus: taktisch → mittelfristig → langfristig",
+  "onbGoalLongLabel": "Langfristiges Ziel (6–24 Monate)",
+  "onbGoalLongHint": "Zum Beispiel: Deutsch-Niveau B2 erreichen",
+  "onbGoalMidLabel": "Mittelfristiges Ziel (2–6 Monate)",
+  "onbGoalMidHint": "Zum Beispiel: A2→B1 abschließen und die Prüfung bestehen",
+  "onbGoalTacticalLabel": "Taktisches Ziel (2–4 Wochen)",
+  "onbGoalTacticalHint": "Zum Beispiel: 12×30-Minuten-Sessions + 2 Sprachclubs",
+  "onbWhyLabel": "Warum ist das wichtig? (optional)",
+  "onbWhyHint": "Motivation/Sinn — hilft dir, dranzubleiben",
+  "onbOptionalNote": "Du kannst es leer lassen und auf „Weiter“ tippen.",
+  "habitsTitle": "Gewohnheiten",
+  "habitsEmptyHint": "Noch keine Gewohnheiten. Füge deine erste hinzu.",
+  "habitsEditorNewTitle": "Neue Gewohnheit",
+  "habitsEditorEditTitle": "Gewohnheit bearbeiten",
+  "habitsEditorTitleLabel": "Titel",
+  "habitsEditorTitleHint": "z. B. Morgentraining",
+  "habitsNegativeLabel": "Negative Gewohnheit",
+  "habitsNegativeHint": "Markiere sie, wenn du sie verfolgen und reduzieren möchtest.",
+  "habitsPositiveHint": "Eine positive/neutrale Gewohnheit, die du stärken möchtest.",
+  "habitsNegativeShort": "Negativ",
+  "habitsPositiveShort": "Positiv/neutral",
+  "habitsDeleteConfirmTitle": "Gewohnheit löschen?",
+  "habitsDeleteConfirmBody": "„{title}“ wird gelöscht und kann nicht wiederhergestellt werden.",
+  "@habitsDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "habitsFooterHint": "Später fügen wir „Filterung“ von Gewohnheiten auf der Startseite hinzu.",
+  "habitsWeekTitle": "Gewohnheiten",
+  "habitsWeekTopTitle": "Gewohnheiten (Top dieser Woche)",
+  "habitsWeekEmptyHint": "Füge mindestens eine Gewohnheit hinzu — dein Fortschritt erscheint hier.",
+  "habitsWeekFooterHint": "Wir zeigen deine aktivsten Gewohnheiten der letzten 7 Tage.",
+  "mentalWeekTitle": "Mentale Gesundheit",
+  "mentalWeekLoadError": "Ladefehler: {error}",
+  "@mentalWeekLoadError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "mentalWeekNoAnswers": "Für diese Woche wurden keine Antworten gefunden (für die aktuelle user_id).",
+  "mentalWeekYesNoHeader": "Ja/Nein (Woche)",
+  "mentalWeekScalesHeader": "Skalen (Trend)",
+  "mentalWeekFooterHint": "Wir zeigen nur wenige Fragen, damit der Bildschirm übersichtlich bleibt.",
+  "mentalWeekNoData": "Keine Daten",
+  "mentalWeekYesCount": "Ja: {yes}/{total}",
+  "@mentalWeekYesCount": {
+    "placeholders": {
+      "yes": {},
+      "total": {}
+    }
+  },
+  "moodWeekTitle": "Wöchentliche Stimmung",
+  "moodWeekMarkedCount": "Eingetragen: {filled}/{total}",
+  "@moodWeekMarkedCount": {
+    "placeholders": {
+      "filled": {},
+      "total": {}
+    }
+  },
+  "moodWeekAverageDash": "Durchschnitt: —",
+  "moodWeekAverageValue": "Durchschnitt: {avg}/5",
+  "@moodWeekAverageValue": {
+    "placeholders": {
+      "avg": {}
+    }
+  },
+  "moodWeekFooterHint": "Das ist eine schnelle Übersicht. Details findest du unten im Verlauf.",
+  "goalsByBlockTitle": "Ziele nach Bereich",
+  "goalsAddTooltip": "Ziel hinzufügen",
+  "goalsHorizonTacticalShort": "Taktisch",
+  "goalsHorizonMidShort": "Mittelfristig",
+  "goalsHorizonLongShort": "Langfristig",
+  "goalsHorizonTacticalLong": "2–6 Wochen",
+  "goalsHorizonMidLong": "3–6 Monate",
+  "goalsHorizonLongLong": "1+ Jahr",
+  "goalsEditorNewTitle": "Neues Ziel",
+  "goalsEditorEditTitle": "Ziel bearbeiten",
+  "goalsEditorLifeBlockLabel": "Bereich",
+  "goalsEditorHorizonLabel": "Horizont",
+  "goalsEditorTitleLabel": "Titel",
+  "goalsEditorTitleHint": "z. B. Englisch auf B2 verbessern",
+  "goalsEditorDescLabel": "Beschreibung (optional)",
+  "goalsEditorDescHint": "Kurz: was genau und wie messen wir Erfolg",
+  "goalsEditorDeadlineLabel": "Deadline: {date}",
+  "@goalsEditorDeadlineLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "goalsDeadlineInline": "Deadline: {date}",
+  "@goalsDeadlineInline": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "goalsEmptyAllHint": "Noch keine Ziele. Füge dein erstes Ziel für die ausgewählten Bereiche hinzu.",
+  "goalsNoBlocksToShow": "Keine verfügbaren Bereiche zur Anzeige.",
+  "goalsNoGoalsForBlock": "Keine Ziele für den ausgewählten Bereich.",
+  "goalsDeleteConfirmTitle": "Ziel löschen?",
+  "goalsDeleteConfirmBody": "„{title}“ wird gelöscht und kann nicht wiederhergestellt werden.",
+  "@goalsDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "profileTitle": "Mein Profil",
+  "profileNameLabel": "Name",
+  "profileNameTitle": "Name",
+  "profileNamePrompt": "Wie sollen wir dich nennen?",
+  "profileAgeLabel": "Alter",
+  "profileAgeTitle": "Alter",
+  "profileAgePrompt": "Gib dein Alter ein",
+  "profileAccountSection": "Konto",
+  "profileSeenPrologueTitle": "Prolog abgeschlossen",
+  "profileSeenPrologueSubtitle": "Du kannst das manuell ändern",
+  "profileFocusSection": "Fokus",
+  "profileTargetHoursLabel": "Zielstunden pro Tag",
+  "profileTargetHoursValue": "{hours} Std.",
+  "@profileTargetHoursValue": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "profileTargetHoursTitle": "Tägliches Stundenziel",
+  "profileTargetHoursFieldLabel": "Stunden",
+  "profileQuestionnaireSection": "Fragebogen & Lebensbereiche",
+  "profileQuestionnaireNotDoneTitle": "Du hast den Fragebogen noch nicht abgeschlossen.",
+  "profileQuestionnaireCta": "Jetzt abschließen",
+  "profileLifeBlocksTitle": "Lebensbereiche",
+  "profileLifeBlocksHint": "z. B. Gesundheit, Karriere, Familie",
+  "profilePrioritiesTitle": "Prioritäten",
+  "profilePrioritiesHint": "z. B. Sport, Finanzen, Lesen",
+  "profileDangerZoneTitle": "Gefahrenzone",
+  "profileDeleteAccountTitle": "Konto löschen?",
+  "profileDeleteAccountBody": "Diese Aktion kann nicht rückgängig gemacht werden.\nGelöscht werden: Ziele, Gewohnheiten, Stimmung, Ausgaben/Einnahmen, Spartöpfe, AI-Pläne, XP und dein Profil.",
+  "profileDeleteAccountConfirm": "Für immer löschen",
+  "profileDeleteAccountCta": "Konto und alle Daten löschen",
+  "profileDeletingAccount": "Wird gelöscht…",
+  "profileDeleteAccountFootnote": "Das Löschen ist unwiderruflich. Deine Daten werden dauerhaft aus Supabase entfernt.",
+  "profileAccountDeletedToast": "Konto gelöscht",
+  "lifeBlockHealth": "Gesundheit",
+  "lifeBlockCareer": "Karriere",
+  "lifeBlockFamily": "Familie",
+  "lifeBlockFinance": "Finanzen",
+  "lifeBlockLearning": "Wachstum",
+  "lifeBlockSocial": "Soziales",
+  "lifeBlockRest": "Erholung",
+  "lifeBlockBalance": "Balance",
+  "lifeBlockLove": "Liebe",
+  "lifeBlockCreativity": "Kreativität",
+  "lifeBlockGeneral": "Allgemein",
+  "aiInsightTypeDataQuality": "Datenqualität",
+  "aiInsightTypeRisk": "Risiko",
+  "aiInsightTypeEmotional": "Emotionen",
+  "aiInsightTypeHabit": "Gewohnheiten",
+  "aiInsightTypeGoal": "Ziele",
+  "aiInsightTypeDefault": "Insight",
+  "aiInsightStrengthStrong": "Starker Einfluss",
+  "aiInsightStrengthNoticeable": "Spürbarer Einfluss",
+  "aiInsightStrengthWeak": "Schwacher Einfluss",
+  "aiInsightStrengthLowConfidence": "Geringe Sicherheit",
+  "aiInsightStrengthPercent": "{value}%",
+  "@aiInsightStrengthPercent": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "aiInsightEvidenceTitle": "Belege",
+  "aiInsightImpactPositive": "Positiv",
+  "aiInsightImpactNegative": "Negativ",
+  "aiInsightImpactMixed": "Gemischt",
+  "aiInsightsTitle": "AI-Insights",
+  "aiInsightsConfirmTitle": "AI-Analyse starten?",
+  "aiInsightsConfirmBody": "AI analysiert deine Aufgaben, Gewohnheiten und dein Wohlbefinden für den ausgewählten Zeitraum und speichert Insights. Das kann einige Sekunden dauern.",
+  "aiInsightsConfirmRun": "Starten",
+  "aiInsightsPeriod7": "7 Tage",
+  "aiInsightsPeriod30": "30 Tage",
+  "aiInsightsPeriod90": "90 Tage",
+  "aiInsightsLastRun": "Letzter Lauf: {date}",
+  "@aiInsightsLastRun": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "aiInsightsEmptyNotRunTitle": "AI wurde noch nicht gestartet",
+  "aiInsightsEmptyNotRunSubtitle": "Wähle einen Zeitraum und tippe auf „Starten“. Insights werden gespeichert und sind in der App verfügbar.",
+  "aiInsightsCtaRun": "Analyse starten",
+  "aiInsightsEmptyNoInsightsTitle": "Noch keine Insights",
+  "aiInsightsEmptyNoInsightsSubtitle": "Füge mehr Daten hinzu (Aufgaben, Gewohnheiten, Antworten) und starte die Analyse erneut.",
+  "aiInsightsCtaRunAgain": "Erneut starten",
+  "aiInsightsErrorAi": "AI-Fehler: {error}",
+  "@aiInsightsErrorAi": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "navGoals": "Ziele",
+  "navMood": "Stimmung",
+  "navProfile": "Profil",
+  "navReports": "Berichte",
+  "navExpenses": "Ausgaben",
   "gcalTitle": "Google Kalender",
-  "gcalHeaderImport": "Finde Ereignisse im Kalender und importiere sie als Ziele.",
-  "gcalHeaderExport": "Wähle einen Zeitraum und exportiere Ziele aus der App in den Google Kalender.",
-
+  "gcalHeaderImport": "Finde Termine in deinem Kalender und importiere sie als Ziele.",
+  "gcalHeaderExport": "Wähle einen Zeitraum und exportiere Ziele aus der App in Google Kalender.",
   "gcalModeImport": "Import",
   "gcalModeExport": "Export",
-
   "gcalCalendarLabel": "Kalender",
-  "gcalPrimaryCalendar": "Primary (Standard)",
-
+  "gcalPrimaryCalendar": "Primär (Standard)",
   "gcalPeriodLabel": "Zeitraum",
   "gcalRangeToday": "Heute",
   "gcalRangeNext7": "Nächste 7 Tage",
   "gcalRangeNext30": "Nächste 30 Tage",
   "gcalRangeCustom": "Zeitraum wählen...",
-
   "gcalDefaultLifeBlockLabel": "Standard-Lebensbereich (für Import)",
   "gcalLifeBlockForGoalLabel": "Lebensbereich für dieses Ziel",
-
-  "gcalEventsNotLoaded": "Ereignisse wurden nicht geladen",
-  "gcalConnectToLoadEvents": "Verbinde dein Konto, um Ereignisse zu laden",
-
-  "gcalExportHint": "Beim Export werden Ereignisse im ausgewählten Kalender für den gewählten Zeitraum erstellt.",
-
+  "gcalEventsNotLoaded": "Termine sind nicht geladen",
+  "gcalConnectToLoadEvents": "Verbinde dein Konto, um Termine zu laden",
+  "gcalExportHint": "Der Export erstellt Termine im ausgewählten Kalender für den gewählten Zeitraum.",
   "gcalConnect": "Verbinden",
   "gcalConnected": "Verbunden",
-
-  "gcalFindEvents": "Ereignisse suchen",
+  "gcalFindEvents": "Termine suchen",
   "gcalImport": "Importieren",
   "gcalExport": "Exportieren",
-
   "gcalNoTitle": "Ohne Titel",
-
   "gcalImportedGoalsCount": "Importierte Ziele: {count}",
   "@gcalImportedGoalsCount": {
     "placeholders": {
       "count": {}
     }
   },
-
   "gcalExportedGoalsCount": "Exportierte Ziele: {count}",
   "@gcalExportedGoalsCount": {
     "placeholders": {
       "count": {}
     }
   },
-
-  "launcherQuickFunctionsTitle": "Schnellfunktionen",
+  "gcTitleDaySync": "Google Kalender • Tagessync",
+  "gcSubtitleImport": "Importiere die Termine dieses Tages in Ziele.",
+  "gcSubtitleExport": "Exportiere die Ziele dieses Tages in den Kalender.",
+  "gcModeImport": "Import",
+  "gcModeExport": "Export",
+  "gcCalendarLabel": "Kalender",
+  "gcCalendarPrimary": "Primär (Standard)",
+  "gcDefaultLifeBlockLabel": "Standard-Lebensbereich (für Import)",
+  "gcLifeBlockForThisGoalLabel": "Lebensbereich für dieses Ziel",
+  "gcEventsNotLoaded": "Termine sind nicht geladen",
+  "gcConnectToLoadEvents": "Verbinde dein Konto, um Termine zu laden",
+  "gcExportHint": "Der Export erstellt Termine im ausgewählten Kalender für die Ziele dieses Tages.",
+  "gcConnect": "Verbinden",
+  "gcConnected": "Verbunden",
+  "gcFindForDay": "Für den Tag suchen",
+  "gcImport": "Importieren",
+  "gcExport": "Exportieren",
+  "gcNoTitle": "Ohne Titel",
+  "gcLoadingDots": "...",
+  "gcImportedGoals": "Importierte Ziele: {count}",
+  "@gcImportedGoals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gcExportedGoals": "Exportierte Ziele: {count}",
+  "@gcExportedGoals": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "launcherQuickFunctionsTitle": "Schnellaktionen",
   "launcherQuickFunctionsSubtitle": "Navigation und Aktionen mit einem Tipp",
-
   "launcherSectionsTitle": "Bereiche",
   "launcherQuickTitle": "Schnell",
-
-  "launcherHome": "Start",
+  "launcherHome": "Startseite",
   "launcherGoals": "Ziele",
   "launcherMood": "Stimmung",
   "launcherProfile": "Profil",
   "launcherInsights": "Insights",
   "launcherReports": "Berichte",
-
-  "launcherMassAddTitle": "Sammel-Eingabe für den Tag",
+  "launcherMassAddTitle": "Masseneintrag für den Tag",
   "launcherMassAddSubtitle": "Ausgaben + Ziele + Stimmung",
-
-  "launcherAiPlanTitle": "KI-Plan für Woche/Monat",
+  "launcherAiPlanTitle": "AI-Plan für Woche/Monat",
   "launcherAiPlanSubtitle": "Analyse von Zielen, Fragebogen und Fortschritt",
-
-  "launcherAiInsightsTitle": "KI-Insights",
+  "launcherAiInsightsTitle": "AI-Insights",
   "launcherAiInsightsSubtitle": "Wie Ereignisse Ziele und Fortschritt beeinflussen",
-
   "launcherRecurringGoalTitle": "Wiederkehrendes Ziel",
-  "launcherRecurringGoalSubtitle": "Planung für mehrere Tage im Voraus",
-
-  "launcherGoogleCalendarSyncTitle": "Google Kalender Synchronisierung",
+  "launcherRecurringGoalSubtitle": "Mehrere Tage im Voraus planen",
+  "launcherGoogleCalendarSyncTitle": "Google-Kalender-Sync",
   "launcherGoogleCalendarSyncSubtitle": "Ziele in den Kalender exportieren",
-
-  "launcherNoDatesToCreate": "Keine Termine zum Erstellen (Deadline/Einstellungen prüfen).",
-
-  "launcherCreateSeriesFailed": "Serie von Zielen konnte nicht erstellt werden: {error}",
+  "launcherNoDatesToCreate": "Keine Termine zu erstellen (Deadline/Einstellungen prüfen).",
+  "launcherCreateSeriesFailed": "Zielserie konnte nicht erstellt werden: {error}",
   "@launcherCreateSeriesFailed": {
     "placeholders": {
       "error": {}
     }
   },
-
-  "launcherSaveError": "Fehler beim Speichern: {error}",
+  "launcherSaveError": "Speicherfehler: {error}",
   "@launcherSaveError": {
     "placeholders": {
       "error": {}
     }
   },
-
-  "launcherCreatedGoalsCount": "Erstellte Ziele: {count}",
+  "launcherCreatedGoalsCount": "Ziele erstellt: {count}",
   "@launcherCreatedGoalsCount": {
     "placeholders": {
       "count": {}
     }
   },
-
-  "launcherSavedSummary": "Gespeichert: {expenses} Ausgabe(n), {incomes} Einnahme(n), {goals} Aufgabe(n), {habits} Gewohnheit(en){moodPart}",
+  "launcherSavedSummary": "Gespeichert: {expenses} Ausgabe(n), {incomes} Einnahme(n), {goals} Ziel(e), {habits} Gewohnheit(en){moodPart}",
   "@launcherSavedSummary": {
     "placeholders": {
       "expenses": {},
@@ -335,620 +730,41 @@
       "moodPart": {}
     }
   },
-
-  "homeTitleHome": "Start",
-  "homeTitleGoals": "Ziele",
-  "homeTitleMood": "Stimmung",
-  "homeTitleProfile": "Profil",
-  "homeTitleReports": "Berichte",
-  "homeTitleExpenses": "Ausgaben",
-  "homeTitleApp": "MyNEST",
-
-  "homeSignOutTooltip": "Abmelden",
-  "homeSignOutTitle": "Abmelden?",
-  "homeSignOutSubtitle": "Die aktuelle Sitzung wird beendet.",
-  "homeSignOutConfirm": "Abmelden",
-  "homeSignOutFailed": "Abmelden fehlgeschlagen: {error}",
-  "@homeSignOutFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-
-  "homeQuickActionsTooltip": "Schnellaktionen",
-
-  "expensesTitle": "Ausgaben",
-  "expensesPickDate": "Datum wählen",
-  "expensesCommitTooltip": "Zuweisung zu Sparzielen fixieren",
-  "expensesCommitUndoTooltip": "Fixierung aufheben",
-  "expensesBudgetSettings": "Budget-Einstellungen",
-
-  "expensesCommitDone": "Zuweisung fixiert",
-  "expensesCommitUndone": "Fixierung aufgehoben",
-
-  "expensesMonthSummary": "Monatsübersicht",
-
-  "expensesIncomeLegend": "Einnahmen {value} €",
-  "@expensesIncomeLegend": {
-    "placeholders": {
-      "value": {}
-    }
-  },
-
-  "expensesExpenseLegend": "Ausgaben {value} €",
-  "@expensesExpenseLegend": {
-    "placeholders": {
-      "value": {}
-    }
-  },
-
-  "expensesFreeLegend": "Frei {value} €",
-  "@expensesFreeLegend": {
-    "placeholders": {
-      "value": {}
-    }
-  },
-
-  "expensesDaySum": "Summe am Tag: {value} €",
-  "@expensesDaySum": {
-    "placeholders": {
-      "value": {}
-    }
-  },
-
-  "expensesNoTxForDay": "Keine Buchungen für diesen Tag",
-  "expensesDeleteTxTitle": "Buchung löschen?",
-  "expensesDeleteTxBody": "{category} — {amount} €",
-  "@expensesDeleteTxBody": {
-    "placeholders": {
-      "category": {},
-      "amount": {}
-    }
-  },
-
-  "expensesCategoriesMonthTitle": "Ausgabenkategorien im Monat",
-  "expensesNoCategoryData": "Noch keine Daten nach Kategorien",
-
-  "expensesJarsTitle": "Sparziele",
-  "expensesNoJars": "Noch keine Sparziele",
-  "expensesCommitShort": "Fixieren",
-  "expensesCommitUndoShort": "Fixierung aufheben",
-
-  "expensesAddIncome": "Einnahme hinzufügen",
-  "expensesAddExpense": "Ausgabe hinzufügen",
-
-  "loginTitle": "Anmelden",
-  "loginEmailLabel": "E-Mail",
-  "loginPasswordLabel": "Passwort",
-  "loginShowPassword": "Passwort anzeigen",
-  "loginHidePassword": "Passwort verbergen",
-
-  "loginForgotPassword": "Passwort vergessen?",
-  "loginCreateAccount": "Konto erstellen",
-  "loginBtnSignIn": "Anmelden",
-  "loginContinueGoogle": "Mit Google fortfahren",
-  "loginContinueApple": "Mit Apple ID fortfahren",
-
-  "loginErrEmailRequired": "E-Mail eingeben",
-  "loginErrEmailInvalid": "Ungültige E-Mail",
-  "loginErrPassRequired": "Passwort eingeben",
-  "loginErrPassMin6": "Mindestens 6 Zeichen",
-
-  "loginResetTitle": "Passwort zurücksetzen",
-  "loginResetSend": "Senden",
-  "loginResetSent": "E-Mail zum Zurücksetzen wurde gesendet. Bitte Postfach prüfen.",
-  "loginResetFailed": "E-Mail konnte nicht gesendet werden: {error}",
-  "@loginResetFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-
-  "moodTitle": "Stimmung",
-  "moodOnePerDay": "1 Eintrag = 1 Tag",
-  "moodHowDoYouFeel": "Wie fühlst du dich?",
-  "moodNoteLabel": "Notiz (optional)",
-  "moodNoteHint": "Was hat deine Stimmung beeinflusst?",
-  "moodSaved": "Stimmung gespeichert",
-  "moodUpdated": "Eintrag aktualisiert",
-  "moodHistoryTitle": "Stimmungs-Verlauf",
-  "moodTapToEdit": "Tippen zum Bearbeiten",
-  "moodNoNote": "Keine Notiz",
-  "moodEditTitle": "Eintrag bearbeiten",
-  "moodEmptyTitle": "Noch keine Einträge",
-  "moodEmptySubtitle": "Wähle ein Datum, markiere deine Stimmung und speichere den Eintrag.",
-
-  "moodErrSaveFailed": "Stimmung konnte nicht gespeichert werden: {error}",
-  "@moodErrSaveFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-
-  "moodErrUpdateFailed": "Eintrag konnte nicht aktualisiert werden: {error}",
-  "@moodErrUpdateFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-
-  "moodErrDeleteFailed": "Eintrag konnte nicht gelöscht werden: {error}",
-  "@moodErrDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-
-  "commonDeleteConfirmTitle": "Eintrag löschen?",
-
-  "onbTopTitle": "",
-  "onbErrSaveFailed": "Antworten konnten nicht gespeichert werden",
-
-  "onbProfileTitle": "Lass uns kurz kennenlernen",
-  "onbProfileSubtitle": "Das hilft für dein Profil und die Personalisierung",
-  "onbNameLabel": "Name",
-  "onbNameHint": "Zum Beispiel: Viktor",
-  "onbAgeLabel": "Alter",
-  "onbAgeHint": "Zum Beispiel: 26",
-  "onbNameNote": "Du kannst deinen Namen später im Profil ändern.",
-
-  "onbBlocksTitle": "Welche Lebensbereiche möchtest du verfolgen?",
-  "onbBlocksSubtitle": "Das wird die Basis für deine Ziele und Quests",
-
-  "onbPrioritiesTitle": "Was ist dir in den nächsten 3–6 Monaten am wichtigsten?",
-  "onbPrioritiesSubtitle": "Wähle bis zu drei — das beeinflusst Empfehlungen",
-  "onbPriorityHealth": "Gesundheit",
-  "onbPriorityCareer": "Karriere",
-  "onbPriorityMoney": "Geld",
-  "onbPriorityFamily": "Familie",
-  "onbPriorityGrowth": "Entwicklung",
-  "onbPriorityLove": "Liebe",
-  "onbPriorityCreativity": "Kreativität",
-  "onbPriorityBalance": "Balance",
-
-  "onbGoalsBlockTitle": "Ziele im Bereich „{block}“",
-  "@onbGoalsBlockTitle": {
-    "placeholders": {
-      "block": {}
-    }
-  },
-
-  "onbGoalsBlockSubtitle": "Fokus: Taktik → mittelfristig → langfristig",
-
-  "onbGoalLongLabel": "Langfristiges Ziel (6–24 Monate)",
-  "onbGoalLongHint": "Zum Beispiel: Deutsch bis Niveau B2",
-
-  "onbGoalMidLabel": "Mittelfristiges Ziel (2–6 Monate)",
-  "onbGoalMidHint": "Zum Beispiel: Kurs A2→B1 absolvieren und Prüfung ablegen",
-
-  "onbGoalTacticalLabel": "Taktisches Ziel (2–4 Wochen)",
-  "onbGoalTacticalHint": "Zum Beispiel: 12 Einheiten à 30 Min + 2 Sprach-Treffen",
-
-  "onbWhyLabel": "Warum ist das wichtig? (optional)",
-  "onbWhyHint": "Motivation/Sinn — hilft, dranzubleiben",
-  "onbOptionalNote": "Du kannst es leer lassen und auf „Weiter“ tippen.",
-
-  "registerTitle": "Konto erstellen",
-  "registerNameLabel": "Name",
-  "registerEmailLabel": "E-Mail",
-  "registerPasswordLabel": "Passwort",
-  "registerConfirmPasswordLabel": "Passwort bestätigen",
-  "registerShowPassword": "Passwort anzeigen",
-  "registerHidePassword": "Passwort verbergen",
-
-  "registerBtnSignUp": "Registrieren",
-  "registerContinueGoogle": "Weiter mit Google",
-  "registerContinueApple": "Weiter mit Apple ID",
-  "registerContinueAppleIos": "Weiter mit Apple ID (iOS)",
-  "registerHaveAccountCta": "Schon ein Konto? Anmelden",
-
-  "registerErrNameRequired": "Bitte Namen eingeben",
-  "registerErrEmailRequired": "Bitte E-Mail eingeben",
-  "registerErrEmailInvalid": "Ungültige E-Mail",
-  "registerErrPassRequired": "Bitte Passwort eingeben",
-  "registerErrPassMin8": "Mindestens 8 Zeichen",
-  "registerErrPassNeedLower": "Füge einen Kleinbuchstaben hinzu (a-z)",
-  "registerErrPassNeedUpper": "Füge einen Großbuchstaben hinzu (A-Z)",
-  "registerErrPassNeedDigit": "Füge eine Zahl hinzu (0-9)",
-  "registerErrConfirmRequired": "Bitte Passwort wiederholen",
-  "registerErrPasswordsMismatch": "Passwörter stimmen nicht überein",
-  "registerErrAcceptTerms": "Bitte AGB und Datenschutzerklärung akzeptieren",
-
-  "registerAppleOnlyIos": "Apple ID ist auf iPhone/iPad (iOS) verfügbar",
-
-  "welcomeAppName": "VitaPlatform",
-  "welcomeSubtitle": "Verwalte Ziele, Stimmung und Zeit\n— alles an einem Ort",
-  "welcomeSignIn": "Anmelden",
-  "welcomeCreateAccount": "Konto erstellen",
-
-  "habitsWeekTitle": "Gewohnheiten",
-  "habitsWeekTopTitle": "Gewohnheiten (Top der Woche)",
-  "habitsWeekEmptyHint": "Füge mindestens eine Gewohnheit hinzu — dann siehst du hier deinen Fortschritt.",
-  "habitsWeekFooterHint": "Wir zeigen die aktivsten Gewohnheiten der letzten 7 Tage.",
-
-  "mentalWeekTitle": "Mentale Gesundheit",
-  "mentalWeekLoadError": "Ladefehler: {error}",
-  "@mentalWeekLoadError": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-
-  "mentalWeekNoAnswers": "Für diese Woche wurden keine Antworten gefunden (für die aktuelle user_id).",
-  "mentalWeekYesNoHeader": "Ja/Nein (Woche)",
-  "mentalWeekScalesHeader": "Skalen (Trend)",
-  "mentalWeekFooterHint": "Wir zeigen nur ein paar Fragen, damit der Bildschirm nicht überladen wirkt.",
-  "mentalWeekNoData": "Keine Daten",
-
-  "mentalWeekYesCount": "Ja: {yes}/{total}",
-  "@mentalWeekYesCount": {
-    "placeholders": {
-      "yes": {},
-      "total": {}
-    }
-  },
-
-  "moodWeekTitle": "Stimmung der Woche",
-  "moodWeekMarkedCount": "Erfasst: {filled}/{total}",
-  "@moodWeekMarkedCount": {
-    "placeholders": {
-      "filled": {},
-      "total": {}
-    }
-  },
-
-  "moodWeekAverageDash": "Durchschnitt: —",
-  "moodWeekAverageValue": "Durchschnitt: {avg}/5",
-  "@moodWeekAverageValue": {
-    "placeholders": {
-      "avg": {}
-    }
-  },
-
-  "moodWeekFooterHint": "Das ist ein schneller Überblick. Details findest du unten in der Historie.",
-
-  "goalsByBlockTitle": "Ziele nach Lebensbereich",
-  "goalsAddTooltip": "Ziel hinzufügen",
-
-  "goalsHorizonTacticalShort": "Taktik",
-  "goalsHorizonMidShort": "Mittelfristig",
-  "goalsHorizonLongShort": "Langfristig",
-
-  "goalsHorizonTacticalLong": "2–6 Wochen",
-  "goalsHorizonMidLong": "3–6 Monate",
-  "goalsHorizonLongLong": "1+ Jahr",
-
-  "goalsEditorNewTitle": "Neues Ziel",
-  "goalsEditorEditTitle": "Ziel bearbeiten",
-  "goalsEditorLifeBlockLabel": "Bereich",
-  "goalsEditorHorizonLabel": "Zeithorizont",
-
-  "goalsEditorTitleLabel": "Titel",
-  "goalsEditorTitleHint": "z. B. Englisch bis B2 verbessern",
-
-  "goalsEditorDescLabel": "Beschreibung (optional)",
-  "goalsEditorDescHint": "Kurz: was genau und wie wir den Erfolg messen",
-
-  "goalsEditorDeadlineLabel": "Deadline: {date}",
-  "@goalsEditorDeadlineLabel": {
-    "placeholders": {
-      "date": {}
-    }
-  },
-
-  "goalsDeadlineInline": "Deadline: {date}",
-  "@goalsDeadlineInline": {
-    "placeholders": {
-      "date": {}
-    }
-  },
-
-  "goalsEmptyAllHint": "Noch keine Ziele. Füge dein erstes Ziel für die ausgewählten Bereiche hinzu.",
-  "goalsNoBlocksToShow": "Keine verfügbaren Bereiche zum Anzeigen.",
-  "goalsNoGoalsForBlock": "Keine Ziele für den ausgewählten Bereich.",
-
-  "goalsDeleteConfirmTitle": "Ziel löschen?",
-  "goalsDeleteConfirmBody": "„{title}“ wird gelöscht und kann nicht wiederhergestellt werden.",
-  "@goalsDeleteConfirmBody": {
-    "placeholders": {
-      "title": {}
-    }
-  },
-
-  "habitsTitle": "Gewohnheiten",
-  "habitsEmptyHint": "Noch keine Gewohnheiten. Füge deine erste hinzu.",
-
-  "habitsEditorNewTitle": "Neue Gewohnheit",
-  "habitsEditorEditTitle": "Gewohnheit bearbeiten",
-  "habitsEditorTitleLabel": "Titel",
-  "habitsEditorTitleHint": "z. B. Morgengymnastik",
-
-  "habitsNegativeLabel": "Negative Gewohnheit",
-  "habitsNegativeHint": "Markiere sie, wenn du sie verfolgen und reduzieren möchtest.",
-  "habitsPositiveHint": "Eine positive/neutrale Gewohnheit zur Stärkung.",
-
-  "habitsNegativeShort": "Negativ",
-  "habitsPositiveShort": "Positiv/neutral",
-
-  "habitsDeleteConfirmTitle": "Gewohnheit löschen?",
-  "habitsDeleteConfirmBody": "„{title}“ wird gelöscht und kann nicht wiederhergestellt werden.",
-  "@habitsDeleteConfirmBody": {
-    "placeholders": {
-      "title": {}
-    }
-  },
-
-  "habitsFooterHint": "Später fügen wir ein „Filtern“ der Gewohnheiten auf dem Home-Screen hinzu.",
-
-  "profileTitle": "Mein Profil",
-
-  "profileNameLabel": "Name",
-  "profileNameTitle": "Name",
-  "profileNamePrompt": "Wie sollen wir dich nennen?",
-
-  "profileAgeLabel": "Alter",
-  "profileAgeTitle": "Alter",
-  "profileAgePrompt": "Bitte Alter eingeben",
-
-  "profileAccountSection": "Konto",
-  "profileSeenPrologueTitle": "Prolog abgeschlossen",
-  "profileSeenPrologueSubtitle": "Kann man manuell ändern",
-
-  "profileFocusSection": "Fokus",
-  "profileTargetHoursLabel": "Zielstunden pro Tag",
-  "profileTargetHoursValue": "{hours} Std.",
-  "@profileTargetHoursValue": {
-    "placeholders": {
-      "hours": {}
-    }
-  },
-
-  "profileTargetHoursTitle": "Ziel: Stunden pro Tag",
-  "profileTargetHoursFieldLabel": "Stunden",
-
-  "profileQuestionnaireSection": "Fragebogen & Lebensbereiche",
-  "profileQuestionnaireNotDoneTitle": "Du hast den Fragebogen noch nicht ausgefüllt.",
-  "profileQuestionnaireCta": "Jetzt ausfüllen",
-
-  "profileLifeBlocksTitle": "Lebensbereiche",
-  "profileLifeBlocksHint": "z. B. Gesundheit, Karriere, Familie",
-
-  "profilePrioritiesTitle": "Prioritäten",
-  "profilePrioritiesHint": "z. B. Sport, Finanzen, Lesen",
-
-  "profileDangerZoneTitle": "Gefahrenzone",
-
-  "profileDeleteAccountTitle": "Konto löschen?",
-  "profileDeleteAccountBody": "Diese Aktion kann nicht rückgängig gemacht werden.\nGelöscht werden: Ziele, Gewohnheiten, Stimmung, Ausgaben/Einnahmen, Spargläser, KI-Pläne, XP und Profil.",
-  "profileDeleteAccountConfirm": "Für immer löschen",
-  "profileDeleteAccountCta": "Konto und alle Daten löschen",
-  "profileDeletingAccount": "Wird gelöscht…",
-  "profileDeleteAccountFootnote": "Das Löschen ist endgültig. Deine Daten werden vollständig aus Supabase entfernt.",
-  "profileAccountDeletedToast": "Konto gelöscht",
-
-  "lifeBlockHealth": "Gesundheit",
-  "lifeBlockCareer": "Karriere",
-  "lifeBlockFamily": "Familie",
-  "lifeBlockFinance": "Finanzen",
-  "lifeBlockLearning": "Weiterentwicklung",
-  "lifeBlockSocial": "Soziales",
-  "lifeBlockRest": "Erholung",
-  "lifeBlockBalance": "Balance",
-  "lifeBlockLove": "Liebe",
-  "lifeBlockCreativity": "Kreativität",
-  "lifeBlockGeneral": "Allgemein",
-
   "addDayGoalTitle": "Neues Tagesziel",
   "addDayGoalFieldTitle": "Titel *",
-  "addDayGoalTitleHint": "Z. B.: Training / Arbeit / Lernen",
+  "addDayGoalTitleHint": "z. B.: Training / Arbeit / Lernen",
   "addDayGoalFieldDescription": "Beschreibung",
-  "addDayGoalDescriptionHint": "Kurz: was genau erledigt werden soll",
+  "addDayGoalDescriptionHint": "Kurz: was genau getan werden muss",
   "addDayGoalStartTime": "Startzeit",
   "addDayGoalLifeBlock": "Lebensbereich",
   "addDayGoalImportance": "Wichtigkeit",
   "addDayGoalEmotion": "Emotion",
   "addDayGoalHours": "Stunden",
-  "addDayGoalEnterTitle": "Bitte Titel eingeben",
-
-  "addExpenseNewTitle": "Neue Ausgabe",
-  "addExpenseEditTitle": "Ausgabe bearbeiten",
-
-  "addExpenseAmountLabel": "Betrag",
-  "addExpenseAmountInvalid": "Bitte einen gültigen Betrag eingeben",
-
-  "addExpenseCategoryLabel": "Kategorie",
-  "addExpenseCategoryRequired": "Bitte eine Kategorie auswählen",
-  "addExpenseCreateCategoryTooltip": "Kategorie erstellen",
-
-  "addExpenseNoteLabel": "Kommentar",
-
-  "addExpenseNewCategoryTitle": "Neue Kategorie",
-  "addExpenseCategoryNameLabel": "Name",
-
-  "addIncomeNewTitle": "Neue Einnahme",
-  "addIncomeEditTitle": "Einnahme bearbeiten",
-  "addIncomeSubtitle": "Betrag, Kategorie und Kommentar",
-
-  "addIncomeAmountLabel": "Betrag",
-  "addIncomeAmountHint": "z. B. 1200,50",
-  "addIncomeAmountInvalid": "Bitte einen gültigen Betrag eingeben",
-
-  "addIncomeCategoryLabel": "Kategorie",
-  "addIncomeCategoryRequired": "Bitte eine Kategorie auswählen",
-
-  "addIncomeNoteLabel": "Kommentar",
-  "addIncomeNoteHint": "Optional",
-
-  "addIncomeNewCategoryTitle": "Neue Einnahmen-Kategorie",
-  "addIncomeCategoryNameLabel": "Name",
-  "addIncomeCategoryNameHint": "z. B. Gehalt, Freelance…",
-  "addIncomeCategoryNameEmpty": "Bitte einen Kategorienamen eingeben",
-
-  "addJarNewTitle": "Neue Sparbüchse",
-  "addJarEditTitle": "Sparbüchse bearbeiten",
-  "addJarSubtitle": "Lege Zielbetrag und Anteil vom freien Geld fest",
-
-  "addJarNameLabel": "Name",
-  "addJarNameHint": "z. B. Reise, Notgroschen, Haus",
-  "addJarNameRequired": "Bitte einen Namen eingeben",
-
-  "addJarPercentLabel": "Anteil vom freien Geld, %",
-  "addJarPercentHint": "0, wenn du manuell auffüllst",
-  "addJarPercentRange": "Prozent muss zwischen 0 und 100 liegen",
-
-  "addJarTargetLabel": "Zielbetrag",
-  "addJarTargetHint": "z. B. 5000",
-  "addJarTargetHelper": "Pflichtfeld",
-  "addJarTargetRequired": "Bitte ein Ziel angeben (positive Zahl)",
-
-  "aiInsightTypeDataQuality": "Datenqualität",
-  "aiInsightTypeRisk": "Risiko",
-  "aiInsightTypeEmotional": "Emotionen",
-  "aiInsightTypeHabit": "Gewohnheiten",
-  "aiInsightTypeGoal": "Ziele",
-  "aiInsightTypeDefault": "Insight",
-
-  "aiInsightStrengthStrong": "Starker Einfluss",
-  "aiInsightStrengthNoticeable": "Spürbarer Einfluss",
-  "aiInsightStrengthWeak": "Schwacher Einfluss",
-  "aiInsightStrengthLowConfidence": "Geringe Sicherheit",
-
-  "aiInsightStrengthPercent": "{value}%",
-  "@aiInsightStrengthPercent": {
-    "placeholders": {
-      "value": {
-        "type": "int"
-      }
-    }
-  },
-
-  "aiInsightEvidenceTitle": "Belege",
-
-  "aiInsightImpactPositive": "Positiv",
-  "aiInsightImpactNegative": "Negativ",
-  "aiInsightImpactMixed": "Gemischt",
-
-  "aiInsightsTitle": "KI-Insights",
-
-  "aiInsightsConfirmTitle": "KI-Analyse starten?",
-  "aiInsightsConfirmBody": "Die KI analysiert Aufgaben, Gewohnheiten und Wohlbefinden für den ausgewählten Zeitraum und speichert Insights. Das kann ein paar Sekunden dauern.",
-  "aiInsightsConfirmRun": "Starten",
-
-  "aiInsightsPeriod7": "7 Tage",
-  "aiInsightsPeriod30": "30 Tage",
-  "aiInsightsPeriod90": "90 Tage",
-
-  "aiInsightsLastRun": "Letzter Lauf: {date}",
-  "@aiInsightsLastRun": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-
-  "aiInsightsEmptyNotRunTitle": "KI wurde noch nicht gestartet",
-  "aiInsightsEmptyNotRunSubtitle": "Wähle einen Zeitraum und tippe auf „Starten“. Insights werden gespeichert und sind in der App verfügbar.",
-  "aiInsightsCtaRun": "Analyse starten",
-
-  "aiInsightsEmptyNoInsightsTitle": "Noch keine Insights",
-  "aiInsightsEmptyNoInsightsSubtitle": "Füge mehr Daten hinzu (Aufgaben, Gewohnheiten, Antworten) und starte die Analyse erneut.",
-  "aiInsightsCtaRunAgain": "Erneut starten",
-
-  "aiInsightsErrorAi": "KI-Fehler: {error}",
-  "@aiInsightsErrorAi": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-
-  "navGoals": "Ziele",
-  "navMood": "Stimmung",
-  "navProfile": "Profil",
-  "navReports": "Berichte",
-  "navExpenses": "Ausgaben",
-
-  "gcTitleDaySync": "Google Kalender • Tagessynchronisierung",
-  "gcSubtitleImport": "Importiere die Ereignisse dieses Tages als Ziele.",
-  "gcSubtitleExport": "Exportiere die Ziele dieses Tages in den Kalender.",
-
-  "gcModeImport": "Import",
-  "gcModeExport": "Export",
-
-  "gcCalendarLabel": "Kalender",
-  "gcCalendarPrimary": "Primär (Standard)",
-
-  "gcDefaultLifeBlockLabel": "Standard-Lebensbereich (für Import)",
-  "gcLifeBlockForThisGoalLabel": "Lebensbereich für dieses Ziel",
-
-  "gcEventsNotLoaded": "Ereignisse wurden nicht geladen",
-  "gcConnectToLoadEvents": "Verbinde dein Konto, um Ereignisse zu laden",
-
-  "gcExportHint": "Beim Export werden Ereignisse im ausgewählten Kalender für die Ziele dieses Tages erstellt.",
-
-  "gcConnect": "Verbinden",
-  "gcConnected": "Verbunden",
-  "gcFindForDay": "Für den Tag suchen",
-  "gcImport": "Import",
-  "gcExport": "Export",
-
-  "gcNoTitle": "Ohne Titel",
-  "gcLoadingDots": "...",
-
-  "gcImportedGoals": "Importierte Ziele: {count}",
-  "@gcImportedGoals": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-
-  "gcExportedGoals": "Exportierte Ziele: {count}",
-  "@gcExportedGoals": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-
+  "addDayGoalEnterTitle": "Gib einen Titel ein",
+  "goalsDeleteConfirmBodyShort": "Diese Aktion kann nicht rückgängig gemacht werden.",
   "editGoalTitle": "Ziel bearbeiten",
-
   "editGoalSectionDetails": "Details",
   "editGoalSectionLifeBlock": "Lebensbereich",
   "editGoalSectionParams": "Einstellungen",
-
   "editGoalFieldTitleLabel": "Titel",
-  "editGoalFieldTitleHint": "Zum Beispiel: 3 km laufen",
-
+  "editGoalFieldTitleHint": "Beispiel: 3-km-Lauf",
   "editGoalFieldDescLabel": "Beschreibung",
-  "editGoalFieldDescHint": "Was genau muss gemacht werden?",
-
+  "editGoalFieldDescHint": "Was genau muss getan werden?",
   "editGoalFieldLifeBlockLabel": "Lebensbereich",
-
   "editGoalFieldImportanceLabel": "Wichtigkeit",
   "editGoalImportanceLow": "Niedrig",
   "editGoalImportanceMedium": "Mittel",
   "editGoalImportanceHigh": "Hoch",
-
   "editGoalFieldEmotionLabel": "Emotion",
   "editGoalFieldEmotionHint": "😊",
-
   "editGoalDurationHours": "Dauer (Std.)",
   "editGoalStartTime": "Start",
-
   "editGoalUntitled": "Ohne Titel",
-
   "expenseCategoryOther": "Sonstiges",
-
   "goalStatusDone": "Erledigt",
-  "goalStatusInProgress": "In Bearbeitung",
+  "goalStatusInProgress": "In Arbeit",
   "actionDelete": "Löschen",
-
-  "goalImportanceChip": "Wichtigkeit {value}/5",
+  "goalImportanceChip": "Priorität {value}/5",
   "@goalImportanceChip": {
     "placeholders": {
       "value": {
@@ -956,7 +772,6 @@
       }
     }
   },
-
   "goalHoursChip": "Stunden {value}",
   "@goalHoursChip": {
     "placeholders": {
@@ -965,17 +780,14 @@
       }
     }
   },
-
   "goalPathEmpty": "Keine Ziele auf dem Pfad",
-
   "timelineActionEdit": "Bearbeiten",
   "timelineActionDelete": "Löschen",
-
-  "saveBarSaving": "Speichern…",
+  "settingsLanguageTitle": "Sprache",
+  "settingsLanguageSubtitle": "Wähle die App-Sprache. „System“ nutzt die Gerätesprache.",
+  "saveBarSaving": "Wird gespeichert…",
   "saveBarSave": "Speichern",
-
-  "reportEmptyChartNotEnoughData": "Nicht genügend Daten",
-
+  "reportEmptyChartNotEnoughData": "Nicht genug Daten",
   "limitSheetTitle": "Limit für „{categoryName}“",
   "@limitSheetTitle": {
     "placeholders": {
@@ -984,18 +796,977 @@
       }
     }
   },
-
   "limitSheetHintNoLimit": "Leer lassen — kein Limit",
   "limitSheetFieldLabel": "Monatliches Limit",
   "limitSheetFieldHint": "z. B. 15000",
   "limitSheetCtaNoLimit": "Kein Limit",
-  "settingsLanguageTitle": "Sprache",
-  "settingsLanguageSubtitle": "Wähle die App-Sprache. „System“ nutzt die Gerätesprache.",
   "profileWebNotificationsSection": "Benachrichtigungen (Web)",
   "profileWebNotificationsPermissionTitle": "Benachrichtigungen erlauben",
-  "profileWebNotificationsPermissionSubtitle": "Funktioniert im Web und nur solange der Tab geöffnet ist.",
-  "profileWebNotificationsEveningTitle": "Abend-Check-in",
+  "profileWebNotificationsPermissionSubtitle": "Funktioniert im Web und nur, solange der Tab geöffnet ist.",
+  "profileWebNotificationsEveningTitle": "Abendlicher Check-in",
   "profileWebNotificationsEveningSubtitle": "Jeden Tag um {time}",
   "profileWebNotificationsChangeTime": "Zeit ändern",
-  "profileWebNotificationsUnsupported": "Browser-Benachrichtigungen sind in diesem Build nicht verfügbar. Sie funktionieren nur in der Web-Version (und nur solange der Tab geöffnet ist)."
+  "profileWebNotificationsUnsupported": "Browser-Benachrichtigungen sind in diesem Build nicht verfügbar. Sie funktionieren nur in der Web-Version (und nur, solange der Tab geöffnet ist).",
+  "lifeBlockEducation": "Bildung",
+  "lifeBlockHobbies": "Hobbys",
+  "userGoalsTitle": "Meine Ziele",
+  "userGoalsSubtitle": "Strategische Ziele nach Lebensbereich: kurzfristig, mittelfristig und langfristig.",
+  "userGoalsNewTitle": "Neues Ziel",
+  "userGoalsEditTitle": "Ziel bearbeiten",
+  "userGoalsCreateGoal": "Ziel erstellen",
+  "userGoalsCreated": "Ziel erstellt",
+  "userGoalsCreateError": "Ziel konnte nicht erstellt werden: {error}",
+  "@userGoalsCreateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsUpdated": "Ziel aktualisiert",
+  "userGoalsUpdateError": "Ziel konnte nicht aktualisiert werden: {error}",
+  "@userGoalsUpdateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsStatusChangeError": "Status konnte nicht geändert werden: {error}",
+  "@userGoalsStatusChangeError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsDeleteError": "Ziel konnte nicht gelöscht werden: {error}",
+  "@userGoalsDeleteError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "userGoalsDeleteConfirmTitle": "Ziel löschen?",
+  "userGoalsAllBlocks": "Alle",
+  "userGoalsAllHorizons": "Alle Horizonte",
+  "userGoalsLoadErrorTitle": "Ladefehler",
+  "userGoalsNoActiveBlocksTitle": "Keine aktiven Lebensbereiche",
+  "userGoalsNoActiveBlocksSubtitle": "Wähle zuerst die Lebensbereiche aus, die der Nutzer verfolgt.",
+  "userGoalsEmptyTitle": "Noch keine Ziele",
+  "userGoalsEmptySubtitle": "Erstelle dein erstes strategisches Ziel für einen deiner Lebensbereiche.",
+  "userGoalsDeadline": "Deadline: {date}",
+  "@userGoalsDeadline": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "userGoalsStatusCompleted": "Abgeschlossen",
+  "userGoalsStatusActive": "Aktiv",
+  "userGoalsReopen": "Wieder öffnen",
+  "userGoalsComplete": "Abschließen",
+  "userGoalsFieldLifeBlock": "Lebensbereich",
+  "userGoalsFieldHorizon": "Horizont",
+  "userGoalsFieldTitle": "Zieltitel",
+  "userGoalsFieldDescription": "Beschreibung",
+  "userGoalsPickTargetDate": "Zieldatum wählen",
+  "userGoalsClearDate": "Datum löschen",
+  "monthJanuary": "Januar",
+  "monthFebruary": "Februar",
+  "monthMarch": "März",
+  "monthApril": "April",
+  "monthMay": "Mai",
+  "monthJune": "Juni",
+  "monthJuly": "Juli",
+  "monthAugust": "August",
+  "monthSeptember": "September",
+  "monthOctober": "Oktober",
+  "monthNovember": "November",
+  "monthDecember": "Dezember",
+  "weekdayMonShort": "Mo",
+  "weekdayTueShort": "Di",
+  "weekdayWedShort": "Mi",
+  "weekdayThuShort": "Do",
+  "weekdayFriShort": "Fr",
+  "weekdaySatShort": "Sa",
+  "weekdaySunShort": "So",
+  "lifeBlockRelations": "Beziehungen",
+  "lifeBlockSpirituality": "Spiritualität",
+  "goalsHeaderWeek": "{month} {year}, Woche {week}",
+  "@goalsHeaderWeek": {
+    "placeholders": {
+      "month": {},
+      "year": {},
+      "week": {}
+    }
+  },
+  "goalsQuickActionsTitle": "Schnellaktionen",
+  "goalsQuickActionsSubtitle": "Hinzufügen und planen mit einem Tipp",
+  "goalsMassAddTitle": "Massentageseintrag",
+  "goalsMassAddSubtitle": "Ausgaben + Einnahmen + Aufgaben + Stimmung + Gewohnheiten",
+  "goalsMassAddSaved": "Gespeichert: {expenses} Ausgabe(n), {incomes} Einnahme(n), {goals} Aufgabe(n), {habits} Gewohnheit(en){moodSuffix}",
+  "@goalsMassAddSaved": {
+    "placeholders": {
+      "expenses": {},
+      "incomes": {},
+      "goals": {},
+      "habits": {},
+      "moodSuffix": {}
+    }
+  },
+  "goalsMassAddMoodSuffix": ", Stimmung",
+  "goalsSaveError": "Speicherfehler: {error}",
+  "@goalsSaveError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "goalsRecurringGoalTitle": "Wiederkehrendes Ziel",
+  "goalsRecurringGoalSubtitle": "Mehrere Tage im Voraus planen",
+  "goalsRecurringNoDates": "Keine Termine zu erstellen. Prüfe Deadline oder Einstellungen.",
+  "goalsPlanHoursDescription": "Plan: {hours} Std.",
+  "@goalsPlanHoursDescription": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsCreatedCount": "Ziele erstellt: {count}",
+  "@goalsCreatedCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "goalsRecurringCreateError": "Zielserie konnte nicht erstellt werden: {error}",
+  "@goalsRecurringCreateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "goalsSimpleTaskTitle": "Schnellaufgabe",
+  "goalsSimpleTaskSubtitle": "Nur Titel, optionale Uhrzeit, Kategorie Allgemein",
+  "goalsSimpleTaskSheetSubtitle": "Nur Titel, optionale Uhrzeit. Standardkategorie ist Allgemein.",
+  "goalsTaskCreated": "Aufgabe erstellt",
+  "goalsTaskCreateError": "Fehler beim Erstellen der Aufgabe: {error}",
+  "@goalsTaskCreateError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "goalsAll": "Alle",
+  "goalsViewDashboard": "Dashboard",
+  "goalsViewCalendar": "Kalender",
+  "goalsViewWeek": "Woche",
+  "goalsViewMonth": "Monat",
+  "goalsByBlocksTitle": "Ziele nach Lebensbereich",
+  "goalsShow": "Anzeigen",
+  "goalsByBlocksHiddenHint": "Ausgeblendet. Tippe auf 👁 zum Anzeigen.",
+  "goalsEnterTaskTitle": "Gib einen Aufgabentitel ein",
+  "goalsTaskTitleLabel": "Aufgabentitel",
+  "goalsAddTime": "Zeit hinzufügen",
+  "goalsTimeValue": "Zeit: {time}",
+  "@goalsTimeValue": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "goalsRemoveTime": "Zeit entfernen",
+  "goalsCreateTask": "Aufgabe erstellen",
+  "goalsWeekSummaryTitle": "Wochenübersicht",
+  "goalsHoursShort": "{hours} Std.",
+  "@goalsHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsHoursTargetSuffix": " / {hours} Std.",
+  "@goalsHoursTargetSuffix": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsHoursShortNoSpace": "{hours}Std.",
+  "@goalsHoursShortNoSpace": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "goalsHoursTargetSuffixNoSpace": " / {hours}Std.",
+  "@goalsHoursTargetSuffixNoSpace": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "dayGoalsHiddenCompletedEmpty": "Alle sichtbaren Ziele sind ausgeblendet. Deaktiviere den Filter „Erledigte ausblenden“.",
+  "dayGoalsKanbanOpenShort": "Offen",
+  "dayGoalsKanbanDoneShort": "Erledigt",
+  "dayGoalsKanbanOpenTitle": "In Arbeit",
+  "dayGoalsKanbanDoneTitle": "Erledigt",
+  "dayGoalsKanbanOpenEmpty": "Keine aktiven Aufgaben",
+  "dayGoalsKanbanDoneEmpty": "Noch nichts hier",
+  "dayGoalsHoursShort": "{hours} Std.",
+  "@dayGoalsHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "dayGoalsSectionMorning": "Morgen",
+  "dayGoalsSectionDay": "Tag",
+  "dayGoalsSectionEvening": "Abend",
+  "dayGoalsSummaryTitle": "Tagesübersicht",
+  "dayGoalsSummarySubtitle": "Bleib fokussiert auf das Wichtige und halte den Tag überschaubar.",
+  "dayGoalsSummaryTotal": "Gesamt",
+  "dayGoalsSummaryDone": "Erledigt",
+  "dayGoalsSummaryRemaining": "Verbleibend",
+  "dayGoalsRemainingHours": "Verbleibende Stunden: {hours}",
+  "@dayGoalsRemainingHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "dayGoalsHideCompleted": "Erledigte ausblenden",
+  "reportsTabSummary": "Übersicht",
+  "reportsTabRelations": "Zusammenhänge",
+  "reportsTabProductivity": "Produktivität",
+  "reportsTabExpenses": "Ausgaben",
+  "reportsCompletedTasks": "Erledigte Aufgaben",
+  "reportsSpentHours": "Aufgewendete Stunden",
+  "reportsEfficiency": "Effizienz",
+  "reportsPeriodEfficiency": "Effizienz des Zeitraums",
+  "reportsPlanFactHours": "Plan: {planned} Std. • Ist: {actual} Std.",
+  "@reportsPlanFactHours": {
+    "placeholders": {
+      "planned": {},
+      "actual": {}
+    }
+  },
+  "reportsAdditionalMetrics": "Zusätzliche Kennzahlen",
+  "reportsCorrelations": "Zusammenhänge zwischen Kennzahlen",
+  "reportsCorrelationsHint": "Das ist keine wissenschaftliche Korrelation, sondern ein klarer Vergleich nach Zeitraum.",
+  "reportsMoodProductivity": "Stimmung → Produktivität",
+  "reportsGoodMood": "Gut",
+  "reportsBadMood": "Schlecht",
+  "reportsHabitsMoodProductivity": "Gewohnheiten → Stimmung / Produktivität",
+  "reportsMoodMostlyHappy": "meist 😊",
+  "reportsMoodMostlySad": "meist 😞",
+  "reportsMoodMostlyNeutral": "meist 😐",
+  "reportsHabitsComparisonHint": "Vergleich von Tagen mit ≥ {percent}% erledigten Gewohnheiten und allen anderen Tagen.",
+  "@reportsHabitsComparisonHint": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsMoodHigh": "Stimmung (hoch)",
+  "reportsMoodLow": "Stimmung (niedrig)",
+  "reportsHoursHigh": "Stunden (hoch)",
+  "reportsHoursLow": "Stunden (niedrig)",
+  "reportsHabitsHighShort": "Gewohnheiten hoch",
+  "reportsHabitsLowShort": "Gewohnheiten niedrig",
+  "reportsMentalMood": "Mentaler Zustand → Stimmung",
+  "reportsExpensesMood": "Ausgaben → Stimmung",
+  "reportsHappyDays": "😊 Tage",
+  "reportsSadDays": "😞 Tage",
+  "reportsCompletedByBlocks": "Erledigt nach Bereichen",
+  "reportsNoCompletedTasks": "Keine erledigten Aufgaben",
+  "reportsTasksCount": "{count} Aufgaben",
+  "@reportsTasksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsHoursByDays": "Aufgewendete Stunden nach Tag",
+  "reportsExpensesForPeriod": "Ausgaben für den Zeitraum",
+  "reportsTotalEuro": "Gesamt: {amount} €",
+  "@reportsTotalEuro": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "reportsAvgExpensePerDay": "Durchschnittliche Ausgaben/Tag: {amount} €",
+  "@reportsAvgExpensePerDay": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "reportsNoExpensesByCategory": "Keine Ausgaben nach Kategorie",
+  "reportsAvgTimePerGoal": "Durchschnittliche Zeit pro Aufgabe",
+  "reportsOnTimeConditional": "„Pünktlich“ (ca.)",
+  "reportsTop3ProductiveDays": "TOP 3 produktive Tage",
+  "reportsTopDayLine": "• {day}.{month}.{year}: {hours} Std.",
+  "@reportsTopDayLine": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      },
+      "year": {
+        "type": "int"
+      },
+      "hours": {}
+    }
+  },
+  "reportsPeriodDay": "Tag",
+  "reportsPeriodWeekShort": "Woche",
+  "reportsPeriodMonthShort": "Monat",
+  "reportsForward": "Weiter",
+  "reportsTapChartSector": "Tippe auf ein Diagrammsegment",
+  "reportsLatestAiInsights": "Neueste AI-Insights",
+  "reportsOpenAll": "Alle öffnen",
+  "reportsInsightsLoadFailed": "Insights konnten nicht geladen werden",
+  "reportsNoSavedInsights": "Noch keine gespeicherten Insights.",
+  "reportsRunAiInsightsHint": "Öffne „AI-Insights“ und starte eine Analyse — dann erscheinen sie hier.",
+  "reportsAiPeriod7Days": "letzte 7 Tage",
+  "reportsAiPeriod30Days": "letzte 30 Tage",
+  "reportsAiPeriod90Days": "letzte 90 Tage",
+  "reportsHoursValue": "{hours} Std.",
+  "@reportsHoursValue": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "reportsEuroValue": "{amount} €",
+  "@reportsEuroValue": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "commonError": "Fehler",
+  "aiPlanConsentSaved": "Einwilligung zur AI-Verarbeitung gespeichert",
+  "aiPlanConsentCheckFailed": "Einwilligung zur AI-Verarbeitung konnte nicht geprüft oder gespeichert werden. Stelle sicher, dass die Tabelle users die Felder ai_processing_consent, ai_processing_consent_at und ai_processing_consent_version enthält. Details: {error}",
+  "@aiPlanConsentCheckFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "aiPlanConsentTitle": "Einwilligung zur AI-Verarbeitung",
+  "aiPlanConsentBody": "Um einen AI-Plan zu generieren, analysiert Nest deine Ziele, Aufgaben, Gewohnheiten, Stimmung und andere App-Daten. Diese Daten werden nur zur Erstellung persönlicher Empfehlungen, Pläne und Insights verwendet.",
+  "aiPlanConsentDeclineBody": "Du kannst die Einwilligung ablehnen — dann wird die AI-Funktion nicht gestartet.",
+  "aiPlanConsentNotNow": "Nicht jetzt",
+  "aiPlanConsentAgree": "Ich stimme zu",
+  "aiPlanOpenLinkFailed": "Link konnte nicht geöffnet werden: {url}",
+  "@aiPlanOpenLinkFailed": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "aiPlanUpdated": "AI-Plan aktualisiert",
+  "aiPlanEmptyEdgeFunction": "Der Plan ist leer. Prüfe die ai-plan Edge Function.",
+  "aiPlanHoursShort": "{hours} Std.",
+  "@aiPlanHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "aiPlanImportanceMeta": "Wichtigkeit {importance}/5",
+  "@aiPlanImportanceMeta": {
+    "placeholders": {
+      "importance": {
+        "type": "int"
+      }
+    }
+  },
+  "aiPlanLinkedToGoal": "mit einem Ziel verknüpft",
+  "aiPlanNothingToApply": "Nichts anzuwenden — wähle einige Elemente aus",
+  "aiPlanDefaultTaskTitle": "AI-Aufgabe",
+  "aiPlanTasksAdded": "Aufgaben hinzugefügt: {count}",
+  "@aiPlanTasksAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiPlanApplyTypeError": "Datentypfehler beim Hinzufügen von Aufgaben: Eines der Felder kam als true/false statt als Zahl. Aktualisiere die Datei erneut: In dieser Version werden boolesche Werte zusätzlich in Zahlen umgewandelt und das Feld is_completed wird nicht mehr manuell gesendet.",
+  "aiPlanTitleWeek": "AI-Plan für die Woche",
+  "aiPlanTitleMonth": "AI-Plan für den Monat",
+  "aiPlanRegenerateTooltip": "Erneut generieren",
+  "aiPlanUpdatedAt": "Aktualisiert: {date}",
+  "@aiPlanUpdatedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "aiPlanCheckingConsent": "Einwilligung zur AI-Verarbeitung wird geprüft...",
+  "aiPlanApplyingTasks": "Aufgaben werden hinzugefügt...",
+  "aiPlanGenerating": "AI-Plan wird generiert...",
+  "aiPlanApplyCount": "Anwenden ({count})",
+  "@aiPlanApplyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiPlanRejectTooltip": "Ablehnen",
+  "aiPlanAcceptTooltip": "Akzeptieren",
+  "aiPlanFieldBlock": "Block",
+  "aiPlanFieldImportance": "Wichtigkeit",
+  "aiPlanFieldHours": "Stunden",
+  "aiPlanFieldRepeat": "Wiederholen",
+  "aiPlanConsentRequiredTitle": "Einwilligung zur AI-Verarbeitung erforderlich",
+  "aiPlanConsentRequiredBody": "Bevor ein AI-Plan generiert wird, musst du bestätigen, dass Nest App-Daten für persönliche Empfehlungen analysieren darf.",
+  "aiPlanGiveConsent": "Einwilligung geben",
+  "aiPlanPrivacyPolicy": "Privacy Policy",
+  "aiPlanDatenschutz": "Datenschutzerklärung",
+  "aiPlanTermsOfUse": "Terms of Use",
+  "aiPlanEmptyTitle": "Der Plan ist leer",
+  "aiPlanEmptyBody": "Drücke unten auf die Schaltfläche, um einen Plan basierend auf AI-Insights, Zielen, Aufgaben, Gewohnheiten und Stimmung zu generieren.",
+  "aiPlanGeneratePlan": "Plan generieren",
+  "aiPlanRepeatNone": "Keine Wiederholung",
+  "aiPlanRepeatDaily": "Jeden Tag",
+  "aiPlanRepeatWeekdays": "Werktage",
+  "aiPlanRepeatWeekly": "Einmal pro Woche",
+  "aiPlanLifeBlockOther": "Sonstiges",
+  "aiInsightsConsentTitle": "Einwilligung zur AI-Verarbeitung",
+  "aiInsightsConsentBody": "Um AI-Insights zu generieren, analysiert Nest deine Ziele, Aufgaben, Gewohnheiten, Stimmung und andere App-Daten. Diese Daten werden nur zur Erstellung persönlicher Empfehlungen, Pläne und Insights verwendet.",
+  "aiInsightsConsentDeclineBody": "Du kannst die Einwilligung ablehnen — dann wird die AI-Funktion nicht gestartet.",
+  "aiInsightsConsentNotNow": "Nicht jetzt",
+  "aiInsightsConsentAgree": "Ich stimme zu",
+  "aiInsightsConsentSaved": "Einwilligung zur AI-Verarbeitung gespeichert",
+  "aiInsightsConsentCheckFailed": "Einwilligung zur AI-Verarbeitung konnte nicht geprüft oder gespeichert werden. Stelle sicher, dass die Tabelle users die Felder ai_processing_consent, ai_processing_consent_at und ai_processing_consent_version enthält. Details: {error}",
+  "aiInsightsCheckingConsent": "Einwilligung zur AI-Verarbeitung wird geprüft...",
+  "aiInsightsUserNotAuthorized": "Nutzer ist nicht authentifiziert",
+  "aiInsightsOpenLinkFailed": "Link konnte nicht geöffnet werden: {url}",
+  "aiInsightsDefaultTitle": "AI-Insight",
+  "aiInsightsConsentRequiredTitle": "Einwilligung zur AI-Verarbeitung erforderlich",
+  "aiInsightsConsentRequiredBody": "Bevor AI-Insights generiert werden, musst du bestätigen, dass Nest App-Daten für persönliche Empfehlungen analysieren darf.",
+  "aiInsightsGiveConsent": "Einwilligung geben",
+  "aiInsightsPrivacyPolicy": "Privacy Policy",
+  "aiInsightsDatenschutz": "Datenschutzerklärung",
+  "aiInsightsTermsOfUse": "Terms of Use",
+  "@aiInsightsConsentCheckFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@aiInsightsOpenLinkFailed": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "massDailyTitle": "Massentageseintrag",
+  "massDailyDatePrefix": "Datum: ",
+  "massDailyChoose": "Auswählen",
+  "massDailyBack": "Zurück",
+  "massDailyCancel": "Abbrechen",
+  "massDailyNext": "Weiter",
+  "massDailySaveAll": "Alles speichern",
+  "massDailyEmptyRowsIgnored": "Leere Zeilen werden ignoriert.",
+  "massDailyMoodTitle": "Stimmung",
+  "massDailyMoodSubtitle": "Optionale Notiz darüber, wie der Tag gelaufen ist.",
+  "massDailyNote": "Notiz",
+  "massDailyHabitsTitle": "Gewohnheiten",
+  "massDailyHabitsSubtitle": "Markiere die Erledigung und füge bei Bedarf eine Menge hinzu.",
+  "massDailyRefresh": "Aktualisieren",
+  "massDailyNoHabits": "Noch keine Gewohnheiten. Füge sie in deinem Profil hinzu.",
+  "massDailyHabitsLoadFailed": "Gewohnheiten konnten nicht geladen werden: {error}",
+  "@massDailyHabitsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "massDailyMentalTitle": "Mentale Gesundheit",
+  "massDailyMentalSubtitle": "Ein kurzer täglicher Zustands-Check-in für spätere Analysen.",
+  "massDailyMentalIntro": "Beantworte ein paar Fragen — das hilft, deinen Zustand zu verfolgen.",
+  "massDailyNoMentalQuestions": "Noch keine Fragen. Füge sie zur Tabelle mental_questions hinzu.",
+  "massDailyMentalLoadFailed": "Fragen konnten nicht geladen werden: {error}",
+  "@massDailyMentalLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "massDailyExpensesTitle": "Ausgaben",
+  "massDailyExpensesSubtitle": "Füge Ausgaben für den ausgewählten Tag hinzu.",
+  "massDailyIncomesTitle": "Einnahmen",
+  "massDailyIncomesSubtitle": "Füge Einnahmen für den ausgewählten Tag hinzu.",
+  "massDailyGoalsTitle": "Aufgaben",
+  "massDailyGoalsSubtitle": "Halte fest, woran du an diesem Tag gearbeitet hast und wie viel Zeit es gekostet hat.",
+  "massDailyAddRow": "Zeile hinzufügen",
+  "massDailyNoMood": "Keine Stimmung",
+  "massDailyQuantityExample": "Menge (zum Beispiel Zigaretten)",
+  "massDailyQuantityOptional": "Menge (optional)",
+  "massDailyQuantityShort": "Menge",
+  "massDailyHabitNegative": "Negativ",
+  "massDailyHabitPositive": "Positiv",
+  "massDailyAnswer": "Antwort",
+  "massDailyAmount": "Betrag",
+  "massDailyCategory": "Kategorie",
+  "massDailyNoCategories": "Keine Kategorien",
+  "massDailyTaskTitle": "Aufgabentitel",
+  "massDailyHours": "Stunden",
+  "massDailyTime": "Zeit",
+  "massDailyEmotion": "Emotion",
+  "massDailyNoEmotion": "Keine Emotion",
+  "massDailyImportance": "Wichtigkeit",
+  "massDailyBigGoal": "Großes Ziel",
+  "massDailyNoLink": "Nicht verknüpft",
+  "massDailyLoadingUserGoals": "Große Ziele werden geladen...",
+  "massDailyNoUserGoalsForCategory": "Für diese Kategorie gibt es noch keine großen Ziele.",
+  "massDailyHorizonTactical": "Taktisch",
+  "massDailyHorizonMid": "Mittelfristig",
+  "massDailyHorizonLong": "Langfristig",
+  "massDailyLifeBlockGeneral": "Allgemein",
+  "massDailyLifeBlockHealth": "Gesundheit",
+  "massDailyLifeBlockCareer": "Karriere",
+  "massDailyLifeBlockFamily": "Familie",
+  "massDailyLifeBlockFinance": "Finanzen",
+  "massDailyLifeBlockEducation": "Bildung",
+  "massDailyLifeBlockHobbies": "Hobbys",
+  "importJournalTextNotRecognized": "Text wurde nicht erkannt. Versuche ein anderes Foto.",
+  "importJournalRecognizedTextTitle": "Erkannter Text",
+  "importJournalContinue": "Weiter",
+  "importJournalUntitled": "Ohne Titel",
+  "importJournalNoTasksFound": "Aus dem Text konnten keine Aufgaben extrahiert werden.",
+  "importJournalAddedGoals": "Ziele hinzugefügt: {count}",
+  "@importJournalAddedGoals": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "importJournalImportFailed": "Import fehlgeschlagen: {error}",
+  "@importJournalImportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "importJournalVisionApiKeyMissing": "VISION_API_KEY ist nicht gesetzt. Starte die App mit --dart-define=VISION_API_KEY=...",
+  "importJournalVisionApiError": "Vision API hat Fehler {statusCode} zurückgegeben: {body}",
+  "@importJournalVisionApiError": {
+    "placeholders": {
+      "statusCode": {},
+      "body": {}
+    }
+  },
+  "importJournalEditTitle": "Bearbeiten",
+  "importJournalNameLabel": "Name",
+  "importJournalTimeColon": "Zeit:",
+  "importJournalHoursColon": "Stunden:",
+  "importJournalFoundTasksTitle": "Gefundene Aufgaben",
+  "importJournalTaskSubtitle": "{time} • {hours} Std.",
+  "@importJournalTaskSubtitle": {
+    "placeholders": {
+      "time": {},
+      "hours": {}
+    }
+  },
+  "importJournalAddSelected": "Ausgewählte hinzufügen",
+  "recurringGoalSelectAtLeastOneWeekday": "Wähle mindestens einen Wochentag aus",
+  "recurringGoalTitle": "Wiederkehrendes Ziel",
+  "recurringGoalSubtitle": "Erstellt Aufgaben von heute bis zum ausgewählten Datum.",
+  "recurringGoalDetailsSection": "Details",
+  "recurringGoalTitleLabel": "Zieltitel",
+  "recurringGoalTitleHint": "Zum Beispiel: Training",
+  "recurringGoalEmotionLabel": "Emotion",
+  "recurringGoalEmotionHint": "Zum Beispiel: 💪 Motivation",
+  "recurringGoalRegularitySection": "Regelmäßigkeit",
+  "recurringGoalEveryNDays": "Alle N Tage",
+  "recurringGoalByWeekdays": "Nach Wochentagen",
+  "recurringGoalIntervalLabel": "Intervall",
+  "recurringGoalEveryNDaysShort": "{count} T",
+  "@recurringGoalEveryNDaysShort": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "recurringGoalWeekdayMon": "Mo",
+  "recurringGoalWeekdayTue": "Di",
+  "recurringGoalWeekdayWed": "Mi",
+  "recurringGoalWeekdayThu": "Do",
+  "recurringGoalWeekdayFri": "Fr",
+  "recurringGoalWeekdaySat": "Sa",
+  "recurringGoalWeekdaySun": "So",
+  "recurringGoalTimeButton": "Zeit: {time}",
+  "@recurringGoalTimeButton": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "recurringGoalUntilButton": "Bis: {date}",
+  "@recurringGoalUntilButton": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "recurringGoalParametersSection": "Parameter",
+  "recurringGoalLifeBlockLabel": "Lebensbereich",
+  "recurringGoalImportanceLabel": "Wichtigkeit",
+  "recurringGoalUserGoalLabel": "Großes Ziel",
+  "recurringGoalNoLink": "Keine Verknüpfung",
+  "recurringGoalLoadingUserGoals": "Ziele für „{block}“ werden geladen...",
+  "@recurringGoalLoadingUserGoals": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "recurringGoalNoUserGoalsForBlock": "Für „{block}“ sind noch keine Ziele verfügbar.",
+  "@recurringGoalNoUserGoalsForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "recurringGoalPlannedHoursLabel": "Geplante Stunden",
+  "recurringGoalOccurrencesCount": "Zu erstellende Aufgaben: {count}",
+  "@recurringGoalOccurrencesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "recurringGoalCreate": "Erstellen",
+  "recurringGoalLifeBlockGeneral": "Allgemein",
+  "recurringGoalLifeBlockHealth": "Gesundheit",
+  "recurringGoalLifeBlockCareer": "Karriere",
+  "recurringGoalLifeBlockFinance": "Finanzen",
+  "recurringGoalLifeBlockRelationships": "Beziehungen",
+  "recurringGoalLifeBlockSelf": "Selbstentwicklung",
+  "recurringGoalLifeBlockEducation": "Bildung",
+  "recurringGoalLifeBlockTravel": "Reisen",
+  "recurringGoalLifeBlockHome": "Zuhause",
+  "recurringGoalHorizonTactical": "Taktisch",
+  "recurringGoalHorizonMid": "Mittelfristig",
+  "recurringGoalHorizonLong": "Langfristig",
+  "addDayGoalLinkSectionTitle": "Mit einem Ziel verknüpfen",
+  "addDayGoalUserGoalLabel": "Großes Ziel",
+  "addDayGoalNoLinkedGoal": "Keine Verknüpfung",
+  "addDayGoalLoadingUserGoals": "Ziele für „{block}“ werden geladen...",
+  "@addDayGoalLoadingUserGoals": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "addDayGoalNoUserGoalsForBlock": "Für „{block}“ sind noch keine Ziele verfügbar.",
+  "@addDayGoalNoUserGoalsForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "addDayGoalLifeBlockGeneral": "Allgemein",
+  "addDayGoalLifeBlockHealth": "Gesundheit",
+  "addDayGoalLifeBlockCareer": "Karriere",
+  "addDayGoalLifeBlockFinance": "Finanzen",
+  "addDayGoalLifeBlockRelationships": "Beziehungen",
+  "addDayGoalLifeBlockSelf": "Selbstentwicklung",
+  "addDayGoalLifeBlockEducation": "Bildung",
+  "addDayGoalLifeBlockTravel": "Reisen",
+  "addDayGoalLifeBlockHome": "Zuhause",
+  "addDayGoalHorizonTactical": "Taktisch",
+  "addDayGoalHorizonMid": "Mittelfristig",
+  "addDayGoalHorizonLong": "Langfristig",
+  "lifeBlockSelf": "Selbstentwicklung",
+  "lifeBlockTravel": "Reisen",
+  "lifeBlockHome": "Zuhause",
+  "horizonTactical": "Taktisch",
+  "horizonMid": "Mittelfristig",
+  "horizonLong": "Langfristig",
+  "editGoalSectionDateTime": "Datum und Uhrzeit",
+  "editGoalSectionUserGoalLink": "Verknüpfung mit einem größeren Ziel",
+  "userGoalLinkFieldLabel": "Größeres Ziel",
+  "userGoalLinkNone": "Keine Verknüpfung",
+  "userGoalLinkLoadingForBlock": "Ziele für „{block}“ werden geladen...",
+  "@userGoalLinkLoadingForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "userGoalLinkNoGoalsForBlock": "Für „{block}“ sind noch keine Ziele verfügbar.",
+  "@userGoalLinkNoGoalsForBlock": {
+    "placeholders": {
+      "block": {}
+    }
+  },
+  "editGoalHoursValue": "Stunden: {hours}",
+  "@editGoalHoursValue": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "commonHoursShort": "{hours} Std.",
+  "@commonHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "healthTrackerTitle": "Gesundheitstracker",
+  "healthCalorieTargetTitle": "Kalorienziel",
+  "healthDailyCaloriesLabel": "Kcal pro Tag",
+  "healthAddMealTitle": "Mahlzeit hinzufügen",
+  "healthMealTypeLabel": "Mahlzeit",
+  "healthMealBreakfast": "Frühstück",
+  "healthMealLunch": "Mittagessen",
+  "healthMealDinner": "Abendessen",
+  "healthMealSnack": "Snack",
+  "healthCaloriesLabel": "Kalorien",
+  "healthEnterCalories": "Kalorien eingeben",
+  "healthMealDescriptionLabel": "Was hast du gegessen?",
+  "healthAddDescription": "Beschreibung hinzufügen",
+  "healthAddBurnTitle": "Verbrannte Kalorien hinzufügen",
+  "healthCaloriesBurnedLabel": "Verbrannte Kalorien",
+  "healthCommentLabel": "Kommentar",
+  "healthWaterTodayTitle": "Wie viel Wasser hast du heute getrunken?",
+  "healthSaveWater": "Wasser speichern",
+  "healthSetTarget": "Ziel festlegen",
+  "healthTargetCalories": "Ziel {calories} kcal",
+  "@healthTargetCalories": {
+    "placeholders": {
+      "calories": {}
+    }
+  },
+  "healthAddMealButton": "Essen hinzufügen",
+  "healthAddBurnButton": "Verbrauch hinzufügen",
+  "healthWaterButton": "Wasser {liters} L",
+  "@healthWaterButton": {
+    "placeholders": {
+      "liters": {}
+    }
+  },
+  "healthConsumed": "Gegessen",
+  "healthBurned": "Verbrannt",
+  "healthBalance": "Bilanz",
+  "healthDeltaVsTarget": "Abweichung vom Ziel",
+  "healthWaterDrunk": "Getrunkenes Wasser",
+  "healthKcalValue": "{value} kcal",
+  "@healthKcalValue": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthKcalValueWithSign": "{value} kcal",
+  "@healthKcalValueWithSign": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthLitersValue": "{value} L",
+  "@healthLitersValue": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthMealsTodayTitle": "Mahlzeiten heute",
+  "healthNoMeals": "Noch keine Essenseinträge.",
+  "healthBurnsTitle": "Verbrannte Kalorien",
+  "healthNoBurns": "Noch keine Einträge zu verbrannten Kalorien.",
+  "healthNoComment": "Kein Kommentar",
+  "hobbyTrackerTitle": "Hobby-Tracker",
+  "hobbyTrackerNewHobbyTitle": "Neues Hobby",
+  "hobbyTrackerHobbyNameLabel": "Hobbyname",
+  "hobbyTrackerEnterHobbyValidator": "Gib ein Hobby ein",
+  "hobbyTrackerWeeklyGoalMinutesLabel": "Wochenziel, Minuten",
+  "hobbyTrackerEnterGoalValidator": "Gib ein Ziel ein",
+  "hobbyTrackerCreateButton": "Erstellen",
+  "hobbyTrackerAddTimeTitle": "Zeit hinzufügen: {title}",
+  "@hobbyTrackerAddTimeTitle": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "hobbyTrackerMinutesSpentLabel": "Aufgewendete Minuten",
+  "hobbyTrackerNoteLabel": "Notiz",
+  "hobbyTrackerDeleteConfirmTitle": "Hobby löschen?",
+  "hobbyTrackerDeleteConfirmBody": "Hobby „{title}“ wird zusammen mit allen Einträgen gelöscht.",
+  "@hobbyTrackerDeleteConfirmBody": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "hobbyTrackerAddHobbyTooltip": "Hobby hinzufügen",
+  "hobbyTrackerEmptyText": "Noch keine Hobbys. Füge deine erste Aktivität hinzu und beginne, Zeit zu tracken.",
+  "hobbyTrackerCreateHobbyButton": "Hobby erstellen",
+  "hobbyTrackerDeleteHobbyTooltip": "Hobby löschen",
+  "hobbyTrackerAddEntryButton": "Eintrag hinzufügen",
+  "hobbyTrackerToday": "Heute {value}",
+  "@hobbyTrackerToday": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "hobbyTrackerWeek": "Woche {value}",
+  "@hobbyTrackerWeek": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "hobbyTrackerGoal": "Ziel: {value}",
+  "@hobbyTrackerGoal": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "hobbyTrackerMinutesShort": "{minutes} Min.",
+  "@hobbyTrackerMinutesShort": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "hobbyTrackerHoursShort": "{hours} Std.",
+  "@hobbyTrackerHoursShort": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "hobbyTrackerHoursMinutesShort": "{hours} Std. {minutes} Min.",
+  "@hobbyTrackerHoursMinutesShort": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  },
+  "importGoalsReviewTitle": "Ziele importieren",
+  "importGoalsReviewSubtitle": "Wähle aus, was importiert werden soll, und passe bei Bedarf Titel oder Beschreibung an.",
+  "importGoalsReviewSelectAll": "Alles auswählen",
+  "importGoalsReviewYes": "Ja",
+  "importGoalsReviewNo": "Nein",
+  "importGoalsReviewListSection": "Liste",
+  "importGoalsReviewImport": "Importieren",
+  "importGoalsReviewFieldTitle": "Titel",
+  "importGoalsReviewFieldDescription": "Beschreibung",
+  "importGoalsReviewTime": "Zeit: {time}",
+  "@importGoalsReviewTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "importGoalsReviewChange": "Ändern",
+  "shoppingBasketCopyHeader": "🛒 Einkaufsliste",
+  "shoppingDueDatePrefix": "bis {date}",
+  "@shoppingDueDatePrefix": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "shoppingBasketCopied": "Einkaufsliste kopiert",
+  "shoppingNewWishlistItem": "Neuer Wunschlisten-Eintrag",
+  "shoppingNewPurchase": "Neue Anschaffung",
+  "shoppingEditItem": "Eintrag bearbeiten",
+  "shoppingFieldTitle": "Titel",
+  "shoppingEnterTitle": "Gib einen Titel ein",
+  "shoppingFieldDescription": "Beschreibung",
+  "shoppingFieldPrice": "Preis",
+  "shoppingFieldStore": "Geschäft",
+  "shoppingFieldExpenseCategory": "Ausgabenkategorie",
+  "shoppingNoCategory": "Keine Kategorie",
+  "shoppingAlreadyBought": "Schon gekauft",
+  "shoppingPurchaseDate": "Kaufdatum",
+  "shoppingReset": "Zurücksetzen",
+  "shoppingEmpty": "Noch leer.",
+  "shoppingTrackerTitle": "Shopping-Tracker",
+  "shoppingCopyBasket": "Warenkorb kopieren",
+  "shoppingBasketTitle": "Einkaufsliste",
+  "shoppingWishlistTitle": "Wunschliste",
+  "profileOpenLinkFailed": "Link konnte nicht geöffnet werden.",
+  "profileDangerZoneSubtitle": "Kontolöschung",
+  "profileLegalDocumentsTitle": "Rechtliche Dokumente",
+  "profileLegalDocumentsSubtitle": "Du kannst Privacy Policy, Datenschutz, Terms of Use und Impressum jederzeit öffnen.",
+  "profileLegalPrivacyTitle": "Privacy Policy",
+  "profileLegalPrivacySubtitle": "Englische Version der Datenschutzerklärung",
+  "profileLegalDatenschutzTitle": "Datenschutzerklärung",
+  "profileLegalDatenschutzSubtitle": "Deutsche Version der Datenschutzerklärung",
+  "profileLegalTermsTitle": "Terms of Use",
+  "profileLegalTermsSubtitle": "Regeln und Bedingungen für die Nutzung von Nest",
+  "profileLegalImpressumTitle": "Impressum",
+  "profileLegalImpressumSubtitle": "Rechtlicher Hinweis und Anbieterinformationen",
+  "settingsLanguageSystem": "System",
+  "settingsLanguageRussian": "Russisch",
+  "settingsLanguageEnglish": "Englisch",
+  "settingsLanguageGerman": "Deutsch",
+  "settingsLanguageFrench": "Französisch",
+  "settingsLanguageSpanish": "Spanisch",
+  "settingsLanguageTurkish": "Türkisch",
+  "profileWebNotificationsEveningBody": "Markiere deine Gewohnheiten und schließe den Tag ab 👌",
+  "profileWebNotificationsPermissionDeniedToast": "Berechtigung wurde nicht erteilt. Prüfe die Benachrichtigungseinstellungen deines Browsers.",
+  "profileWebNotificationsPermissionGrantedToast": "Browser-Benachrichtigungen sind aktiviert ✅",
+  "profileWebNotificationsTimeChangedToast": "Benachrichtigungszeit: {time}",
+  "@profileWebNotificationsTimeChangedToast": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "profileWebNotificationsLoadingSettings": "Einstellungen werden geladen...",
+  "profileWebNotificationsEnabledToast": "Aktiviert. Denke daran, Benachrichtigungen im Browser zu erlauben.",
+  "profileWebNotificationsDisabledToast": "Deaktiviert.",
+  "profileEditChipsDefaultHint": "Werte durch Kommas getrennt eingeben",
+  "onboardingWelcomeTitle": "Willkommen bei Nest",
+  "onboardingWelcomeBody": "Ich zeige dir kurz die wichtigsten Funktionen: Schnellaktionen, Aufgaben, große Ziele, Profil, Berichte und Finanzen.",
+  "onboardingSkip": "Überspringen",
+  "onboardingStart": "Starten",
+  "onboardingFinishTitle": "Fertig",
+  "onboardingFinishBody": "Jetzt weißt du, wo sich die wichtigsten Funktionen von Nest befinden. Du kannst das Tutorial später über das Hilfe-Symbol auf der Startseite erneut starten.",
+  "onboardingGotIt": "Verstanden",
+  "onboardingMainQuickActionsTitle": "Schnellaktionen",
+  "onboardingMainQuickActionsText": "Mit dieser Schaltfläche kannst du schnell Aufgaben, Stimmung, Ausgaben und Gewohnheiten hinzufügen sowie den AI-Plan starten.",
+  "onboardingMainNavigationTitle": "Nest-Navigation",
+  "onboardingMainNavigationText": "Hier findest du die Hauptbereiche: Startseite, Aufgaben, große Ziele, Profil, Berichte und Finanzen.",
+  "onboardingMainHelpTitle": "Anleitung erneut öffnen",
+  "onboardingMainHelpText": "Tippe auf dieses Symbol, wenn du das interaktive How-To später wiederholen möchtest.",
+  "onboardingGoalsFilterTitle": "Filter nach Lebensbereich",
+  "onboardingGoalsFilterText": "Wähle Karriere, Gesundheit, Finanzen und andere Bereiche, um Aufgaben im passenden Kontext zu sehen.",
+  "onboardingGoalsModeTitle": "Dashboard oder Kalender",
+  "onboardingGoalsModeText": "Das Dashboard zeigt das Gesamtbild, während der Kalender beim Planen von Aufgaben nach Tagen und Wochen hilft.",
+  "onboardingGoalsAddTitle": "Aktionen hinzufügen",
+  "onboardingGoalsAddText": "Hier kannst du schnell eine Aufgabe, eine Aufgabenserie oder einen ganzen Tag mit mehreren Einträgen erfassen.",
+  "onboardingReportsPeriodTitle": "Analysezeitraum",
+  "onboardingReportsPeriodText": "Wechsle zwischen Tag, Woche und Monat, um Ziele, Stimmung, Gewohnheiten und Finanzen im Verlauf zu vergleichen.",
+  "onboardingReportsChartTitle": "Interaktive Diagramme",
+  "onboardingReportsChartText": "Tippe auf Diagrammsegmente und Punkte — die App zeigt Details nur zum ausgewählten Element.",
+  "onboardingUserGoalsHeaderTitle": "Große Ziele",
+  "onboardingUserGoalsHeaderText": "Hier werden strategische Ziele gespeichert: kurzfristig, mittelfristig und langfristig. Später kannst du tägliche Aufgaben damit verknüpfen.",
+  "onboardingUserGoalsFiltersTitle": "Zielfilter",
+  "onboardingUserGoalsFiltersText": "Filtere Ziele nach Lebensbereich und Horizont, um dich schnell auf die gewünschte Richtung zu fokussieren.",
+  "onboardingUserGoalsAddTitle": "Großes Ziel erstellen",
+  "onboardingUserGoalsAddText": "Tippe hier, um ein Ziel hinzuzufügen sowie Lebensbereich, Horizont und Deadline auszuwählen.",
+  "onboardingProfileHeaderTitle": "Profil",
+  "onboardingProfileHeaderText": "Das ist das Zentrum deiner persönlichen Nest-Einstellungen: Konto, Fokus, Gewohnheiten und App-Präferenzen.",
+  "onboardingProfileCardTitle": "Persönliche Daten",
+  "onboardingProfileCardText": "Name, Alter und Basisparameter werden verwendet, um die Oberfläche und zukünftige AI-Empfehlungen zu personalisieren.",
+  "onboardingProfileFocusTitle": "Fokus und Einstellungen",
+  "onboardingProfileFocusText": "Diese Parameter beeinflussen Tagesplanung, Analysen und Empfehlungen in der App.",
+  "onboardingBudgetIncomeTitle": "Einnahmekategorien",
+  "onboardingBudgetIncomeText": "Füge Einnahmequellen hinzu, damit die Finanzanalyse die Struktur deiner Zuflüsse versteht.",
+  "onboardingBudgetExpenseTitle": "Ausgabenkategorien",
+  "onboardingBudgetExpenseText": "Hier richtest du Ausgabenkategorien und Limits ein. So siehst du, wohin dein Budget am schnellsten fließt.",
+  "onboardingBudgetJarsTitle": "Spartöpfe und Verteilung",
+  "onboardingBudgetJarsText": "Nutze Spartöpfe für Sparziele: Reisen, Notgroschen, Investments oder größere Anschaffungen.",
+  "onboardingBudgetSaveTitle": "Einstellungen speichern",
+  "onboardingBudgetSaveText": "Vergiss nach Änderungen nicht, dein Budget zu speichern, damit Kategorien und Limits in der Datenbank landen.",
+  "onboardingDayGoalsSummaryTitle": "Tagesübersicht",
+  "onboardingDayGoalsSummaryText": "Diese Karte zeigt deinen Tagesfortschritt: wie viele Aufgaben erledigt sind, was übrig bleibt und wie viel Zeit noch geplant ist.",
+  "onboardingDayGoalsFilterTitle": "Erledigte ausblenden",
+  "onboardingDayGoalsFilterText": "Aktiviere diesen Filter, um nur aktive Aufgaben auf dem Bildschirm zu behalten.",
+  "onboardingDayGoalsFabTitle": "Aktivität hinzufügen",
+  "onboardingDayGoalsFabText": "Mit dieser Schaltfläche kannst du eine Aufgabe hinzufügen, einen Journaleintrag erkennen oder Google Kalender synchronisieren.",
+  "onboardingQuestionnaireProgressTitle": "Einrichtungsfortschritt",
+  "onboardingQuestionnaireProgressText": "Hier siehst du, auf welchem Schritt der Ersteinrichtung du dich gerade befindest.",
+  "onboardingQuestionnaireNextTitle": "Weitergehen",
+  "onboardingQuestionnaireNextText": "Tippe nach Abschluss des aktuellen Schritts hier. Am Ende speichert Nest dein Profil, deine Lebensbereiche und Ziele.",
+  "onboardingExpensesControlsTitle": "Tag und Budgeteinstellungen",
+  "onboardingExpensesControlsText": "Wähle hier das Datum der Transaktion und öffne Einstellungen für Kategorien, Limits und Spartöpfe.",
+  "onboardingExpensesSummaryTitle": "Monatliche Finanzübersicht",
+  "onboardingExpensesSummaryText": "Diese Karte zeigt monatliche Einnahmen, Ausgaben und freien Saldo — die Grundlage für die Budgetanalyse.",
+  "onboardingExpensesTransactionsTitle": "Transaktionen für den ausgewählten Tag",
+  "onboardingExpensesTransactionsText": "Hier siehst du Einnahmen und Ausgaben des Tages. Tippe auf eine Transaktion zum Bearbeiten oder wische nach links zum Löschen.",
+  "onboardingExpensesFabTitle": "Einnahme oder Ausgabe hinzufügen",
+  "onboardingExpensesFabText": "Tippe auf Plus, um das Menü zu öffnen und schnell eine neue Finanztransaktion hinzuzufügen.",
+  "onboardingNextHint": "Tippe auf den Bildschirm, um fortzufahren",
+  "registerLegalTermsTitle": "Terms of Use",
+  "registerLegalPrivacyTitle": "Privacy Policy",
+  "registerLegalDatenschutzTitle": "Datenschutzerklärung",
+  "registerLegalImpressumTitle": "Impressum",
+  "registerLegalOptionalTitle": "{title} · optional",
+  "@registerLegalOptionalTitle": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "registerErrOpenRequiredLegalDocs": "Bitte öffne und lies zuerst Terms of Use und Privacy Policy.",
+  "registerLegalOpenFailed": "{document} konnte nicht geöffnet werden.",
+  "@registerLegalOpenFailed": {
+    "placeholders": {
+      "document": {}
+    }
+  },
+  "registerLegalAcceptedText": "Ich habe Terms of Use und Privacy Policy gelesen und akzeptiere sie.",
+  "registerLegalOpenRequiredDocsText": "Öffne und lies zuerst Terms of Use und Privacy Policy. Datenschutzerklärung und Impressum sind als zusätzliche rechtliche Informationen verfügbar.",
+  "registerLegalPrefix": "Mit der Registrierung akzeptierst du die ",
+  "registerLegalTerms": "Nutzungsbedingungen",
+  "registerLegalMiddle": " und die ",
+  "registerLegalPrivacy": "Datenschutzerklärung",
+  "registerLegalSuffix": ".",
+  "addIncomeCategoryNameLabel": "Kategoriename"
 }

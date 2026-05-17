@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../services/home_trackers_repo.dart';
 import '../report_section_card.dart';
@@ -16,12 +17,21 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
   bool _loading = true;
   HealthDaySummary? _summary;
 
-  static const _mealLabels = {
-    'breakfast': 'Завтрак',
-    'lunch': 'Обед',
-    'dinner': 'Ужин',
-    'snack': 'Перекус',
-  };
+  String _mealLabel(BuildContext context, String type) {
+    final l = AppLocalizations.of(context)!;
+    switch (type) {
+      case 'breakfast':
+        return l.healthMealBreakfast;
+      case 'lunch':
+        return l.healthMealLunch;
+      case 'dinner':
+        return l.healthMealDinner;
+      case 'snack':
+        return l.healthMealSnack;
+      default:
+        return type;
+    }
+  }
 
   @override
   void initState() {
@@ -51,6 +61,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
+        final l = AppLocalizations.of(ctx)!;
         return Padding(
           padding: EdgeInsets.only(
             left: 16,
@@ -68,7 +79,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Норма калорий',
+                  l.healthCalorieTargetTitle,
                   style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -77,7 +88,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                 TextField(
                   controller: ctrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Ккал в день'),
+                  decoration: InputDecoration(labelText: l.healthDailyCaloriesLabel),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -90,7 +101,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                       Navigator.pop(ctx);
                       await _load();
                     },
-                    child: const Text('Сохранить'),
+                    child: Text(l.commonSave),
                   ),
                 ),
               ],
@@ -113,6 +124,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
+        final l = AppLocalizations.of(ctx)!;
         return StatefulBuilder(
           builder: (ctx, setLocal) => Padding(
             padding: EdgeInsets.only(
@@ -133,7 +145,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Добавить прием пищи',
+                      l.healthAddMealTitle,
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -141,12 +153,12 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                     const SizedBox(height: 14),
                     DropdownButtonFormField<String>(
                       value: mealType,
-                      decoration: const InputDecoration(labelText: 'Прием пищи'),
-                      items: _mealLabels.entries
+                      decoration: InputDecoration(labelText: l.healthMealTypeLabel),
+                      items: const ['breakfast', 'lunch', 'dinner', 'snack']
                           .map(
                             (e) => DropdownMenuItem(
-                              value: e.key,
-                              child: Text(e.value),
+                              value: e,
+                              child: Text(_mealLabel(ctx, e)),
                             ),
                           )
                           .toList(),
@@ -156,18 +168,18 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                     TextFormField(
                       controller: caloriesCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Калории'),
+                      decoration: InputDecoration(labelText: l.healthCaloriesLabel),
                       validator: (v) =>
-                          (int.tryParse(v ?? '') ?? 0) <= 0 ? 'Введите калории' : null,
+                          (int.tryParse(v ?? '') ?? 0) <= 0 ? l.healthEnterCalories : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: descCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Что это была за еда',
+                      decoration: InputDecoration(
+                        labelText: l.healthMealDescriptionLabel,
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Добавьте описание'
+                          ? l.healthAddDescription
                           : null,
                     ),
                     const SizedBox(height: 14),
@@ -187,7 +199,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                           await _load();
                         },
                         icon: const Icon(Icons.restaurant_rounded),
-                        label: const Text('Сохранить'),
+                        label: Text(l.commonSave),
                       ),
                     ),
                   ],
@@ -210,6 +222,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
+        final l = AppLocalizations.of(ctx)!;
         return Padding(
           padding: EdgeInsets.only(
             left: 16,
@@ -227,7 +240,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Добавить расход калорий',
+                  l.healthAddBurnTitle,
                   style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -236,14 +249,14 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                 TextField(
                   controller: caloriesCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Сколько калорий потрачено',
+                  decoration: InputDecoration(
+                    labelText: l.healthCaloriesBurnedLabel,
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: noteCtrl,
-                  decoration: const InputDecoration(labelText: 'Комментарий'),
+                  decoration: InputDecoration(labelText: l.healthCommentLabel),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -262,7 +275,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                       await _load();
                     },
                     icon: const Icon(Icons.local_fire_department_rounded),
-                    label: const Text('Сохранить'),
+                    label: Text(l.commonSave),
                   ),
                 ),
               ],
@@ -283,6 +296,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
+        final l = AppLocalizations.of(ctx)!;
         return StatefulBuilder(
           builder: (ctx, setLocal) => Padding(
             padding: EdgeInsets.only(
@@ -301,14 +315,14 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Сколько воды выпито сегодня',
+                    l.healthWaterTodayTitle,
                     style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    '${current.toStringAsFixed(1)} л',
+                    l.healthLitersValue(current.toStringAsFixed(1)),
                     style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
@@ -318,7 +332,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                     min: 1,
                     max: 3,
                     divisions: 8,
-                    label: '${current.toStringAsFixed(1)} л',
+                    label: l.healthLitersValue(current.toStringAsFixed(1)),
                     onChanged: (v) => setLocal(() => current = v),
                   ),
                   const SizedBox(height: 12),
@@ -335,7 +349,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                         await _load();
                       },
                       icon: const Icon(Icons.water_drop_rounded),
-                      label: const Text('Сохранить воду'),
+                      label: Text(l.healthSaveWater),
                     ),
                   ),
                 ],
@@ -381,16 +395,17 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final s = _summary;
+    final l = AppLocalizations.of(context)!;
 
     return ReportSectionCard(
-      title: 'Трекер здоровья',
+      title: l.healthTrackerTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Align(
             alignment: Alignment.centerRight,
             child: IconButton(
-              tooltip: 'Норма калорий',
+              tooltip: l.healthCalorieTargetTitle,
               onPressed: _editTarget,
               icon: const Icon(Icons.edit_note_rounded),
             ),
@@ -409,50 +424,50 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                   onPressed: _editTarget,
                   icon: const Icon(Icons.flag_rounded),
                   label: Text(
-                    s.dailyTarget > 0 ? 'Норма ${s.dailyTarget} ккал' : 'Указать норму',
+                    s.dailyTarget > 0 ? l.healthTargetCalories(s.dailyTarget) : l.healthSetTarget,
                   ),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: _addMeal,
                   icon: const Icon(Icons.restaurant_rounded),
-                  label: const Text('Добавить еду'),
+                  label: Text(l.healthAddMealButton),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: _addBurn,
                   icon: const Icon(Icons.directions_run_rounded),
-                  label: const Text('Добавить расход'),
+                  label: Text(l.healthAddBurnButton),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: _editWater,
                   icon: const Icon(Icons.water_drop_rounded),
-                  label: Text('Вода ${s.waterLiters.toStringAsFixed(1)} л'),
+                  label: Text(l.healthWaterButton(s.waterLiters.toStringAsFixed(1))),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _stat(context, 'Съедено', '${s.consumed} ккал', Icons.fastfood_rounded),
+            _stat(context, l.healthConsumed, l.healthKcalValue(s.consumed), Icons.fastfood_rounded),
             const SizedBox(height: 8),
-            _stat(context, 'Потрачено', '${s.burned} ккал', Icons.local_fire_department_rounded),
+            _stat(context, l.healthBurned, l.healthKcalValue(s.burned), Icons.local_fire_department_rounded),
             const SizedBox(height: 8),
-            _stat(context, 'Баланс', '${s.net} ккал', Icons.balance_rounded),
+            _stat(context, l.healthBalance, l.healthKcalValue(s.net), Icons.balance_rounded),
             const SizedBox(height: 8),
             _stat(
               context,
-              'Отклонение от нормы',
-              '${s.deltaVsTarget >= 0 ? '+' : ''}${s.deltaVsTarget} ккал',
+              l.healthDeltaVsTarget,
+              l.healthKcalValueWithSign(s.deltaVsTarget >= 0 ? '+${s.deltaVsTarget}' : '${s.deltaVsTarget}'),
               Icons.compare_arrows_rounded,
             ),
             const SizedBox(height: 8),
-            _stat(context, 'Выпито воды', '${s.waterLiters.toStringAsFixed(1)} л', Icons.water_drop_rounded),
+            _stat(context, l.healthWaterDrunk, l.healthLitersValue(s.waterLiters.toStringAsFixed(1)), Icons.water_drop_rounded),
             const SizedBox(height: 14),
             Text(
-              'Приемы пищи за сегодня',
+              l.healthMealsTodayTitle,
               style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             if (s.meals.isEmpty)
               Text(
-                'Пока нет записей по еде.',
+                l.healthNoMeals,
                 style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
               ),
             for (final meal in s.meals) ...[
@@ -462,8 +477,8 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                   backgroundColor: cs.primary.withOpacity(0.10),
                   child: Icon(Icons.restaurant_menu_rounded, color: cs.primary),
                 ),
-                title: Text(_mealLabels[meal.mealType] ?? meal.mealType),
-                subtitle: Text('${meal.description}\n${meal.calories} ккал'),
+                title: Text(_mealLabel(context, meal.mealType)),
+                subtitle: Text('${meal.description}\n${l.healthKcalValue(meal.calories)}'),
                 isThreeLine: true,
                 trailing: IconButton(
                   onPressed: () async {
@@ -477,13 +492,13 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
             ],
             const SizedBox(height: 12),
             Text(
-              'Расход калорий',
+              l.healthBurnsTitle,
               style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             if (s.burns.isEmpty)
               Text(
-                'Пока нет записей о потраченных калориях.',
+                l.healthNoBurns,
                 style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
               ),
             for (final burn in s.burns) ...[
@@ -493,9 +508,9 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                   backgroundColor: cs.secondary.withOpacity(0.12),
                   child: Icon(Icons.local_fire_department_rounded, color: cs.secondary),
                 ),
-                title: Text('${burn.caloriesBurned} ккал'),
+                title: Text(l.healthKcalValue(burn.caloriesBurned)),
                 subtitle: Text(
-                  burn.note.trim().isEmpty ? 'Без комментария' : burn.note,
+                  burn.note.trim().isEmpty ? l.healthNoComment : burn.note,
                 ),
                 trailing: IconButton(
                   onPressed: () async {
