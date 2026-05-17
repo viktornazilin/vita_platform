@@ -1767,5 +1767,12 @@
   "registerLegalMiddle": " и ",
   "registerLegalPrivacy": "Политику конфиденциальности",
   "registerLegalSuffix": ".",
-  "addIncomeCategoryNameLabel": "Название категории"
+  "addIncomeCategoryNameLabel": "Название категории",
+  "launcherDayGoals": "Цели дня",
+  "launcherPlannedHoursDescription": "План: {hours} ч",
+  "@launcherPlannedHoursDescription": {
+  "placeholders": {
+    "hours": {}
+  }
+}
 }

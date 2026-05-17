@@ -3692,4 +3692,12 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get registerLegalOpenRequiredDocsText =>
       'Сначала открой и прочитай Условия использования и Политику конфиденциальности. Datenschutzerklärung и Impressum доступны как дополнительная правовая информация.';
+
+  @override
+  String get launcherDayGoals => 'Цели дня';
+
+  @override
+  String launcherPlannedHoursDescription(Object hours) {
+    return 'План: $hours ч';
+  }
 }

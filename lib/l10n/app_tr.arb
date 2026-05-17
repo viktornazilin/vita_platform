@@ -1768,5 +1768,12 @@
   "registerLegalMiddle": " ve ",
   "registerLegalPrivacy": "Gizlilik Politikası",
   "registerLegalSuffix": "nı kabul etmiş olursun.",
-  "addIncomeCategoryNameLabel": "Kategori adı"
+  "addIncomeCategoryNameLabel": "Kategori adı",
+  "launcherDayGoals": "Günün hedefleri",
+  "launcherPlannedHoursDescription": "Plan: {hours} sa",
+  "@launcherPlannedHoursDescription": {
+  "placeholders": {
+    "hours": {}
+  }
+}
 }

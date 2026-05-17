@@ -1768,5 +1768,12 @@
   "registerLegalMiddle": " y la ",
   "registerLegalPrivacy": "Política de privacidad",
   "registerLegalSuffix": ".",
-  "addIncomeCategoryNameLabel": "Nombre de la categoría"
+  "addIncomeCategoryNameLabel": "Nombre de la categoría",
+  "launcherDayGoals": "Objetivos del día",
+  "launcherPlannedHoursDescription": "Plan: {hours} h",
+  "@launcherPlannedHoursDescription": {
+  "placeholders": {
+    "hours": {}
+  }
+}
 }

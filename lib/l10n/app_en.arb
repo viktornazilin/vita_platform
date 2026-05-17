@@ -1761,5 +1761,12 @@
     }
   },
   "registerLegalAcceptedText": "I have read and accept the Terms of Use and Privacy Policy.",
-  "registerLegalOpenRequiredDocsText": "Open and read Terms of Use and Privacy Policy first. Datenschutzerklärung and Impressum are available as additional legal information."
+  "registerLegalOpenRequiredDocsText": "Open and read Terms of Use and Privacy Policy first. Datenschutzerklärung and Impressum are available as additional legal information.",
+  "launcherDayGoals": "Day goals",
+  "launcherPlannedHoursDescription": "Plan: {hours} h",
+  "@launcherPlannedHoursDescription": {
+  "placeholders": {
+    "hours": {}
+  }
+}
 }

@@ -6723,6 +6723,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open and read Terms of Use and Privacy Policy first. Datenschutzerklärung and Impressum are available as additional legal information.'**
   String get registerLegalOpenRequiredDocsText;
+
+  /// No description provided for @launcherDayGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Day goals'**
+  String get launcherDayGoals;
+
+  /// No description provided for @launcherPlannedHoursDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan: {hours} h'**
+  String launcherPlannedHoursDescription(Object hours);
 }
 
 class _AppLocalizationsDelegate

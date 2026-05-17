@@ -3723,4 +3723,12 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get registerLegalOpenRequiredDocsText =>
       'Öffne und lies zuerst Terms of Use und Privacy Policy. Datenschutzerklärung und Impressum sind als zusätzliche rechtliche Informationen verfügbar.';
+
+  @override
+  String get launcherDayGoals => 'Tagesziele';
+
+  @override
+  String launcherPlannedHoursDescription(Object hours) {
+    return 'Plan: $hours Std.';
+  }
 }

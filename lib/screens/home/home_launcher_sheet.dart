@@ -81,7 +81,7 @@ void showHomeLauncherSheet({
                   ),
                   LauncherTile(
                     icon: Icons.track_changes_rounded,
-                    label: 'Цели',
+                    label: AppLocalizations.of(ctx)!.launcherDayGoals,
                     onTap: () {
                       Navigator.pop(ctx);
                       model.select(2);
@@ -241,7 +241,7 @@ void showHomeLauncherSheet({
                                 );
                               }
 
-                              DateTime _combine(DateTime day, TimeOfDay t) =>
+                              DateTime combine(DateTime day, TimeOfDay t) =>
                                   DateTime(
                                     day.year,
                                     day.month,
@@ -251,7 +251,7 @@ void showHomeLauncherSheet({
                                   );
 
                               for (final g in result.goals) {
-                                final start = _combine(
+                                final start = combine(
                                   result.date,
                                   g.startTime ??
                                       const TimeOfDay(hour: 9, minute: 0),
@@ -265,8 +265,16 @@ void showHomeLauncherSheet({
                                   0,
                                 );
 
+                                final hoursText = g.hours.toStringAsFixed(
+                                  g.hours.truncateToDouble() == g.hours
+                                      ? 0
+                                      : 1,
+                                );
+
                                 final desc = g.hours > 0
-                                    ? 'План: ${g.hours.toStringAsFixed(g.hours.truncateToDouble() == g.hours ? 0 : 1)} ч'
+                                    ? l.launcherPlannedHoursDescription(
+                                        hoursText,
+                                      )
                                     : '';
 
                                 await dbRepo.createGoal(
@@ -470,8 +478,18 @@ void showHomeLauncherSheet({
                                 59,
                               );
 
+                              final hoursText =
+                                  plan.plannedHours.toStringAsFixed(
+                                plan.plannedHours.truncateToDouble() ==
+                                        plan.plannedHours
+                                    ? 0
+                                    : 1,
+                              );
+
                               final desc = plan.plannedHours > 0
-                                  ? 'План: ${plan.plannedHours.toStringAsFixed(plan.plannedHours.truncateToDouble() == plan.plannedHours ? 0 : 1)} ч'
+                                  ? l.launcherPlannedHoursDescription(
+                                      hoursText,
+                                    )
                                   : '';
 
                               await dbRepo.createGoal(
@@ -655,9 +673,9 @@ class _NestSectionTitle extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w900,
-          color: cs.onSurface,
-        ),
+              fontWeight: FontWeight.w900,
+              color: cs.onSurface,
+            ),
       ),
     );
   }

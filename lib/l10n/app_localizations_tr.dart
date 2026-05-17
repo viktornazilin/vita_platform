@@ -3693,4 +3693,12 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get registerLegalOpenRequiredDocsText =>
       'Önce Kullanım Şartlarını ve Gizlilik Politikasını açıp oku. Veri Koruma Beyanı ve Künye ek yasal bilgi olarak mevcuttur.';
+
+  @override
+  String get launcherDayGoals => 'Günün hedefleri';
+
+  @override
+  String launcherPlannedHoursDescription(Object hours) {
+    return 'Plan: $hours sa';
+  }
 }
