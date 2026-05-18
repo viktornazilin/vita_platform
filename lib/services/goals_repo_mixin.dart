@@ -1,8 +1,11 @@
 import 'core/base_repo.dart';
 import '../models/goal.dart';
 import '../models/xp.dart';
+import '../core/security/secure_crypto_service.dart';
 
 mixin GoalsRepoMixin on BaseRepo {
+  final SecureCryptoService _crypto = SecureCryptoService();
+
   // =========================
   // Goals CRUD
   // =========================
@@ -18,9 +21,13 @@ mixin GoalsRepoMixin on BaseRepo {
     }
 
     final res = await q.order('created_at', ascending: false);
-    return (res as List)
-        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
-        .toList();
+    final rows = (res as List).cast<Map<String, dynamic>>();
+
+    final decryptedRows = await Future.wait(
+      rows.map(_decryptGoalRow),
+    );
+
+    return decryptedRows.map(Goal.fromMap).toList();
   }
 
   Future<Goal> createGoal({
@@ -34,22 +41,38 @@ mixin GoalsRepoMixin on BaseRepo {
     required DateTime startTime,
     String? userGoalId,
   }) async {
+    final encryptedPayload = await _encryptGoalPayload(
+      title: title,
+      description: description,
+      emotion: emotion,
+    );
+
     final insert = <String, dynamic>{
       'user_id': uid,
-      'title': title,
-      'description': description,
+
+      // Legacy/plain columns intentionally cleared.
+      // title is NOT NULL in DB, therefore we store an empty string.
+      'title': '',
+      'description': '',
+      'emotion': '',
+
+      'encrypted_payload': encryptedPayload,
+
       'deadline': deadline.toIso8601String(),
       'is_completed': false,
       'life_block': lifeBlock,
       'importance': importance,
-      'emotion': emotion,
       'spent_hours': spentHours,
       'start_time': startTime.toIso8601String(),
       'user_goal_id': userGoalId,
     };
 
     final res = await client.from('goals').insert(insert).select().single();
-    return Goal.fromMap(res);
+    final decrypted = await _decryptGoalRow(
+      (res as Map).cast<String, dynamic>(),
+    );
+
+    return Goal.fromMap(decrypted);
   }
 
   Future<List<Goal>> createGoalsBulk(
@@ -57,41 +80,72 @@ mixin GoalsRepoMixin on BaseRepo {
   ) async {
     if (items.isEmpty) return [];
 
-    final payload = items
-        .map(
-          (item) => <String, dynamic>{
+    final payload = await Future.wait(
+      items.map(
+        (item) async {
+          final title = (item['title'] ?? '').toString();
+          final description = (item['description'] ?? '').toString();
+          final emotion = (item['emotion'] ?? '').toString();
+
+          final encryptedPayload = await _encryptGoalPayload(
+            title: title,
+            description: description,
+            emotion: emotion,
+          );
+
+          return <String, dynamic>{
             'user_id': uid,
-            'title': item['title'],
-            'description': item['description'] ?? '',
+
+            // Legacy/plain columns intentionally cleared.
+            'title': '',
+            'description': '',
+            'emotion': '',
+
+            'encrypted_payload': encryptedPayload,
+
             'deadline': _asIsoString(item['deadline']),
             'is_completed': item['is_completed'] ?? false,
             'life_block': item['life_block'] ?? 'general',
             'importance': item['importance'] ?? 1,
-            'emotion': item['emotion'] ?? '',
             'spent_hours': _asDouble(item['spent_hours'] ?? 1.0),
             'start_time': _asIsoString(item['start_time']),
             'user_goal_id': item['user_goal_id'],
-          },
-        )
-        .toList();
+          };
+        },
+      ),
+    );
 
     final res = await client.from('goals').insert(payload).select();
-    return (res as List)
-        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
-        .toList();
+    final rows = (res as List).cast<Map<String, dynamic>>();
+
+    final decryptedRows = await Future.wait(
+      rows.map(_decryptGoalRow),
+    );
+
+    return decryptedRows.map(Goal.fromMap).toList();
   }
 
   Future<void> updateGoal(Goal goal) async {
+    final encryptedPayload = await _encryptGoalPayload(
+      title: goal.title,
+      description: goal.description,
+      emotion: goal.emotion,
+    );
+
     await client
         .from('goals')
         .update({
-          'title': goal.title,
-          'description': goal.description,
+          // Legacy/plain columns intentionally cleared.
+          'title': '',
+          'description': '',
+          'emotion': '',
+
+          'encrypted_payload': encryptedPayload,
+
           'deadline': goal.deadline.toIso8601String(),
           'is_completed': goal.isCompleted,
           'life_block': goal.lifeBlock,
           'importance': goal.importance,
-          'emotion': goal.emotion,
           'spent_hours': goal.spentHours,
           'start_time': goal.startTime.toIso8601String(),
           'user_goal_id': _extractUserGoalId(goal),
@@ -115,13 +169,47 @@ mixin GoalsRepoMixin on BaseRepo {
   }) async {
     final update = <String, dynamic>{};
 
-    if (title != null) update['title'] = title;
-    if (description != null) update['description'] = description;
+    final shouldUpdateEncryptedPayload =
+        title != null || description != null || emotion != null;
+
+    if (shouldUpdateEncryptedPayload) {
+      final current = await client
+          .from('goals')
+          .select('title, description, emotion, encrypted_payload')
+          .eq('id', goalId)
+          .eq('user_id', uid)
+          .maybeSingle();
+
+      if (current != null) {
+        final currentRow = await _decryptGoalRow(
+          (current as Map).cast<String, dynamic>(),
+        );
+
+        final mergedTitle = title ?? (currentRow['title'] ?? '').toString();
+        final mergedDescription =
+            description ?? (currentRow['description'] ?? '').toString();
+        final mergedEmotion =
+            emotion ?? (currentRow['emotion'] ?? '').toString();
+
+        final encryptedPayload = await _encryptGoalPayload(
+          title: mergedTitle,
+          description: mergedDescription,
+          emotion: mergedEmotion,
+        );
+
+        update['encrypted_payload'] = encryptedPayload;
+
+        // Legacy/plain columns intentionally cleared.
+        update['title'] = '';
+        update['description'] = '';
+        update['emotion'] = '';
+      }
+    }
+
     if (deadline != null) update['deadline'] = deadline.toIso8601String();
     if (isCompleted != null) update['is_completed'] = isCompleted;
     if (lifeBlock != null) update['life_block'] = lifeBlock;
     if (importance != null) update['importance'] = importance;
-    if (emotion != null) update['emotion'] = emotion;
     if (spentHours != null) update['spent_hours'] = spentHours;
     if (startTime != null) update['start_time'] = startTime.toIso8601String();
 
@@ -181,10 +269,13 @@ mixin GoalsRepoMixin on BaseRepo {
     }
 
     final res = await q.order('start_time', ascending: true);
+    final rows = (res as List).cast<Map<String, dynamic>>();
 
-    return (res as List)
-        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
-        .toList();
+    final decryptedRows = await Future.wait(
+      rows.map(_decryptGoalRow),
+    );
+
+    return decryptedRows.map(Goal.fromMap).toList();
   }
 
   Future<List<Goal>> getGoalsLinkedToUserGoal(String userGoalId) async {
@@ -195,9 +286,13 @@ mixin GoalsRepoMixin on BaseRepo {
         .eq('user_goal_id', userGoalId)
         .order('start_time', ascending: true);
 
-    return (res as List)
-        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
-        .toList();
+    final rows = (res as List).cast<Map<String, dynamic>>();
+
+    final decryptedRows = await Future.wait(
+      rows.map(_decryptGoalRow),
+    );
+
+    return decryptedRows.map(Goal.fromMap).toList();
   }
 
   Future<void> unlinkGoalsFromUserGoal(String userGoalId) async {
@@ -245,17 +340,15 @@ mixin GoalsRepoMixin on BaseRepo {
     String? lifeBlock,
     String? userGoalId,
   }) async {
-    final q = query.trim();
+    final q = query.trim().toLowerCase();
     if (q.isEmpty) return [];
-
-    final pattern = '%$q%';
 
     var req = client
         .from('goals')
-        .select('title, created_at, deadline, life_block, user_goal_id')
-        .eq('user_id', uid)
-        .ilike('title', pattern)
-        .neq('title', '');
+        .select(
+          'title, description, emotion, encrypted_payload, created_at, deadline, life_block, user_goal_id',
+        )
+        .eq('user_id', uid);
 
     if (lifeBlock != null) {
       req = req.eq('life_block', lifeBlock);
@@ -264,17 +357,25 @@ mixin GoalsRepoMixin on BaseRepo {
       req = req.eq('user_goal_id', userGoalId);
     }
 
-    final rows = await req.order('created_at', ascending: false).limit(200);
+    // Server-side ILIKE is no longer possible for encrypted titles.
+    // We fetch recent rows and filter locally after decryption.
+    final rows = await req.order('created_at', ascending: false).limit(300);
+    final rawRows = (rows as List).cast<Map<String, dynamic>>();
+
+    final decryptedRows = await Future.wait(
+      rawRows.map(_decryptGoalRow),
+    );
 
     final seen = <String>{};
     final out = <String>[];
 
-    for (final r in (rows as List)) {
+    for (final r in decryptedRows) {
       final title = (r['title'] as String?)?.trim() ?? '';
       if (title.isEmpty) continue;
 
       final norm = title.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
       if (norm.isEmpty || seen.contains(norm)) continue;
+      if (!norm.contains(q)) continue;
 
       seen.add(norm);
       out.add(title);
@@ -293,7 +394,9 @@ mixin GoalsRepoMixin on BaseRepo {
   }) async {
     var q = client
         .from('goals')
-        .select('title, deadline, life_block, user_goal_id')
+        .select(
+          'title, description, emotion, encrypted_payload, deadline, life_block, user_goal_id',
+        )
         .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
@@ -306,10 +409,11 @@ mixin GoalsRepoMixin on BaseRepo {
     }
 
     final res = await q;
+    final rows = (res as List).cast<Map<String, dynamic>>();
 
-    return (res as List)
-        .map((e) => (e as Map).cast<String, dynamic>())
-        .toList();
+    return Future.wait(
+      rows.map(_decryptGoalRow),
+    );
   }
 
   Future<List<String>> suggestRecurringGoalTitles({
@@ -324,7 +428,9 @@ mixin GoalsRepoMixin on BaseRepo {
 
     var q = client
         .from('goals')
-        .select('title, deadline, life_block, user_goal_id')
+        .select(
+          'title, description, emotion, encrypted_payload, deadline, life_block, user_goal_id',
+        )
         .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
@@ -337,14 +443,16 @@ mixin GoalsRepoMixin on BaseRepo {
     }
 
     final res = await q;
-    final items = (res as List).cast<dynamic>();
+    final rows = (res as List).cast<Map<String, dynamic>>();
+
+    final decryptedRows = await Future.wait(
+      rows.map(_decryptGoalRow),
+    );
 
     final Map<String, Set<String>> daysByTitle = {};
     final Map<String, int> totalByTitle = {};
 
-    for (final raw in items) {
-      final m = (raw as Map).cast<String, dynamic>();
-
+    for (final m in decryptedRows) {
       final title = (m['title'] ?? '').toString().trim();
       if (title.isEmpty) continue;
 
@@ -447,10 +555,13 @@ mixin GoalsRepoMixin on BaseRepo {
     }
 
     final res = await q.order('start_time', ascending: true);
+    final rows = (res as List).cast<Map<String, dynamic>>();
 
-    return (res as List)
-        .map((m) => Goal.fromMap(m as Map<String, dynamic>))
-        .toList();
+    final decryptedRows = await Future.wait(
+      rows.map(_decryptGoalRow),
+    );
+
+    return decryptedRows.map(Goal.fromMap).toList();
   }
 
   Future<double> getTotalHoursSpentOnDate(
@@ -481,6 +592,65 @@ mixin GoalsRepoMixin on BaseRepo {
       0,
       (sum, item) => sum + ((item['spent_hours'] ?? 0) as num).toDouble(),
     );
+  }
+
+  // =========================
+  // Encryption helpers
+  // =========================
+
+  Future<Map<String, dynamic>> _encryptGoalPayload({
+    required String title,
+    required String description,
+    required String emotion,
+  }) async {
+    final payload = <String, dynamic>{
+      'title': title.trim(),
+      'description': description.trim(),
+      'emotion': emotion.trim(),
+    };
+
+    return _crypto.encryptJson(payload);
+  }
+
+  Future<Map<String, dynamic>> _decryptGoalRow(Map<String, dynamic> row) async {
+    final copy = Map<String, dynamic>.from(row);
+    final encryptedPayload = copy['encrypted_payload'];
+
+    if (encryptedPayload == null) {
+      // Legacy fallback: old rows before encryption.
+      copy['title'] = (copy['title'] ?? '').toString();
+      copy['description'] = (copy['description'] ?? '').toString();
+      copy['emotion'] = (copy['emotion'] ?? '').toString();
+      return copy;
+    }
+
+    try {
+      if (encryptedPayload is! Map) {
+        copy['title'] = (copy['title'] ?? '').toString();
+        copy['description'] = (copy['description'] ?? '').toString();
+        copy['emotion'] = (copy['emotion'] ?? '').toString();
+        return copy;
+      }
+
+      final payload = await _crypto.decryptJson(
+        encryptedPayload.cast<String, dynamic>(),
+      );
+
+      copy['title'] = (payload['title'] ?? copy['title'] ?? '').toString();
+      copy['description'] =
+          (payload['description'] ?? copy['description'] ?? '').toString();
+      copy['emotion'] =
+          (payload['emotion'] ?? copy['emotion'] ?? '').toString();
+
+      return copy;
+    } catch (_) {
+      // If decryption fails, do not crash the whole screen.
+      // Keep legacy/plain values if they exist.
+      copy['title'] = (copy['title'] ?? '').toString();
+      copy['description'] = (copy['description'] ?? '').toString();
+      copy['emotion'] = (copy['emotion'] ?? '').toString();
+      return copy;
+    }
   }
 
   // =========================
