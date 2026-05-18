@@ -44,7 +44,7 @@ class _VitaAppState extends State<VitaApp> {
     if (mounted) setState(() => _isReady = true);
   }
 
-  ThemeData _patchNestTheme(ThemeData base, {required bool isDark}) {
+  ThemeData _patchLadnaTheme(ThemeData base, {required bool isDark}) {
     const seed = Color(0xFF2F80FF);
 
     final cs0 = base.colorScheme;
@@ -131,8 +131,8 @@ class _VitaAppState extends State<VitaApp> {
     final themeCtl = context.watch<ThemeController>();
     final localeCtl = context.watch<LocaleController>();
 
-    final ThemeData light = _patchNestTheme(themeCtl.lightTheme, isDark: false);
-    final ThemeData dark = _patchNestTheme(themeCtl.darkTheme, isDark: true);
+    final ThemeData light = _patchLadnaTheme(themeCtl.lightTheme, isDark: false);
+    final ThemeData dark = _patchLadnaTheme(themeCtl.darkTheme, isDark: true);
 
     final bool isLoggedIn = _isReady && _userService.currentUser != null;
     final bool hasCompleted =
@@ -140,7 +140,7 @@ class _VitaAppState extends State<VitaApp> {
     final bool hasSeenIntro = _isReady && _userService.hasSeenEpicIntro;
 
     return MaterialApp(
-      title: 'Nest App',
+      title: 'Ladna',
       debugShowCheckedModeBanner: false,
       locale: localeCtl.locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
