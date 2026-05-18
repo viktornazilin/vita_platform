@@ -997,7 +997,7 @@ abstract class AppLocalizations {
   /// No description provided for @launcherGoals.
   ///
   /// In en, this message translates to:
-  /// **'Goals'**
+  /// **'Day goals'**
   String get launcherGoals;
 
   /// No description provided for @launcherMood.
@@ -6727,7 +6727,7 @@ abstract class AppLocalizations {
   /// No description provided for @launcherDayGoals.
   ///
   /// In en, this message translates to:
-  /// **'Day goals'**
+  /// **'Goals'**
   String get launcherDayGoals;
 
   /// No description provided for @launcherPlannedHoursDescription.

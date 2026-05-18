@@ -506,7 +506,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get launcherHome => 'Maison';
 
   @override
-  String get launcherGoals => 'Objectifs';
+  String get launcherGoals => 'Tâches';
 
   @override
   String get launcherMood => 'Humeur';
@@ -3735,7 +3735,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ouvre et lis d’abord les conditions d’utilisation et la politique de confidentialité. La déclaration de protection des données et les mentions légales sont disponibles comme informations juridiques supplémentaires.';
 
   @override
-  String get launcherDayGoals => 'Objectifs du jour';
+  String get launcherDayGoals => 'Objectifs';
 
   @override
   String launcherPlannedHoursDescription(Object hours) {

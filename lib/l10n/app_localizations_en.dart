@@ -500,7 +500,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get launcherHome => 'Home';
 
   @override
-  String get launcherGoals => 'Goals';
+  String get launcherGoals => 'Day goals';
 
   @override
   String get launcherMood => 'Mood';
@@ -3687,7 +3687,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open and read Terms of Use and Privacy Policy first. Datenschutzerklärung and Impressum are available as additional legal information.';
 
   @override
-  String get launcherDayGoals => 'Day goals';
+  String get launcherDayGoals => 'Goals';
 
   @override
   String launcherPlannedHoursDescription(Object hours) {

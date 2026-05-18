@@ -505,7 +505,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get launcherHome => 'Startseite';
 
   @override
-  String get launcherGoals => 'Ziele';
+  String get launcherGoals => 'Tagesziele';
 
   @override
   String get launcherMood => 'Stimmung';
@@ -586,7 +586,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeTitleHome => 'Startseite';
 
   @override
-  String get homeTitleGoals => 'Ziele';
+  String get homeTitleGoals => 'Tagesziele';
 
   @override
   String get homeTitleMood => 'Stimmung';
@@ -3725,7 +3725,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Öffne und lies zuerst Terms of Use und Privacy Policy. Datenschutzerklärung und Impressum sind als zusätzliche rechtliche Informationen verfügbar.';
 
   @override
-  String get launcherDayGoals => 'Tagesziele';
+  String get launcherDayGoals => 'Ziele';
 
   @override
   String launcherPlannedHoursDescription(Object hours) {

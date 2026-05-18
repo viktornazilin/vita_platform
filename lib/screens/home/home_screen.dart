@@ -280,7 +280,7 @@ class _HomeViewState extends State<_HomeView> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Nest App',
+                    'Ladna',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: tt.bodySmall?.copyWith(

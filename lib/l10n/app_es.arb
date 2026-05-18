@@ -686,7 +686,7 @@
   "launcherSectionsTitle": "Secciones",
   "launcherQuickTitle": "Rápido",
   "launcherHome": "Inicio",
-  "launcherGoals": "Objetivos",
+  "launcherGoals": "Tareas",
   "launcherMood": "Ánimo",
   "launcherProfile": "Perfil",
   "launcherInsights": "Insights",
@@ -1769,7 +1769,7 @@
   "registerLegalPrivacy": "Política de privacidad",
   "registerLegalSuffix": ".",
   "addIncomeCategoryNameLabel": "Nombre de la categoría",
-  "launcherDayGoals": "Objetivos del día",
+  "launcherDayGoals": "Objetivos",
   "launcherPlannedHoursDescription": "Plan: {hours} h",
   "@launcherPlannedHoursDescription": {
   "placeholders": {

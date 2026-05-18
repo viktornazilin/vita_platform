@@ -505,7 +505,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get launcherGoals => 'Задачи';
 
   @override
-  String get launcherMood => 'Цели';
+  String get launcherMood => 'Задачи';
 
   @override
   String get launcherProfile => 'Профиль';
@@ -3694,7 +3694,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сначала открой и прочитай Условия использования и Политику конфиденциальности. Datenschutzerklärung и Impressum доступны как дополнительная правовая информация.';
 
   @override
-  String get launcherDayGoals => 'Цели дня';
+  String get launcherDayGoals => 'Цели';
 
   @override
   String launcherPlannedHoursDescription(Object hours) {

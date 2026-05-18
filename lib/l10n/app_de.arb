@@ -189,7 +189,7 @@
   "homeWeekLoadFailedTitle": "Statistiken konnten nicht geladen werden",
   "homeWeekLoadFailedSubtitle": "Prüfe deine Internetverbindung oder versuche es später erneut.",
   "homeTitleHome": "Startseite",
-  "homeTitleGoals": "Ziele",
+  "homeTitleGoals": "Tagesziele",
   "homeTitleMood": "Stimmung",
   "homeTitleProfile": "Profil",
   "homeTitleReports": "Berichte",
@@ -686,7 +686,7 @@
   "launcherSectionsTitle": "Bereiche",
   "launcherQuickTitle": "Schnell",
   "launcherHome": "Startseite",
-  "launcherGoals": "Ziele",
+  "launcherGoals": "Tagesziele",
   "launcherMood": "Stimmung",
   "launcherProfile": "Profil",
   "launcherInsights": "Insights",
@@ -1769,7 +1769,7 @@
   "registerLegalPrivacy": "Datenschutzerklärung",
   "registerLegalSuffix": ".",
   "addIncomeCategoryNameLabel": "Kategoriename",
-  "launcherDayGoals": "Tagesziele",
+  "launcherDayGoals": "Ziele",
   "launcherPlannedHoursDescription": "Plan: {hours} Std.",
   "@launcherPlannedHoursDescription": {
   "placeholders": {

@@ -686,7 +686,7 @@
   "launcherQuickTitle": "Быстро",
   "launcherHome": "Главная",
   "launcherGoals": "Задачи",
-  "launcherMood": "Цели",
+  "launcherMood": "Задачи",
   "launcherProfile": "Профиль",
   "launcherInsights": "Отчеты",
   "launcherReports": "Бюджет",
@@ -1768,7 +1768,7 @@
   "registerLegalPrivacy": "Политику конфиденциальности",
   "registerLegalSuffix": ".",
   "addIncomeCategoryNameLabel": "Название категории",
-  "launcherDayGoals": "Цели дня",
+  "launcherDayGoals": "Цели",
   "launcherPlannedHoursDescription": "План: {hours} ч",
   "@launcherPlannedHoursDescription": {
   "placeholders": {

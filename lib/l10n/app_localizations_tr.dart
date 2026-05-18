@@ -502,7 +502,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get launcherHome => 'Ev';
 
   @override
-  String get launcherGoals => 'Hedefler';
+  String get launcherGoals => 'Görevler';
 
   @override
   String get launcherMood => 'Ruh hali';
@@ -3695,7 +3695,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Önce Kullanım Şartlarını ve Gizlilik Politikasını açıp oku. Veri Koruma Beyanı ve Künye ek yasal bilgi olarak mevcuttur.';
 
   @override
-  String get launcherDayGoals => 'Günün hedefleri';
+  String get launcherDayGoals => 'Hedefler';
 
   @override
   String launcherPlannedHoursDescription(Object hours) {

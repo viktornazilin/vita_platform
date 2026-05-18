@@ -11,7 +11,6 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../models/login_model.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
-import '../widgets/nest/nest_pill.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -253,15 +252,8 @@ class _LoginViewState extends State<_LoginView> {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Center(
-                                    child: NestPill(
-                                      leading: const Icon(Icons.wb_sunny_outlined),
-                                      text: 'Nest',
-                                    ),
-                                  ),
-                                  const SizedBox(height: 18),
                                   const _LogoPlate(),
-                                  const SizedBox(height: 18),
+                                  const SizedBox(height: 20),
                                   Center(
                                     child: Text(
                                       l.loginTitle,
@@ -418,19 +410,10 @@ class _LogoPlate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-      decoration: BoxDecoration(
-        color: isDark ? scheme.surfaceContainer : scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
+    return Center(
       child: Image.asset(
         'assets/images/logo.png',
-        height: 172,
+        height: 118,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
       ),

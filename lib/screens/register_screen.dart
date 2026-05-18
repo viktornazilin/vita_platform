@@ -13,7 +13,6 @@ import '../models/register_model.dart';
 import '../services/user_service.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
-import '../widgets/nest/nest_pill.dart';
 
 
 enum _LegalDoc { terms, privacy, datenschutz, impressum }
@@ -353,17 +352,8 @@ class _RegisterViewState extends State<_RegisterView> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Center(
-                                    child: NestPill(
-                                      leading: const Icon(
-                                        Icons.auto_awesome_outlined,
-                                      ),
-                                      text: 'Nest',
-                                    ),
-                                  ),
-                                  const SizedBox(height: 18),
                                   const _LogoPlate(),
-                                  const SizedBox(height: 18),
+                                  const SizedBox(height: 20),
                                   Text(
                                     l.registerTitle,
                                     textAlign: TextAlign.center,
@@ -701,19 +691,10 @@ class _LogoPlate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-      decoration: BoxDecoration(
-        color: isDark ? scheme.surfaceContainer : scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
+    return Center(
       child: Image.asset(
         'assets/images/logo.png',
-        height: 160,
+        height: 112,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
       ),

@@ -686,7 +686,7 @@
   "launcherSectionsTitle": "Bölümler",
   "launcherQuickTitle": "Hızlı",
   "launcherHome": "Ev",
-  "launcherGoals": "Hedefler",
+  "launcherGoals": "Görevler",
   "launcherMood": "Ruh hali",
   "launcherProfile": "Profil",
   "launcherInsights": "İçgörüler",
@@ -1769,7 +1769,7 @@
   "registerLegalPrivacy": "Gizlilik Politikası",
   "registerLegalSuffix": "nı kabul etmiş olursun.",
   "addIncomeCategoryNameLabel": "Kategori adı",
-  "launcherDayGoals": "Günün hedefleri",
+  "launcherDayGoals": "Hedefler",
   "launcherPlannedHoursDescription": "Plan: {hours} sa",
   "@launcherPlannedHoursDescription": {
   "placeholders": {
