@@ -1747,6 +1747,9 @@
   "registerLegalTermsTitle": "Terms of Use",
   "registerLegalPrivacyTitle": "Privacy Policy",
   "registerLegalDatenschutzTitle": "Datenschutzerklärung",
+  "registerLegalPrivacyPrefix": "Ich stimme der Verarbeitung meiner personenbezogenen Daten gemäß der",
+  "registerLegalTermsPrefix": "Ich stimme den",
+  "registerLegalOptionalLinksPrefix": "Ebenfalls verfügbar:",
   "registerLegalImpressumTitle": "Impressum",
   "registerLegalOptionalTitle": "{title} · optional",
   "@registerLegalOptionalTitle": {

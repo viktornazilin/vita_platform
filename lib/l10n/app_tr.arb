@@ -1747,6 +1747,9 @@
   "registerLegalTermsTitle": "Kullanım Şartları",
   "registerLegalPrivacyTitle": "Gizlilik Politikası",
   "registerLegalDatenschutzTitle": "Veri Koruma Beyanı",
+  "registerLegalPrivacyPrefix": "Kişisel verilerimin işlenmesini kabul ediyorum:",
+  "registerLegalTermsPrefix": "Şunları kabul ediyorum:",
+  "registerLegalOptionalLinksPrefix": "Ayrıca mevcut:",
   "registerLegalImpressumTitle": "Künye",
   "registerLegalOptionalTitle": "{title} · isteğe bağlı",
   "@registerLegalOptionalTitle": {

@@ -3664,6 +3664,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get registerLegalTermsTitle => 'Kullanım Şartları';
 
   @override
+  String get registerLegalPrivacyPrefix =>
+      'Kişisel verilerimin işlenmesini kabul ediyorum:';
+
+  @override
+  String get registerLegalTermsPrefix => 'Şunları kabul ediyorum:';
+
+  @override
+  String get registerLegalOptionalLinksPrefix => 'Ayrıca mevcut:';
+
+  @override
   String get registerLegalPrivacyTitle => 'Gizlilik Politikası';
 
   @override

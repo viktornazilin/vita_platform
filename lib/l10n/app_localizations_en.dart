@@ -3656,6 +3656,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerLegalTermsTitle => 'Terms of Use';
 
   @override
+  String get registerLegalPrivacyPrefix =>
+      'I agree to the processing of my personal data under the';
+
+  @override
+  String get registerLegalTermsPrefix => 'I agree to the';
+
+  @override
+  String get registerLegalOptionalLinksPrefix => 'Also available:';
+
+  @override
   String get registerLegalPrivacyTitle => 'Privacy Policy';
 
   @override

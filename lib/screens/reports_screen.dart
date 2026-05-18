@@ -196,25 +196,24 @@ class _ReportsBodyState extends State<_ReportsBody> {
     DateTime start,
     DateTime endExclusive,
   ) async {
-    final client = Supabase.instance.client;
+    // moods.date is the real DB column. Also use dbRepo here so encrypted
+    // mood payloads are decrypted by MoodsRepoMixin before reports use them.
+    final endInclusive = _dateOnly(endExclusive).subtract(const Duration(days: 1));
+    if (endInclusive.isBefore(_dateOnly(start))) return <DateTime, String>{};
 
-    final res = await client
-        .from('moods')
-        .select('day, emoji')
-        .eq('user_id', dbRepo.uid)
-        .gte('day', _dateOnlyStr(start))
-        .lt('day', _dateOnlyStr(endExclusive));
+    final moods = await dbRepo.fetchMoodsRange(
+      from: _dateOnly(start),
+      to: endInclusive,
+    );
 
     final out = <DateTime, String>{};
-    for (final r in (res as List)) {
-      final m = Map<String, dynamic>.from(r as Map);
-      final dayStr = (m['day'] ?? '').toString();
-      final emoji = (m['emoji'] ?? '').toString();
-      if (dayStr.isEmpty || emoji.isEmpty) continue;
-      final d = DateTime.tryParse(dayStr);
-      if (d == null) continue;
-      out[_dateOnly(d)] = emoji;
+    for (final mood in moods) {
+      final day = _dateOnly(mood.date);
+      final emoji = mood.emoji.trim();
+      if (emoji.isEmpty) continue;
+      out[day] = emoji;
     }
+
     return out;
   }
 

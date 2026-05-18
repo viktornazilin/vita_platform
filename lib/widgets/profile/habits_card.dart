@@ -1,4 +1,5 @@
-// lib/screens/profile/habits_card.dart
+// lib/widgets/profile/habits_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,124 +16,17 @@ import '../../widgets/nest/nest_sheet.dart';
 class HabitsCard extends StatelessWidget {
   const HabitsCard({super.key});
 
-  Future<(String title, bool neg)?> _openHabitEditor(
+  Future<(String, bool)?> _openHabitEditor(
     BuildContext context, {
     Habit? existing,
-  }) async {
-    final l = AppLocalizations.of(context)!;
-
-    final titleCtrl = TextEditingController(text: existing?.title ?? '');
-    bool isNeg = existing?.isNegative ?? false;
-
-    final res = await showModalBottomSheet<(String, bool)>(
+  }) {
+    return showModalBottomSheet<(String, bool)>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => NestSheet(
-        child: StatefulBuilder(
-          builder: (ctx, setSt) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 14,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SheetHeader(
-                    title: existing == null
-                        ? l.habitsEditorNewTitle
-                        : l.habitsEditorEditTitle,
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    controller: titleCtrl,
-                    maxLength: 60,
-                    decoration: InputDecoration(
-                      labelText: l.habitsEditorTitleLabel,
-                      hintText: l.habitsEditorTitleHint,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  NestCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isNeg
-                              ? Icons.warning_amber_rounded
-                              : Icons.check_circle_outline_rounded,
-                          color: const Color(0xFF2E4B5A),
-                          size: 18,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            l.habitsNegativeLabel,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF2E4B5A),
-                            ),
-                          ),
-                        ),
-                        Switch(
-                          value: isNeg,
-                          onChanged: (v) => setSt(() => isNeg = v),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    isNeg ? l.habitsNegativeHint : l.habitsPositiveHint,
-                    style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF2E4B5A).withOpacity(0.65),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text(l.commonCancel),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () {
-                            final t = titleCtrl.text.trim();
-                            if (t.isEmpty) return;
-                            Navigator.pop(ctx, (t, isNeg));
-                          },
-                          child: Text(l.commonSave),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+      builder: (_) => _HabitEditorSheet(existing: existing),
     );
-
-    titleCtrl.dispose();
-    return res;
   }
 
   Future<bool> _confirmDelete(BuildContext context, Habit h) async {
@@ -154,9 +48,9 @@ class HabitsCard extends StatelessWidget {
               Text(
                 l.habitsDeleteConfirmBody(h.title),
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF2E4B5A).withOpacity(0.8),
-                  fontWeight: FontWeight.w700,
-                ),
+                      color: const Color(0xFF2E4B5A).withOpacity(0.8),
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
               const SizedBox(height: 14),
               Row(
@@ -190,18 +84,30 @@ class HabitsCard extends StatelessWidget {
   }
 
   Future<void> _saveHabit(BuildContext context, {Habit? existing}) async {
-    final res = await _openHabitEditor(context, existing: existing);
-    if (res == null) return;
+    final result = await _openHabitEditor(context, existing: existing);
+    if (result == null) return;
+    if (!context.mounted) return;
 
     final habits = context.read<HabitsModel>();
+
+    final title = result.$1;
+    final isNegative = result.$2;
+
     String? err;
+
     if (existing == null) {
-      err = await habits.create(title: res.$1, isNegative: res.$2);
+      err = await habits.create(title: title, isNegative: isNegative);
     } else {
-      err = await habits.update(existing.id, title: res.$1, isNegative: res.$2);
+      err = await habits.update(
+        existing.id,
+        title: title,
+        isNegative: isNegative,
+      );
     }
 
-    if (err != null && context.mounted) ProfileUi.snack(context, err);
+    if (err != null && context.mounted) {
+      ProfileUi.snack(context, err);
+    }
   }
 
   @override
@@ -220,9 +126,9 @@ class HabitsCard extends StatelessWidget {
                 child: Text(
                   l.habitsTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF2E4B5A),
-                  ),
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF2E4B5A),
+                      ),
                 ),
               ),
               IconButton(
@@ -233,7 +139,6 @@ class HabitsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-
           if (habits.loading)
             const Padding(
               padding: EdgeInsets.all(12),
@@ -243,36 +148,185 @@ class HabitsCard extends StatelessWidget {
             Text(
               l.habitsEmptyHint,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF2E4B5A).withOpacity(0.7),
-                fontWeight: FontWeight.w700,
-              ),
+                    color: const Color(0xFF2E4B5A).withOpacity(0.7),
+                    fontWeight: FontWeight.w700,
+                  ),
             )
           else
             ...habits.items.map(
               (h) => _HabitRow(
+                key: ValueKey(h.id),
                 habit: h,
                 onTap: () => _saveHabit(context, existing: h),
                 onEdit: () => _saveHabit(context, existing: h),
                 onDelete: () async {
                   final ok = await _confirmDelete(context, h);
                   if (!ok) return;
+                  if (!context.mounted) return;
+
                   final err = await context.read<HabitsModel>().delete(h.id);
+
                   if (err != null && context.mounted) {
                     ProfileUi.snack(context, err);
                   }
                 },
               ),
             ),
-
           const SizedBox(height: 10),
           Text(
             l.habitsFooterHint,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF2E4B5A).withOpacity(0.55),
-              fontWeight: FontWeight.w700,
-            ),
+                  color: const Color(0xFF2E4B5A).withOpacity(0.55),
+                  fontWeight: FontWeight.w700,
+                ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HabitEditorSheet extends StatefulWidget {
+  final Habit? existing;
+
+  const _HabitEditorSheet({
+    required this.existing,
+  });
+
+  @override
+  State<_HabitEditorSheet> createState() => _HabitEditorSheetState();
+}
+
+class _HabitEditorSheetState extends State<_HabitEditorSheet> {
+  late final TextEditingController _titleCtrl;
+  late bool _isNegative;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _titleCtrl = TextEditingController(
+      text: widget.existing?.title ?? '',
+    );
+
+    _isNegative = widget.existing?.isNegative ?? false;
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final title = _titleCtrl.text.trim();
+
+    if (title.isEmpty) return;
+
+    Navigator.pop(context, (title, _isNegative));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final isEdit = widget.existing != null;
+
+    return NestSheet(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 14,
+          bottom: bottom + 16,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SheetHeader(
+                title: isEdit
+                    ? l.habitsEditorEditTitle
+                    : l.habitsEditorNewTitle,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _titleCtrl,
+                maxLength: 60,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _submit(),
+                decoration: InputDecoration(
+                  labelText: l.habitsEditorTitleLabel,
+                  hintText: l.habitsEditorTitleHint,
+                ),
+              ),
+              const SizedBox(height: 10),
+              NestCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _isNegative
+                          ? Icons.warning_amber_rounded
+                          : Icons.check_circle_outline_rounded,
+                      color: const Color(0xFF2E4B5A),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l.habitsNegativeLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF2E4B5A),
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: _isNegative,
+                      onChanged: (value) {
+                        setState(() {
+                          _isNegative = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _isNegative ? l.habitsNegativeHint : l.habitsPositiveHint,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(l.commonCancel),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _submit,
+                      child: Text(l.commonSave),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -285,6 +339,7 @@ class _HabitRow extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _HabitRow({
+    super.key,
     required this.habit,
     required this.onTap,
     required this.onEdit,
@@ -294,7 +349,7 @@ class _HabitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final isNeg = habit.isNegative;
+    final isNegative = habit.isNegative;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -311,7 +366,7 @@ class _HabitRow extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                isNeg
+                isNegative
                     ? Icons.warning_amber_rounded
                     : Icons.check_circle_outline_rounded,
                 size: 18,
@@ -325,23 +380,24 @@ class _HabitRow extends StatelessWidget {
                     Text(
                       habit.title,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF2E4B5A),
-                      ),
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF2E4B5A),
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isNeg ? l.habitsNegativeShort : l.habitsPositiveShort,
+                      isNegative
+                          ? l.habitsNegativeShort
+                          : l.habitsPositiveShort,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2E4B5A).withOpacity(0.65),
-                      ),
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                          ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 10),
-
               IconButton(
                 tooltip: l.commonEdit,
                 onPressed: onEdit,
@@ -365,7 +421,10 @@ class _HabitRow extends StatelessWidget {
 
 class _SheetHeader extends StatelessWidget {
   final String title;
-  const _SheetHeader({required this.title});
+
+  const _SheetHeader({
+    required this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -387,9 +446,9 @@ class _SheetHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
-            ),
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF2E4B5A),
+                ),
           ),
         ),
       ],

@@ -12,6 +12,7 @@ import '../../models/habit.dart';
 import '../../models/mental_question.dart';
 import '../../models/week_insights.dart';
 import '../mood_screen.dart';
+
 // ✅ new widgets (week cards)
 import '../../widgets/mood/mood_week_card.dart';
 import '../../widgets/mood/habits_week_card.dart';
@@ -62,7 +63,6 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   final TextEditingController _noteCtrl = TextEditingController();
   bool _savingMood = false;
 
-  // ✅ week insights future for new widgets
   Future<WeekInsights>? _weekFuture;
 
   @override
@@ -72,10 +72,12 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   void initState() {
     super.initState();
 
-    // Safe init (providers are already above in the tree, but this is the most stable way)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      setState(() => _weekFuture = _loadWeekInsights());
+
+      setState(() {
+        _weekFuture = _loadWeekInsights();
+      });
     });
   }
 
@@ -92,14 +94,21 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     ]);
 
     if (!mounted) return;
-    setState(() => _weekFuture = _loadWeekInsights());
+
+    setState(() {
+      _weekFuture = _loadWeekInsights();
+    });
   }
 
   Mood? _todayMood(List<Mood> moods) {
     final today = DateUtils.dateOnly(DateTime.now());
+
     for (final m in moods) {
-      if (DateUtils.isSameDay(DateUtils.dateOnly(m.date), today)) return m;
+      if (DateUtils.isSameDay(DateUtils.dateOnly(m.date), today)) {
+        return m;
+      }
     }
+
     return null;
   }
 
@@ -109,31 +118,44 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     final end = loc.formatShortMonthDay(
       r.range.end.subtract(const Duration(days: 1)),
     );
+
     return '$start – $end';
   }
 
   Future<void> _saveTodayMood(BuildContext context) async {
     if (_savingMood) return;
-    setState(() => _savingMood = true);
+
+    setState(() {
+      _savingMood = true;
+    });
 
     final today = DateUtils.dateOnly(DateTime.now());
     final note = _noteCtrl.text.trim();
 
     try {
-      await dbRepo.upsertMood(date: today, emoji: _selectedEmoji, note: note);
+      await dbRepo.upsertMood(
+        date: today,
+        emoji: _selectedEmoji,
+        note: note,
+      );
+
+      if (!mounted) return;
+
       await context.read<MoodModel>().load();
 
       if (!mounted) return;
 
       _noteCtrl.clear();
+
       setState(() {
         _editingMood = false;
         _selectedEmoji = '😊';
         _savingMood = false;
-        _weekFuture = _loadWeekInsights(); // ✅ refresh week insights after save
+        _weekFuture = _loadWeekInsights();
       });
 
       final l = AppLocalizations.of(context)!;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l.homeMoodSaved),
@@ -142,9 +164,13 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _savingMood = false);
+
+      setState(() {
+        _savingMood = false;
+      });
 
       final l = AppLocalizations.of(context)!;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l.homeMoodSaveFailed(e.toString())),
@@ -160,19 +186,29 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
 
   MapEntry<String, double>? _topCategory(Map<String, double> byCategory) {
     if (byCategory.isEmpty) return null;
+
     MapEntry<String, double>? best;
+
     for (final e in byCategory.entries) {
-      if (best == null || e.value > best!.value) best = e;
+      if (best == null || e.value > best!.value) {
+        best = e;
+      }
     }
+
     return best;
   }
 
   MapEntry<DateTime, double>? _peakDay(Map<DateTime, double> byDay) {
     if (byDay.isEmpty) return null;
+
     MapEntry<DateTime, double>? best;
+
     for (final e in byDay.entries) {
-      if (best == null || e.value > best!.value) best = e;
+      if (best == null || e.value > best!.value) {
+        best = e;
+      }
     }
+
     return best;
   }
 
@@ -206,14 +242,15 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   }
 
   // ---------------------------------------------------------------------------
-  // ✅ Week insights logic (for new widgets)
+  // Week insights logic
   // ---------------------------------------------------------------------------
 
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   List<DateTime> _calendarWeekDays({DateTime? anchor}) {
     final a = _dateOnly(anchor ?? DateTime.now());
-    final start = a.subtract(Duration(days: a.weekday - DateTime.monday)); // Пн
+    final start = a.subtract(Duration(days: a.weekday - DateTime.monday));
+
     return List.generate(7, (i) => start.add(Duration(days: i)));
   }
 
@@ -249,6 +286,24 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     }
   }
 
+  bool _isYesNoQuestion(MentalQuestion q) {
+    final raw = q.answerType.toString().toLowerCase();
+
+    return raw.contains('yes_no') ||
+        raw.contains('yesno') ||
+        raw.contains('boolean') ||
+        raw.contains('bool');
+  }
+
+  bool _isScaleQuestion(MentalQuestion q) {
+    final raw = q.answerType.toString().toLowerCase();
+
+    return raw.contains('scale') ||
+        raw.contains('rating') ||
+        raw.contains('integer') ||
+        raw.contains('int');
+  }
+
   Future<WeekInsights> _loadWeekInsights() async {
     final days = _calendarWeekDays();
 
@@ -256,21 +311,27 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     final habits = await dbRepo.listHabits();
 
     final habitEntriesByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
+
     for (final d in days) {
       habitEntriesByDay[d] = await dbRepo.getHabitEntriesForDay(d);
     }
 
     final habitDoneCount = <String, int>{};
+
     for (final h in habits) {
       habitDoneCount[h.id] = 0;
     }
 
     for (final d in days) {
       final map = habitEntriesByDay[d] ?? {};
+
       for (final h in habits) {
         final e = map[h.id];
         final done = (e?['done'] as bool?) ?? false;
-        if (done) habitDoneCount[h.id] = (habitDoneCount[h.id] ?? 0) + 1;
+
+        if (done) {
+          habitDoneCount[h.id] = (habitDoneCount[h.id] ?? 0) + 1;
+        }
       }
     }
 
@@ -278,6 +339,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
       ..sort((a, b) {
         final ca = habitDoneCount[a.id] ?? 0;
         final cb = habitDoneCount[b.id] ?? 0;
+
         return cb.compareTo(ca);
       });
 
@@ -285,6 +347,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     final questions = await dbRepo.listMentalQuestions(onlyActive: true);
 
     final answersByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
+
     for (final d in days) {
       answersByDay[d] = await dbRepo.getMentalAnswersForDay(d);
     }
@@ -292,6 +355,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     // moods from MoodModel
     final moods = context.read<MoodModel>().moods;
     final moodByDay = <DateTime, Mood>{};
+
     for (final m in moods) {
       final k = DateUtils.dateOnly(m.date);
       moodByDay.putIfAbsent(k, () => m);
@@ -299,18 +363,17 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
 
     final moodScores = days.map((d) {
       final m = moodByDay[d];
+
       if (m == null) return 0;
+
       return _emojiToScore(m.emoji);
     }).toList();
 
-    final yesNoQuestions = questions
-        .where((q) => q.answerType == 'yes_no')
-        .toList();
-    final scaleQuestions = questions
-        .where((q) => q.answerType == 'scale')
-        .toList();
+    final yesNoQuestions = questions.where(_isYesNoQuestion).toList();
+    final scaleQuestions = questions.where(_isScaleQuestion).toList();
 
     final yesNoStats = <String, YesNoStat>{};
+
     for (final q in yesNoQuestions) {
       int yes = 0;
       int total = 0;
@@ -318,30 +381,41 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
       for (final d in days) {
         final map = answersByDay[d] ?? {};
         final a = map[q.id];
+
         if (a == null) continue;
 
         final v = a['value_bool'];
+
         if (v is bool) {
           total++;
+
           if (v) yes++;
         }
       }
 
-      yesNoStats[q.id] = YesNoStat(question: q, yes: yes, total: total);
+      yesNoStats[q.id] = YesNoStat(
+        question: q,
+        yes: yes,
+        total: total,
+      );
     }
 
     final scaleStats = <String, ScaleStat>{};
+
     for (final q in scaleQuestions) {
       final series = <int?>[];
 
       for (final d in days) {
         final map = answersByDay[d] ?? {};
         final a = map[q.id];
+
         if (a == null) {
           series.add(null);
           continue;
         }
+
         final v = a['value_int'];
+
         if (v is int) {
           series.add(v);
         } else if (v is num) {
@@ -352,11 +426,16 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
       }
 
       final vals = series.whereType<int>().toList();
+
       final avg = vals.isEmpty
           ? null
           : (vals.reduce((a, b) => a + b) / vals.length);
 
-      scaleStats[q.id] = ScaleStat(question: q, series: series, avg: avg);
+      scaleStats[q.id] = ScaleStat(
+        question: q,
+        series: series,
+        avg: avg,
+      );
     }
 
     return WeekInsights(
@@ -389,22 +468,23 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     if (reports.period != ReportPeriod.week) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+
         context.read<ReportsModel>().setPeriod(ReportPeriod.week);
       });
     }
 
     final todayMood = _todayMood(moodModel.moods);
 
-    // ---- metrics (same logic as before, just displayed better) ----
     final totalTasks = reports.loading ? null : reports.goalsInRange.length;
+
     final doneTasks = reports.loading
         ? null
         : reports.goalsInRange.where((g) => g.isCompleted).length;
 
     final taskProgress =
         (reports.loading || totalTasks == null || totalTasks == 0)
-        ? null
-        : (doneTasks! / totalTasks).clamp(0.0, 1.0);
+            ? null
+            : (doneTasks! / totalTasks).clamp(0.0, 1.0);
 
     final daysInRange = reports.loading
         ? null
@@ -415,14 +495,11 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
 
     final hoursPerDay =
         (reports.loading || daysInRange == null || daysInRange == 0)
-        ? null
-        : (reports.totalHours / daysInRange);
+            ? null
+            : (reports.totalHours / daysInRange);
 
     final efficiency = reports.loading ? null : reports.efficiency;
 
-    // Responsive layout:
-    // phone -> 2x2 grid
-    // wide  -> 4 in a row
     final maxWidth = mq.size.width;
     final isPhone = maxWidth < 600;
 
@@ -432,7 +509,6 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
         key: const PageStorageKey('home-dashboard-scroll'),
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // ======= HEADER + CLEAN METRICS GRID =======
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -458,8 +534,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                         subtitle: todayMood == null
                             ? l.homeMoodNoEntry
                             : (todayMood.note.trim().isEmpty
-                                  ? l.homeMoodNoNote
-                                  : l.homeMoodHasNote),
+                                ? l.homeMoodNoNote
+                                : l.homeMoodHasNote),
                         icon: Icons.mood_rounded,
                         progress: todayMood == null ? 0.0 : 1.0,
                       ),
@@ -468,14 +544,13 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                         value: reports.loading
                             ? '…'
                             : (totalTasks == null || totalTasks == 0
-                                  ? '0%'
-                                  : '${((taskProgress ?? 0) * 100).round()}%'),
+                                ? '0%'
+                                : '${((taskProgress ?? 0) * 100).round()}%'),
                         subtitle: reports.loading
                             ? l.commonLoading
                             : '${doneTasks ?? 0}/${totalTasks ?? 0}',
                         icon: Icons.check_circle_rounded,
-                        progress:
-                            taskProgress ?? (reports.loading ? null : 0.0),
+                        progress: taskProgress ?? (reports.loading ? null : 0.0),
                       ),
                       _MetricItem(
                         title: l.homeMetricHoursPerDayTitle,
@@ -508,24 +583,29 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // ✅ NEW: WEEK INSIGHTS (3 cards)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
               child: FutureBuilder<WeekInsights>(
                 future: _weekFuture,
                 builder: (context, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) {
+                  if (_weekFuture == null ||
+                      snap.connectionState == ConnectionState.waiting) {
                     return const _WeekLoadingCard();
                   }
-                  if (!snap.hasData) {
+
+                  if (snap.hasError || !snap.hasData) {
                     return _WeekErrorCard(
-                      onRetry: () =>
-                          setState(() => _weekFuture = _loadWeekInsights()),
+                      onRetry: () {
+                        setState(() {
+                          _weekFuture = _loadWeekInsights();
+                        });
+                      },
                     );
                   }
 
                   final data = snap.data!;
+
                   return Column(
                     children: [
                       MoodWeekCard(
@@ -554,7 +634,6 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // ✅ NEW: HOME TRACKERS
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
@@ -570,7 +649,6 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // Настроение сегодня (редактор) — логика сохранена
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -615,8 +693,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                       todayMood == null
                                           ? l.homeMoodNoTodayEntry
                                           : (todayMood.note.trim().isEmpty
-                                                ? l.homeMoodEntryNoNote
-                                                : todayMood.note.trim()),
+                                              ? l.homeMoodEntryNoNote
+                                              : todayMood.note.trim()),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: tt.titleSmall?.copyWith(
@@ -642,9 +720,11 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                 tooltip: _editingMood
                                     ? l.commonCollapse
                                     : l.commonUpdate,
-                                onPressed: () => setState(
-                                  () => _editingMood = !_editingMood,
-                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _editingMood = !_editingMood;
+                                  });
+                                },
                                 icon: Icon(
                                   _editingMood
                                       ? Icons.expand_less
@@ -681,9 +761,11 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                           ),
                                           child: MoodSelector(
                                             selectedEmoji: _selectedEmoji,
-                                            onSelect: (e) => setState(
-                                              () => _selectedEmoji = e,
-                                            ),
+                                            onSelect: (e) {
+                                              setState(() {
+                                                _selectedEmoji = e;
+                                              });
+                                            },
                                           ),
                                         ),
                                         const SizedBox(height: 12),
@@ -738,12 +820,15 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                                 ? SizedBox(
                                                     width: 18,
                                                     height: 18,
-                                                    child: CircularProgressIndicator.adaptive(
+                                                    child:
+                                                        CircularProgressIndicator
+                                                            .adaptive(
                                                       strokeWidth: 2,
                                                       valueColor:
                                                           AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(cs.onPrimary),
+                                                              Color>(
+                                                        cs.onPrimary,
+                                                      ),
                                                     ),
                                                   )
                                                 : const Icon(
@@ -773,12 +858,12 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                             icon: Icons.open_in_new,
                             label: l.homeOpenMoodHistoryCta,
                             onPressed: () {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => MoodScreen(),
-      ),
-    );
-  },
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const MoodScreen(),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -786,7 +871,6 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // Сводка недели — без дублирования метрик (оставляем диапазон + CTA)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -821,7 +905,6 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
 
-          // Расходы недели — без изменений
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
@@ -840,7 +923,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                           reports.range.end,
                         ),
                         builder: (context, snap) {
-                          if (snap.connectionState == ConnectionState.waiting) {
+                          if (snap.connectionState ==
+                              ConnectionState.waiting) {
                             return const SizedBox(
                               height: 92,
                               child: Center(
@@ -850,6 +934,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                           }
 
                           final data = snap.data;
+
                           if (data == null ||
                               (data.total <= 0 && data.byDay.isEmpty)) {
                             return Column(
@@ -877,6 +962,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                                       .difference(reports.range.start)
                                       .inDays)
                                   .clamp(1, 366);
+
                           final avg = data.total / days;
 
                           final topCat = _topCategory(data.byCategory);
@@ -895,7 +981,9 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                l.homeExpensesAvgPerDay(avg.toStringAsFixed(2)),
+                                l.homeExpensesAvgPerDay(
+                                  avg.toStringAsFixed(2),
+                                ),
                                 style: tt.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant.withOpacity(0.95),
                                 ),
@@ -972,7 +1060,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   }
 }
 
-// ===================== WEEK helper cards (loading/error) =====================
+// ===================== WEEK helper cards =====================
 
 class _WeekLoadingCard extends StatelessWidget {
   const _WeekLoadingCard();
@@ -980,6 +1068,7 @@ class _WeekLoadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+
     return ReportSectionCard(
       title: l.homeWeekCardTitle,
       child: const SizedBox(
@@ -992,6 +1081,7 @@ class _WeekLoadingCard extends StatelessWidget {
 
 class _WeekErrorCard extends StatelessWidget {
   final VoidCallback onRetry;
+
   const _WeekErrorCard({required this.onRetry});
 
   @override
@@ -1051,7 +1141,10 @@ class _MetricsGrid extends StatelessWidget {
   final bool isPhone;
   final List<_MetricItem> items;
 
-  const _MetricsGrid({required this.isPhone, required this.items});
+  const _MetricsGrid({
+    required this.isPhone,
+    required this.items,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1081,6 +1174,7 @@ class _MetricsGrid extends StatelessWidget {
 
 class _MetricTile extends StatelessWidget {
   final _MetricItem item;
+
   const _MetricTile({required this.item});
 
   @override
@@ -1143,10 +1237,13 @@ class _MetricTile extends StatelessWidget {
 }
 
 class _MiniRing extends StatelessWidget {
-  final double? progress; // 0..1, null -> loading
+  final double? progress;
   final IconData icon;
 
-  const _MiniRing({required this.progress, required this.icon});
+  const _MiniRing({
+    required this.progress,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {

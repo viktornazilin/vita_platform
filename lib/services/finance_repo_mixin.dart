@@ -1,6 +1,7 @@
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/security/secure_crypto_service.dart';
 import '../domain/category.dart' as dm;
 import '../domain/transaction_item.dart';
 import '../domain/jar.dart';
@@ -14,7 +15,7 @@ abstract class FinanceRepo {
 
   Future<void> addTransaction({
     required DateTime ts,
-    required String kind, // 'expense' | 'income'
+    required String kind,
     required String categoryId,
     required double amount,
     String? note,
@@ -23,8 +24,6 @@ abstract class FinanceRepo {
   Future<List<TransactionItem>> listTransactionsByDay(DateTime date);
   Future<Map<String, double>> sumByMonth({required DateTime monthStart});
 
-  /// Autocomplete: ранее введённые заметки (note) по транзакциям.
-  /// kind: 'expense' | 'income'
   Future<List<String>> searchTransactionNotes({
     required String kind,
     required String query,
@@ -63,6 +62,70 @@ abstract class FinanceRepo {
 }
 
 mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
+  final SecureCryptoService _crypto = SecureCryptoService();
+
+  String _normText(String? value) => (value ?? '').trim();
+
+  String? _normOrNull(String? value) {
+    final normalized = _normText(value);
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  Future<Map<String, dynamic>> _encryptTransactionPayload({
+    required String note,
+  }) {
+    return _crypto.encryptJson({
+      'note': _normOrNull(note),
+    });
+  }
+
+  Future<Map<String, dynamic>> _decryptTransactionRow(
+    Map<String, dynamic> row,
+  ) async {
+    final encryptedPayload = row['encrypted_payload'];
+
+    if (encryptedPayload == null || encryptedPayload is! Map) {
+      return row;
+    }
+
+    try {
+      final decryptedPayload = await _crypto.decryptJson(
+        Map<String, dynamic>.from(encryptedPayload),
+      );
+
+      final decryptedNote = decryptedPayload['note'];
+      row['note'] = decryptedNote is String ? decryptedNote.trim() : '';
+
+      return row;
+    } catch (_) {
+      // Старые записи или записи, зашифрованные другим локальным ключом,
+      // оставляем как есть, чтобы экран не падал.
+      return row;
+    }
+  }
+
+  Future<List<TransactionItem>> _mapTransactionRows(dynamic res) async {
+    final out = <TransactionItem>[];
+
+    for (final raw in res as List) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final map = await _decryptTransactionRow(row);
+
+      out.add(
+        TransactionItem(
+          id: map['id'] as String,
+          ts: DateTime.parse(map['ts'] as String),
+          kind: (map['kind'] ?? '') as String,
+          categoryId: (map['category_id'] ?? '') as String,
+          amount: (map['amount'] as num).toDouble(),
+          note: (map['note'] as String?)?.toString(),
+        ),
+      );
+    }
+
+    return out;
+  }
+
   @override
   Future<List<dm.Category>> listCategories({required String kind}) async {
     final res = await client
@@ -120,9 +183,11 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
           .maybeSingle();
 
       final limit = (limitRow?['limit_amount'] as num?)?.toDouble();
+
       if (limit != null && limit > 0) {
         final start = monthStart(ts);
         final end = nextMonth(ts);
+
         final spentRes = await client
             .from('transactions')
             .select('amount')
@@ -130,14 +195,22 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
             .eq('category_id', categoryId)
             .gte('ts', start.toIso8601String())
             .lt('ts', end.toIso8601String());
+
         final spent = (spentRes as List).fold<double>(
           0,
           (sum, r) => sum + (r['amount'] as num).toDouble(),
         );
-        if (spent + amount > limit)
+
+        if (spent + amount > limit) {
           throw Exception('Превышен лимит для категории');
+        }
       }
     }
+
+    final normalizedNote = _normText(note);
+    final encryptedPayload = await _encryptTransactionPayload(
+      note: normalizedNote,
+    );
 
     await client.from('transactions').insert({
       'user_id': uid,
@@ -145,7 +218,12 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
       'kind': kind,
       'category_id': categoryId,
       'amount': amount,
-      'note': note ?? '',
+
+      // Technical fallback. Real note is stored in encrypted_payload.
+      'note': normalizedNote.isEmpty ? '' : '[encrypted]',
+
+      'encrypted_payload': encryptedPayload,
+      'encryption_version': 1,
     });
   }
 
@@ -162,17 +240,7 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
         .lt('ts', end.toIso8601String())
         .order('ts', ascending: false);
 
-    return (res as List).map((m) {
-      final map = Map<String, dynamic>.from(m as Map);
-      return TransactionItem(
-        id: map['id'] as String,
-        ts: DateTime.parse(map['ts'] as String),
-        kind: (map['kind'] ?? '') as String,
-        categoryId: (map['category_id'] ?? '') as String,
-        amount: (map['amount'] as num).toDouble(),
-        note: (map['note'] as String?)?.toString(),
-      );
-    }).toList();
+    return _mapTransactionRows(res);
   }
 
   @override
@@ -192,10 +260,12 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
         .select();
 
     final out = <String, double>{'income': 0.0, 'expense': 0.0};
+
     for (final row in res) {
       final r = Map<String, dynamic>.from(row as Map);
       out[r['kind'] as String] = (r['sum'] as num?)?.toDouble() ?? 0.0;
     }
+
     return out;
   }
 
@@ -205,32 +275,33 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
     required String query,
     int limit = 8,
   }) async {
-    final q = query.trim();
+    final q = query.trim().toLowerCase();
     if (q.isEmpty) return [];
 
-    // PostgREST ilike: %pattern%
-    final pattern = '%$q%';
-
-    // Берём побольше строк и дедуплим локально, чтобы получить уникальные подсказки.
+    // После шифрования note нельзя искать через ilike в БД.
+    // Поэтому берём последние транзакции нужного типа, расшифровываем локально
+    // и фильтруем подсказки на клиенте.
     final rows = await client
         .from('transactions')
-        .select('note, ts')
+        .select('id, ts, kind, category_id, amount, note, encrypted_payload')
         .eq('user_id', uid)
         .eq('kind', kind)
-        .ilike('note', pattern)
-        .neq('note', '')
         .order('ts', ascending: false)
-        .limit(200);
+        .limit(300);
 
     final seen = <String>{};
     final out = <String>[];
 
-    for (final r in (rows as List)) {
-      final note = (r['note'] as String?)?.trim() ?? '';
+    for (final raw in rows as List) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final decryptedRow = await _decryptTransactionRow(row);
+
+      final note = _normText(decryptedRow['note']?.toString());
       if (note.isEmpty) continue;
 
       final norm = note.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
       if (norm.isEmpty) continue;
+      if (!norm.contains(q)) continue;
       if (seen.contains(norm)) continue;
 
       seen.add(norm);
@@ -302,6 +373,7 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
       final isMissingRpc =
           e.code == 'PGRST202' ||
           (e.message).toLowerCase().contains('increment_jar_amount');
+
       if (!isMissingRpc) rethrow;
     }
 
@@ -329,6 +401,7 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
     required double amount,
   }) async {
     final monthStr = d(DateTime(periodMonth.year, periodMonth.month, 1));
+
     final exists = await client
         .from('jar_allocations')
         .select('id')
@@ -337,7 +410,9 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
         .eq('period_month', monthStr)
         .maybeSingle();
 
-    if (exists != null) throw Exception('Аллокация за этот месяц уже есть');
+    if (exists != null) {
+      throw Exception('Аллокация за этот месяц уже есть');
+    }
 
     await client.from('jar_allocations').insert({
       'user_id': uid,
@@ -360,17 +435,7 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
         .lt('ts', to.toIso8601String())
         .order('ts', ascending: false);
 
-    return (res as List).map((m) {
-      final map = Map<String, dynamic>.from(m as Map);
-      return TransactionItem(
-        id: map['id'] as String,
-        ts: DateTime.parse(map['ts'] as String),
-        kind: (map['kind'] ?? '') as String,
-        categoryId: (map['category_id'] ?? '') as String,
-        amount: (map['amount'] as num).toDouble(),
-        note: (map['note'] as String?)?.toString(),
-      );
-    }).toList();
+    return _mapTransactionRows(res);
   }
 
   @override
@@ -415,11 +480,14 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
         .lt('ts', end.toIso8601String());
 
     final byCat = <String, double>{};
-    for (final r in (rows as List)) {
+
+    for (final r in rows as List) {
       final id = r['category_id'] as String?;
       if (id == null) continue;
+
       byCat[id] = (byCat[id] ?? 0) + (r['amount'] as num).toDouble();
     }
+
     if (byCat.isEmpty) return {};
 
     final catsRes = await client
@@ -438,9 +506,11 @@ mixin FinanceRepoMixin on BaseRepo implements FinanceRepo {
     }).toList();
 
     final out = <dm.Category, double>{};
+
     for (final c in cats) {
       out[c] = byCat[c.id] ?? 0.0;
     }
+
     return out;
   }
 

@@ -1,5 +1,83 @@
+// lib/services/home_trackers_repo.dart
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../core/security/secure_crypto_service.dart';
+
+DateTime? _parseDateTime(dynamic value) {
+  if (value == null) return null;
+  return DateTime.tryParse(value.toString())?.toLocal();
+}
+
+class ExpenseCategoryLite {
+  final String id;
+  final String name;
+
+  const ExpenseCategoryLite({required this.id, required this.name});
+
+  factory ExpenseCategoryLite.fromMap(Map<String, dynamic> map) {
+    return ExpenseCategoryLite(
+      id: (map['id'] ?? '').toString(),
+      name: (map['name'] ?? '').toString(),
+    );
+  }
+}
+
+class ShoppingItemData {
+  final String id;
+  final String title;
+  final String description;
+  final double price;
+  final String storeName;
+  final DateTime? dueDate;
+  final String? expenseCategoryId;
+  final String? expenseCategoryName;
+  final bool isBought;
+  final bool isWishlist;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+
+  const ShoppingItemData({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.price,
+    required this.storeName,
+    required this.dueDate,
+    required this.expenseCategoryId,
+    required this.expenseCategoryName,
+    required this.isBought,
+    required this.isWishlist,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory ShoppingItemData.fromMap(Map<String, dynamic> map) {
+    final category = map['categories'];
+
+    String? categoryName;
+    if (category is Map) {
+      categoryName = (category['name'] ?? '').toString();
+    }
+
+    return ShoppingItemData(
+      id: (map['id'] ?? '').toString(),
+      title: (map['title'] ?? '').toString(),
+      description: (map['description'] ?? '').toString(),
+      price: (map['price'] as num?)?.toDouble() ?? 0.0,
+      storeName: (map['store_name'] ?? '').toString(),
+      dueDate: _parseDateTime(map['due_date']),
+      expenseCategoryId: map['expense_category_id']?.toString(),
+      expenseCategoryName: categoryName == null || categoryName.trim().isEmpty
+          ? null
+          : categoryName.trim(),
+      isBought: (map['is_bought'] as bool?) ?? false,
+      isWishlist: (map['is_wishlist'] as bool?) ?? false,
+      createdAt: _parseDateTime(map['created_at']) ?? DateTime.now(),
+      updatedAt: _parseDateTime(map['updated_at']),
+    );
+  }
+}
 
 class HobbySummary {
   final String hobbyId;
@@ -17,255 +95,353 @@ class HobbySummary {
   });
 
   double get weekProgress {
-    if (targetMinutesWeek <= 0) return 0;
+    if (targetMinutesWeek <= 0) return 0.0;
     return (spentMinutesWeek / targetMinutesWeek).clamp(0.0, 1.0);
   }
 }
 
-class MealEntryData {
+class HealthMealData {
   final String id;
-  final DateTime entryDate;
   final String mealType;
   final int calories;
   final String description;
 
-  const MealEntryData({
+  const HealthMealData({
     required this.id,
-    required this.entryDate,
     required this.mealType,
     required this.calories,
     required this.description,
   });
 
-  factory MealEntryData.fromMap(Map<String, dynamic> map) {
-    return MealEntryData(
-      id: map['id'] as String,
-      entryDate: DateTime.parse(map['entry_date'] as String),
-      mealType: (map['meal_type'] as String?) ?? 'snack',
-      calories: ((map['calories'] as num?) ?? 0).round(),
-      description: (map['description'] as String?) ?? '',
+  factory HealthMealData.fromMap(Map<String, dynamic> map) {
+    return HealthMealData(
+      id: (map['id'] ?? '').toString(),
+      mealType: (map['meal_type'] ?? '').toString(),
+      calories: (map['calories'] as num?)?.toInt() ?? 0,
+      description: (map['description'] ?? '').toString(),
     );
   }
 }
 
-class BurnEntryData {
+class HealthBurnData {
   final String id;
-  final DateTime entryDate;
   final int caloriesBurned;
   final String note;
 
-  const BurnEntryData({
+  const HealthBurnData({
     required this.id,
-    required this.entryDate,
     required this.caloriesBurned,
     required this.note,
   });
 
-  factory BurnEntryData.fromMap(Map<String, dynamic> map) {
-    return BurnEntryData(
-      id: map['id'] as String,
-      entryDate: DateTime.parse(map['entry_date'] as String),
-      caloriesBurned: ((map['calories_burned'] as num?) ?? 0).round(),
-      note: (map['note'] as String?) ?? '',
-    );
-  }
-}
-
-class WaterEntryData {
-  final String id;
-  final DateTime entryDate;
-  final double liters;
-
-  const WaterEntryData({
-    required this.id,
-    required this.entryDate,
-    required this.liters,
-  });
-
-  factory WaterEntryData.fromMap(Map<String, dynamic> map) {
-    return WaterEntryData(
-      id: map['id'] as String,
-      entryDate: DateTime.parse(map['entry_date'] as String),
-      liters: ((map['liters'] as num?) ?? 0).toDouble(),
+  factory HealthBurnData.fromMap(Map<String, dynamic> map) {
+    return HealthBurnData(
+      id: (map['id'] ?? '').toString(),
+      caloriesBurned: (map['calories_burned'] as num?)?.toInt() ?? 0,
+      note: (map['note'] ?? '').toString(),
     );
   }
 }
 
 class HealthDaySummary {
   final int dailyTarget;
-  final List<MealEntryData> meals;
-  final List<BurnEntryData> burns;
-  final List<WaterEntryData> waterEntries;
+  final int consumed;
+  final int burned;
+  final int net;
+  final int deltaVsTarget;
+  final double waterLiters;
+  final List<HealthMealData> meals;
+  final List<HealthBurnData> burns;
 
   const HealthDaySummary({
     required this.dailyTarget,
+    required this.consumed,
+    required this.burned,
+    required this.net,
+    required this.deltaVsTarget,
+    required this.waterLiters,
     required this.meals,
     required this.burns,
-    required this.waterEntries,
   });
-
-  int get consumed => meals.fold(0, (s, e) => s + e.calories);
-  int get burned => burns.fold(0, (s, e) => s + e.caloriesBurned);
-  int get net => consumed - burned;
-  int get deltaVsTarget => consumed - dailyTarget;
-  double get waterLiters => waterEntries.fold(0.0, (s, e) => s + e.liters);
-}
-
-class ExpenseCategoryLite {
-  final String id;
-  final String name;
-
-  const ExpenseCategoryLite({
-    required this.id,
-    required this.name,
-  });
-
-  factory ExpenseCategoryLite.fromMap(Map<String, dynamic> map) {
-    return ExpenseCategoryLite(
-      id: map['id'] as String,
-      name: (map['name'] as String?) ?? 'Без категории',
-    );
-  }
-}
-
-class ShoppingItemData {
-  final String id;
-  final String title;
-  final String description;
-  final double price;
-  final String storeName;
-  final DateTime? dueDate;
-  final String? expenseCategoryId;
-  final String? expenseCategoryName;
-  final bool isBought;
-  final bool isWishlist;
-
-  const ShoppingItemData({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.price,
-    required this.storeName,
-    required this.dueDate,
-    required this.expenseCategoryId,
-    required this.expenseCategoryName,
-    required this.isBought,
-    required this.isWishlist,
-  });
-
-  factory ShoppingItemData.fromMap(Map<String, dynamic> map) {
-    final cat = map['categories'];
-    String? categoryName;
-    if (cat is Map<String, dynamic>) {
-      categoryName = cat['name'] as String?;
-    }
-
-    return ShoppingItemData(
-      id: map['id'] as String,
-      title: (map['title'] as String?) ?? '',
-      description: (map['description'] as String?) ?? '',
-      price: ((map['price'] as num?) ?? 0).toDouble(),
-      storeName: (map['store_name'] as String?) ?? '',
-      dueDate: map['due_date'] == null
-          ? null
-          : DateTime.tryParse(map['due_date'] as String),
-      expenseCategoryId: map['expense_category_id'] as String?,
-      expenseCategoryName: categoryName,
-      isBought: (map['is_bought'] as bool?) ?? false,
-      isWishlist: (map['is_wishlist'] as bool?) ?? false,
-    );
-  }
 }
 
 class HomeTrackersRepo {
-  HomeTrackersRepo({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  HomeTrackersRepo({
+    SupabaseClient? client,
+    SecureCryptoService? crypto,
+  })  : _client = client ?? Supabase.instance.client,
+        _crypto = crypto ?? SecureCryptoService();
 
   final SupabaseClient _client;
+  final SecureCryptoService _crypto;
 
   String get _uid {
-    final id = _client.auth.currentUser?.id;
-    if (id == null) throw StateError('User is not authenticated.');
-    return id;
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null || userId.trim().isEmpty) {
+      throw Exception('User is not authenticated');
+    }
+    return userId;
   }
 
-  DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
+  String _dateOnly(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
-  DateTime _endOfDayExclusive(DateTime d) =>
-      DateTime(d.year, d.month, d.day).add(const Duration(days: 1));
+  DateTime _dayStart(DateTime date) => DateTime(date.year, date.month, date.day);
 
-  DateTime _startOfWeek(DateTime d) {
-    final day = DateTime(d.year, d.month, d.day);
-    return day.subtract(Duration(days: day.weekday - 1));
+  DateTime _weekStart(DateTime date) {
+    final d = _dayStart(date);
+    return d.subtract(Duration(days: d.weekday - DateTime.monday));
   }
 
-  DateTime _endOfWeekExclusive(DateTime d) =>
-      _startOfWeek(d).add(const Duration(days: 7));
+  DateTime _weekEndExclusive(DateTime date) =>
+      _weekStart(date).add(const Duration(days: 7));
+
+  String _normText(String? value) => (value ?? '').trim();
+
+  String? _normOrNull(String? value) {
+    final normalized = _normText(value);
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  Future<Map<String, dynamic>> _encryptShoppingPayload({
+    required String title,
+    String? description,
+    String? storeName,
+  }) {
+    return _crypto.encryptJson({
+      'title': _normText(title),
+      'description': _normOrNull(description),
+      'store_name': _normOrNull(storeName),
+    });
+  }
+
+  Future<Map<String, dynamic>> _decryptShoppingRow(
+    Map<String, dynamic> row,
+  ) async {
+    final encryptedPayload = row['encrypted_payload'];
+
+    if (encryptedPayload == null || encryptedPayload is! Map) {
+      return row;
+    }
+
+    try {
+      final decryptedPayload = await _crypto.decryptJson(
+        Map<String, dynamic>.from(encryptedPayload),
+      );
+
+      final title = decryptedPayload['title'];
+      final description = decryptedPayload['description'];
+      final storeName = decryptedPayload['store_name'];
+
+      if (title is String && title.trim().isNotEmpty) {
+        row['title'] = title.trim();
+      }
+
+      row['description'] = description is String && description.trim().isNotEmpty
+          ? description.trim()
+          : '';
+
+      row['store_name'] = storeName is String && storeName.trim().isNotEmpty
+          ? storeName.trim()
+          : '';
+
+      return row;
+    } catch (_) {
+      return row;
+    }
+  }
+
+  Future<List<ShoppingItemData>> listShoppingItems() async {
+    final rows = await _client
+        .from('shopping_items')
+        .select(
+          'id,user_id,title,description,price,store_name,due_date,expense_category_id,is_bought,is_wishlist,created_at,updated_at,encrypted_payload,categories(name)',
+        )
+        .eq('user_id', _uid)
+        .order('is_bought', ascending: true)
+        .order('due_date', ascending: true)
+        .order('created_at', ascending: false);
+
+    final out = <ShoppingItemData>[];
+
+    for (final raw in rows as List) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final decryptedRow = await _decryptShoppingRow(row);
+      out.add(ShoppingItemData.fromMap(decryptedRow));
+    }
+
+    return out;
+  }
+
+  Future<List<ExpenseCategoryLite>> listExpenseCategories() async {
+    final rows = await _client
+        .from('categories')
+        .select('id,name')
+        .eq('user_id', _uid)
+        .eq('kind', 'expense')
+        .order('name', ascending: true);
+
+    return (rows as List)
+        .map((raw) => ExpenseCategoryLite.fromMap(
+              Map<String, dynamic>.from(raw as Map),
+            ))
+        .where((category) => category.id.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> createShoppingItem({
+    required String title,
+    String? description,
+    double price = 0,
+    String? storeName,
+    DateTime? dueDate,
+    String? expenseCategoryId,
+    bool isWishlist = false,
+  }) async {
+    final normalizedTitle = _normText(title);
+    if (normalizedTitle.isEmpty) throw Exception('Title cannot be empty');
+
+    final encryptedPayload = await _encryptShoppingPayload(
+      title: normalizedTitle,
+      description: description,
+      storeName: storeName,
+    );
+
+    await _client.from('shopping_items').insert({
+      'user_id': _uid,
+      'title': '[encrypted]',
+      'description': null,
+      'store_name': null,
+      'price': price < 0 ? 0 : price,
+      'due_date': dueDate?.toUtc().toIso8601String(),
+      'expense_category_id': _normOrNull(expenseCategoryId),
+      'is_bought': false,
+      'is_wishlist': isWishlist,
+      'encrypted_payload': encryptedPayload,
+      'encryption_version': 1,
+    });
+  }
+
+  Future<void> updateShoppingItem({
+    required String id,
+    required String title,
+    String? description,
+    double price = 0,
+    String? storeName,
+    DateTime? dueDate,
+    String? expenseCategoryId,
+    bool isBought = false,
+    bool isWishlist = false,
+  }) async {
+    final normalizedTitle = _normText(title);
+    if (normalizedTitle.isEmpty) throw Exception('Title cannot be empty');
+
+    final encryptedPayload = await _encryptShoppingPayload(
+      title: normalizedTitle,
+      description: description,
+      storeName: storeName,
+    );
+
+    await _client
+        .from('shopping_items')
+        .update({
+          'title': '[encrypted]',
+          'description': null,
+          'store_name': null,
+          'price': price < 0 ? 0 : price,
+          'due_date': dueDate?.toUtc().toIso8601String(),
+          'expense_category_id': _normOrNull(expenseCategoryId),
+          'is_bought': isBought,
+          'is_wishlist': isWishlist,
+          'encrypted_payload': encryptedPayload,
+          'encryption_version': 1,
+        })
+        .eq('id', id)
+        .eq('user_id', _uid);
+  }
+
+  Future<void> toggleShoppingBought({
+    required String id,
+    required bool isBought,
+  }) async {
+    await _client
+        .from('shopping_items')
+        .update({'is_bought': isBought})
+        .eq('id', id)
+        .eq('user_id', _uid);
+  }
+
+  Future<void> deleteShoppingItem(String id) async {
+    await _client
+        .from('shopping_items')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _uid);
+  }
 
   Future<List<HobbySummary>> listHobbySummariesForWeek(DateTime anchor) async {
-    final userId = _uid;
-    final startDay = _startOfDay(anchor);
-    final endDay = _endOfDayExclusive(anchor);
-    final weekStart = _startOfWeek(anchor);
-    final weekEnd = _endOfWeekExclusive(anchor);
+    final start = _weekStart(anchor);
+    final end = _weekEndExclusive(anchor);
+    final today = _dayStart(anchor);
 
-    final hobbies = await _client
+    final hobbiesRaw = await _client
         .from('hobby_profiles')
         .select('id,title,target_minutes_week')
-        .eq('user_id', userId)
-        .order('created_at');
+        .eq('user_id', _uid)
+        .order('created_at', ascending: true);
 
-    final entries = await _client
+    final entriesRaw = await _client
         .from('hobby_entries')
         .select('hobby_id,entry_date,minutes_spent')
-        .eq('user_id', userId)
-        .gte('entry_date', weekStart.toIso8601String())
-        .lt('entry_date', weekEnd.toIso8601String());
+        .eq('user_id', _uid)
+        .gte('entry_date', start.toIso8601String())
+        .lt('entry_date', end.toIso8601String());
 
-    final todayTotals = <String, int>{};
-    final weekTotals = <String, int>{};
+    final spentWeek = <String, int>{};
+    final spentToday = <String, int>{};
 
-    for (final row in entries) {
-      final map = row as Map<String, dynamic>;
-      final hobbyId = map['hobby_id'] as String;
-      final minutes = ((map['minutes_spent'] as num?) ?? 0).round();
-      final ts = DateTime.tryParse(map['entry_date'] as String? ?? '');
+    for (final raw in entriesRaw as List) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final hobbyId = (row['hobby_id'] ?? '').toString();
+      if (hobbyId.isEmpty) continue;
 
-      weekTotals[hobbyId] = (weekTotals[hobbyId] ?? 0) + minutes;
-      if (ts != null && !ts.isBefore(startDay) && ts.isBefore(endDay)) {
-        todayTotals[hobbyId] = (todayTotals[hobbyId] ?? 0) + minutes;
+      final minutes = (row['minutes_spent'] as num?)?.toInt() ?? 0;
+      spentWeek[hobbyId] = (spentWeek[hobbyId] ?? 0) + minutes;
+
+      final date = _parseDateTime(row['entry_date']);
+      if (date != null && _dateOnly(date) == _dateOnly(today)) {
+        spentToday[hobbyId] = (spentToday[hobbyId] ?? 0) + minutes;
       }
     }
 
-    return [
-      for (final row in hobbies)
-        HobbySummary(
-          hobbyId: row['id'] as String,
-          hobbyTitle: (row['title'] as String?) ?? 'Хобби',
-          targetMinutesWeek: ((row['target_minutes_week'] as num?) ?? 0).round(),
-          spentMinutesToday: todayTotals[row['id'] as String] ?? 0,
-          spentMinutesWeek: weekTotals[row['id'] as String] ?? 0,
-        ),
-    ];
+    return (hobbiesRaw as List).map((raw) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final hobbyId = (row['id'] ?? '').toString();
+
+      return HobbySummary(
+        hobbyId: hobbyId,
+        hobbyTitle: (row['title'] ?? '').toString(),
+        targetMinutesWeek: (row['target_minutes_week'] as num?)?.toInt() ?? 0,
+        spentMinutesToday: spentToday[hobbyId] ?? 0,
+        spentMinutesWeek: spentWeek[hobbyId] ?? 0,
+      );
+    }).toList();
   }
 
   Future<void> createHobby({
     required String title,
     required int targetMinutesWeek,
   }) async {
+    final normalizedTitle = _normText(title);
+    if (normalizedTitle.isEmpty) throw Exception('Hobby title cannot be empty');
+
     await _client.from('hobby_profiles').insert({
       'user_id': _uid,
-      'title': title.trim(),
-      'target_minutes_week': targetMinutesWeek,
+      'title': normalizedTitle,
+      'target_minutes_week': targetMinutesWeek < 0 ? 0 : targetMinutesWeek,
     });
-  }
-
-  Future<void> deleteHobby(String hobbyId) async {
-    await _client
-        .from('hobby_profiles')
-        .delete()
-        .eq('id', hobbyId)
-        .eq('user_id', _uid);
   }
 
   Future<void> addHobbyEntry({
@@ -278,76 +454,90 @@ class HomeTrackersRepo {
       'user_id': _uid,
       'hobby_id': hobbyId,
       'entry_date': entryDate.toIso8601String(),
-      'minutes_spent': minutesSpent,
-      'note': note?.trim(),
+      'minutes_spent': minutesSpent < 0 ? 0 : minutesSpent,
+      'note': _normText(note),
     });
   }
 
-  Future<int> getDailyCalorieTarget() async {
-    final rows = await _client
+  Future<void> deleteHobby(String hobbyId) async {
+    await _client
+        .from('hobby_profiles')
+        .delete()
+        .eq('id', hobbyId)
+        .eq('user_id', _uid);
+  }
+
+  Future<HealthDaySummary> loadHealthDaySummary(DateTime date) async {
+    final start = _dayStart(date);
+    final end = start.add(const Duration(days: 1));
+
+    final profile = await _client
         .from('health_profiles')
         .select('daily_calorie_target')
         .eq('user_id', _uid)
-        .limit(1);
+        .maybeSingle();
 
-    if (rows.isEmpty) return 0;
-    return ((rows.first['daily_calorie_target'] as num?) ?? 0).round();
-  }
-
-  Future<void> upsertDailyCalorieTarget(int target) async {
-    await _client.from('health_profiles').upsert(
-      {
-        'user_id': _uid,
-        'daily_calorie_target': target,
-      },
-      onConflict: 'user_id',
-    );
-  }
-
-  Future<HealthDaySummary> loadHealthDaySummary(DateTime day) async {
-    final start = _startOfDay(day);
-    final end = _endOfDayExclusive(day);
-    final target = await getDailyCalorieTarget();
-
-    final mealsRows = await _client
+    final mealsRaw = await _client
         .from('meal_entries')
-        .select()
+        .select('id,meal_type,calories,description')
         .eq('user_id', _uid)
         .gte('entry_date', start.toIso8601String())
         .lt('entry_date', end.toIso8601String())
-        .order('entry_date');
+        .order('created_at', ascending: false);
 
-    final burnRows = await _client
+    final burnsRaw = await _client
         .from('calorie_burn_entries')
-        .select()
+        .select('id,calories_burned,note')
         .eq('user_id', _uid)
         .gte('entry_date', start.toIso8601String())
         .lt('entry_date', end.toIso8601String())
-        .order('entry_date');
+        .order('created_at', ascending: false);
 
-    final waterRows = await _client
+    final waterRaw = await _client
         .from('water_entries')
-        .select()
+        .select('liters')
         .eq('user_id', _uid)
         .gte('entry_date', start.toIso8601String())
-        .lt('entry_date', end.toIso8601String())
-        .order('entry_date');
+        .lt('entry_date', end.toIso8601String());
+
+    final meals = (mealsRaw as List)
+        .map((raw) => HealthMealData.fromMap(Map<String, dynamic>.from(raw as Map)))
+        .toList();
+
+    final burns = (burnsRaw as List)
+        .map((raw) => HealthBurnData.fromMap(Map<String, dynamic>.from(raw as Map)))
+        .toList();
+
+    final consumed = meals.fold<int>(0, (sum, item) => sum + item.calories);
+    final burned = burns.fold<int>(0, (sum, item) => sum + item.caloriesBurned);
+    final dailyTarget = (profile?['daily_calorie_target'] as num?)?.toInt() ?? 0;
+
+    final waterLiters = (waterRaw as List).fold<double>(0, (sum, raw) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      return sum + ((row['liters'] as num?)?.toDouble() ?? 0.0);
+    });
+
+    final net = consumed - burned;
+    final deltaVsTarget = dailyTarget <= 0 ? net : net - dailyTarget;
 
     return HealthDaySummary(
-      dailyTarget: target,
-      meals: [
-        for (final row in mealsRows)
-          MealEntryData.fromMap(row as Map<String, dynamic>),
-      ],
-      burns: [
-        for (final row in burnRows)
-          BurnEntryData.fromMap(row as Map<String, dynamic>),
-      ],
-      waterEntries: [
-        for (final row in waterRows)
-          WaterEntryData.fromMap(row as Map<String, dynamic>),
-      ],
+      dailyTarget: dailyTarget,
+      consumed: consumed,
+      burned: burned,
+      net: net,
+      deltaVsTarget: deltaVsTarget,
+      waterLiters: waterLiters,
+      meals: meals,
+      burns: burns,
     );
+  }
+
+  Future<void> upsertDailyCalorieTarget(int value) async {
+    await _client.from('health_profiles').upsert({
+      'user_id': _uid,
+      'daily_calorie_target': value < 0 ? 0 : value,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }, onConflict: 'user_id');
   }
 
   Future<void> addMeal({
@@ -360,8 +550,8 @@ class HomeTrackersRepo {
       'user_id': _uid,
       'entry_date': entryDate.toIso8601String(),
       'meal_type': mealType,
-      'calories': calories,
-      'description': description.trim(),
+      'calories': calories < 0 ? 0 : calories,
+      'description': _normText(description),
     });
   }
 
@@ -373,8 +563,8 @@ class HomeTrackersRepo {
     await _client.from('calorie_burn_entries').insert({
       'user_id': _uid,
       'entry_date': entryDate.toIso8601String(),
-      'calories_burned': caloriesBurned,
-      'note': note?.trim(),
+      'calories_burned': caloriesBurned < 0 ? 0 : caloriesBurned,
+      'note': _normText(note),
     });
   }
 
@@ -382,8 +572,8 @@ class HomeTrackersRepo {
     required DateTime entryDate,
     required double liters,
   }) async {
-    final start = _startOfDay(entryDate);
-    final end = _endOfDayExclusive(entryDate);
+    final start = _dayStart(entryDate);
+    final end = start.add(const Duration(days: 1));
 
     await _client
         .from('water_entries')
@@ -395,7 +585,7 @@ class HomeTrackersRepo {
     await _client.from('water_entries').insert({
       'user_id': _uid,
       'entry_date': entryDate.toIso8601String(),
-      'liters': liters,
+      'liters': liters < 0 ? 0 : liters,
     });
   }
 
@@ -406,99 +596,6 @@ class HomeTrackersRepo {
   Future<void> deleteBurn(String id) async {
     await _client
         .from('calorie_burn_entries')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', _uid);
-  }
-
-  Future<List<ExpenseCategoryLite>> listExpenseCategories() async {
-    final rows = await _client
-        .from('categories')
-        .select('id,name')
-        .eq('user_id', _uid)
-        .eq('kind', 'expense')
-        .order('name');
-
-    return [
-      for (final row in rows)
-        ExpenseCategoryLite.fromMap(row as Map<String, dynamic>),
-    ];
-  }
-
-  Future<List<ShoppingItemData>> listShoppingItems() async {
-    final rows = await _client
-        .from('shopping_items')
-        .select(
-          'id,title,description,price,store_name,due_date,expense_category_id,is_bought,is_wishlist,categories(name)',
-        )
-        .eq('user_id', _uid)
-        .order('is_wishlist')
-        .order('is_bought')
-        .order('due_date', ascending: true);
-
-    return [
-      for (final row in rows)
-        ShoppingItemData.fromMap(row as Map<String, dynamic>),
-    ];
-  }
-
-  Future<void> createShoppingItem({
-    required String title,
-    required String description,
-    required double price,
-    required String storeName,
-    DateTime? dueDate,
-    String? expenseCategoryId,
-    required bool isWishlist,
-  }) async {
-    await _client.from('shopping_items').insert({
-      'user_id': _uid,
-      'title': title.trim(),
-      'description': description.trim(),
-      'price': price,
-      'store_name': storeName.trim(),
-      'due_date': dueDate?.toIso8601String(),
-      'expense_category_id': expenseCategoryId,
-      'is_bought': false,
-      'is_wishlist': isWishlist,
-    });
-  }
-
-  Future<void> updateShoppingItem({
-    required String id,
-    required String title,
-    required String description,
-    required double price,
-    required String storeName,
-    DateTime? dueDate,
-    String? expenseCategoryId,
-    required bool isBought,
-    required bool isWishlist,
-  }) async {
-    await _client.from('shopping_items').update({
-      'title': title.trim(),
-      'description': description.trim(),
-      'price': price,
-      'store_name': storeName.trim(),
-      'due_date': dueDate?.toIso8601String(),
-      'expense_category_id': expenseCategoryId,
-      'is_bought': isBought,
-      'is_wishlist': isWishlist,
-    }).eq('id', id).eq('user_id', _uid);
-  }
-
-  Future<void> toggleShoppingBought({
-    required String id,
-    required bool isBought,
-  }) async {
-    await _client.from('shopping_items').update({
-      'is_bought': isBought,
-    }).eq('id', id).eq('user_id', _uid);
-  }
-
-  Future<void> deleteShoppingItem(String id) async {
-    await _client
-        .from('shopping_items')
         .delete()
         .eq('id', id)
         .eq('user_id', _uid);

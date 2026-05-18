@@ -3663,6 +3663,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get registerLegalTermsTitle => 'Условия использования';
 
   @override
+  String get registerLegalPrivacyPrefix =>
+      'Я даю согласие на обработку моих персональных данных согласно';
+
+  @override
+  String get registerLegalTermsPrefix => 'Я соглашаюсь с';
+
+  @override
+  String get registerLegalOptionalLinksPrefix => 'Также доступны:';
+
+  @override
   String get registerLegalPrivacyTitle => 'Политика конфиденциальности';
 
   @override

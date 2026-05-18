@@ -14,7 +14,6 @@ import '../services/user_service.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_blur_card.dart';
 
-
 enum _LegalDoc { terms, privacy, datenschutz, impressum }
 
 const Map<_LegalDoc, String> _legalDocUrls = {
@@ -22,11 +21,6 @@ const Map<_LegalDoc, String> _legalDocUrls = {
   _LegalDoc.privacy: 'https://nest-landing-lemon.vercel.app/privacy',
   _LegalDoc.datenschutz: 'https://nest-landing-lemon.vercel.app/datenschutz',
   _LegalDoc.impressum: 'https://nest-landing-lemon.vercel.app/impressum',
-};
-
-const Set<_LegalDoc> _requiredLegalDocs = {
-  _LegalDoc.terms,
-  _LegalDoc.privacy,
 };
 
 String _legalDocTitle(AppLocalizations l, _LegalDoc doc) {
@@ -40,12 +34,6 @@ String _legalDocTitle(AppLocalizations l, _LegalDoc doc) {
     case _LegalDoc.impressum:
       return l.registerLegalImpressumTitle;
   }
-}
-
-String _legalDocChipTitle(AppLocalizations l, _LegalDoc doc) {
-  final title = _legalDocTitle(l, doc);
-  if (_requiredLegalDocs.contains(doc)) return title;
-  return l.registerLegalOptionalTitle(title);
 }
 
 class RegisterScreen extends StatelessWidget {
@@ -84,10 +72,7 @@ class _RegisterViewState extends State<_RegisterView> {
   bool _obscure1 = true;
   bool _obscure2 = true;
   bool _busy = false;
-  final Set<_LegalDoc> _openedLegalDocs = <_LegalDoc>{};
-
-  bool get _requiredLegalDocsOpened =>
-      _requiredLegalDocs.every(_openedLegalDocs.contains);
+  bool _privacyAccepted = false;
 
   bool get _isApplePlatform {
     if (kIsWeb) return false;
@@ -130,8 +115,8 @@ class _RegisterViewState extends State<_RegisterView> {
       return;
     }
 
-    final hasArchetype =
-        userService.selectedArchetype != null && userService.selectedArchetype!.isNotEmpty;
+    final hasArchetype = userService.selectedArchetype != null &&
+        userService.selectedArchetype!.isNotEmpty;
 
     if (!hasArchetype) {
       Navigator.pushNamedAndRemoveUntil(context, '/archetype', (_) => false);
@@ -185,19 +170,21 @@ class _RegisterViewState extends State<_RegisterView> {
     final l = AppLocalizations.of(context)!;
     final model = context.read<RegisterModel>();
 
-    if (!_requiredLegalDocsOpened) {
+    if (!_privacyAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l.registerErrOpenRequiredLegalDocs),
+          content: Text(
+            '${l.registerLegalPrivacyPrefix} ${l.registerLegalPrivacyTitle}',
+          ),
         ),
       );
       return false;
     }
 
     if (!model.termsAccepted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l.registerErrAcceptTerms)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.registerErrAcceptTerms)),
+      );
       return false;
     }
 
@@ -215,17 +202,12 @@ class _RegisterViewState extends State<_RegisterView> {
 
     if (!mounted) return;
 
-    if (opened) {
-      setState(() {
-        _openedLegalDocs.add(doc);
-      });
-    } else {
+    if (!opened) {
+      final l = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)!.registerLegalOpenFailed(
-              _legalDocTitle(AppLocalizations.of(context)!, doc),
-            ),
+            l.registerLegalOpenFailed(_legalDocTitle(l, doc)),
           ),
         ),
       );
@@ -254,7 +236,9 @@ class _RegisterViewState extends State<_RegisterView> {
     if (ok) {
       await _routeAfterAuth();
     } else if (model.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.error!)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(model.error!)),
+      );
     }
   }
 
@@ -270,7 +254,9 @@ class _RegisterViewState extends State<_RegisterView> {
     setState(() => _busy = false);
 
     if (model.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.error!)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(model.error!)),
+      );
     }
   }
 
@@ -278,9 +264,9 @@ class _RegisterViewState extends State<_RegisterView> {
     final l = AppLocalizations.of(context)!;
 
     if (!_isApplePlatform) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l.registerAppleOnlyIos)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.registerAppleOnlyIos)),
+      );
       return;
     }
 
@@ -295,17 +281,18 @@ class _RegisterViewState extends State<_RegisterView> {
     setState(() => _busy = false);
 
     if (model.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(model.error!)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(model.error!)),
+      );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final model = context.watch<RegisterModel>();
     final isLoading = model.loading || _busy;
-    final canSubmitLegal = _requiredLegalDocsOpened && model.termsAccepted;
+    final canSubmitLegal = _privacyAccepted && model.termsAccepted;
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -332,13 +319,15 @@ class _RegisterViewState extends State<_RegisterView> {
                     keyboardOpen ? 12 : 20,
                   ),
                   child: SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - 32,
+                      ),
                       child: Align(
-                        alignment:
-                            keyboardOpen ? Alignment.topCenter : Alignment.center,
+                        alignment: keyboardOpen
+                            ? Alignment.topCenter
+                            : Alignment.center,
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 560),
                           child: NestBlurCard(
@@ -413,8 +402,9 @@ class _RegisterViewState extends State<_RegisterView> {
                                         Icons.lock_outline_rounded,
                                       ),
                                       suffixIcon: IconButton(
-                                        onPressed: () =>
-                                            setState(() => _obscure1 = !_obscure1),
+                                        onPressed: () => setState(
+                                          () => _obscure1 = !_obscure1,
+                                        ),
                                         icon: Icon(
                                           _obscure1
                                               ? Icons.visibility_outlined
@@ -440,8 +430,9 @@ class _RegisterViewState extends State<_RegisterView> {
                                         Icons.verified_user_outlined,
                                       ),
                                       suffixIcon: IconButton(
-                                        onPressed: () =>
-                                            setState(() => _obscure2 = !_obscure2),
+                                        onPressed: () => setState(
+                                          () => _obscure2 = !_obscure2,
+                                        ),
                                         icon: Icon(
                                           _obscure2
                                               ? Icons.visibility_outlined
@@ -450,14 +441,15 @@ class _RegisterViewState extends State<_RegisterView> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 14),
-                                  _LegalRow(
-                                    value: model.termsAccepted,
+                                  const SizedBox(height: 18),
+                                  _LegalConsentSection(
+                                    privacyAccepted: _privacyAccepted,
+                                    termsAccepted: model.termsAccepted,
                                     enabled: !isLoading,
-                                    requiredDocsOpened: _requiredLegalDocsOpened,
-                                    openedDocs: _openedLegalDocs,
-                                    onChanged: (v) {
-                                      if (!_requiredLegalDocsOpened) return;
+                                    onPrivacyChanged: (v) {
+                                      setState(() => _privacyAccepted = v);
+                                    },
+                                    onTermsChanged: (v) {
                                       model.termsAccepted = v;
                                       model.notifyListeners();
                                     },
@@ -482,12 +474,12 @@ class _RegisterViewState extends State<_RegisterView> {
                                               vertical: 10,
                                             ),
                                             child: Center(
-                                              child:
-                                                  CircularProgressIndicator.adaptive(),
+                                              child: CircularProgressIndicator.adaptive(),
                                             ),
                                           )
                                         : FilledButton.icon(
-                                            onPressed: canSubmitLegal ? _onRegister : null,
+                                            onPressed:
+                                                canSubmitLegal ? _onRegister : null,
                                             icon: const Icon(
                                               Icons.person_add_alt_1_rounded,
                                             ),
@@ -564,20 +556,20 @@ class _RegisterViewState extends State<_RegisterView> {
   }
 }
 
-class _LegalRow extends StatelessWidget {
-  final bool value;
+class _LegalConsentSection extends StatelessWidget {
+  final bool privacyAccepted;
+  final bool termsAccepted;
   final bool enabled;
-  final bool requiredDocsOpened;
-  final Set<_LegalDoc> openedDocs;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool> onPrivacyChanged;
+  final ValueChanged<bool> onTermsChanged;
   final ValueChanged<_LegalDoc> onOpenDoc;
 
-  const _LegalRow({
-    required this.value,
+  const _LegalConsentSection({
+    required this.privacyAccepted,
+    required this.termsAccepted,
     required this.enabled,
-    required this.requiredDocsOpened,
-    required this.openedDocs,
-    required this.onChanged,
+    required this.onPrivacyChanged,
+    required this.onTermsChanged,
     required this.onOpenDoc,
   });
 
@@ -587,100 +579,172 @@ class _LegalRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    Widget docLink(_LegalDoc doc) {
-      final opened = openedDocs.contains(doc);
-      final title = _legalDocChipTitle(l, doc);
-
-      return InkWell(
-        onTap: enabled ? () => onOpenDoc(doc) : null,
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-          decoration: BoxDecoration(
-            color: opened
-                ? const Color(0xFF22C55E).withOpacity(0.10)
-                : scheme.primary.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: opened
-                  ? const Color(0xFF22C55E).withOpacity(0.28)
-                  : scheme.primary.withOpacity(0.18),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _LegalConsentLine(
+          value: privacyAccepted,
+          enabled: enabled,
+          prefixText: l.registerLegalPrivacyPrefix,
+          linkText: l.registerLegalPrivacyTitle,
+          onChanged: onPrivacyChanged,
+          onTapLink: () => onOpenDoc(_LegalDoc.privacy),
+        ),
+        const SizedBox(height: 12),
+        _LegalConsentLine(
+          value: termsAccepted,
+          enabled: enabled,
+          prefixText: l.registerLegalTermsPrefix,
+          linkText: l.registerLegalTermsTitle,
+          onChanged: onTermsChanged,
+          onTapLink: () => onOpenDoc(_LegalDoc.terms),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.only(left: 34),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            alignment: WrapAlignment.start,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Icon(
-                opened ? Icons.check_circle_rounded : Icons.open_in_new_rounded,
-                size: 15,
-                color: opened ? const Color(0xFF22C55E) : scheme.primary,
-              ),
-              const SizedBox(width: 5),
               Text(
-                title,
-                style: tt.labelMedium?.copyWith(
-                  color: opened ? const Color(0xFF1E8E4D) : scheme.primary,
-                  fontWeight: FontWeight.w800,
+                l.registerLegalOptionalLinksPrefix,
+                style: tt.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  height: 1.25,
+                  fontWeight: FontWeight.w500,
                 ),
+              ),
+              _LegalInlineLink(
+                text: l.registerLegalDatenschutzTitle,
+                enabled: enabled,
+                onTap: () => onOpenDoc(_LegalDoc.datenschutz),
+              ),
+              Text(
+                '·',
+                style: tt.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant.withOpacity(0.7),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              _LegalInlineLink(
+                text: l.registerLegalImpressumTitle,
+                enabled: enabled,
+                onTap: () => onOpenDoc(_LegalDoc.impressum),
               ),
             ],
           ),
         ),
-      );
-    }
+      ],
+    );
+  }
+}
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-      decoration: BoxDecoration(
-        color: scheme.surface.withOpacity(0.56),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: _LegalDoc.values.map(docLink).toList(),
+class _LegalConsentLine extends StatelessWidget {
+  final bool value;
+  final bool enabled;
+  final String prefixText;
+  final String linkText;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onTapLink;
+
+  const _LegalConsentLine({
+    required this.value,
+    required this.enabled,
+    required this.prefixText,
+    required this.linkText,
+    required this.onChanged,
+    required this.onTapLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 26,
+          height: 26,
+          child: Checkbox(
+            value: value,
+            onChanged: enabled ? (v) => onChanged(v ?? false) : null,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+            side: BorderSide(
+              color: scheme.outlineVariant,
+              width: 1.6,
+            ),
           ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Checkbox(
-                  value: value,
-                  onChanged: enabled && requiredDocsOpened
-                      ? (v) => onChanged(v ?? false)
-                      : null,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity:
-                      const VisualDensity(horizontal: -2, vertical: -2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 1.5),
+            child: RichText(
+              text: TextSpan(
+                style: tt.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  height: 1.28,
+                  fontWeight: FontWeight.w500,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  requiredDocsOpened
-                      ? l.registerLegalAcceptedText
-                      : l.registerLegalOpenRequiredDocsText,
-                  style: tt.bodyMedium?.copyWith(
-                    color: requiredDocsOpened
-                        ? scheme.onSurface
-                        : scheme.onSurfaceVariant,
-                    fontWeight: requiredDocsOpened ? FontWeight.w600 : FontWeight.w500,
+                children: [
+                  TextSpan(text: '$prefixText '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.baseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: _LegalInlineLink(
+                      text: linkText,
+                      enabled: enabled,
+                      onTap: onTapLink,
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LegalInlineLink extends StatelessWidget {
+  final String text;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _LegalInlineLink({
+    required this.text,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: enabled ? onTap : null,
+      child: Text(
+        text,
+        style: tt.bodyMedium?.copyWith(
+          color: enabled ? scheme.primary : scheme.onSurfaceVariant.withOpacity(0.55),
+          height: 1.28,
+          fontWeight: FontWeight.w800,
+          decoration: TextDecoration.underline,
+          decorationColor:
+              enabled ? scheme.primary : scheme.onSurfaceVariant.withOpacity(0.55),
+          decorationThickness: 1.15,
+        ),
       ),
     );
   }

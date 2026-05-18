@@ -9,7 +9,6 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../../services/habits_repo_mixin.dart' show HabitEntryUpsert;
 import '../../services/mental_repo_mixin.dart';
 
-import '../../widgets/launcher_tile.dart';
 import '../../widgets/mass_daily_entry_sheet.dart';
 import '../../widgets/recurring_goal_sheet.dart';
 import '../../widgets/ai_plan_sheet.dart';
@@ -63,7 +62,7 @@ void showHomeLauncherSheet({
                   childAspectRatio: .95,
                 ),
                 children: [
-                  LauncherTile(
+                  _NestLauncherTile(
                     icon: Icons.home,
                     label: AppLocalizations.of(ctx)!.launcherHome,
                     onTap: () {
@@ -71,7 +70,7 @@ void showHomeLauncherSheet({
                       model.select(0);
                     },
                   ),
-                  LauncherTile(
+                  _NestLauncherTile(
                     icon: Icons.flag,
                     label: AppLocalizations.of(ctx)!.launcherGoals,
                     onTap: () {
@@ -79,7 +78,7 @@ void showHomeLauncherSheet({
                       model.select(1);
                     },
                   ),
-                  LauncherTile(
+                  _NestLauncherTile(
                     icon: Icons.track_changes_rounded,
                     label: AppLocalizations.of(ctx)!.launcherDayGoals,
                     onTap: () {
@@ -87,7 +86,7 @@ void showHomeLauncherSheet({
                       model.select(2);
                     },
                   ),
-                  LauncherTile(
+                  _NestLauncherTile(
                     icon: Icons.person,
                     label: AppLocalizations.of(ctx)!.launcherProfile,
                     onTap: () {
@@ -95,7 +94,7 @@ void showHomeLauncherSheet({
                       model.select(3);
                     },
                   ),
-                  LauncherTile(
+                  _NestLauncherTile(
                     icon: Icons.insights,
                     label: AppLocalizations.of(ctx)!.launcherInsights,
                     onTap: () {
@@ -103,7 +102,7 @@ void showHomeLauncherSheet({
                       model.select(4);
                     },
                   ),
-                  LauncherTile(
+                  _NestLauncherTile(
                     icon: Icons.account_balance_wallet,
                     label: AppLocalizations.of(ctx)!.launcherReports,
                     onTap: () {
@@ -332,7 +331,7 @@ void showHomeLauncherSheet({
                       const SizedBox(height: 10),
                       _NestQuickActionTile(
                         icon: Icons.auto_awesome,
-                        color: cs.tertiary,
+                        color: cs.primary,
                         title: l.launcherAiPlanTitle,
                         subtitle: l.launcherAiPlanSubtitle,
                         onTap: () async {
@@ -365,7 +364,7 @@ void showHomeLauncherSheet({
                       const SizedBox(height: 10),
                       _NestQuickActionTile(
                         icon: Icons.psychology_alt,
-                        color: cs.secondary,
+                        color: cs.primary,
                         title: l.launcherAiInsightsTitle,
                         subtitle: l.launcherAiInsightsSubtitle,
                         onTap: () async {
@@ -386,7 +385,7 @@ void showHomeLauncherSheet({
                       const SizedBox(height: 10),
                       _NestQuickActionTile(
                         icon: Icons.event_repeat_rounded,
-                        color: cs.primaryContainer,
+                        color: cs.primary,
                         title: l.launcherRecurringGoalTitle,
                         subtitle: l.launcherRecurringGoalSubtitle,
                         onTap: () async {
@@ -572,24 +571,28 @@ class _NestSheet extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final sheetColor = Color.lerp(
+      cs.surface,
+      cs.primaryContainer,
+      isDark ? 0.06 : 0.10,
+    )!;
+
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? cs.surface.withOpacity(0.92)
-              : cs.surface.withOpacity(0.94),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          color: sheetColor.withOpacity(isDark ? 0.96 : 0.98),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           border: Border.all(
-            color: cs.outlineVariant.withOpacity(isDark ? 0.42 : 0.72),
+            color: cs.primary.withOpacity(isDark ? 0.18 : 0.16),
           ),
           boxShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withOpacity(0.24)
-                  : cs.shadow.withOpacity(0.12),
-              blurRadius: 28,
-              offset: const Offset(0, -10),
+                  ? Colors.black.withOpacity(0.30)
+                  : cs.primary.withOpacity(0.10),
+              blurRadius: 34,
+              offset: const Offset(0, -12),
             ),
           ],
         ),
@@ -609,6 +612,12 @@ class _NestSheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerEnd = Color.lerp(
+      cs.primary,
+      cs.surface,
+      isDark ? 0.20 : 0.10,
+    )!;
 
     return Row(
       children: [
@@ -620,7 +629,7 @@ class _NestSheetHeader extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [cs.primary, cs.tertiary],
+              colors: [cs.primary, headerEnd],
             ),
             boxShadow: [
               BoxShadow(
@@ -681,6 +690,94 @@ class _NestSectionTitle extends StatelessWidget {
   }
 }
 
+
+class _NestLauncherTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _NestLauncherTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardColor = Color.lerp(
+      cs.surface,
+      cs.primaryContainer,
+      isDark ? 0.08 : 0.14,
+    )!;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: cardColor.withOpacity(isDark ? 0.78 : 0.88),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: cs.primary.withOpacity(isDark ? 0.20 : 0.18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.14)
+                    : cs.primary.withOpacity(0.07),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: cs.primary.withOpacity(isDark ? 0.16 : 0.10),
+                    border: Border.all(
+                      color: cs.primary.withOpacity(isDark ? 0.28 : 0.22),
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: cs.primary,
+                    size: 25,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: tt.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                    height: 1.12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NestQuickActionTile extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -702,27 +799,31 @@ class _NestQuickActionTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final tileColor = Color.lerp(
+      cs.surface,
+      cs.primaryContainer,
+      isDark ? 0.08 : 0.13,
+    )!;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => onTap(),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
           decoration: BoxDecoration(
-            color: isDark
-                ? cs.surfaceContainerHigh.withOpacity(0.78)
-                : cs.surface.withOpacity(0.96),
-            borderRadius: BorderRadius.circular(20),
+            color: tileColor.withOpacity(isDark ? 0.80 : 0.92),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: cs.outlineVariant.withOpacity(isDark ? 0.38 : 0.65),
+              color: cs.primary.withOpacity(isDark ? 0.18 : 0.16),
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(0.16)
-                    : cs.shadow.withOpacity(0.08),
-                blurRadius: 18,
+                    ? Colors.black.withOpacity(0.14)
+                    : cs.primary.withOpacity(0.07),
+                blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
             ],
@@ -730,35 +831,46 @@ class _NestQuickActionTile extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: color.withOpacity(isDark ? 0.20 : 0.16),
+                  color: cs.primary.withOpacity(isDark ? 0.18 : 0.10),
                   border: Border.all(
-                    color: color.withOpacity(isDark ? 0.32 : 0.24),
+                    color: cs.primary.withOpacity(isDark ? 0.30 : 0.20),
                   ),
                 ),
-                child: Icon(icon, color: color),
+                child: Icon(
+                  icon,
+                  color: cs.primary,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: tt.titleSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: cs.onSurface,
+                        height: 1.15,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: tt.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
+                        height: 1.18,
                       ),
                     ),
                   ],
@@ -767,7 +879,7 @@ class _NestQuickActionTile extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(
                 Icons.chevron_right_rounded,
-                color: cs.onSurfaceVariant,
+                color: cs.primary.withOpacity(isDark ? 0.75 : 0.68),
               ),
             ],
           ),
@@ -775,6 +887,7 @@ class _NestQuickActionTile extends StatelessWidget {
       ),
     );
   }
+
 }
 
 class _NestQuickActionTileDisabled extends StatelessWidget {

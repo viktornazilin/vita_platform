@@ -3703,6 +3703,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get registerLegalTermsTitle => 'Conditions d’utilisation';
 
   @override
+  String get registerLegalPrivacyPrefix =>
+      'J\'accepte le traitement de mes données personnelles conformément à la';
+
+  @override
+  String get registerLegalTermsPrefix => 'J\'accepte les';
+
+  @override
+  String get registerLegalOptionalLinksPrefix => 'Également disponible :';
+
+  @override
   String get registerLegalPrivacyTitle => 'Politique de confidentialité';
 
   @override

@@ -6676,6 +6676,24 @@ abstract class AppLocalizations {
   /// **'Terms of Use'**
   String get registerLegalTermsTitle;
 
+  /// No description provided for @registerLegalPrivacyPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the processing of my personal data under the'**
+  String get registerLegalPrivacyPrefix;
+
+  /// No description provided for @registerLegalTermsPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the'**
+  String get registerLegalTermsPrefix;
+
+  /// No description provided for @registerLegalOptionalLinksPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Also available:'**
+  String get registerLegalOptionalLinksPrefix;
+
   /// No description provided for @registerLegalPrivacyTitle.
   ///
   /// In en, this message translates to:

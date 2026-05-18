@@ -3694,6 +3694,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get registerLegalTermsTitle => 'Terms of Use';
 
   @override
+  String get registerLegalPrivacyPrefix =>
+      'Ich stimme der Verarbeitung meiner personenbezogenen Daten gemäß der';
+
+  @override
+  String get registerLegalTermsPrefix => 'Ich stimme den';
+
+  @override
+  String get registerLegalOptionalLinksPrefix => 'Ebenfalls verfügbar:';
+
+  @override
   String get registerLegalPrivacyTitle => 'Privacy Policy';
 
   @override
