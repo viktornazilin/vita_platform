@@ -9,7 +9,7 @@ class AppLocalizationsTr extends AppLocalizations {
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
-  String get appTitle => 'Nest App';
+  String get appTitle => 'Ladna';
 
   @override
   String get login => 'Giriş yap';
@@ -598,7 +598,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get homeTitleExpenses => 'Giderler';
 
   @override
-  String get homeTitleApp => 'MyNEST';
+  String get homeTitleApp => 'Ladna';
 
   @override
   String get homeSignOutTooltip => 'Çıkış yap';
@@ -2354,7 +2354,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get aiPlanConsentBody =>
-      'AI planı oluşturmak için Nest hedeflerini, görevlerini, alışkanlıklarını, ruh halini ve diğer uygulama verilerini analiz edecek. Bu veriler yalnızca kişisel öneriler, planlar ve içgörüler oluşturmak için kullanılır.';
+      'AI planı oluşturmak için Ladna hedeflerini, görevlerini, alışkanlıklarını, ruh halini ve diğer uygulama verilerini analiz edecek. Bu veriler yalnızca kişisel öneriler, planlar ve içgörüler oluşturmak için kullanılır.';
 
   @override
   String get aiPlanConsentDeclineBody =>
@@ -2458,7 +2458,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get aiPlanConsentRequiredBody =>
-      'AI planı oluşturmadan önce Nest’in kişisel öneriler için uygulama verilerini analiz edebileceğini onaylamalısın.';
+      'AI planı oluşturmadan önce Ladna’in kişisel öneriler için uygulama verilerini analiz edebileceğini onaylamalısın.';
 
   @override
   String get aiPlanGiveConsent => 'Onay ver';
@@ -2502,7 +2502,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get aiInsightsConsentBody =>
-      'AI içgörüleri oluşturmak için Nest hedeflerini, görevlerini, alışkanlıklarını, ruh halini ve diğer uygulama verilerini analiz edecek. Bu veriler yalnızca kişisel öneriler, planlar ve içgörüler oluşturmak için kullanılır.';
+      'AI içgörüleri oluşturmak için Ladna hedeflerini, görevlerini, alışkanlıklarını, ruh halini ve diğer uygulama verilerini analiz edecek. Bu veriler yalnızca kişisel öneriler, planlar ve içgörüler oluşturmak için kullanılır.';
 
   @override
   String get aiInsightsConsentDeclineBody =>
@@ -2541,7 +2541,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get aiInsightsConsentRequiredBody =>
-      'AI içgörüleri oluşturmadan önce Nest’in kişisel öneriler için uygulama verilerini analiz edebileceğini onaylamalısın.';
+      'AI içgörüleri oluşturmadan önce Ladna’in kişisel öneriler için uygulama verilerini analiz edebileceğini onaylamalısın.';
 
   @override
   String get aiInsightsGiveConsent => 'Onay ver';
@@ -3385,7 +3385,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileLegalTermsSubtitle =>
-      'Nest kullanımına ilişkin kurallar ve koşullar';
+      'Ladna kullanımına ilişkin kurallar ve koşullar';
 
   @override
   String get profileLegalImpressumTitle => 'Künye';
@@ -3446,7 +3446,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileEditChipsDefaultHint => 'Değerleri virgülle ayırarak gir';
 
   @override
-  String get onboardingWelcomeTitle => 'Nest’e hoş geldin';
+  String get onboardingWelcomeTitle => 'Ladna’e hoş geldin';
 
   @override
   String get onboardingWelcomeBody =>
@@ -3463,7 +3463,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingFinishBody =>
-      'Artık Nest’in ana özelliklerinin nerede olduğunu biliyorsun. Eğitimi daha sonra ana ekrandaki yardım simgesinden tekrar başlatabilirsin.';
+      'Artık Ladna’in ana özelliklerinin nerede olduğunu biliyorsun. Eğitimi daha sonra ana ekrandaki yardım simgesinden tekrar başlatabilirsin.';
 
   @override
   String get onboardingGotIt => 'Anladım';
@@ -3476,7 +3476,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu düğmeyle hızlıca görev, ruh hali, gider, alışkanlık ekleyebilir ve AI planını başlatabilirsin.';
 
   @override
-  String get onboardingMainNavigationTitle => 'Nest navigasyonu';
+  String get onboardingMainNavigationTitle => 'Ladna navigasyonu';
 
   @override
   String get onboardingMainNavigationText =>
@@ -3550,7 +3550,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingProfileHeaderText =>
-      'Bu, kişisel Nest ayarlarının merkezidir: hesap, odak, alışkanlıklar ve uygulama tercihleri.';
+      'Bu, kişisel Ladna ayarlarının merkezidir: hesap, odak, alışkanlıklar ve uygulama tercihleri.';
 
   @override
   String get onboardingProfileCardTitle => 'Kişisel veriler';
@@ -3627,7 +3627,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingQuestionnaireNextText =>
-      'Mevcut adımı tamamladıktan sonra buraya dokun. Sonunda Nest profilini, yaşam alanlarını ve hedeflerini kaydedecek.';
+      'Mevcut adımı tamamladıktan sonra buraya dokun. Sonunda Ladna profilini, yaşam alanlarını ve hedeflerini kaydedecek.';
 
   @override
   String get onboardingExpensesControlsTitle => 'Gün ve bütçe ayarları';

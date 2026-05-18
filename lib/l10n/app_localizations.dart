@@ -109,7 +109,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Nest App'**
+  /// **'Ladna'**
   String get appTitle;
 
   /// No description provided for @login.
@@ -1159,7 +1159,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTitleApp.
   ///
   /// In en, this message translates to:
-  /// **'MyNEST'**
+  /// **'Ladna'**
   String get homeTitleApp;
 
   /// No description provided for @homeSignOutTooltip.
@@ -4345,7 +4345,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiPlanConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'To generate an AI plan, Nest will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.'**
+  /// **'To generate an AI plan, Ladna will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.'**
   String get aiPlanConsentBody;
 
   /// No description provided for @aiPlanConsentDeclineBody.
@@ -4519,7 +4519,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiPlanConsentRequiredBody.
   ///
   /// In en, this message translates to:
-  /// **'Before generating an AI plan, you need to confirm that Nest may analyze app data for personal recommendations.'**
+  /// **'Before generating an AI plan, you need to confirm that Ladna may analyze app data for personal recommendations.'**
   String get aiPlanConsentRequiredBody;
 
   /// No description provided for @aiPlanGiveConsent.
@@ -4603,7 +4603,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiInsightsConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'To generate AI insights, Nest will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.'**
+  /// **'To generate AI insights, Ladna will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.'**
   String get aiInsightsConsentBody;
 
   /// No description provided for @aiInsightsConsentDeclineBody.
@@ -4669,7 +4669,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiInsightsConsentRequiredBody.
   ///
   /// In en, this message translates to:
-  /// **'Before generating AI insights, you need to confirm that Nest may analyze app data for personal recommendations.'**
+  /// **'Before generating AI insights, you need to confirm that Ladna may analyze app data for personal recommendations.'**
   String get aiInsightsConsentRequiredBody;
 
   /// No description provided for @aiInsightsGiveConsent.
@@ -6193,7 +6193,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileLegalTermsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Rules and conditions for using Nest'**
+  /// **'Rules and conditions for using Ladna'**
   String get profileLegalTermsSubtitle;
 
   /// No description provided for @profileLegalImpressumTitle.
@@ -6301,7 +6301,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingWelcomeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Nest'**
+  /// **'Welcome to Ladna'**
   String get onboardingWelcomeTitle;
 
   /// No description provided for @onboardingWelcomeBody.
@@ -6331,7 +6331,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingFinishBody.
   ///
   /// In en, this message translates to:
-  /// **'Now you know where the main Nest features are. You can restart the tutorial later from the help icon on the home screen.'**
+  /// **'Now you know where the main Ladna features are. You can restart the tutorial later from the help icon on the home screen.'**
   String get onboardingFinishBody;
 
   /// No description provided for @onboardingGotIt.
@@ -6355,7 +6355,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingMainNavigationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Nest navigation'**
+  /// **'Ladna navigation'**
   String get onboardingMainNavigationTitle;
 
   /// No description provided for @onboardingMainNavigationText.
@@ -6481,7 +6481,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingProfileHeaderText.
   ///
   /// In en, this message translates to:
-  /// **'This is the center for personal Nest settings: account, focus, habits, and app preferences.'**
+  /// **'This is the center for personal Ladna settings: account, focus, habits, and app preferences.'**
   String get onboardingProfileHeaderText;
 
   /// No description provided for @onboardingProfileCardTitle.
@@ -6613,7 +6613,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingQuestionnaireNextText.
   ///
   /// In en, this message translates to:
-  /// **'After completing the current step, tap here. At the end, Nest will save your profile, life areas, and goals.'**
+  /// **'After completing the current step, tap here. At the end, Ladna will save your profile, life areas, and goals.'**
   String get onboardingQuestionnaireNextText;
 
   /// No description provided for @onboardingExpensesControlsTitle.

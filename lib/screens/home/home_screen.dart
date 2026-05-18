@@ -212,7 +212,7 @@ class _HomeViewState extends State<_HomeView> {
                     : Colors.white.withOpacity(0.94),
                 padding: EdgeInsets.all(small ? 5 : 8),
                 child: Image.asset(
-                  'assets/images/logo.png',
+                  'assets/images/logo_simple.png',
                   width: size * 0.55,
                   height: size * 0.55,
                   fit: BoxFit.contain,

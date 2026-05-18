@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Nest App';
+  String get appTitle => 'Ladna';
 
   @override
   String get login => 'Login';
@@ -595,7 +595,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTitleExpenses => 'Expenses';
 
   @override
-  String get homeTitleApp => 'MyNEST';
+  String get homeTitleApp => 'Ladna';
 
   @override
   String get homeSignOutTooltip => 'Sign out';
@@ -2344,7 +2344,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiPlanConsentBody =>
-      'To generate an AI plan, Nest will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.';
+      'To generate an AI plan, Ladna will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.';
 
   @override
   String get aiPlanConsentDeclineBody =>
@@ -2447,7 +2447,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiPlanConsentRequiredBody =>
-      'Before generating an AI plan, you need to confirm that Nest may analyze app data for personal recommendations.';
+      'Before generating an AI plan, you need to confirm that Ladna may analyze app data for personal recommendations.';
 
   @override
   String get aiPlanGiveConsent => 'Give consent';
@@ -2491,7 +2491,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiInsightsConsentBody =>
-      'To generate AI insights, Nest will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.';
+      'To generate AI insights, Ladna will analyze your goals, tasks, habits, mood and other app data. This data is used only to create personal recommendations, plans and insights.';
 
   @override
   String get aiInsightsConsentDeclineBody =>
@@ -2531,7 +2531,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiInsightsConsentRequiredBody =>
-      'Before generating AI insights, you need to confirm that Nest may analyze app data for personal recommendations.';
+      'Before generating AI insights, you need to confirm that Ladna may analyze app data for personal recommendations.';
 
   @override
   String get aiInsightsGiveConsent => 'Give consent';
@@ -3375,7 +3375,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileLegalTermsTitle => 'Terms of Use';
 
   @override
-  String get profileLegalTermsSubtitle => 'Rules and conditions for using Nest';
+  String get profileLegalTermsSubtitle =>
+      'Rules and conditions for using Ladna';
 
   @override
   String get profileLegalImpressumTitle => 'Impressum';
@@ -3436,7 +3437,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileEditChipsDefaultHint => 'Enter values separated by commas';
 
   @override
-  String get onboardingWelcomeTitle => 'Welcome to Nest';
+  String get onboardingWelcomeTitle => 'Welcome to Ladna';
 
   @override
   String get onboardingWelcomeBody =>
@@ -3453,7 +3454,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingFinishBody =>
-      'Now you know where the main Nest features are. You can restart the tutorial later from the help icon on the home screen.';
+      'Now you know where the main Ladna features are. You can restart the tutorial later from the help icon on the home screen.';
 
   @override
   String get onboardingGotIt => 'Got it';
@@ -3466,7 +3467,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use this button to quickly add tasks, mood, expenses, habits, and launch the AI plan.';
 
   @override
-  String get onboardingMainNavigationTitle => 'Nest navigation';
+  String get onboardingMainNavigationTitle => 'Ladna navigation';
 
   @override
   String get onboardingMainNavigationText =>
@@ -3540,7 +3541,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingProfileHeaderText =>
-      'This is the center for personal Nest settings: account, focus, habits, and app preferences.';
+      'This is the center for personal Ladna settings: account, focus, habits, and app preferences.';
 
   @override
   String get onboardingProfileCardTitle => 'Personal data';
@@ -3617,7 +3618,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingQuestionnaireNextText =>
-      'After completing the current step, tap here. At the end, Nest will save your profile, life areas, and goals.';
+      'After completing the current step, tap here. At the end, Ladna will save your profile, life areas, and goals.';
 
   @override
   String get onboardingExpensesControlsTitle => 'Day and budget settings';
