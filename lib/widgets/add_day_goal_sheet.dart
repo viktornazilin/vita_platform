@@ -108,16 +108,31 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         return 'career';
 
       case 'finance':
+      case 'finances':
       case 'финансы':
       case 'money':
       case 'financial':
-        return 'finance';
+        // Keep both finance/finances supported. The current LifeBlock enum uses
+        // `finances`, while some older app parts may still use `finance`.
+        return v == 'finance' ? 'finance' : 'finances';
+
+      case 'family':
+      case 'семья':
+        return 'family';
+
+      case 'hobbies':
+      case 'hobby':
+      case 'хобби':
+        return 'hobbies';
+
+      case 'spirituality':
+      case 'духовность':
+        return 'spirituality';
 
       case 'relationships':
       case 'relationship':
       case 'relations':
       case 'отношения':
-      case 'семья':
         return 'relationships';
 
       case 'self':
@@ -171,30 +186,103 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   }
 
   String _lifeBlockLabel(BuildContext context, String value) {
-    final l = AppLocalizations.of(context)!;
+    final key = _normalizeBlock(value);
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
 
-    switch (_normalizeBlock(value)) {
-      case 'general':
-        return l.addDayGoalLifeBlockGeneral;
-      case 'health':
-        return l.addDayGoalLifeBlockHealth;
-      case 'career':
-        return l.addDayGoalLifeBlockCareer;
-      case 'finance':
-        return l.addDayGoalLifeBlockFinance;
-      case 'relationships':
-        return l.addDayGoalLifeBlockRelationships;
-      case 'self':
-        return l.addDayGoalLifeBlockSelf;
-      case 'education':
-        return l.addDayGoalLifeBlockEducation;
-      case 'travel':
-        return l.addDayGoalLifeBlockTravel;
-      case 'home':
-        return l.addDayGoalLifeBlockHome;
-      default:
-        return value;
-    }
+    const labels = <String, Map<String, String>>{
+      'ru': {
+        'general': 'Общее',
+        'health': 'Здоровье',
+        'career': 'Карьера',
+        'finance': 'Финансы',
+        'finances': 'Финансы',
+        'family': 'Семья',
+        'education': 'Образование',
+        'hobbies': 'Хобби',
+        'spirituality': 'Духовность',
+        'relationships': 'Отношения',
+        'self': 'Саморазвитие',
+        'travel': 'Путешествия',
+        'home': 'Дом',
+      },
+      'en': {
+        'general': 'General',
+        'health': 'Health',
+        'career': 'Career',
+        'finance': 'Finance',
+        'finances': 'Finance',
+        'family': 'Family',
+        'education': 'Education',
+        'hobbies': 'Hobbies',
+        'spirituality': 'Spirituality',
+        'relationships': 'Relationships',
+        'self': 'Self-development',
+        'travel': 'Travel',
+        'home': 'Home',
+      },
+      'de': {
+        'general': 'Allgemein',
+        'health': 'Gesundheit',
+        'career': 'Karriere',
+        'finance': 'Finanzen',
+        'finances': 'Finanzen',
+        'family': 'Familie',
+        'education': 'Bildung',
+        'hobbies': 'Hobbys',
+        'spirituality': 'Spiritualität',
+        'relationships': 'Beziehungen',
+        'self': 'Selbstentwicklung',
+        'travel': 'Reisen',
+        'home': 'Zuhause',
+      },
+      'fr': {
+        'general': 'Général',
+        'health': 'Santé',
+        'career': 'Carrière',
+        'finance': 'Finances',
+        'finances': 'Finances',
+        'family': 'Famille',
+        'education': 'Éducation',
+        'hobbies': 'Loisirs',
+        'spirituality': 'Spiritualité',
+        'relationships': 'Relations',
+        'self': 'Développement personnel',
+        'travel': 'Voyages',
+        'home': 'Maison',
+      },
+      'es': {
+        'general': 'General',
+        'health': 'Salud',
+        'career': 'Carrera',
+        'finance': 'Finanzas',
+        'finances': 'Finanzas',
+        'family': 'Familia',
+        'education': 'Educación',
+        'hobbies': 'Aficiones',
+        'spirituality': 'Espiritualidad',
+        'relationships': 'Relaciones',
+        'self': 'Desarrollo personal',
+        'travel': 'Viajes',
+        'home': 'Hogar',
+      },
+      'tr': {
+        'general': 'Genel',
+        'health': 'Sağlık',
+        'career': 'Kariyer',
+        'finance': 'Finans',
+        'finances': 'Finans',
+        'family': 'Aile',
+        'education': 'Eğitim',
+        'hobbies': 'Hobiler',
+        'spirituality': 'Maneviyat',
+        'relationships': 'İlişkiler',
+        'self': 'Kişisel gelişim',
+        'travel': 'Seyahat',
+        'home': 'Ev',
+      },
+    };
+
+    return labels[lang]?[key] ?? labels['en']?[key] ?? value;
   }
 
   String _horizonLabel(BuildContext context, String value) {

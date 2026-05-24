@@ -80,17 +80,30 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         return 'career';
 
       case 'finance':
+      case 'finances':
       case 'финансы':
       case 'money':
       case 'financial':
-        return 'finance';
+        return 'finances';
+
+      case 'family':
+      case 'семья':
+        return 'family';
 
       case 'relationships':
       case 'relationship':
       case 'relations':
       case 'отношения':
-      case 'семья':
         return 'relationships';
+
+      case 'hobbies':
+      case 'hobby':
+      case 'хобби':
+        return 'hobbies';
+
+      case 'spirituality':
+      case 'духовность':
+        return 'spirituality';
 
       case 'self':
       case 'selfdevelopment':
@@ -149,6 +162,32 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
   String _lifeBlockLabel(BuildContext context, String value) {
     final t = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+
+    String local({
+      required String ru,
+      required String en,
+      required String de,
+      required String fr,
+      required String es,
+      required String tr,
+    }) {
+      switch (lang) {
+        case 'de':
+          return de;
+        case 'fr':
+          return fr;
+        case 'es':
+          return es;
+        case 'tr':
+          return tr;
+        case 'en':
+          return en;
+        case 'ru':
+        default:
+          return ru;
+      }
+    }
 
     switch (_normalizeBlock(value)) {
       case 'general':
@@ -158,9 +197,37 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
       case 'career':
         return t.lifeBlockCareer;
       case 'finance':
+      case 'finances':
         return t.lifeBlockFinance;
+      case 'family':
+        return local(
+          ru: 'Семья',
+          en: 'Family',
+          de: 'Familie',
+          fr: 'Famille',
+          es: 'Familia',
+          tr: 'Aile',
+        );
       case 'relationships':
         return t.lifeBlockRelations;
+      case 'hobbies':
+        return local(
+          ru: 'Хобби',
+          en: 'Hobbies',
+          de: 'Hobbys',
+          fr: 'Loisirs',
+          es: 'Aficiones',
+          tr: 'Hobiler',
+        );
+      case 'spirituality':
+        return local(
+          ru: 'Духовность',
+          en: 'Spirituality',
+          de: 'Spiritualität',
+          fr: 'Spiritualité',
+          es: 'Espiritualidad',
+          tr: 'Maneviyat',
+        );
       case 'self':
         return t.lifeBlockSelf;
       case 'education':
@@ -470,48 +537,78 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                 NestSectionTitle(t.editGoalSectionDateTime),
                 NestCard(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: _pickDate,
-                          child: InputDecorator(
-                            decoration: _nestInput(
-                              label: t.commonDate,
-                              icon: Icons.calendar_today_rounded,
-                            ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final narrow = constraints.maxWidth < 430;
+
+                      final dateField = InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: _pickDate,
+                        child: InputDecorator(
+                          decoration: _nestInput(
+                            label: t.commonDate,
+                            icon: Icons.calendar_today_rounded,
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
                             child: Text(
                               _formatDate(_selectedDate),
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.visible,
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 color: scheme.onSurface,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: _pickTime,
-                          child: InputDecorator(
-                            decoration: _nestInput(
-                              label: t.editGoalStartTime,
-                              icon: Icons.schedule_rounded,
-                            ),
+                      );
+
+                      final timeField = InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: _pickTime,
+                        child: InputDecorator(
+                          decoration: _nestInput(
+                            label: t.editGoalStartTime,
+                            icon: Icons.schedule_rounded,
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
                             child: Text(
                               _start.format(context),
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.visible,
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 color: scheme.onSurface,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      );
+
+                      if (narrow) {
+                        return Column(
+                          children: [
+                            dateField,
+                            const SizedBox(height: 12),
+                            timeField,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(child: dateField),
+                          const SizedBox(width: 12),
+                          Expanded(child: timeField),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 if (canEditBlock) ...[
@@ -623,84 +720,136 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                 NestSectionTitle(t.editGoalSectionParams),
                 NestCard(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: _importance,
-                              decoration: _nestInput(
-                                label: t.editGoalFieldImportanceLabel,
-                                icon: Icons.local_fire_department_rounded,
-                              ),
-                              items: [
-                                DropdownMenuItem(
-                                  value: 1,
-                                  child: Text(t.editGoalImportanceLow),
-                                ),
-                                DropdownMenuItem(
-                                  value: 2,
-                                  child: Text(t.editGoalImportanceMedium),
-                                ),
-                                DropdownMenuItem(
-                                  value: 3,
-                                  child: Text(t.editGoalImportanceHigh),
-                                ),
-                              ],
-                              onChanged: (v) {
-                                setState(() => _importance = v ?? _importance);
-                              },
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final narrow = constraints.maxWidth < 430;
+
+                      final importanceField = DropdownButtonFormField<int>(
+                        value: _importance,
+                        isExpanded: true,
+                        decoration: _nestInput(
+                          label: t.editGoalFieldImportanceLabel,
+                          icon: Icons.local_fire_department_rounded,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 1,
+                            child: Text(
+                              t.editGoalImportanceLow,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: _emotionCtrl,
-                              textInputAction: TextInputAction.done,
-                              decoration: _nestInput(
-                                label: t.editGoalFieldEmotionLabel,
-                                hint: t.editGoalFieldEmotionHint,
-                                icon: Icons.emoji_emotions_outlined,
-                              ),
+                          DropdownMenuItem(
+                            value: 2,
+                            child: Text(
+                              t.editGoalImportanceMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 3,
+                            child: Text(
+                              t.editGoalImportanceHigh,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.timelapse_rounded,
-                            size: 18,
-                            color: scheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            t.editGoalHoursValue(_hours.toStringAsFixed(1)),
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                          const Spacer(),
-                          NestPill(
-                            leading: const Icon(Icons.schedule_rounded, size: 16),
-                            text: t.commonHoursShort(_hours.toStringAsFixed(1)),
-                          ),
-                        ],
-                      ),
-                      Slider(
-                        value: _hours,
-                        min: 0.5,
-                        max: 14,
-                        divisions: 27,
-                        label: _hours.toStringAsFixed(1),
-                        onChanged: (v) {
-                          setState(() => _hours = v);
+                        selectedItemBuilder: (context) {
+                          final labels = [
+                            t.editGoalImportanceLow,
+                            t.editGoalImportanceMedium,
+                            t.editGoalImportanceHigh,
+                          ];
+
+                          return labels
+                              .map(
+                                (label) => Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList();
                         },
-                      ),
-                    ],
+                        onChanged: (v) {
+                          setState(() => _importance = v ?? _importance);
+                        },
+                      );
+
+                      final emotionField = TextField(
+                        controller: _emotionCtrl,
+                        textInputAction: TextInputAction.done,
+                        decoration: _nestInput(
+                          label: t.editGoalFieldEmotionLabel,
+                          hint: t.editGoalFieldEmotionHint,
+                          icon: Icons.emoji_emotions_outlined,
+                        ),
+                      );
+
+                      return Column(
+                        children: [
+                          if (narrow) ...[
+                            importanceField,
+                            const SizedBox(height: 12),
+                            emotionField,
+                          ] else
+                            Row(
+                              children: [
+                                Expanded(child: importanceField),
+                                const SizedBox(width: 12),
+                                Expanded(child: emotionField),
+                              ],
+                            ),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.timelapse_rounded,
+                                size: 18,
+                                color: scheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  t.editGoalHoursValue(
+                                    _hours.toStringAsFixed(1),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              NestPill(
+                                leading: const Icon(
+                                  Icons.schedule_rounded,
+                                  size: 16,
+                                ),
+                                text: t.commonHoursShort(
+                                  _hours.toStringAsFixed(1),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Slider(
+                            value: _hours,
+                            min: 0.5,
+                            max: 14,
+                            divisions: 27,
+                            label: _hours.toStringAsFixed(1),
+                            onChanged: (v) {
+                              setState(() => _hours = v);
+                            },
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 14),

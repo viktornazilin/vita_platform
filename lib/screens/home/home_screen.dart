@@ -18,6 +18,7 @@ import '../../widgets/frosted_rail.dart';
 import '../../widgets/nest/nest_background.dart';
 import '../../widgets/nest/nest_blur_card.dart';
 import '../../services/onboarding_tour_service.dart';
+import '../../services/first_setup_service.dart';
 
 import 'home_dashboard_tab.dart';
 import 'home_launcher_sheet.dart';
@@ -61,9 +62,15 @@ class _HomeViewState extends State<_HomeView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final model = context.read<HomeModel>();
-      OnboardingTourService.startFullAppOnboardingIfNeeded(
+
+      final setupCompleted =
+          await FirstSetupService.ensureLifeBlocksSelected(context);
+
+      if (!mounted || !setupCompleted) return;
+
+      await OnboardingTourService.startFullAppOnboardingIfNeeded(
         context: context,
         onSelectTab: model.select,
         launcherKey: _launcherKey,
@@ -168,7 +175,7 @@ class _HomeViewState extends State<_HomeView> {
       height: outerSize,
       child: FloatingActionButton(
         key: key,
-        heroTag: heroTag,
+        heroTag: null,
         elevation: 0,
         highlightElevation: 0,
         backgroundColor: Colors.transparent,
@@ -419,9 +426,12 @@ class _HomeViewState extends State<_HomeView> {
         bucket: _bucket,
         child: Padding(
           padding: EdgeInsets.only(bottom: bottomInset),
-          child: IndexedStack(
-            index: model.selectedIndex,
-            children: HomeScreen._screens,
+          child: HeroMode(
+            enabled: false,
+            child: IndexedStack(
+              index: model.selectedIndex,
+              children: HomeScreen._screens,
+            ),
           ),
         ),
       ),

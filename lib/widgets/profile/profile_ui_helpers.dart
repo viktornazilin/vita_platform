@@ -15,6 +15,8 @@ class ProfileUi {
     'finance',
     'education',
     'hobbies',
+    'spirituality',
+    'relationships',
   ];
 
   static void snack(BuildContext context, String text) {
@@ -40,12 +42,116 @@ class ProfileUi {
     );
   }
 
-  static LifeBlockMeta blockMeta(String raw) {
+  static String normalizeLifeBlock(String raw) {
     final k = raw.trim().toLowerCase();
+    if (k.isEmpty) return '';
 
     switch (k) {
       case 'health':
       case 'здоровье':
+      case 'healthcare':
+      case 'wellbeing':
+      case 'well-being':
+      case 'sport':
+      case 'спорт':
+        return 'health';
+
+      case 'career':
+      case 'работа':
+      case 'карьера':
+      case 'job':
+      case 'work':
+      case 'business':
+      case 'бизнес':
+        return 'career';
+
+      case 'family':
+      case 'семья':
+        return 'family';
+
+      case 'finance':
+      case 'finances':
+      case 'финансы':
+      case 'money':
+      case 'деньги':
+      case 'financial':
+        return 'finance';
+
+      case 'education':
+      case 'study':
+      case 'учёба':
+      case 'учеба':
+      case 'образование':
+      case 'learning':
+      case 'обучение':
+      case 'развитие':
+        return 'education';
+
+      case 'hobby':
+      case 'hobbies':
+      case 'хобби':
+        return 'hobbies';
+
+      case 'spirituality':
+      case 'spirit':
+      case 'духовность':
+        return 'spirituality';
+
+      case 'relationships':
+      case 'relationship':
+      case 'relations':
+      case 'отношения':
+        return 'relationships';
+
+      case 'self':
+      case 'selfdevelopment':
+      case 'self-development':
+      case 'personal':
+      case 'personal growth':
+      case 'личное':
+      case 'саморазвитие':
+        return 'self';
+
+      case 'travel':
+      case 'traveling':
+      case 'путешествия':
+        return 'travel';
+
+      case 'home':
+      case 'house':
+      case 'дом':
+        return 'home';
+
+      case 'general':
+      case 'общий':
+      case 'общее':
+      case 'общие':
+      case 'без категории':
+        return 'general';
+
+      default:
+        return k;
+    }
+  }
+
+  static List<String> normalizeLifeBlocks(Iterable<String> values) {
+    final seen = <String>{};
+    final out = <String>[];
+
+    for (final raw in values) {
+      final key = normalizeLifeBlock(raw);
+      if (key.isEmpty || key == 'general') continue;
+      if (seen.add(key)) out.add(key);
+    }
+
+    return out;
+  }
+
+  static LifeBlockMeta blockMeta(String raw) {
+    final k = normalizeLifeBlock(raw);
+
+    switch (k) {
+      case 'health':
         return const LifeBlockMeta(
           key: 'health',
           labelKey: 'lifeBlockHealth',
@@ -53,8 +159,6 @@ class ProfileUi {
         );
 
       case 'career':
-      case 'работа':
-      case 'карьера':
         return const LifeBlockMeta(
           key: 'career',
           labelKey: 'lifeBlockCareer',
@@ -62,7 +166,6 @@ class ProfileUi {
         );
 
       case 'family':
-      case 'семья':
         return const LifeBlockMeta(
           key: 'family',
           labelKey: 'lifeBlockFamily',
@@ -70,9 +173,6 @@ class ProfileUi {
         );
 
       case 'finance':
-      case 'финансы':
-      case 'money':
-      case 'деньги':
         return const LifeBlockMeta(
           key: 'finance',
           labelKey: 'lifeBlockFinance',
@@ -80,59 +180,158 @@ class ProfileUi {
         );
 
       case 'education':
-      case 'study':
-      case 'учёба':
-      case 'образование':
-      case 'learning':
-      case 'развитие':
         return const LifeBlockMeta(
           key: 'education',
           labelKey: 'lifeBlockEducation',
           icon: Icons.menu_book_rounded,
         );
 
-      case 'hobby':
       case 'hobbies':
-      case 'хобби':
         return const LifeBlockMeta(
           key: 'hobbies',
           labelKey: 'lifeBlockHobbies',
           icon: Icons.palette_rounded,
         );
 
-      default:
+      case 'spirituality':
         return const LifeBlockMeta(
-          key: 'hobbies',
-          labelKey: 'lifeBlockHobbies',
-          icon: Icons.palette_rounded,
+          key: 'spirituality',
+          labelKey: 'lifeBlockSpirituality',
+          icon: Icons.self_improvement_rounded,
+        );
+
+      case 'relationships':
+        return const LifeBlockMeta(
+          key: 'relationships',
+          labelKey: 'lifeBlockRelationships',
+          icon: Icons.people_alt_rounded,
+        );
+
+      case 'self':
+        return const LifeBlockMeta(
+          key: 'self',
+          labelKey: 'lifeBlockSelf',
+          icon: Icons.psychology_alt_rounded,
+        );
+
+      case 'travel':
+        return const LifeBlockMeta(
+          key: 'travel',
+          labelKey: 'lifeBlockTravel',
+          icon: Icons.flight_takeoff_rounded,
+        );
+
+      case 'home':
+        return const LifeBlockMeta(
+          key: 'home',
+          labelKey: 'lifeBlockHome',
+          icon: Icons.house_rounded,
+        );
+
+      default:
+        return LifeBlockMeta(
+          key: k.isEmpty ? 'general' : k,
+          labelKey: 'lifeBlockCustom',
+          icon: Icons.circle_rounded,
         );
     }
   }
 
   static String blockLabel(BuildContext context, String raw) {
-    final l = AppLocalizations.of(context)!;
-    final meta = blockMeta(raw);
+    final key = blockMeta(raw).key;
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
 
-    switch (meta.labelKey) {
-      case 'lifeBlockHealth':
-        return l.lifeBlockHealth;
-      case 'lifeBlockCareer':
-        return l.lifeBlockCareer;
-      case 'lifeBlockFamily':
-        return l.lifeBlockFamily;
-      case 'lifeBlockFinance':
-        return l.lifeBlockFinance;
-      case 'lifeBlockEducation':
-        return l.lifeBlockEducation;
-      case 'lifeBlockHobbies':
-        return l.lifeBlockHobbies;
-      default:
-        return l.lifeBlockHobbies;
-    }
+    const labels = <String, Map<String, String>>{
+      'ru': {
+        'general': 'Общее',
+        'health': 'Здоровье',
+        'career': 'Карьера',
+        'family': 'Семья',
+        'finance': 'Финансы',
+        'education': 'Образование',
+        'hobbies': 'Хобби',
+        'spirituality': 'Духовность',
+        'relationships': 'Отношения',
+        'self': 'Саморазвитие',
+        'travel': 'Путешествия',
+        'home': 'Дом',
+      },
+      'en': {
+        'general': 'General',
+        'health': 'Health',
+        'career': 'Career',
+        'family': 'Family',
+        'finance': 'Finance',
+        'education': 'Education',
+        'hobbies': 'Hobbies',
+        'spirituality': 'Spirituality',
+        'relationships': 'Relationships',
+        'self': 'Self-development',
+        'travel': 'Travel',
+        'home': 'Home',
+      },
+      'de': {
+        'general': 'Allgemein',
+        'health': 'Gesundheit',
+        'career': 'Karriere',
+        'family': 'Familie',
+        'finance': 'Finanzen',
+        'education': 'Bildung',
+        'hobbies': 'Hobbys',
+        'spirituality': 'Spiritualität',
+        'relationships': 'Beziehungen',
+        'self': 'Selbstentwicklung',
+        'travel': 'Reisen',
+        'home': 'Zuhause',
+      },
+      'fr': {
+        'general': 'Général',
+        'health': 'Santé',
+        'career': 'Carrière',
+        'family': 'Famille',
+        'finance': 'Finances',
+        'education': 'Éducation',
+        'hobbies': 'Loisirs',
+        'spirituality': 'Spiritualité',
+        'relationships': 'Relations',
+        'self': 'Développement personnel',
+        'travel': 'Voyages',
+        'home': 'Maison',
+      },
+      'es': {
+        'general': 'General',
+        'health': 'Salud',
+        'career': 'Carrera',
+        'family': 'Familia',
+        'finance': 'Finanzas',
+        'education': 'Educación',
+        'hobbies': 'Aficiones',
+        'spirituality': 'Espiritualidad',
+        'relationships': 'Relaciones',
+        'self': 'Desarrollo personal',
+        'travel': 'Viajes',
+        'home': 'Hogar',
+      },
+      'tr': {
+        'general': 'Genel',
+        'health': 'Sağlık',
+        'career': 'Kariyer',
+        'family': 'Aile',
+        'finance': 'Finans',
+        'education': 'Eğitim',
+        'hobbies': 'Hobiler',
+        'spirituality': 'Maneviyat',
+        'relationships': 'İlişkiler',
+        'self': 'Kişisel gelişim',
+        'travel': 'Seyahat',
+        'home': 'Ev',
+      },
+    };
+
+    return labels[lang]?[key] ?? labels['en']?[key] ?? raw;
   }
 
   static Future<String?> promptText(
-
     BuildContext context, {
     required String title,
     required String label,
@@ -357,16 +556,14 @@ class ProfileUi {
     );
   }
 
-
   static Future<List<String>?> editChipsDialog(
     BuildContext context, {
     required String title,
     required List<String> initial,
-    String? hint,
+    String hint = 'Введите через запятую',
   }) async {
     final l = AppLocalizations.of(context)!;
-    final ctrl = TextEditingController(text: initial.join(', '));
-    final effectiveHint = hint ?? l.profileEditChipsDefaultHint;
+    final ctrl = TextEditingController(text: normalizeLifeBlocks(initial).join(', '));
 
     final res = await showModalBottomSheet<List<String>>(
       context: context,
@@ -390,7 +587,7 @@ class ProfileUi {
               TextField(
                 controller: ctrl,
                 maxLines: 3,
-                decoration: InputDecoration(hintText: effectiveHint),
+                decoration: InputDecoration(hintText: hint),
               ),
               const SizedBox(height: 10),
               Row(
@@ -408,13 +605,12 @@ class ProfileUi {
                         final raw = ctrl.text.trim();
                         final list = raw.isEmpty
                             ? <String>[]
-                            : raw
-                                  .split(',')
-                                  .map((e) => e.trim())
-                                  .where((e) => e.isNotEmpty)
-                                  .toSet()
-                                  .toList()
-                              ..sort();
+                            : normalizeLifeBlocks(
+                                raw
+                                    .split(',')
+                                    .map((e) => e.trim())
+                                    .where((e) => e.isNotEmpty),
+                              )..sort();
                         Navigator.pop(ctx, list);
                       },
                       child: Text(l.commonSave),
@@ -438,7 +634,7 @@ class ProfileUi {
     required List<String> initial,
   }) async {
     final l = AppLocalizations.of(context)!;
-    final selected = initial.map((e) => blockMeta(e).key).toSet();
+    final selected = normalizeLifeBlocks(initial).toSet();
 
     final res = await showModalBottomSheet<List<String>>(
       context: context,
@@ -571,6 +767,7 @@ class ProfileUi {
     required VoidCallback onEdit,
   }) {
     final scheme = Theme.of(context).colorScheme;
+    final visibleItems = normalizeLifeBlocks(items);
 
     final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w900,
@@ -598,7 +795,7 @@ class ProfileUi {
           ],
         ),
         const SizedBox(height: 10),
-        if (items.isEmpty)
+        if (visibleItems.isEmpty)
           Text(
             '—',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -610,7 +807,7 @@ class ProfileUi {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: items.map((e) => nestChip(context, e)).toList(),
+            children: visibleItems.map((e) => nestChip(context, e)).toList(),
           ),
       ],
     );
@@ -718,4 +915,3 @@ class _SheetHeader extends StatelessWidget {
     );
   }
 }
-

@@ -93,7 +93,7 @@ class ProfileModel extends ChangeNotifier {
       goalsByBlock = _jsonToStringMap(row['goals_by_block']);
 
       priorities = ((row['priorities'] as List?) ?? []).map((e) => '$e').toList();
-      lifeBlocks = ((row['life_blocks'] as List?) ?? []).map((e) => '$e').toList();
+      lifeBlocks = _normalizeLifeBlocks(row['life_blocks']);
 
       targetHours = (row['target_hours'] as num?)?.toDouble() ?? 14;
       weights = ((row['weights'] as List?) ?? [])
@@ -114,6 +114,114 @@ class ProfileModel extends ChangeNotifier {
       return v.map((k, val) => MapEntry('$k', val == null ? '' : '$val'));
     }
     return {};
+  }
+
+  String _normalizeLifeBlock(String raw) {
+    final v = raw.trim().toLowerCase();
+    if (v.isEmpty) return '';
+
+    switch (v) {
+      case 'general':
+      case 'общий':
+      case 'общее':
+      case 'общие':
+      case 'без категории':
+        return 'general';
+
+      case 'health':
+      case 'здоровье':
+      case 'healthcare':
+      case 'wellbeing':
+      case 'well-being':
+      case 'sport':
+      case 'спорт':
+        return 'health';
+
+      case 'career':
+      case 'карьера':
+      case 'работа':
+      case 'job':
+      case 'work':
+      case 'business':
+      case 'бизнес':
+        return 'career';
+
+      case 'family':
+      case 'семья':
+        return 'family';
+
+      case 'finance':
+      case 'finances':
+      case 'финансы':
+      case 'money':
+      case 'financial':
+      case 'деньги':
+        // Profile UI uses `finance` as the canonical key.
+        return 'finance';
+
+      case 'education':
+      case 'learning':
+      case 'study':
+      case 'учеба':
+      case 'учёба':
+      case 'образование':
+      case 'обучение':
+        return 'education';
+
+      case 'hobby':
+      case 'hobbies':
+      case 'хобби':
+        return 'hobbies';
+
+      case 'spirituality':
+      case 'spirit':
+      case 'духовность':
+        return 'spirituality';
+
+      case 'relationships':
+      case 'relationship':
+      case 'relations':
+      case 'отношения':
+        return 'relationships';
+
+      case 'self':
+      case 'selfdevelopment':
+      case 'self-development':
+      case 'personal':
+      case 'personal growth':
+      case 'личное':
+      case 'саморазвитие':
+        return 'self';
+
+      case 'travel':
+      case 'traveling':
+      case 'путешествия':
+        return 'travel';
+
+      case 'home':
+      case 'house':
+      case 'дом':
+        return 'home';
+
+      default:
+        return v;
+    }
+  }
+
+  List<String> _normalizeLifeBlocks(dynamic value) {
+    final raw = ((value as List?) ?? const [])
+        .map((e) => _normalizeLifeBlock('$e'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    final seen = <String>{};
+    final out = <String>[];
+
+    for (final key in raw) {
+      if (seen.add(key)) out.add(key);
+    }
+
+    return out;
   }
 
   Future<void> _loadXp() async {
@@ -163,7 +271,7 @@ class ProfileModel extends ChangeNotifier {
         'has_completed_questionnaire': true,
       });
 
-  Future<String?> setLifeBlocks(List<String> v) => savePatch({'life_blocks': v});
+  Future<String?> setLifeBlocks(List<String> v) => savePatch({'life_blocks': _normalizeLifeBlocks(v)});
   Future<String?> setPriorities(List<String> v) => savePatch({'priorities': v});
   Future<String?> setTargetHours(double v) => savePatch({'target_hours': v});
   Future<String?> setPreferredLanguage(String? v) =>
