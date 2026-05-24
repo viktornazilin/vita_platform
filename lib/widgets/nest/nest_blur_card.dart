@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// Теперь это не glassmorphism-компонент по умолчанию.
-/// Название сохранено ради совместимости, но визуально карточка стала
-/// значительно спокойнее и ближе к corporate / editorial style.
 class NestBlurCard extends StatelessWidget {
   final Widget child;
   final double radius;
   final EdgeInsets padding;
   final VoidCallback? onTap;
-
-  /// Сохраняем параметры ради совместимости со старыми вызовами,
-  /// но визуально больше не строим карточку вокруг blur/opacity.
   final double opacity;
   final double blur;
+  final Color? accentColor;
 
   const NestBlurCard({
     super.key,
@@ -20,58 +15,70 @@ class NestBlurCard extends StatelessWidget {
     this.radius = 26,
     this.padding = const EdgeInsets.all(16),
     this.onTap,
-    this.opacity = 0.70,
+    this.opacity = 0.92,
     this.blur = 18,
+    this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = accentColor ?? scheme.secondary;
 
     final backgroundColor = isDark
-        ? scheme.surfaceContainerLow
-        : scheme.surfaceContainerLowest;
+        ? Color.lerp(scheme.surfaceContainerLow, accent, 0.07)!
+        : Color.lerp(scheme.surfaceContainerLowest, accent, 0.115)!;
 
-    final borderColor = scheme.outlineVariant;
+    final borderColor = Color.lerp(
+      scheme.outlineVariant,
+      accent,
+      isDark ? 0.28 : 0.42,
+    )!;
 
     final shadow = isDark
         ? <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
+              color: Colors.black.withOpacity(0.24),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
             ),
           ]
         : <BoxShadow>[
             BoxShadow(
-              color: const Color(0xFF004A98).withOpacity(0.06),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
+              color: scheme.primary.withOpacity(0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: accent.withOpacity(0.16),
+              blurRadius: 26,
+              offset: const Offset(0, 12),
             ),
           ];
 
-    final content = Padding(
-      padding: padding,
-      child: child,
+    final content = Padding(padding: padding, child: child);
+
+    final decorated = AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: borderColor, width: 1.45),
+        boxShadow: shadow,
+      ),
+      child: content,
     );
+
+    if (onTap == null) return decorated;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(radius),
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: borderColor),
-            boxShadow: shadow,
-          ),
-          child: content,
-        ),
+        child: decorated,
       ),
     );
   }

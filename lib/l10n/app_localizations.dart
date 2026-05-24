@@ -6753,6 +6753,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Plan: {hours} h'**
   String launcherPlannedHoursDescription(Object hours);
+
+  /// No description provided for @profileGdprSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & GDPR'**
+  String get profileGdprSection;
+
+  /// No description provided for @profileGdprExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export my data'**
+  String get profileGdprExportTitle;
+
+  /// No description provided for @profileGdprExportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates a JSON export of all app data linked to your account.'**
+  String get profileGdprExportSubtitle;
+
+  /// No description provided for @profileGdprNotSignedInToast.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not signed in. Data export is not possible.'**
+  String get profileGdprNotSignedInToast;
+
+  /// No description provided for @profileGdprDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'GDPR data export created'**
+  String get profileGdprDialogTitle;
+
+  /// No description provided for @profileGdprDialogFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'File name: {fileName}'**
+  String profileGdprDialogFileName(String fileName);
+
+  /// No description provided for @profileGdprDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The export was created as JSON and copied to your clipboard.\n\nYou can now paste the content into a file ending with .json.'**
+  String get profileGdprDialogBody;
+
+  /// No description provided for @profileGdprDialogPreviewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview:'**
+  String get profileGdprDialogPreviewLabel;
+
+  /// No description provided for @profileGdprCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get profileGdprCopyButton;
+
+  /// No description provided for @profileGdprDoneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get profileGdprDoneButton;
+
+  /// No description provided for @profileGdprCopiedAgainToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Data export was copied to the clipboard again.'**
+  String get profileGdprCopiedAgainToast;
+
+  /// No description provided for @profileGdprCreatedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'GDPR data export was created and copied.'**
+  String get profileGdprCreatedToast;
+
+  /// No description provided for @profileGdprFailedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Data export failed: {error}'**
+  String profileGdprFailedToast(String error);
+
+  /// No description provided for @profileGdprExportNoteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'This export contains the authenticated user account, the public.users profile row, all user-scoped app tables, and reference tables required to understand exported answers.'**
+  String get profileGdprExportNoteAccount;
+
+  /// No description provided for @profileGdprExportNoteRls.
+  ///
+  /// In en, this message translates to:
+  /// **'The export is limited by Supabase Row Level Security. Tables that do not exist or are not readable are returned with an _export_warning entry.'**
+  String get profileGdprExportNoteRls;
+
+  /// No description provided for @profileGdprExportNoteEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted payload fields are exported as stored. Decryption depends on the app encryption implementation and the active user session.'**
+  String get profileGdprExportNoteEncrypted;
 }
 
 class _AppLocalizationsDelegate

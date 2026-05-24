@@ -1778,5 +1778,35 @@
   "placeholders": {
     "hours": {}
   }
-}
+},
+"profileGdprSection": "Confidentialité et GDPR",
+"profileGdprExportTitle": "Exporter mes données",
+"profileGdprExportSubtitle": "Crée une exportation JSON de toutes les données de l’app liées à ton compte.",
+"profileGdprNotSignedInToast": "Tu n’es pas connecté. L’export des données n’est pas possible.",
+"profileGdprDialogTitle": "Export de données GDPR créé",
+"profileGdprDialogFileName": "Nom du fichier : {fileName}",
+"@profileGdprDialogFileName": {
+  "placeholders": {
+    "fileName": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprDialogBody": "L’export a été créé au format JSON et copié dans le presse-papiers.\n\nTu peux maintenant coller le contenu dans un fichier avec l’extension .json.",
+"profileGdprDialogPreviewLabel": "Aperçu :",
+"profileGdprCopyButton": "Copier",
+"profileGdprDoneButton": "Terminé",
+"profileGdprCopiedAgainToast": "L’export des données a de nouveau été copié dans le presse-papiers.",
+"profileGdprCreatedToast": "L’export de données GDPR a été créé et copié.",
+"profileGdprFailedToast": "Échec de l’export des données : {error}",
+"@profileGdprFailedToast": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprExportNoteAccount": "Cet export contient le compte utilisateur authentifié, l’enregistrement de profil public.users, toutes les tables de l’app liées à l’utilisateur et les tables de référence nécessaires pour comprendre les réponses exportées.",
+"profileGdprExportNoteRls": "L’export est limité par Supabase Row Level Security. Les tables inexistantes ou non lisibles sont retournées avec une entrée _export_warning.",
+"profileGdprExportNoteEncrypted": "Les champs encrypted_payload sont exportés tels qu’ils sont stockés. Le déchiffrement dépend de l’implémentation du chiffrement dans l’app et de la session utilisateur active."
 }

@@ -58,7 +58,6 @@ class _HomeViewState extends State<_HomeView> {
   final GlobalKey _helpKey = GlobalKey(debugLabel: 'nest_help');
   final GlobalKey _railKey = GlobalKey(debugLabel: 'nest_navigation_rail');
 
-
   @override
   void initState() {
     super.initState();
@@ -158,65 +157,97 @@ class _HomeViewState extends State<_HomeView> {
   }) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = cs.secondary;
+
+    final outerSize = size;
+    final innerSize = small ? size * 0.68 : size * 0.66;
+    final logoSize = small ? size * 0.44 : size * 0.42;
 
     return SizedBox(
-      width: size,
-      height: size,
+      width: outerSize,
+      height: outerSize,
       child: FloatingActionButton(
         key: key,
         heroTag: heroTag,
         elevation: 0,
         highlightElevation: 0,
         backgroundColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(size * 0.32),
-        ),
+        splashColor: cs.primary.withOpacity(0.10),
+        shape: const CircleBorder(),
         onPressed: onPressed,
-        child: Container(
+        child: DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(size * 0.32),
+            shape: BoxShape.circle,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isDark
                   ? [
-                      cs.surfaceContainerHighest,
-                      cs.primary.withOpacity(0.88),
+                      cs.primary.withOpacity(0.95),
+                      cs.primaryContainer.withOpacity(0.96),
+                      cs.secondary.withOpacity(0.72),
                     ]
                   : [
-                      cs.primary.withOpacity(0.92),
-                      cs.secondary.withOpacity(0.90),
+                      cs.primary.withOpacity(0.98),
+                      Color.lerp(cs.primaryContainer, accent, 0.22)!.withOpacity(0.96),
+                      accent.withOpacity(0.92),
                     ],
             ),
             border: Border.all(
               color: isDark
-                  ? cs.outline.withOpacity(0.70)
-                  : Colors.white.withOpacity(0.85),
+                  ? Colors.white.withOpacity(0.28)
+                  : Colors.white.withOpacity(0.88),
+              width: small ? 1.0 : 1.4,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(0.22)
-                    : cs.primary.withOpacity(0.16),
+                    ? cs.primary.withOpacity(0.20)
+                    : accent.withOpacity(0.28),
+                blurRadius: small ? 12 : 22,
+                offset: Offset(0, small ? 5 : 10),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.24 : 0.06),
                 blurRadius: small ? 10 : 18,
                 offset: Offset(0, small ? 4 : 8),
               ),
             ],
           ),
           child: Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(size * 0.26),
-              child: Container(
+            child: Container(
+              width: innerSize,
+              height: innerSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
                 color: isDark
-                    ? cs.surfaceContainerLow.withOpacity(0.96)
-                    : Colors.white.withOpacity(0.94),
-                padding: EdgeInsets.all(small ? 5 : 8),
-                child: Image.asset(
-                  'assets/images/logo_simple.png',
-                  width: size * 0.55,
-                  height: size * 0.55,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
+                    ? cs.surface.withOpacity(0.92)
+                    : Colors.white.withOpacity(0.88),
+                border: Border.all(
+                  color: isDark
+                      ? cs.outlineVariant.withOpacity(0.55)
+                      : Colors.white.withOpacity(0.92),
+                  width: small ? 0.8 : 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.18 : 0.06),
+                    blurRadius: small ? 8 : 12,
+                    offset: Offset(0, small ? 3 : 5),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: ClipOval(
+                  child: SizedBox(
+                    width: logoSize,
+                    height: logoSize,
+                    child: Image.asset(
+                      'assets/images/logo_simple.png',
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -238,6 +269,7 @@ class _HomeViewState extends State<_HomeView> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -247,17 +279,34 @@ class _HomeViewState extends State<_HomeView> {
         12,
       ),
       child: NestBlurCard(
-        radius: 24,
+        radius: 26,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        accentColor: cs.secondary,
         child: Row(
           children: [
             Container(
               width: compact ? 44 : 48,
               height: compact ? 44 : 48,
               decoration: BoxDecoration(
-                color: cs.primary.withOpacity(0.10),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    cs.primary.withOpacity(isDark ? 0.30 : 0.16),
+                    cs.secondary.withOpacity(isDark ? 0.18 : 0.24),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cs.outlineVariant),
+                border: Border.all(
+                  color: Color.lerp(cs.outlineVariant, cs.secondary, 0.28)!,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.secondary.withOpacity(isDark ? 0.08 : 0.13),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Icon(
                 _iconFor(model.selectedIndex),
@@ -295,9 +344,17 @@ class _HomeViewState extends State<_HomeView> {
               key: _helpKey,
               tooltip: 'How-To',
               style: IconButton.styleFrom(
-                backgroundColor: cs.surfaceContainerHighest.withOpacity(0.55),
+                backgroundColor: Color.lerp(
+                  cs.surfaceContainerHighest,
+                  cs.secondary,
+                  isDark ? 0.10 : 0.18,
+                ),
+                foregroundColor: isDark ? cs.onSurface : cs.onSecondaryContainer,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                side: BorderSide(
+                  color: Color.lerp(cs.outlineVariant, cs.secondary, 0.24)!,
                 ),
               ),
               onPressed: () => OnboardingTourService.startFullAppOnboarding(
@@ -314,10 +371,16 @@ class _HomeViewState extends State<_HomeView> {
             IconButton(
               tooltip: l.homeSignOutTooltip,
               style: IconButton.styleFrom(
-                backgroundColor: cs.surfaceContainerHighest.withOpacity(0.55),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                backgroundColor: Color.lerp(
+                  cs.surfaceContainerHighest,
+                  cs.primary,
+                  isDark ? 0.08 : 0.12,
                 ),
+                foregroundColor: cs.onSurfaceVariant,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                side: BorderSide(color: cs.outlineVariant.withOpacity(0.75)),
               ),
               onPressed: () => _confirmSignOut(context),
               icon: const Icon(Icons.logout_rounded),
@@ -376,10 +439,10 @@ class _HomeViewState extends State<_HomeView> {
         final isDashboard = model.selectedIndex == 0;
         final safeBottom = MediaQuery.of(context).padding.bottom;
 
-        // ↓↓↓ СДЕЛАНО НАМНОГО КОМПАКТНЕЕ
-        final double fabSizeCompact = isDashboard ? 72 : 82;
-        final double fabBottomCompact = 10 + safeBottom;
-        final double fabReserveCompact = 64 + safeBottom;
+        // The launcher is a true floating button now.
+        // No reserved bottom padding and no artificial bottom rectangle.
+        final double fabSizeCompact = isDashboard ? 68 : 76;
+        final double fabBottomCompact = -2;
         final double railFabSize = 44;
 
         final fab = ValueListenableBuilder<bool>(
@@ -411,9 +474,13 @@ class _HomeViewState extends State<_HomeView> {
 
         if (isCompact) {
           return Scaffold(
+            extendBody: true,
+            resizeToAvoidBottomInset: false,
             backgroundColor: Colors.transparent,
             body: NestBackground(
+              useSoftGradient: true,
               child: Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Column(
                     children: [
@@ -431,7 +498,7 @@ class _HomeViewState extends State<_HomeView> {
                           child: _buildAnimatedContent(
                             context,
                             model,
-                            bottomInset: fabReserveCompact,
+                            bottomInset: 0,
                           ),
                         ),
                       ),
@@ -454,6 +521,7 @@ class _HomeViewState extends State<_HomeView> {
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: NestBackground(
+            useSoftGradient: true,
             child: Row(
               children: [
                 Padding(
@@ -465,6 +533,18 @@ class _HomeViewState extends State<_HomeView> {
                       onDestinationSelected: model.select,
                       extended: extendedRail,
                       useIndicator: true,
+                      indicatorColor: Color.lerp(
+                        Theme.of(context).colorScheme.primaryContainer,
+                        Theme.of(context).colorScheme.secondaryContainer,
+                        0.36,
+                      ),
+                      selectedIconTheme: IconThemeData(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      selectedLabelTextStyle: Theme.of(context)
+                          .textTheme
+                          .labelLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
                       backgroundColor: Colors.transparent,
                       leading: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),

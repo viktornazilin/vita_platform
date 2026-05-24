@@ -96,7 +96,7 @@ class HobbySummary {
 
   double get weekProgress {
     if (targetMinutesWeek <= 0) return 0.0;
-    return (spentMinutesWeek / targetMinutesWeek).clamp(0.0, 1.0);
+    return (spentMinutesWeek / targetMinutesWeek).clamp(0.0, 1.0).toDouble();
   }
 }
 
@@ -253,6 +253,151 @@ class HomeTrackersRepo {
     }
   }
 
+  Future<Map<String, dynamic>> _encryptHobbyPayload({
+    required String title,
+  }) {
+    return _crypto.encryptJson({
+      'title': _normText(title),
+    });
+  }
+
+  Future<Map<String, dynamic>> _decryptHobbyRow(
+    Map<String, dynamic> row,
+  ) async {
+    final encryptedPayload = row['encrypted_payload'];
+
+    if (encryptedPayload == null || encryptedPayload is! Map) {
+      return row;
+    }
+
+    try {
+      final decryptedPayload = await _crypto.decryptJson(
+        Map<String, dynamic>.from(encryptedPayload),
+      );
+
+      final title = decryptedPayload['title'];
+
+      if (title is String && title.trim().isNotEmpty) {
+        row['title'] = title.trim();
+      }
+
+      return row;
+    } catch (_) {
+      // Старые записи или записи, зашифрованные другим локальным ключом,
+      // оставляем как есть, чтобы экран не падал.
+      return row;
+    }
+  }
+
+  Future<Map<String, dynamic>> _encryptHobbyEntryPayload({
+    String? note,
+  }) {
+    return _crypto.encryptJson({
+      'note': _normOrNull(note),
+    });
+  }
+
+  Future<Map<String, dynamic>> _decryptHobbyEntryRow(
+    Map<String, dynamic> row,
+  ) async {
+    final encryptedPayload = row['encrypted_payload'];
+
+    if (encryptedPayload == null || encryptedPayload is! Map) {
+      return row;
+    }
+
+    try {
+      final decryptedPayload = await _crypto.decryptJson(
+        Map<String, dynamic>.from(encryptedPayload),
+      );
+
+      final note = decryptedPayload['note'];
+
+      row['note'] = note is String && note.trim().isNotEmpty
+          ? note.trim()
+          : '';
+
+      return row;
+    } catch (_) {
+      // Старые записи или записи, зашифрованные другим локальным ключом,
+      // оставляем как есть, чтобы экран не падал.
+      return row;
+    }
+  }
+
+  Future<Map<String, dynamic>> _encryptMealPayload({
+    String? description,
+  }) {
+    return _crypto.encryptJson({
+      'description': _normOrNull(description),
+    });
+  }
+
+  Future<Map<String, dynamic>> _decryptMealRow(
+    Map<String, dynamic> row,
+  ) async {
+    final encryptedPayload = row['encrypted_payload'];
+
+    if (encryptedPayload == null || encryptedPayload is! Map) {
+      return row;
+    }
+
+    try {
+      final decryptedPayload = await _crypto.decryptJson(
+        Map<String, dynamic>.from(encryptedPayload),
+      );
+
+      final description = decryptedPayload['description'];
+
+      row['description'] =
+          description is String && description.trim().isNotEmpty
+              ? description.trim()
+              : '';
+
+      return row;
+    } catch (_) {
+      // Старые записи или записи, зашифрованные другим локальным ключом,
+      // оставляем как есть, чтобы экран не падал.
+      return row;
+    }
+  }
+
+  Future<Map<String, dynamic>> _encryptBurnPayload({
+    String? note,
+  }) {
+    return _crypto.encryptJson({
+      'note': _normOrNull(note),
+    });
+  }
+
+  Future<Map<String, dynamic>> _decryptBurnRow(
+    Map<String, dynamic> row,
+  ) async {
+    final encryptedPayload = row['encrypted_payload'];
+
+    if (encryptedPayload == null || encryptedPayload is! Map) {
+      return row;
+    }
+
+    try {
+      final decryptedPayload = await _crypto.decryptJson(
+        Map<String, dynamic>.from(encryptedPayload),
+      );
+
+      final note = decryptedPayload['note'];
+
+      row['note'] = note is String && note.trim().isNotEmpty
+          ? note.trim()
+          : '';
+
+      return row;
+    } catch (_) {
+      // Старые записи или записи, зашифрованные другим локальным ключом,
+      // оставляем как есть, чтобы экран не падал.
+      return row;
+    }
+  }
+
   Future<List<ShoppingItemData>> listShoppingItems() async {
     final rows = await _client
         .from('shopping_items')
@@ -388,7 +533,7 @@ class HomeTrackersRepo {
 
     final hobbiesRaw = await _client
         .from('hobby_profiles')
-        .select('id,title,target_minutes_week')
+        .select('id,title,target_minutes_week,encrypted_payload')
         .eq('user_id', _uid)
         .order('created_at', ascending: true);
 
@@ -416,18 +561,26 @@ class HomeTrackersRepo {
       }
     }
 
-    return (hobbiesRaw as List).map((raw) {
-      final row = Map<String, dynamic>.from(raw as Map);
-      final hobbyId = (row['id'] ?? '').toString();
+    final out = <HobbySummary>[];
 
-      return HobbySummary(
-        hobbyId: hobbyId,
-        hobbyTitle: (row['title'] ?? '').toString(),
-        targetMinutesWeek: (row['target_minutes_week'] as num?)?.toInt() ?? 0,
-        spentMinutesToday: spentToday[hobbyId] ?? 0,
-        spentMinutesWeek: spentWeek[hobbyId] ?? 0,
+    for (final raw in hobbiesRaw as List) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final decryptedRow = await _decryptHobbyRow(row);
+      final hobbyId = (decryptedRow['id'] ?? '').toString();
+
+      out.add(
+        HobbySummary(
+          hobbyId: hobbyId,
+          hobbyTitle: (decryptedRow['title'] ?? '').toString(),
+          targetMinutesWeek:
+              (decryptedRow['target_minutes_week'] as num?)?.toInt() ?? 0,
+          spentMinutesToday: spentToday[hobbyId] ?? 0,
+          spentMinutesWeek: spentWeek[hobbyId] ?? 0,
+        ),
       );
-    }).toList();
+    }
+
+    return out;
   }
 
   Future<void> createHobby({
@@ -437,10 +590,19 @@ class HomeTrackersRepo {
     final normalizedTitle = _normText(title);
     if (normalizedTitle.isEmpty) throw Exception('Hobby title cannot be empty');
 
+    final encryptedPayload = await _encryptHobbyPayload(
+      title: normalizedTitle,
+    );
+
     await _client.from('hobby_profiles').insert({
       'user_id': _uid,
-      'title': normalizedTitle,
+
+      // Technical fallback. Real title is stored in encrypted_payload.
+      'title': '[encrypted]',
+
       'target_minutes_week': targetMinutesWeek < 0 ? 0 : targetMinutesWeek,
+      'encrypted_payload': encryptedPayload,
+      'encryption_version': 1,
     });
   }
 
@@ -450,12 +612,22 @@ class HomeTrackersRepo {
     required int minutesSpent,
     String? note,
   }) async {
+    final normalizedNote = _normText(note);
+    final encryptedPayload = await _encryptHobbyEntryPayload(
+      note: normalizedNote,
+    );
+
     await _client.from('hobby_entries').insert({
       'user_id': _uid,
       'hobby_id': hobbyId,
       'entry_date': entryDate.toIso8601String(),
       'minutes_spent': minutesSpent < 0 ? 0 : minutesSpent,
-      'note': _normText(note),
+
+      // Technical fallback. Real note is stored in encrypted_payload.
+      'note': normalizedNote.isEmpty ? '' : '[encrypted]',
+
+      'encrypted_payload': encryptedPayload,
+      'encryption_version': 1,
     });
   }
 
@@ -479,7 +651,7 @@ class HomeTrackersRepo {
 
     final mealsRaw = await _client
         .from('meal_entries')
-        .select('id,meal_type,calories,description')
+        .select('id,meal_type,calories,description,encrypted_payload')
         .eq('user_id', _uid)
         .gte('entry_date', start.toIso8601String())
         .lt('entry_date', end.toIso8601String())
@@ -487,7 +659,7 @@ class HomeTrackersRepo {
 
     final burnsRaw = await _client
         .from('calorie_burn_entries')
-        .select('id,calories_burned,note')
+        .select('id,calories_burned,note,encrypted_payload')
         .eq('user_id', _uid)
         .gte('entry_date', start.toIso8601String())
         .lt('entry_date', end.toIso8601String())
@@ -500,13 +672,21 @@ class HomeTrackersRepo {
         .gte('entry_date', start.toIso8601String())
         .lt('entry_date', end.toIso8601String());
 
-    final meals = (mealsRaw as List)
-        .map((raw) => HealthMealData.fromMap(Map<String, dynamic>.from(raw as Map)))
-        .toList();
+    final meals = <HealthMealData>[];
 
-    final burns = (burnsRaw as List)
-        .map((raw) => HealthBurnData.fromMap(Map<String, dynamic>.from(raw as Map)))
-        .toList();
+    for (final raw in mealsRaw as List) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final decryptedRow = await _decryptMealRow(row);
+      meals.add(HealthMealData.fromMap(decryptedRow));
+    }
+
+    final burns = <HealthBurnData>[];
+
+    for (final raw in burnsRaw as List) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final decryptedRow = await _decryptBurnRow(row);
+      burns.add(HealthBurnData.fromMap(decryptedRow));
+    }
 
     final consumed = meals.fold<int>(0, (sum, item) => sum + item.calories);
     final burned = burns.fold<int>(0, (sum, item) => sum + item.caloriesBurned);
@@ -546,12 +726,22 @@ class HomeTrackersRepo {
     required int calories,
     required String description,
   }) async {
+    final normalizedDescription = _normText(description);
+    final encryptedPayload = await _encryptMealPayload(
+      description: normalizedDescription,
+    );
+
     await _client.from('meal_entries').insert({
       'user_id': _uid,
       'entry_date': entryDate.toIso8601String(),
       'meal_type': mealType,
       'calories': calories < 0 ? 0 : calories,
-      'description': _normText(description),
+
+      // Technical fallback. Real description is stored in encrypted_payload.
+      'description': normalizedDescription.isEmpty ? '' : '[encrypted]',
+
+      'encrypted_payload': encryptedPayload,
+      'encryption_version': 1,
     });
   }
 
@@ -560,11 +750,21 @@ class HomeTrackersRepo {
     required int caloriesBurned,
     String? note,
   }) async {
+    final normalizedNote = _normText(note);
+    final encryptedPayload = await _encryptBurnPayload(
+      note: normalizedNote,
+    );
+
     await _client.from('calorie_burn_entries').insert({
       'user_id': _uid,
       'entry_date': entryDate.toIso8601String(),
       'calories_burned': caloriesBurned < 0 ? 0 : caloriesBurned,
-      'note': _normText(note),
+
+      // Technical fallback. Real note is stored in encrypted_payload.
+      'note': normalizedNote.isEmpty ? '' : '[encrypted]',
+
+      'encrypted_payload': encryptedPayload,
+      'encryption_version': 1,
     });
   }
 

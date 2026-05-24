@@ -3703,4 +3703,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String launcherPlannedHoursDescription(Object hours) {
     return 'Plan: $hours h';
   }
+
+  @override
+  String get profileGdprSection => 'Privacy & GDPR';
+
+  @override
+  String get profileGdprExportTitle => 'Export my data';
+
+  @override
+  String get profileGdprExportSubtitle =>
+      'Creates a JSON export of all app data linked to your account.';
+
+  @override
+  String get profileGdprNotSignedInToast =>
+      'You are not signed in. Data export is not possible.';
+
+  @override
+  String get profileGdprDialogTitle => 'GDPR data export created';
+
+  @override
+  String profileGdprDialogFileName(String fileName) {
+    return 'File name: $fileName';
+  }
+
+  @override
+  String get profileGdprDialogBody =>
+      'The export was created as JSON and copied to your clipboard.\n\nYou can now paste the content into a file ending with .json.';
+
+  @override
+  String get profileGdprDialogPreviewLabel => 'Preview:';
+
+  @override
+  String get profileGdprCopyButton => 'Copy';
+
+  @override
+  String get profileGdprDoneButton => 'Done';
+
+  @override
+  String get profileGdprCopiedAgainToast =>
+      'Data export was copied to the clipboard again.';
+
+  @override
+  String get profileGdprCreatedToast =>
+      'GDPR data export was created and copied.';
+
+  @override
+  String profileGdprFailedToast(String error) {
+    return 'Data export failed: $error';
+  }
+
+  @override
+  String get profileGdprExportNoteAccount =>
+      'This export contains the authenticated user account, the public.users profile row, all user-scoped app tables, and reference tables required to understand exported answers.';
+
+  @override
+  String get profileGdprExportNoteRls =>
+      'The export is limited by Supabase Row Level Security. Tables that do not exist or are not readable are returned with an _export_warning entry.';
+
+  @override
+  String get profileGdprExportNoteEncrypted =>
+      'Encrypted payload fields are exported as stored. Decryption depends on the app encryption implementation and the active user session.';
 }

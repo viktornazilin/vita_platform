@@ -6,6 +6,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../main.dart'; // dbRepo
 import '../../models/week_insights.dart';
+import '../../utils/mental_question_l10n.dart';
 import '../../widgets/report_section_card.dart';
 
 class MentalWeekCard extends StatefulWidget {
@@ -321,7 +322,7 @@ class _YesNoBar extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final isDark = _isDark(context);
 
-    final label = stat.question.text;
+    final label = localizedMentalQuestionText(context, stat.question);
     final ratio = stat.ratio;
 
     return Column(
@@ -402,7 +403,7 @@ class _ScaleSparkline extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final isDark = _isDark(context);
 
-    final label = stat.question.text;
+    final label = localizedMentalQuestionText(context, stat.question);
     final avg = stat.avg;
 
     final minV = stat.question.minValue ?? 1;

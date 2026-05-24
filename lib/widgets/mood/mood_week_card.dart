@@ -78,6 +78,14 @@ class _MoodBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Color fillFor(int score) {
+      if (score >= 4) return cs.secondary;
+      if (score == 3) return cs.primary;
+      if (score > 0) return cs.tertiary;
+      return cs.surfaceContainerHighest;
+    }
 
     return _Inset(
       radius: 18,
@@ -100,9 +108,35 @@ class _MoodBars extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
+                      gradient: v == 0
+                          ? null
+                          : LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color.lerp(fillFor(v), Colors.white, isDark ? 0.06 : 0.18)!,
+                                fillFor(v),
+                              ],
+                            ),
                       color: v == 0
-                          ? cs.surfaceContainerHighest.withOpacity(0.30)
-                          : cs.primary.withOpacity(0.75),
+                          ? cs.surfaceContainerHighest.withOpacity(
+                              isDark ? 0.24 : 0.42,
+                            )
+                          : null,
+                      border: Border.all(
+                        color: v == 0
+                            ? cs.outlineVariant.withOpacity(isDark ? 0.38 : 0.52)
+                            : fillFor(v).withOpacity(isDark ? 0.72 : 0.86),
+                      ),
+                      boxShadow: v == 0
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: fillFor(v).withOpacity(isDark ? 0.20 : 0.18),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -142,7 +176,7 @@ class _MiniPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: cs.onSurfaceVariant),
+            Icon(icon, size: 18, color: cs.secondary),
             const SizedBox(width: 8),
             Text(
               label,
@@ -164,13 +198,33 @@ class _Inset extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = cs.secondary;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.35),
+          color: Color.lerp(
+            cs.surfaceContainerHighest,
+            accent,
+            isDark ? 0.055 : 0.095,
+          ),
           borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
+          border: Border.all(
+            color: Color.lerp(
+              cs.outlineVariant,
+              accent,
+              isDark ? 0.16 : 0.24,
+            )!,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withOpacity(isDark ? 0.025 : 0.055),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: child,
       ),

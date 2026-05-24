@@ -11,10 +11,8 @@ import 'models/register_model.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/onboarding_questionnaire_screen.dart';
 import 'screens/expenses_screen.dart';
 import 'screens/budget_setup_screen.dart';
-import 'screens/epic_intro_screen.dart';
 import 'screens/user_goals_screen.dart';
 
 import 'controllers/theme_controller.dart';
@@ -135,9 +133,6 @@ class _VitaAppState extends State<VitaApp> {
     final ThemeData dark = _patchLadnaTheme(themeCtl.darkTheme, isDark: true);
 
     final bool isLoggedIn = _isReady && _userService.currentUser != null;
-    final bool hasCompleted =
-        _isReady && _userService.hasCompletedQuestionnaire;
-    final bool hasSeenIntro = _isReady && _userService.hasSeenEpicIntro;
 
     return MaterialApp(
       title: 'Ladna',
@@ -159,27 +154,13 @@ class _VitaAppState extends State<VitaApp> {
 
         '/login': (_) => const LoginScreen(),
 
-        '/onboarding': (ctx) => OnboardingQuestionnaireScreen(
-          userService: _userService,
-          onCompleted: () {
-            final loggedIn = _userService.currentUser != null;
-            Navigator.of(
-              ctx,
-            ).pushReplacementNamed(loggedIn ? '/home' : '/login');
-          },
-        ),
-
         '/expenses': (_) => const ExpensesScreen(),
         '/budget': (_) => const BudgetSetupScreen(),
-        '/intro': (_) => EpicIntroScreen(userService: _userService),
       },
       home: !_isReady
           ? const _BootSplash()
           : _StartGate(
-              userService: _userService,
               isLoggedIn: isLoggedIn,
-              hasCompleted: hasCompleted,
-              hasSeenIntro: hasSeenIntro,
             ),
     );
   }
@@ -195,29 +176,18 @@ class _BootSplash extends StatelessWidget {
 }
 
 class _StartGate extends StatelessWidget {
-  final UserService userService;
   final bool isLoggedIn;
-  final bool hasCompleted;
-  final bool hasSeenIntro;
 
   const _StartGate({
-    required this.userService,
     required this.isLoggedIn,
-    required this.hasCompleted,
-    required this.hasSeenIntro,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (!hasSeenIntro) {
-      return EpicIntroScreen(userService: userService);
-    }
-    if (!hasCompleted) {
-      return OnboardingQuestionnaireScreen(userService: userService);
-    }
     if (isLoggedIn) {
       return const HomeScreen();
     }
+
     return const LoginScreen();
   }
 }

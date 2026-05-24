@@ -269,6 +269,168 @@ type Insight = {
   suggestion: string;
 };
 
+type ClientContext = {
+  userGoalsById: Map<string, Partial<UserGoalRow>>;
+  tasksById: Map<string, Partial<TaskRow>>;
+  habitsById: Map<string, Partial<HabitRow>>;
+  mentalAnswers: MentalAnswerRow[];
+};
+
+function isEncryptedPlaceholder(value: unknown) {
+  const s = String(value ?? "").trim().toLowerCase();
+  return (
+    s === "" ||
+    s === "[encrypted]" ||
+    s === "__encrypted__" ||
+    s === "encrypted" ||
+    s.startsWith("[encrypted:")
+  );
+}
+
+function cleanText(value: unknown) {
+  const s = String(value ?? "").trim();
+  if (!s || isEncryptedPlaceholder(s)) return null;
+  return s;
+}
+
+function shortId(id: unknown) {
+  return String(id ?? "").slice(0, 6);
+}
+
+function normalizeClientContext(input: any): ClientContext {
+  const ctx: ClientContext = {
+    userGoalsById: new Map(),
+    tasksById: new Map(),
+    habitsById: new Map(),
+    mentalAnswers: [],
+  };
+
+  const userGoals = Array.isArray(input?.user_goals) ? input.user_goals : [];
+  for (const raw of userGoals) {
+    const id = String(raw?.id ?? "");
+    if (!id) continue;
+    ctx.userGoalsById.set(id, {
+      title: cleanText(raw?.title) ?? undefined,
+      description: cleanText(raw?.description) ?? undefined,
+      life_block: cleanText(raw?.life_block) ?? raw?.life_block ?? undefined,
+      horizon: cleanText(raw?.horizon) ?? raw?.horizon ?? undefined,
+      target_date: raw?.target_date ?? undefined,
+      is_completed: typeof raw?.is_completed === "boolean" ? raw.is_completed : undefined,
+      completed_at: raw?.completed_at ?? undefined,
+    });
+  }
+
+  const tasks = Array.isArray(input?.goals) ? input.goals : Array.isArray(input?.tasks) ? input.tasks : [];
+  for (const raw of tasks) {
+    const id = String(raw?.id ?? "");
+    if (!id) continue;
+    ctx.tasksById.set(id, {
+      title: cleanText(raw?.title) ?? undefined,
+      description: cleanText(raw?.description) ?? undefined,
+      life_block: cleanText(raw?.life_block) ?? raw?.life_block ?? undefined,
+      emotion: cleanText(raw?.emotion) ?? raw?.emotion ?? undefined,
+      user_goal_id: raw?.user_goal_id ?? undefined,
+    });
+  }
+
+  const habits = Array.isArray(input?.habits) ? input.habits : [];
+  for (const raw of habits) {
+    const id = String(raw?.id ?? "");
+    if (!id) continue;
+    ctx.habitsById.set(id, {
+      title: cleanText(raw?.title) ?? undefined,
+      is_negative: typeof raw?.is_negative === "boolean" ? raw.is_negative : undefined,
+    });
+  }
+
+  const mentalAnswers = Array.isArray(input?.mental_answers) ? input.mental_answers : [];
+  for (const raw of mentalAnswers) {
+    const day = String(raw?.day ?? "").slice(0, 10);
+    const questionId = String(raw?.question_id ?? "");
+    if (!day || !questionId) continue;
+
+    const rawInt = raw?.value_int;
+    const rawBool = raw?.value_bool;
+    const rawText = raw?.value_text;
+
+    ctx.mentalAnswers.push({
+      day,
+      question_id: questionId,
+      value_bool: typeof rawBool === "boolean" ? rawBool : null,
+      value_int: rawInt === null || rawInt === undefined ? null : safeNum(rawInt),
+      value_text: cleanText(rawText),
+    });
+  }
+
+  return ctx;
+}
+
+function mergeClientContextIntoRows(
+  userGoals: UserGoalRow[],
+  tasks: TaskRow[],
+  habits: HabitRow[],
+  mentalAnswers: MentalAnswerRow[],
+  clientContextInput: any,
+  fromDay: string,
+  toDay: string,
+) {
+  const ctx = normalizeClientContext(clientContextInput);
+
+  const mergedUserGoals = userGoals.map((g) => {
+    const c = ctx.userGoalsById.get(g.id);
+    const title = cleanText(c?.title) ?? cleanText(g.title) ?? `Цель ${shortId(g.id)}`;
+    const description = cleanText(c?.description) ?? cleanText(g.description);
+    return {
+      ...g,
+      ...c,
+      title,
+      description,
+      life_block: c?.life_block ?? g.life_block,
+      horizon: c?.horizon ?? g.horizon,
+      target_date: c?.target_date ?? g.target_date,
+      is_completed: c?.is_completed ?? g.is_completed,
+      completed_at: c?.completed_at ?? g.completed_at,
+    } as UserGoalRow;
+  });
+
+  const mergedTasks = tasks.map((t) => {
+    const c = ctx.tasksById.get(t.id);
+    return {
+      ...t,
+      ...c,
+      title: cleanText(c?.title) ?? cleanText(t.title) ?? `Задача ${shortId(t.id)}`,
+      description: cleanText(c?.description) ?? cleanText(t.description),
+      life_block: c?.life_block ?? t.life_block,
+      emotion: c?.emotion ?? t.emotion,
+      user_goal_id: c?.user_goal_id ?? t.user_goal_id,
+    } as TaskRow;
+  });
+
+  const mergedHabits = habits.map((h) => {
+    const c = ctx.habitsById.get(h.id);
+    return {
+      ...h,
+      ...c,
+      title: cleanText(c?.title) ?? cleanText(h.title) ?? `Привычка ${shortId(h.id)}`,
+      is_negative: c?.is_negative ?? h.is_negative,
+    } as HabitRow;
+  });
+
+  const clientMentalAnswers = ctx.mentalAnswers.filter((a) => a.day >= fromDay && a.day <= toDay);
+  const mergedMentalAnswers = clientMentalAnswers.length > 0 ? clientMentalAnswers : mentalAnswers;
+
+  return {
+    userGoals: mergedUserGoals,
+    tasks: mergedTasks,
+    habits: mergedHabits,
+    mentalAnswers: mergedMentalAnswers,
+    hasClientContext: Boolean(clientContextInput && Object.keys(clientContextInput).length > 0),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Data loading
+// ─────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────
 // Data loading
 // ─────────────────────────────────────────────────────────────
@@ -278,11 +440,11 @@ async function selectOrThrow<T>(query: PromiseLike<{ data: T | null; error: any 
   return data as T;
 }
 
-async function buildAnalytics(userId: string, periodInput: unknown, dateFrom?: unknown, dateTo?: unknown) {
+async function buildAnalytics(userId: string, periodInput: unknown, dateFrom?: unknown, dateTo?: unknown, clientContext?: any) {
   const range = periodToRange(periodInput, dateFrom, dateTo);
   const { period, from, to, fromDay, toDay, days } = range;
 
-  const [userGoals, tasks, moods, habits, habitEntries, meals] = await Promise.all([
+  let [userGoals, tasks, moods, habits, habitEntries, meals] = await Promise.all([
     selectOrThrow<UserGoalRow[]>(
       admin
         .from("user_goals")
@@ -357,6 +519,21 @@ async function buildAnalytics(userId: string, periodInput: unknown, dateFrom?: u
   } catch (e) {
     console.warn("Mental data skipped:", String(e));
   }
+
+  const merged = mergeClientContextIntoRows(
+    userGoals,
+    tasks,
+    habits,
+    mentalAnswers,
+    clientContext,
+    fromDay,
+    toDay,
+  );
+
+  userGoals = merged.userGoals;
+  tasks = merged.tasks;
+  habits = merged.habits;
+  mentalAnswers = merged.mentalAnswers;
 
   const habitById = new Map(habits.map((h) => [h.id, h]));
   const userGoalById = new Map(userGoals.map((g) => [g.id, g]));
@@ -1097,11 +1274,21 @@ Deno.serve(async (req) => {
     const userId = authData.user.id;
     const body = await req.json().catch(() => ({}));
 
+    const hasClientContext =
+      body?.client_context &&
+      typeof body.client_context === "object" &&
+      Object.keys(body.client_context).length > 0;
+
+    if (hasClientContext && body?.ai_consent !== true) {
+      return errorResponse("AI consent required for client_context", 403);
+    }
+
     const { period, fromDay, toDay, snapshot, stats } = await buildAnalytics(
       userId,
       body.period ?? "week",
       body.date_from,
       body.date_to,
+      body.client_context,
     );
 
     const ruleInsights = buildRuleBasedInsights(snapshot, stats);
@@ -1118,20 +1305,26 @@ Deno.serve(async (req) => {
         }
       : await buildFinalInsightsWithLLM(ruleInsights, snapshot, stats);
 
-    const run = await saveRun({
-      userId,
-      period,
-      fromDay,
-      toDay,
-      snapshot,
-      stats,
-      insights: finalInsights,
-      usedLlm: useLlm,
-    });
+    const allowPlaintextPersist = body?.allow_plaintext_persist === true;
+    const shouldPersistRun = !hasClientContext || allowPlaintextPersist;
+
+    const run = shouldPersistRun
+      ? await saveRun({
+          userId,
+          period,
+          fromDay,
+          toDay,
+          snapshot,
+          stats,
+          insights: finalInsights,
+          usedLlm: useLlm,
+        })
+      : null;
 
     return jsonResponse({
       ok: true,
       run,
+      requires_client_side_persist: hasClientContext && !allowPlaintextPersist,
       period,
       date_from: fromDay,
       date_to: toDay,

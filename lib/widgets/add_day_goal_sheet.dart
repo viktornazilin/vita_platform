@@ -246,6 +246,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
           .select('id, title, life_block, horizon')
           .eq('user_id', userId)
           .eq('life_block', normalizedBlock)
+          .eq('is_completed', false)
           .order('title');
 
       final items = (raw as List)
@@ -260,30 +261,27 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
           .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
           .toList();
 
-      final selectedId = _selectedUserGoalId;
-      if (selectedId != null && !items.any((g) => g.id == selectedId)) {
-        final fallback = _findSelectedGoalFallback();
-        if (fallback != null) {
-          items.add(fallback);
-        }
-      }
-
       items.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+      final selectedId = _selectedUserGoalId;
+      final selectedStillVisible =
+          selectedId == null || items.any((g) => g.id == selectedId);
 
       if (!mounted) return;
 
       setState(() {
         _userGoalsForSelectedBlock = items;
+        if (!selectedStillVisible) {
+          _selectedUserGoalId = null;
+        }
         _loadingUserGoals = false;
       });
     } catch (_) {
       if (!mounted) return;
 
-      final fallback = _findSelectedGoalFallback();
-
       setState(() {
-        _userGoalsForSelectedBlock =
-            fallback == null ? const [] : <UserGoalLinkOption>[fallback];
+        _userGoalsForSelectedBlock = const [];
+        _selectedUserGoalId = null;
         _loadingUserGoals = false;
       });
     }

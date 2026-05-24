@@ -105,8 +105,30 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
             child: Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: cs.surface,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.lerp(cs.surfaceContainerLowest, cs.secondary, 0.045)!,
+                    Color.lerp(cs.surfaceContainerLow, cs.primary, 0.025)!,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Color.lerp(cs.outlineVariant, cs.secondary, 0.22)!,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.secondary.withOpacity(0.10),
+                    blurRadius: 28,
+                    offset: const Offset(0, 12),
+                  ),
+                  BoxShadow(
+                    color: cs.primary.withOpacity(0.06),
+                    blurRadius: 22,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Form(
                 key: formKey,
@@ -256,13 +278,43 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.45),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.lerp(
+              cs.surfaceContainerLowest,
+              isWishlist ? cs.tertiary : cs.secondary,
+              isDark ? 0.045 : 0.070,
+            )!,
+            Color.lerp(
+              cs.surfaceContainerLow,
+              cs.primary,
+              isDark ? 0.025 : 0.035,
+            )!,
+          ],
+        ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(
+          color: Color.lerp(
+            cs.outlineVariant,
+            isWishlist ? cs.tertiary : cs.secondary,
+            isDark ? 0.16 : 0.22,
+          )!,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isWishlist ? cs.tertiary : cs.secondary)
+                .withOpacity(isDark ? 0.04 : 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,6 +328,14 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                 ),
               ),
               FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Color.lerp(
+                    cs.surfaceContainerHighest,
+                    isWishlist ? cs.tertiary : cs.secondary,
+                    isDark ? 0.14 : 0.22,
+                  ),
+                  foregroundColor: cs.onSurface,
+                ),
                 onPressed: () => _showItemSheet(isWishlist: isWishlist),
                 icon: const Icon(Icons.add_rounded),
                 label: Text(l.commonAdd),
@@ -293,6 +353,8 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
               value: item.isBought,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
+              activeColor: isWishlist ? cs.tertiary : cs.secondary,
+              checkColor: isWishlist ? cs.onTertiary : cs.onSecondary,
               onChanged: (v) async {
                 await _repo.toggleShoppingBought(
                   id: item.id,
@@ -338,7 +400,10 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                 ],
               ),
             ),
-            const Divider(height: 1),
+            Divider(
+              height: 1,
+              color: cs.outlineVariant.withOpacity(isDark ? 0.28 : 0.42),
+            ),
           ],
         ],
       ),
@@ -348,6 +413,8 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final basket = _items.where((e) => !e.isWishlist).toList();
     final wishlist = _items.where((e) => e.isWishlist).toList();
 
@@ -360,6 +427,17 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
             alignment: Alignment.centerRight,
             child: IconButton(
               tooltip: l.shoppingCopyBasket,
+              style: IconButton.styleFrom(
+                backgroundColor: Color.lerp(
+                  cs.surfaceContainerHighest,
+                  cs.secondary,
+                  isDark ? 0.12 : 0.18,
+                ),
+                foregroundColor: basket.isEmpty ? cs.onSurfaceVariant : cs.secondary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
               onPressed: basket.isEmpty ? null : _copyBasket,
               icon: const Icon(Icons.content_copy_rounded),
             ),

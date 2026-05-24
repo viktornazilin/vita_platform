@@ -64,8 +64,30 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: cs.surface,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.lerp(cs.surfaceContainerLowest, cs.secondary, 0.045)!,
+                  Color.lerp(cs.surfaceContainerLow, cs.primary, 0.025)!,
+                ],
+              ),
               borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Color.lerp(cs.outlineVariant, cs.secondary, 0.22)!,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.secondary.withOpacity(0.10),
+                  blurRadius: 28,
+                  offset: const Offset(0, 12),
+                ),
+                BoxShadow(
+                  color: cs.primary.withOpacity(0.06),
+                  blurRadius: 22,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Form(
               key: formKey,
@@ -147,8 +169,30 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: cs.surface,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.lerp(cs.surfaceContainerLowest, cs.secondary, 0.045)!,
+                  Color.lerp(cs.surfaceContainerLow, cs.primary, 0.025)!,
+                ],
+              ),
               borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Color.lerp(cs.outlineVariant, cs.secondary, 0.22)!,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.secondary.withOpacity(0.10),
+                  blurRadius: 28,
+                  offset: const Offset(0, 12),
+                ),
+                BoxShadow(
+                  color: cs.primary.withOpacity(0.06),
+                  blurRadius: 22,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -235,6 +279,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ReportSectionCard(
       title: l.hobbyTrackerTitle,
@@ -245,6 +290,17 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
             alignment: Alignment.centerRight,
             child: IconButton(
               tooltip: l.hobbyTrackerAddHobbyTooltip,
+              style: IconButton.styleFrom(
+                backgroundColor: Color.lerp(
+                  cs.surfaceContainerHighest,
+                  cs.secondary,
+                  isDark ? 0.12 : 0.18,
+                ),
+                foregroundColor: cs.secondary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
               onPressed: _showCreateHobbySheet,
               icon: const Icon(Icons.add_circle_outline_rounded),
             ),
@@ -279,11 +335,37 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: cs.surface.withOpacity(0.45),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color.lerp(
+                            cs.surfaceContainerLowest,
+                            cs.secondary,
+                            isDark ? 0.045 : 0.070,
+                          )!,
+                          Color.lerp(
+                            cs.surfaceContainerLow,
+                            cs.primary,
+                            isDark ? 0.030 : 0.040,
+                          )!,
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: cs.outlineVariant.withOpacity(0.65),
+                        color: Color.lerp(
+                          cs.outlineVariant,
+                          cs.secondary,
+                          isDark ? 0.16 : 0.22,
+                        )!,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.secondary.withOpacity(isDark ? 0.04 : 0.08),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,6 +416,11 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                           value: hobby.weekProgress,
                           minHeight: 10,
                           borderRadius: BorderRadius.circular(999),
+                          backgroundColor: cs.surfaceContainerHighest
+                              .withOpacity(isDark ? 0.28 : 0.50),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            hobby.weekProgress >= 0.75 ? cs.secondary : cs.primary,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -366,19 +453,35 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = cs.secondary;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: cs.primary.withOpacity(0.08),
+        color: Color.lerp(
+          cs.surfaceContainerHighest,
+          accent,
+          isDark ? 0.10 : 0.16,
+        ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.4)),
+        border: Border.all(
+          color: Color.lerp(cs.outlineVariant, accent, isDark ? 0.18 : 0.26)!,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: cs.primary),
+          Icon(icon, size: 16, color: accent),
           const SizedBox(width: 6),
-          Text(text),
+          Text(
+            text,
+            style: tt.labelMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+            ),
+          ),
         ],
       ),
     );

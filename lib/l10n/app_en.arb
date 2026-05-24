@@ -1771,5 +1771,35 @@
   "placeholders": {
     "hours": {}
   }
-}
+},
+"profileGdprSection": "Privacy & GDPR",
+"profileGdprExportTitle": "Export my data",
+"profileGdprExportSubtitle": "Creates a JSON export of all app data linked to your account.",
+"profileGdprNotSignedInToast": "You are not signed in. Data export is not possible.",
+"profileGdprDialogTitle": "GDPR data export created",
+"profileGdprDialogFileName": "File name: {fileName}",
+"@profileGdprDialogFileName": {
+  "placeholders": {
+    "fileName": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprDialogBody": "The export was created as JSON and copied to your clipboard.\n\nYou can now paste the content into a file ending with .json.",
+"profileGdprDialogPreviewLabel": "Preview:",
+"profileGdprCopyButton": "Copy",
+"profileGdprDoneButton": "Done",
+"profileGdprCopiedAgainToast": "Data export was copied to the clipboard again.",
+"profileGdprCreatedToast": "GDPR data export was created and copied.",
+"profileGdprFailedToast": "Data export failed: {error}",
+"@profileGdprFailedToast": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprExportNoteAccount": "This export contains the authenticated user account, the public.users profile row, all user-scoped app tables, and reference tables required to understand exported answers.",
+"profileGdprExportNoteRls": "The export is limited by Supabase Row Level Security. Tables that do not exist or are not readable are returned with an _export_warning entry.",
+"profileGdprExportNoteEncrypted": "Encrypted payload fields are exported as stored. Decryption depends on the app encryption implementation and the active user session."
 }

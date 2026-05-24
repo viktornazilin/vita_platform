@@ -1177,21 +1177,47 @@ class _MetricTile extends StatelessWidget {
 
   const _MetricTile({required this.item});
 
+  Color _accent(ColorScheme cs) {
+    if (item.icon == Icons.mood_rounded || item.icon == Icons.timer_outlined) {
+      return cs.secondary;
+    }
+    if (item.icon == Icons.speed_rounded) return cs.tertiary;
+    return cs.primary;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = _accent(cs);
+
+    final bg = isDark
+        ? Color.lerp(cs.surfaceContainerLow, accent, 0.08)!
+        : Color.lerp(cs.surfaceContainerLowest, accent, 0.16)!;
+    final border = Color.lerp(
+      cs.outlineVariant,
+      accent,
+      isDark ? 0.32 : 0.56,
+    )!;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.55),
+        color: bg,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.65)),
+        border: Border.all(color: border, width: 1.45),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withOpacity(isDark ? 0.08 : 0.15),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          _MiniRing(progress: item.progress, icon: item.icon),
+          _MiniRing(progress: item.progress, icon: item.icon, accent: accent),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1223,8 +1249,8 @@ class _MetricTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: tt.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurfaceVariant.withOpacity(0.95),
+                    fontWeight: FontWeight.w800,
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -1239,10 +1265,12 @@ class _MetricTile extends StatelessWidget {
 class _MiniRing extends StatelessWidget {
   final double? progress;
   final IconData icon;
+  final Color accent;
 
   const _MiniRing({
     required this.progress,
     required this.icon,
+    required this.accent,
   });
 
   @override
@@ -1250,8 +1278,8 @@ class _MiniRing extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final p = progress;
 
-    const size = 44.0;
-    const stroke = 5.0;
+    const size = 46.0;
+    const stroke = 5.5;
 
     return SizedBox(
       width: size,
@@ -1263,7 +1291,7 @@ class _MiniRing extends StatelessWidget {
             value: 1,
             strokeWidth: stroke,
             valueColor: AlwaysStoppedAnimation<Color>(
-              cs.outlineVariant.withOpacity(0.30),
+              cs.outlineVariant.withOpacity(0.58),
             ),
           ),
           if (p == null)
@@ -1272,18 +1300,21 @@ class _MiniRing extends StatelessWidget {
             CircularProgressIndicator(
               value: p.clamp(0.0, 1.0),
               strokeWidth: stroke,
-              valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
               backgroundColor: Colors.transparent,
             ),
           Container(
-            width: 26,
-            height: 26,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.65),
+              color: Color.lerp(cs.surfaceContainerHighest, accent, 0.20),
               shape: BoxShape.circle,
-              border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+              border: Border.all(
+                color: Color.lerp(cs.outlineVariant, accent, 0.38)!,
+                width: 1.2,
+              ),
             ),
-            child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+            child: Icon(icon, size: 16, color: accent),
           ),
         ],
       ),

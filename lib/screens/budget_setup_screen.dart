@@ -45,7 +45,9 @@ class _SetupViewState extends State<_SetupView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowBudgetOnboarding());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeShowBudgetOnboarding(),
+    );
   }
 
   void _maybeShowBudgetOnboarding() {
@@ -146,11 +148,13 @@ class _SetupViewState extends State<_SetupView> {
   }) async {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = cs.secondary;
 
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
-      backgroundColor: cs.surface,
+      backgroundColor: Color.lerp(cs.surface, accent, isDark ? 0.035 : 0.05),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -168,7 +172,7 @@ class _SetupViewState extends State<_SetupView> {
                     width: 42,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: cs.outlineVariant,
+                      color: Color.lerp(cs.outlineVariant, accent, 0.42)!,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -370,7 +374,7 @@ class _SetupViewState extends State<_SetupView> {
 
     return _NestSection(
       icon: Icons.savings_outlined,
-      tone: cs.tertiaryContainer,
+      tone: cs.secondary,
       title: l.budgetJarsTitle,
       subtitle: l.budgetJarsSubtitle,
       trailing: FilledButton.tonalIcon(
@@ -395,6 +399,7 @@ class _SetupViewState extends State<_SetupView> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: NestBlurCard(
+                    accentColor: cs.secondary,
                     child: Padding(
                       padding: const EdgeInsets.all(14),
                       child: Row(
@@ -405,14 +410,28 @@ class _SetupViewState extends State<_SetupView> {
                             height: 46,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
-                              color: cs.tertiaryContainer.withOpacity(0.55),
-                              border: Border.all(
-                                color: cs.outlineVariant.withOpacity(0.4),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  cs.secondary.withOpacity(0.26),
+                                  cs.primary.withOpacity(0.12),
+                                ],
                               ),
+                              border: Border.all(
+                                color: Color.lerp(cs.outlineVariant, cs.secondary, 0.32)!,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.secondary.withOpacity(0.12),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 7),
+                                ),
+                              ],
                             ),
                             child: Icon(
                               Icons.account_balance_wallet_outlined,
-                              color: cs.onTertiaryContainer,
+                              color: cs.secondary,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -446,6 +465,7 @@ class _SetupViewState extends State<_SetupView> {
                                       minHeight: 10,
                                       backgroundColor: cs.surfaceContainerHighest
                                           .withOpacity(0.45),
+                                      color: cs.secondary,
                                     ),
                                   ),
                                 ],
@@ -476,6 +496,7 @@ class _SetupViewState extends State<_SetupView> {
     if (m.loading) {
       return Scaffold(
         body: NestBackground(
+          useSoftGradient: true,
           child: const Center(child: CircularProgressIndicator.adaptive()),
         ),
       );
@@ -496,7 +517,7 @@ class _SetupViewState extends State<_SetupView> {
             subtitle: l.budgetIncomeCategoriesSubtitle,
             icon: Icons.trending_up_rounded,
             categories: m.incomeCategories,
-            tone: cs.primaryContainer,
+            tone: cs.primary,
             helper: 'Доходные категории теперь тоже можно полноценно добавлять и удалять.',
             onAdd: () => _addCategory(context: context, m: m, income: true),
             onTap: (category) => _showIncomeActions(
@@ -519,7 +540,7 @@ class _SetupViewState extends State<_SetupView> {
             subtitle: l.budgetExpenseCategoriesSubtitle,
             icon: Icons.shopping_bag_outlined,
             categories: m.expenseCategories,
-            tone: cs.secondaryContainer,
+            tone: cs.secondary,
             helper: 'Нажатие по категории открывает установку лимита.',
             onAdd: () => _addCategory(context: context, m: m, income: false),
             onTap: (category) => _editExpenseLimit(
@@ -542,13 +563,20 @@ class _SetupViewState extends State<_SetupView> {
 
         return Scaffold(
           body: NestBackground(
+            useSoftGradient: true,
             child: CustomScrollView(
               slivers: [
                 SliverAppBar.large(
                   pinned: true,
                   backgroundColor: Colors.transparent,
                   surfaceTintColor: Colors.transparent,
-                  title: Text(l.budgetSetupTitle),
+                  title: Text(
+                    l.budgetSetupTitle,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.35,
+                        ),
+                  ),
                 ),
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(horizontalPad, 8, horizontalPad, 96),
@@ -612,8 +640,10 @@ class _NestSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return NestBlurCard(
+      accentColor: tone,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -627,12 +657,26 @@ class _NestSection extends StatelessWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: tone.withOpacity(0.72),
-                    border: Border.all(
-                      color: cs.outlineVariant.withOpacity(0.35),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        tone.withOpacity(isDark ? 0.30 : 0.22),
+                        Color.lerp(cs.surfaceContainerHighest, tone, isDark ? 0.10 : 0.18)!,
+                      ],
                     ),
+                    border: Border.all(
+                      color: Color.lerp(cs.outlineVariant, tone, 0.30)!,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: tone.withOpacity(isDark ? 0.08 : 0.14),
+                        blurRadius: 14,
+                        offset: const Offset(0, 7),
+                      ),
+                    ],
                   ),
-                  child: Icon(icon, color: cs.onPrimaryContainer),
+                  child: Icon(icon, color: tone),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -687,6 +731,7 @@ class _CategoryPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
       color: Colors.transparent,
@@ -698,8 +743,24 @@ class _CategoryPill extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            color: tone.withOpacity(0.62),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.25)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                tone.withOpacity(isDark ? 0.16 : 0.18),
+                Color.lerp(cs.surfaceContainerHighest, tone, isDark ? 0.07 : 0.12)!,
+              ],
+            ),
+            border: Border.all(
+              color: Color.lerp(cs.outlineVariant, tone, 0.30)!,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: tone.withOpacity(isDark ? 0.05 : 0.10),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -749,6 +810,7 @@ class _ActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final accent = cs.secondary;
 
     return Material(
       color: Colors.transparent,
@@ -760,8 +822,10 @@ class _ActionRow extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            color: cs.surfaceContainerHighest.withOpacity(0.28),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.35)),
+            color: Color.lerp(cs.surfaceContainerHighest, accent, 0.08),
+            border: Border.all(
+              color: Color.lerp(cs.outlineVariant, accent, 0.24)!,
+            ),
           ),
           child: Row(
             children: [

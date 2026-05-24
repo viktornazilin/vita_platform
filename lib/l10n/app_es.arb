@@ -1778,5 +1778,35 @@
   "placeholders": {
     "hours": {}
   }
-}
+},
+"profileGdprSection": "Privacidad y GDPR",
+"profileGdprExportTitle": "Exportar mis datos",
+"profileGdprExportSubtitle": "Crea una exportación JSON de todos los datos de la app vinculados a tu cuenta.",
+"profileGdprNotSignedInToast": "No has iniciado sesión. No es posible exportar los datos.",
+"profileGdprDialogTitle": "Exportación de datos GDPR creada",
+"profileGdprDialogFileName": "Nombre del archivo: {fileName}",
+"@profileGdprDialogFileName": {
+  "placeholders": {
+    "fileName": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprDialogBody": "La exportación se creó como JSON y se copió al portapapeles.\n\nAhora puedes pegar el contenido en un archivo con la extensión .json.",
+"profileGdprDialogPreviewLabel": "Vista previa:",
+"profileGdprCopyButton": "Copiar",
+"profileGdprDoneButton": "Listo",
+"profileGdprCopiedAgainToast": "La exportación de datos se copió de nuevo al portapapeles.",
+"profileGdprCreatedToast": "La exportación de datos GDPR se creó y se copió.",
+"profileGdprFailedToast": "Error al exportar los datos: {error}",
+"@profileGdprFailedToast": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprExportNoteAccount": "Esta exportación contiene la cuenta de usuario autenticada, el registro de perfil de public.users, todas las tablas de la app vinculadas al usuario y las tablas de referencia necesarias para entender las respuestas exportadas.",
+"profileGdprExportNoteRls": "La exportación está limitada por Supabase Row Level Security. Las tablas que no existen o que no se pueden leer se devuelven con una entrada _export_warning.",
+"profileGdprExportNoteEncrypted": "Los campos encrypted_payload se exportan tal como están almacenados. El descifrado depende de la implementación de cifrado de la app y de la sesión activa del usuario."
 }

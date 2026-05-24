@@ -3741,4 +3741,64 @@ class AppLocalizationsDe extends AppLocalizations {
   String launcherPlannedHoursDescription(Object hours) {
     return 'Plan: $hours Std.';
   }
+
+  @override
+  String get profileGdprSection => 'Datenschutz & GDPR';
+
+  @override
+  String get profileGdprExportTitle => 'Meine Daten exportieren';
+
+  @override
+  String get profileGdprExportSubtitle =>
+      'Erstellt einen JSON-Export aller App-Daten, die deinem Benutzerkonto zugeordnet sind.';
+
+  @override
+  String get profileGdprNotSignedInToast =>
+      'Du bist nicht angemeldet. Der Datenexport ist daher nicht möglich.';
+
+  @override
+  String get profileGdprDialogTitle => 'GDPR-Datenexport erstellt';
+
+  @override
+  String profileGdprDialogFileName(String fileName) {
+    return 'Dateiname: $fileName';
+  }
+
+  @override
+  String get profileGdprDialogBody =>
+      'Der Export wurde als JSON erstellt und in die Zwischenablage kopiert.\n\nDu kannst den Inhalt jetzt in eine Datei mit der Endung .json einfügen.';
+
+  @override
+  String get profileGdprDialogPreviewLabel => 'Vorschau:';
+
+  @override
+  String get profileGdprCopyButton => 'Kopieren';
+
+  @override
+  String get profileGdprDoneButton => 'Fertig';
+
+  @override
+  String get profileGdprCopiedAgainToast =>
+      'Datenexport wurde erneut in die Zwischenablage kopiert.';
+
+  @override
+  String get profileGdprCreatedToast =>
+      'GDPR-Datenexport wurde erstellt und kopiert.';
+
+  @override
+  String profileGdprFailedToast(String error) {
+    return 'Datenexport fehlgeschlagen: $error';
+  }
+
+  @override
+  String get profileGdprExportNoteAccount =>
+      'Dieser Export enthält das authentifizierte Benutzerkonto, den Profil-Datensatz aus public.users, alle benutzerbezogenen App-Tabellen und Referenztabellen, die zum Verständnis der exportierten Antworten erforderlich sind.';
+
+  @override
+  String get profileGdprExportNoteRls =>
+      'Der Export wird durch Supabase Row Level Security begrenzt. Tabellen, die nicht existieren oder nicht gelesen werden dürfen, werden mit einem _export_warning-Eintrag zurückgegeben.';
+
+  @override
+  String get profileGdprExportNoteEncrypted =>
+      'Verschlüsselte Payload-Felder werden so exportiert, wie sie gespeichert sind. Die Entschlüsselung hängt von der Verschlüsselungslogik der App und der aktiven Benutzersitzung ab.';
 }

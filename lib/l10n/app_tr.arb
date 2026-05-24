@@ -1778,5 +1778,35 @@
   "placeholders": {
     "hours": {}
   }
-}
+},
+"profileGdprSection": "Gizlilik ve GDPR",
+"profileGdprExportTitle": "Verilerimi dışa aktar",
+"profileGdprExportSubtitle": "Hesabına bağlı tüm uygulama verilerinin JSON dışa aktarımını oluşturur.",
+"profileGdprNotSignedInToast": "Oturum açmadın. Veri dışa aktarımı mümkün değil.",
+"profileGdprDialogTitle": "GDPR veri dışa aktarımı oluşturuldu",
+"profileGdprDialogFileName": "Dosya adı: {fileName}",
+"@profileGdprDialogFileName": {
+  "placeholders": {
+    "fileName": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprDialogBody": "Dışa aktarım JSON olarak oluşturuldu ve panoya kopyalandı.\n\nİçeriği artık .json uzantılı bir dosyaya yapıştırabilirsin.",
+"profileGdprDialogPreviewLabel": "Önizleme:",
+"profileGdprCopyButton": "Kopyala",
+"profileGdprDoneButton": "Tamam",
+"profileGdprCopiedAgainToast": "Veri dışa aktarımı tekrar panoya kopyalandı.",
+"profileGdprCreatedToast": "GDPR veri dışa aktarımı oluşturuldu ve kopyalandı.",
+"profileGdprFailedToast": "Veri dışa aktarımı başarısız oldu: {error}",
+"@profileGdprFailedToast": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprExportNoteAccount": "Bu dışa aktarım; kimliği doğrulanmış kullanıcı hesabını, public.users profil kaydını, kullanıcıya bağlı tüm uygulama tablolarını ve dışa aktarılan yanıtları anlamak için gerekli referans tablolarını içerir.",
+"profileGdprExportNoteRls": "Dışa aktarım Supabase Row Level Security ile sınırlıdır. Var olmayan veya okunamayan tablolar _export_warning girdisiyle döndürülür.",
+"profileGdprExportNoteEncrypted": "Şifrelenmiş payload alanları saklandıkları şekilde dışa aktarılır. Şifre çözme, uygulamanın şifreleme uygulamasına ve aktif kullanıcı oturumuna bağlıdır."
 }

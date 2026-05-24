@@ -28,15 +28,35 @@ class HabitsWeekCard extends StatelessWidget {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (habits.isEmpty) {
       return ReportSectionCard(
         title: l.habitsWeekTitle,
-        child: Text(
-          l.habitsWeekEmptyHint,
-          style: tt.bodyMedium?.copyWith(
-            color: cs.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Color.lerp(
+              cs.surfaceContainerLowest,
+              cs.secondary,
+              isDark ? 0.045 : 0.065,
+            ),
+            border: Border.all(
+              color: Color.lerp(
+                cs.outlineVariant,
+                cs.secondary,
+                isDark ? 0.16 : 0.20,
+              )!,
+            ),
+          ),
+          child: Text(
+            l.habitsWeekEmptyHint,
+            style: tt.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -57,15 +77,39 @@ class HabitsWeekCard extends StatelessWidget {
             ),
             if (h != habits.last) const SizedBox(height: 16),
           ],
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              l.habitsWeekFooterHint,
-              style: tt.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              color: Color.lerp(
+                cs.surfaceContainerHighest,
+                cs.secondary,
+                isDark ? 0.07 : 0.10,
               ),
+              border: Border.all(
+                color: Color.lerp(
+                  cs.outlineVariant,
+                  cs.secondary,
+                  isDark ? 0.18 : 0.22,
+                )!,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome_rounded, size: 18, color: cs.secondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l.habitsWeekFooterHint,
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -97,119 +141,191 @@ class _HabitHeatmapRow extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isDark = _isDark(context);
+    final completion = (doneCount / 7).clamp(0.0, 1.0);
 
-    final doneFill = cs.primary;
-    final doneBorder = isDark
-        ? cs.primary.withOpacity(0.95)
-        : cs.primary.withOpacity(0.90);
+    final accent = completion >= 0.85
+        ? cs.secondary
+        : completion >= 0.45
+            ? cs.primary
+            : cs.tertiary;
 
-    final emptyFill = isDark
-        ? cs.surfaceContainerHighest.withOpacity(0.22)
-        : Colors.white.withOpacity(0.06);
+    final doneFill = Color.lerp(cs.primary, cs.secondary, 0.30)!;
+    final doneBorder = Color.lerp(cs.primary, cs.secondary, 0.42)!;
 
-    final emptyBorder = isDark
-        ? cs.outlineVariant.withOpacity(0.60)
-        : Colors.white.withOpacity(0.55);
+    final emptyFill = Color.lerp(
+      cs.surfaceContainerHighest,
+      cs.secondary,
+      isDark ? 0.035 : 0.055,
+    )!;
 
-    final countBg = isDark
-        ? cs.primary.withOpacity(0.22)
-        : Colors.white.withOpacity(0.10);
+    final emptyBorder = Color.lerp(
+      cs.outlineVariant,
+      cs.secondary,
+      isDark ? 0.12 : 0.16,
+    )!;
 
-    final countBorder = isDark
-        ? cs.primary.withOpacity(0.45)
-        : Colors.white.withOpacity(0.35);
+    final countBg = Color.lerp(
+      cs.surfaceContainerHighest,
+      accent,
+      isDark ? 0.14 : 0.18,
+    )!;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                habit.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: cs.onSurface,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: countBg,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: countBorder, width: 1.4),
-              ),
-              child: Text(
-                '$doneCount/7',
-                style: tt.titleSmall?.copyWith(
-                  color: cs.onSurface,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
+    final countBorder = Color.lerp(
+      cs.outlineVariant,
+      accent,
+      isDark ? 0.28 : 0.32,
+    )!;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        color: Color.lerp(
+          cs.surfaceContainerLowest,
+          accent,
+          isDark ? 0.030 : 0.045,
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: List.generate(days.length, (i) {
-            final d = days[i];
-            final map = entriesByDay[d] ?? {};
-            final e = map[habit.id];
-            final done = (e?['done'] as bool?) ?? false;
+        border: Border.all(
+          color: Color.lerp(cs.outlineVariant, accent, isDark ? 0.12 : 0.16)!,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withOpacity(0.20),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  habit.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: countBg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: countBorder, width: 1.2),
+                ),
+                child: Text(
+                  '$doneCount/7',
+                  style: tt.titleSmall?.copyWith(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: List.generate(days.length, (i) {
+              final d = days[i];
+              final map = entriesByDay[d] ?? {};
+              final e = map[habit.id];
+              final done = (e?['done'] as bool?) ?? false;
 
-            return Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    height: 46,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: done ? doneFill : emptyFill,
-                      border: Border.all(
-                        color: done ? doneBorder : emptyBorder,
-                        width: done ? 1.8 : 1.4,
-                      ),
-                      boxShadow: done
-                          ? [
-                              BoxShadow(
-                                color: cs.primary.withOpacity(
-                                  isDark ? 0.35 : 0.22,
+              return Expanded(
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      height: 46,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        gradient: done
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  cs.primary,
+                                  doneFill,
+                                  cs.secondary.withOpacity(isDark ? 0.78 : 0.88),
+                                ],
+                              )
+                            : null,
+                        color: done ? null : emptyFill,
+                        border: Border.all(
+                          color: done ? doneBorder : emptyBorder,
+                          width: done ? 1.6 : 1.2,
+                        ),
+                        boxShadow: done
+                            ? [
+                                BoxShadow(
+                                  color: cs.primary.withOpacity(
+                                    isDark ? 0.24 : 0.16,
+                                  ),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                                BoxShadow(
+                                  color: cs.secondary.withOpacity(
+                                    isDark ? 0.10 : 0.14,
+                                  ),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: done
+                            ? Icon(
+                                Icons.check_rounded,
+                                size: 20,
+                                color: cs.onPrimary,
+                              )
+                            : Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: cs.outlineVariant.withOpacity(
+                                    isDark ? 0.46 : 0.72,
+                                  ),
+                                ),
                               ),
-                            ]
-                          : null,
+                      ),
                     ),
-                    child: Center(
-                      child: done
-                          ? Icon(
-                              Icons.check_rounded,
-                              size: 20,
-                              color: cs.onPrimary,
-                            )
-                          : null,
+                    const SizedBox(height: 8),
+                    Text(
+                      weekdayLabel(d),
+                      style: tt.labelMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    weekdayLabel(d),
-                    style: tt.labelMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      ],
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,7 +1,11 @@
 // lib/screens/profile/profile_left_column.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
@@ -134,12 +138,240 @@ class ProfileLeftColumn extends StatelessWidget {
 
         const SizedBox(height: 16),
 
+        // ====== GDPR DATA EXPORT ======
+        const _GdprDataExportSection(),
+
+        const SizedBox(height: 16),
+
         // ====== WEB NOTIFICATIONS ======
         const _WebNotificationsSection(),
       ],
     );
   }
 }
+
+
+class _GdprDataExportSection extends StatefulWidget {
+  const _GdprDataExportSection();
+
+  @override
+  State<_GdprDataExportSection> createState() => _GdprDataExportSectionState();
+}
+
+class _GdprDataExportSectionState extends State<_GdprDataExportSection> {
+  bool _exporting = false;
+
+  static const List<String> _userScopedTables = [
+    'goals',
+    'user_goals',
+    'moods',
+    'expenses',
+    'ai_insights_runs',
+    'ai_plans',
+    'ai_plan_items',
+  ];
+
+  Future<List<dynamic>> _safeSelectUserRows({
+    required SupabaseClient client,
+    required String table,
+    required String userId,
+  }) async {
+    try {
+      final rows = await client.from(table).select().eq('user_id', userId);
+
+      return rows as List<dynamic>;
+    } catch (e) {
+      return [
+        {
+          '_export_warning':
+              'Table "$table" could not be exported. It may not exist yet, may use another schema, or may be restricted by RLS.',
+          '_error': e.toString(),
+        }
+      ];
+    }
+  }
+
+  Future<Map<String, dynamic>?> _buildGdprExport() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+
+    if (user == null) {
+      return null;
+    }
+
+    Map<String, dynamic>? userProfile;
+    try {
+      userProfile = await client
+          .from('users')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+    } catch (e) {
+      userProfile = {
+        '_export_warning':
+            'The profile row from table "users" could not be exported.',
+        '_error': e.toString(),
+      };
+    }
+
+    final data = <String, dynamic>{};
+    for (final table in _userScopedTables) {
+      data[table] = await _safeSelectUserRows(
+        client: client,
+        table: table,
+        userId: user.id,
+      );
+    }
+
+    return {
+      'export': {
+        'type': 'gdpr_data_export',
+        'app': 'Nest',
+        'version': 1,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      'account': {
+        'auth_user': {
+          'id': user.id,
+          'email': user.email,
+          'phone': user.phone,
+          'created_at': user.createdAt,
+          'last_sign_in_at': user.lastSignInAt,
+          'app_metadata': user.appMetadata,
+          'user_metadata': user.userMetadata,
+        },
+        'profile': userProfile,
+      },
+      'data': data,
+      'notes': [
+        'This export contains data available to the authenticated user via Supabase Row Level Security.',
+        'Tables that do not exist or are not readable are returned with an _export_warning entry.',
+      ],
+    };
+  }
+
+  Future<void> _exportData() async {
+    if (_exporting) return;
+
+    final l = AppLocalizations.of(context)!;
+
+    setState(() => _exporting = true);
+
+    try {
+      final export = await _buildGdprExport();
+
+      if (!mounted) return;
+
+      if (export == null) {
+        ProfileUi.snack(
+          context,
+          l.profileGdprNotSignedInToast,
+        );
+        return;
+      }
+
+      const encoder = JsonEncoder.withIndent('  ');
+      final json = encoder.convert(export);
+      final timestamp = DateTime.now()
+          .toUtc()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .replaceAll('.', '-');
+      final fileName = 'nest-gdpr-export-$timestamp.json';
+
+      await Clipboard.setData(ClipboardData(text: json));
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text(l.profileGdprDialogTitle),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  '${l.profileGdprDialogFileName(fileName)}\n\n'
+                  '${l.profileGdprDialogBody}\n\n'
+                  '${l.profileGdprDialogPreviewLabel}\n\n$json',
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: json));
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                  if (mounted) {
+                    ProfileUi.snack(
+                      context,
+                      l.profileGdprCopiedAgainToast,
+                    );
+                  }
+                },
+                child: Text(l.profileGdprCopyButton),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(l.profileGdprDoneButton),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (!mounted) return;
+      ProfileUi.snack(
+        context,
+        l.profileGdprCreatedToast,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ProfileUi.snack(
+        context,
+        l.profileGdprFailedToast(e.toString()),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _exporting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NestSectionTitle(l.profileGdprSection),
+        const SizedBox(height: 10),
+        NestCard(
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            dense: true,
+            leading: _exporting
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download_outlined),
+            title: Text(l.profileGdprExportTitle),
+            subtitle: Text(l.profileGdprExportSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _exporting ? null : _exportData,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 
 class _WebNotificationsSection extends StatelessWidget {
   const _WebNotificationsSection();

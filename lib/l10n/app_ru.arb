@@ -1777,5 +1777,35 @@
   "placeholders": {
     "hours": {}
   }
-}
+},
+"profileGdprSection": "Конфиденциальность и GDPR",
+"profileGdprExportTitle": "Экспортировать мои данные",
+"profileGdprExportSubtitle": "Создаёт JSON-экспорт всех данных приложения, связанных с твоим аккаунтом.",
+"profileGdprNotSignedInToast": "Ты не вошёл в аккаунт. Экспорт данных невозможен.",
+"profileGdprDialogTitle": "GDPR-экспорт данных создан",
+"profileGdprDialogFileName": "Имя файла: {fileName}",
+"@profileGdprDialogFileName": {
+  "placeholders": {
+    "fileName": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprDialogBody": "Экспорт создан в формате JSON и скопирован в буфер обмена.\n\nТеперь ты можешь вставить содержимое в файл с расширением .json.",
+"profileGdprDialogPreviewLabel": "Предпросмотр:",
+"profileGdprCopyButton": "Копировать",
+"profileGdprDoneButton": "Готово",
+"profileGdprCopiedAgainToast": "Экспорт данных снова скопирован в буфер обмена.",
+"profileGdprCreatedToast": "GDPR-экспорт данных создан и скопирован.",
+"profileGdprFailedToast": "Не удалось экспортировать данные: {error}",
+"@profileGdprFailedToast": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"profileGdprExportNoteAccount": "Этот экспорт содержит аутентифицированный аккаунт пользователя, профиль из public.users, все пользовательские таблицы приложения и справочные таблицы, необходимые для понимания экспортированных ответов.",
+"profileGdprExportNoteRls": "Экспорт ограничен правилами Supabase Row Level Security. Таблицы, которые не существуют или недоступны для чтения, возвращаются с записью _export_warning.",
+"profileGdprExportNoteEncrypted": "Зашифрованные поля encrypted_payload экспортируются в том виде, в котором они сохранены. Расшифровка зависит от реализации шифрования в приложении и активной пользовательской сессии."
 }

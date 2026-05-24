@@ -49,6 +49,81 @@ function asBool(v: unknown): boolean {
   return v === true;
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+function isEncryptedPlaceholder(v: unknown): boolean {
+  const s = asString(v).toLowerCase();
+  return !s || s === "[encrypted]" || s === "encrypted" || s.includes("encrypted_payload");
+}
+
+function shortId(v: unknown): string {
+  const s = asString(v);
+  return s.length >= 8 ? s.slice(0, 8) : s || "item";
+}
+
+function safeDisplayText(v: unknown, fallback: string): string {
+  const s = asString(v);
+  return isEncryptedPlaceholder(s) ? fallback : s;
+}
+
+function hasClientContext(body: AnyRow): boolean {
+  const ctx = body.client_context;
+  if (!isPlainObject(ctx)) return false;
+
+  return Array.isArray(ctx.user_goals) ||
+    Array.isArray(ctx.goals) ||
+    Array.isArray(ctx.tasks) ||
+    Array.isArray(ctx.ai_plan_items);
+}
+
+function readClientRows(ctx: unknown, key: string): AnyRow[] {
+  if (!isPlainObject(ctx)) return [];
+  const rows = ctx[key];
+  return Array.isArray(rows)
+    ? rows.filter(isPlainObject).map((x) => ({ ...x }))
+    : [];
+}
+
+function normalizeClientGoal(row: AnyRow): AnyRow {
+  const id = asString(row.id);
+  return {
+    ...row,
+    id,
+    title: safeDisplayText(row.title, `Цель ${shortId(id)}`),
+    description: safeDisplayText(row.description, ""),
+    life_block: normalizeLifeBlock(row.life_block),
+    horizon: asString(row.horizon) || "tactical",
+    is_completed: asBool(row.is_completed),
+  };
+}
+
+function normalizeClientTask(row: AnyRow): AnyRow {
+  const id = asString(row.id);
+  return {
+    ...row,
+    id,
+    title: safeDisplayText(row.title, `Задача ${shortId(id)}`),
+    description: safeDisplayText(row.description, ""),
+    life_block: normalizeLifeBlock(row.life_block),
+    is_completed: asBool(row.is_completed),
+  };
+}
+
+function clampPlannedHours(v: unknown): number {
+  return Math.max(0.25, Math.min(8, asNumber(v, 1)));
+}
+
+function clampNonNegative(v: unknown): number {
+  return Math.max(0, asNumber(v, 0));
+}
+
+function clampTargetMinutes(v: unknown): number {
+  const n = Math.round(asNumber(v, 0));
+  return Math.max(0, n);
+}
+
 function clampImportance(v: unknown): number {
   const n = typeof v === "number" ? v : Number(v ?? 3);
   if (!Number.isFinite(n)) return 3;
@@ -147,7 +222,8 @@ function goalId(g: AnyRow): string {
 }
 
 function goalTitle(g: AnyRow): string {
-  return asString(g.title);
+  const id = goalId(g);
+  return safeDisplayText(g.title, `Цель ${shortId(id)}`);
 }
 
 function goalLifeBlock(g: AnyRow): string {
@@ -504,7 +580,8 @@ function actionTemplatesForGoal(goal: AnyRow, period: Horizon): Array<{ title: s
 }
 
 function makeContinuationTitle(task: AnyRow, goal: AnyRow): string {
-  const taskTitle = cleanTaskTitle(asString(task.title));
+  const rawTaskTitle = safeDisplayText(task.title, "");
+  const taskTitle = cleanTaskTitle(rawTaskTitle);
   const g = cleanTaskTitle(goalTitle(goal));
   if (!taskTitle) return `Сделать конкретный шаг по цели «${g}»`;
 
@@ -732,8 +809,17 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({})) as AnyRow;
     const period = normalizePeriod(body.period ?? body.horizon);
+
+    const clientContextUsed = hasClientContext(body);
+    if (clientContextUsed && body.ai_consent !== true) {
+      return jsonResponse({
+        ok: false,
+        error: "AI consent is required when client_context contains locally decrypted user data.",
+        code: "AI_CONSENT_REQUIRED",
+      }, 403);
+    }
 
     const now = new Date();
     const requestStart = parseDateOnly(body.date_from ?? body.date) ?? now;
@@ -762,40 +848,67 @@ serve(async (req) => {
     const hasRequestedLifeBlock = rawRequestedLifeBlock.length > 0;
     const requestedLifeBlock = hasRequestedLifeBlock ? normalizeLifeBlock(rawRequestedLifeBlock) : "";
 
-    let goalsQuery = supabase
-      .from("user_goals")
-      .select("id, title, description, life_block, horizon, target_date, is_completed, sort_order, created_at")
-      .eq("user_id", userId)
-      .eq("is_completed", false)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(40);
-
-    if (hasRequestedLifeBlock) goalsQuery = goalsQuery.eq("life_block", requestedLifeBlock);
-
-    const { data: userGoalsRaw, error: userGoalsError } = await goalsQuery;
-    if (userGoalsError) {
-      return jsonResponse({ ok: false, stage: "load_user_goals", error: errorToJson(userGoalsError) }, 500);
-    }
-
-    const userGoals = Array.isArray(userGoalsRaw) ? userGoalsRaw as AnyRow[] : [];
-    const goalIds = userGoals.map(goalId).filter(Boolean);
-
+    let userGoals: AnyRow[] = [];
     let recentGoals: AnyRow[] = [];
-    if (goalIds.length > 0) {
-      const { data: goalsRaw, error: goalsError } = await supabase
-        .from("goals")
-        .select("id, title, description, life_block, importance, is_completed, spent_hours, start_time, deadline, user_goal_id, created_at")
-        .eq("user_id", userId)
-        .in("user_goal_id", goalIds)
-        .gte("start_time", contextStart.toISOString())
-        .order("start_time", { ascending: false })
-        .limit(500);
 
-      if (goalsError) {
-        return jsonResponse({ ok: false, stage: "load_goals", error: errorToJson(goalsError) }, 500);
+    if (clientContextUsed) {
+      const ctx = body.client_context;
+      userGoals = readClientRows(ctx, "user_goals")
+        .map(normalizeClientGoal)
+        .filter((g) => !asBool(g.is_completed))
+        .filter((g) => !hasRequestedLifeBlock || goalLifeBlock(g) === requestedLifeBlock)
+        .slice(0, 40);
+
+      recentGoals = [
+        ...readClientRows(ctx, "goals"),
+        ...readClientRows(ctx, "tasks"),
+      ]
+        .map(normalizeClientTask)
+        .filter((t) => {
+          const st = parseDateOnly(t.start_time) ?? (asString(t.start_time) ? new Date(asString(t.start_time)) : null);
+          if (!st || Number.isNaN(st.getTime())) return true;
+          return st >= contextStart;
+        })
+        .slice(0, 500);
+    } else {
+      let goalsQuery = supabase
+        .from("user_goals")
+        .select("id, title, description, life_block, horizon, target_date, is_completed, sort_order, created_at")
+        .eq("user_id", userId)
+        .eq("is_completed", false)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .limit(40);
+
+      if (hasRequestedLifeBlock) goalsQuery = goalsQuery.eq("life_block", requestedLifeBlock);
+
+      const { data: userGoalsRaw, error: userGoalsError } = await goalsQuery;
+      if (userGoalsError) {
+        return jsonResponse({ ok: false, stage: "load_user_goals", error: errorToJson(userGoalsError) }, 500);
       }
-      recentGoals = Array.isArray(goalsRaw) ? goalsRaw as AnyRow[] : [];
+
+      userGoals = (Array.isArray(userGoalsRaw) ? userGoalsRaw as AnyRow[] : [])
+        .map(normalizeClientGoal);
+
+      const goalIds = userGoals.map(goalId).filter(Boolean);
+
+      if (goalIds.length > 0) {
+        const { data: goalsRaw, error: goalsError } = await supabase
+          .from("goals")
+          .select("id, title, description, life_block, importance, is_completed, spent_hours, start_time, deadline, user_goal_id, created_at")
+          .eq("user_id", userId)
+          .in("user_goal_id", goalIds)
+          .gte("start_time", contextStart.toISOString())
+          .order("start_time", { ascending: false })
+          .limit(500);
+
+        if (goalsError) {
+          return jsonResponse({ ok: false, stage: "load_goals", error: errorToJson(goalsError) }, 500);
+        }
+
+        recentGoals = (Array.isArray(goalsRaw) ? goalsRaw as AnyRow[] : [])
+          .map(normalizeClientTask);
+      }
     }
 
     const drafts = buildActionablePlanItems({
@@ -816,7 +929,7 @@ serve(async (req) => {
         description: it.description,
         life_block: normalizeLifeBlock(it.life_block),
         importance: clampImportance(it.importance),
-        planned_hours: Math.max(0.25, Math.min(8, asNumber(it.planned_hours, 1))),
+        planned_hours: clampPlannedHours(it.planned_hours),
         reason: it.reason,
         state: "suggested",
         start_time: itemDate.toISOString(),
@@ -826,6 +939,60 @@ serve(async (req) => {
       };
     });
 
+    if (clientContextUsed) {
+      const temporaryPlan = {
+        id: null,
+        user_id: userId,
+        horizon: period,
+        period,
+        date_from: toDateOnly(periodStart),
+        date_to: toDateOnly(periodEnd),
+        source_insight_run_id: insightRun?.id ?? null,
+        input_snapshot: {
+          strategy: "concrete_goal_linked_tasks_v5_encryption_aware_encryption_aware",
+          period,
+          date_from: toDateOnly(periodStart),
+          date_to: toDateOnly(periodEnd),
+          latest_insight_run_id: insightRun?.id ?? null,
+          active_user_goals_count: userGoals.length,
+          linked_history_tasks_count: recentGoals.length,
+          auto_distribution: true,
+          link_user_goal_id: true,
+          generated_at: now.toISOString(),
+          client_context_used: true,
+          persisted_server_side: false,
+        },
+      };
+
+      const responseItems = finalItems.map((it, index) => ({
+        id: null,
+        plan_id: null,
+        ...it,
+        sort_order: index,
+      }));
+
+      return jsonResponse({
+        ok: true,
+        plan_id: null,
+        plan: temporaryPlan,
+        items: responseItems,
+        requires_client_side_persist: true,
+        reason: "client_context_used_with_locally_decrypted_data",
+        meta: {
+          strategy: "concrete_goal_linked_tasks_v5_encryption_aware_encryption_aware",
+          period,
+          date_from: toDateOnly(periodStart),
+          date_to: toDateOnly(periodEnd),
+          active_user_goals_count: userGoals.length,
+          linked_history_tasks_count: recentGoals.length,
+          auto_distribution: true,
+          link_user_goal_id: true,
+          client_context_used: true,
+          persisted_server_side: false,
+        },
+      });
+    }
+
     const desiredPlanRow: AnyRow = {
       user_id: userId,
       horizon: period,
@@ -834,7 +1001,7 @@ serve(async (req) => {
       date_to: toDateOnly(periodEnd),
       source_insight_run_id: insightRun?.id ?? null,
       input_snapshot: {
-        strategy: "concrete_goal_linked_tasks_v5",
+        strategy: "concrete_goal_linked_tasks_v5_encryption_aware",
         period,
         date_from: toDateOnly(periodStart),
         date_to: toDateOnly(periodEnd),
@@ -885,7 +1052,7 @@ serve(async (req) => {
       plan,
       items: responseItems,
       meta: {
-        strategy: "concrete_goal_linked_tasks_v5",
+        strategy: "concrete_goal_linked_tasks_v5_encryption_aware",
         period,
         date_from: toDateOnly(periodStart),
         date_to: toDateOnly(periodEnd),
@@ -894,6 +1061,8 @@ serve(async (req) => {
         auto_distribution: true,
         link_user_goal_id: true,
         user_goal_id_persisted: itemColumns.has("user_goal_id"),
+        client_context_used: false,
+        persisted_server_side: true,
       },
     });
   } catch (err) {

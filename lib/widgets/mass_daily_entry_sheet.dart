@@ -7,6 +7,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../domain/category.dart' as dm;
 import '../main.dart';
 import '../models/mental_question.dart';
+import '../utils/mental_question_l10n.dart';
 import '../widgets/add_day_goal_sheet.dart';
 
 class MassDailyEntrySheet extends StatefulWidget {
@@ -1211,7 +1212,7 @@ class _MentalQuestionTile extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                q.text,
+                localizedMentalQuestionText(context, q),
                 style: tt.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: cs.onSurface,
@@ -1241,7 +1242,7 @@ class _MentalQuestionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              q.text,
+              localizedMentalQuestionText(context, q),
               style: tt.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: cs.onSurface,
@@ -1303,7 +1304,7 @@ class _MentalQuestionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              q.text,
+              localizedMentalQuestionText(context, q),
               style: tt.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: cs.onSurface,

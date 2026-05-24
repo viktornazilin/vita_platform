@@ -6,10 +6,20 @@ class ThemeController extends ChangeNotifier {
   static const _kModeKey = 'app_theme_mode';
 
   /// Core brand palette
-  static const Color kBrandDeepBlue = Color(0xFF004A98);
-  static const Color kBrandBlue = Color(0xFF005DBF);
-  static const Color kBrandAccent = Color(0xFF42B8FD);
+  static const Color kBrandDeepBlue = Color(0xFF12335A);
+  static const Color kBrandBlue = Color(0xFF2F7BFF);
+  static const Color kBrandAccent = Color(0xFF4EB5FF);
   static const Color kWhite = Color(0xFFFFFFFF);
+
+  /// Complementary premium accents.
+  ///
+  /// These colors are intentionally not used as dominant app colors.
+  /// They are designed for highlights, badges, positive/negative states,
+  /// wallet-style cards, progress bars and small visual accents.
+  static const Color kAccentGold = Color(0xFFE7B63D);
+  static const Color kAccentAqua = Color(0xFF2FC6BB);
+  static const Color kAccentCoral = Color(0xFFFF6A3D);
+  static const Color kAccentLavender = Color(0xFFB9A8D9);
 
   Color _seed = kBrandBlue;
   ThemeMode _mode = ThemeMode.system;
@@ -27,50 +37,85 @@ class ThemeController extends ChangeNotifier {
     );
 
     if (brightness == Brightness.dark) {
-      // New direction:
-      // not "midnight glass app", but cleaner corporate blue interface.
+      // Dark mode must not use saturated blue as the main surface.
+      // The app keeps the blue brand identity through primary/accent colors,
+      // while cards, backgrounds and fields use deep navy neutral layers.
       scheme = scheme.copyWith(
-        primary: kBrandAccent,
-        secondary: const Color(0xFF8ED8FF),
-        tertiary: const Color(0xFFB9E7FF),
+        primary: const Color(0xFF6BB6FF),
+        onPrimary: const Color(0xFF001C36),
+        primaryContainer: const Color(0xFF143A66),
+        onPrimaryContainer: const Color(0xFFEAF4FF),
 
-        surface: const Color(0xFF0057B8),
-        surfaceContainerLowest: const Color(0xFF004585),
-        surfaceContainerLow: const Color(0xFF004F9E),
-        surfaceContainer: const Color(0xFF0057B8),
-        surfaceContainerHigh: const Color(0xFF0C63C4),
-        surfaceContainerHighest: const Color(0xFF1A6FD0),
+        secondary: kAccentGold,
+        onSecondary: const Color(0xFF241700),
+        secondaryContainer: const Color(0xFF5D4300),
+        onSecondaryContainer: const Color(0xFFFFE8A8),
 
-        background: const Color(0xFF0057B8),
-        onBackground: const Color(0xFFF7FAFF),
+        tertiary: kAccentAqua,
+        onTertiary: const Color(0xFF00201C),
+        tertiaryContainer: const Color(0xFF005047),
+        onTertiaryContainer: const Color(0xFFB6FFF4),
 
-        onSurface: const Color(0xFFF7FAFF),
-        onSurfaceVariant: const Color(0xFFD7E6FA),
+        error: kAccentCoral,
+        onError: const Color(0xFF3B0500),
+        errorContainer: const Color(0xFF742018),
+        onErrorContainer: const Color(0xFFFFDAD5),
 
-        outline: const Color(0x66FFFFFF),
-        outlineVariant: const Color(0x33FFFFFF),
+        surface: const Color(0xFF07111F),
+        surfaceContainerLowest: const Color(0xFF040912),
+        surfaceContainerLow: const Color(0xFF0B1627),
+        surfaceContainer: const Color(0xFF102038),
+        surfaceContainerHigh: const Color(0xFF162B48),
+        surfaceContainerHighest: const Color(0xFF1F3A5F),
+
+        background: const Color(0xFF07111F),
+        onBackground: const Color(0xFFF5F8FF),
+
+        onSurface: const Color(0xFFF5F8FF),
+        onSurfaceVariant: const Color(0xFFB9C9DD),
+
+        outline: const Color(0x668DB5E8),
+        outlineVariant: const Color(0x2E8DB5E8),
+        shadow: const Color(0xFF000813),
       );
     } else {
       scheme = scheme.copyWith(
         primary: kBrandBlue,
-        secondary: kBrandAccent,
-        tertiary: kBrandDeepBlue,
+        onPrimary: kWhite,
+        primaryContainer: const Color(0xFFCFE1FF),
+        onPrimaryContainer: const Color(0xFF08254D),
 
-        surface: const Color(0xFFF5F9FF),
-        surfaceContainerLowest: const Color(0xFFFFFFFF),
-        surfaceContainerLow: const Color(0xFFF0F6FF),
-        surfaceContainer: const Color(0xFFE8F1FF),
-        surfaceContainerHigh: const Color(0xFFDDEAFF),
-        surfaceContainerHighest: const Color(0xFFD2E3FF),
+        secondary: kAccentGold,
+        onSecondary: const Color(0xFF2B1B00),
+        secondaryContainer: const Color(0xFFF0C96B),
+        onSecondaryContainer: const Color(0xFF2F2100),
 
-        background: const Color(0xFFF5F9FF),
-        onBackground: const Color(0xFF0D2342),
+        tertiary: kAccentAqua,
+        onTertiary: const Color(0xFF00201C),
+        tertiaryContainer: const Color(0xFF9FDCD6),
+        onTertiaryContainer: const Color(0xFF00332E),
 
-        onSurface: const Color(0xFF0D2342),
-        onSurfaceVariant: const Color(0xFF49627F),
+        error: const Color(0xFFE85C45),
+        onError: kWhite,
+        errorContainer: const Color(0xFFFFD7CE),
+        onErrorContainer: const Color(0xFF3B0500),
 
-        outline: const Color(0xFFB8CCE9),
-        outlineVariant: const Color(0xFFD3E0F3),
+        surface: const Color(0xFFF3F1E9),
+        surfaceContainerLowest: const Color(0xFFFFFBF2),
+        surfaceContainerLow: const Color(0xFFF5EFE0),
+        surfaceContainer: const Color(0xFFE7E2D1),
+        surfaceContainerHigh: const Color(0xFFD7DDDF),
+        surfaceContainerHighest: const Color(0xFFC9D4DA),
+
+        background: const Color(0xFFF3F1E9),
+        onBackground: const Color(0xFF172333),
+
+        onSurface: const Color(0xFF142238),
+        onSurfaceVariant: const Color(0xFF475C73),
+
+        outline: const Color(0xFF9CB4C9),
+        outlineVariant: const Color(0xFFB7C6CF),
+        shadow: const Color(0xFF12335A),
       );
     }
 
@@ -154,7 +199,7 @@ class ThemeController extends ChangeNotifier {
 
     final filledBg = brightness == Brightness.dark
         ? scheme.surfaceContainerHigh
-        : scheme.surfaceContainerHighest;
+        : scheme.surfaceContainerHigh;
 
     return base.copyWith(
       textTheme: textTheme,
@@ -245,10 +290,8 @@ class ThemeController extends ChangeNotifier {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           elevation: 0,
-          backgroundColor: brightness == Brightness.dark
-              ? scheme.surfaceContainerHighest
-              : scheme.primary,
-          foregroundColor: scheme.onSurface,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
           disabledBackgroundColor: scheme.surfaceContainerHigh,
           disabledForegroundColor: scheme.onSurfaceVariant,
           shape: RoundedRectangleBorder(
@@ -263,7 +306,9 @@ class ThemeController extends ChangeNotifier {
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: scheme.onSurface,
+          foregroundColor: brightness == Brightness.dark
+              ? scheme.primary
+              : scheme.onSurface,
           side: BorderSide(color: scheme.outline),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
@@ -277,7 +322,9 @@ class ThemeController extends ChangeNotifier {
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: scheme.onSurface,
+          foregroundColor: brightness == Brightness.dark
+              ? scheme.primary
+              : scheme.onSurface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -340,10 +387,12 @@ class ThemeController extends ChangeNotifier {
 
       sliderTheme: SliderThemeData(
         trackHeight: 3.5,
-        activeTrackColor: scheme.primary,
+        activeTrackColor: scheme.secondary,
         inactiveTrackColor: scheme.outlineVariant,
-        thumbColor: scheme.onSurface,
-        overlayColor: scheme.primary.withOpacity(0.12),
+        thumbColor: brightness == Brightness.dark
+            ? scheme.onSurface
+            : scheme.primary,
+        overlayColor: scheme.secondary.withOpacity(0.14),
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
       ),
@@ -352,7 +401,9 @@ class ThemeController extends ChangeNotifier {
         backgroundColor: brightness == Brightness.dark
             ? scheme.surfaceContainerLow
             : scheme.surfaceContainerHighest,
-        selectedColor: scheme.surfaceContainerHighest,
+        selectedColor: brightness == Brightness.dark
+            ? scheme.secondary.withOpacity(0.22)
+            : scheme.secondaryContainer,
         disabledColor: scheme.surfaceContainerLow,
         labelStyle: textTheme.labelLarge?.copyWith(
           color: scheme.onSurface,
@@ -360,6 +411,21 @@ class ThemeController extends ChangeNotifier {
         side: BorderSide(color: scheme.outlineVariant),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: scheme.secondary,
+        linearTrackColor: scheme.outlineVariant.withOpacity(0.55),
+        circularTrackColor: scheme.outlineVariant.withOpacity(0.55),
+      ),
+
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        elevation: 0,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
         ),
       ),
     );

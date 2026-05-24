@@ -570,6 +570,7 @@ class _NestSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = cs.secondary;
 
     final sheetColor = Color.lerp(
       cs.surface,
@@ -584,7 +585,7 @@ class _NestSheet extends StatelessWidget {
           color: sheetColor.withOpacity(isDark ? 0.96 : 0.98),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           border: Border.all(
-            color: cs.primary.withOpacity(isDark ? 0.18 : 0.16),
+            color: accent.withOpacity(isDark ? 0.18 : 0.24),
           ),
           boxShadow: [
             BoxShadow(
@@ -613,10 +614,11 @@ class _NestSheetHeader extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = cs.secondary;
     final headerEnd = Color.lerp(
+      accent,
       cs.primary,
-      cs.surface,
-      isDark ? 0.20 : 0.10,
+      isDark ? 0.26 : 0.34,
     )!;
 
     return Row(
@@ -629,11 +631,11 @@ class _NestSheetHeader extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [cs.primary, headerEnd],
+              colors: [accent, headerEnd],
             ),
             boxShadow: [
               BoxShadow(
-                color: cs.primary.withOpacity(0.22),
+                color: accent.withOpacity(isDark ? 0.16 : 0.24),
                 blurRadius: 16,
                 offset: const Offset(0, 10),
               ),
@@ -708,10 +710,11 @@ class _NestLauncherTile extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final accent = cs.secondary;
     final cardColor = Color.lerp(
       cs.surface,
-      cs.primaryContainer,
-      isDark ? 0.08 : 0.14,
+      accent,
+      isDark ? 0.05 : 0.12,
     )!;
 
     return Material(
@@ -724,13 +727,13 @@ class _NestLauncherTile extends StatelessWidget {
             color: cardColor.withOpacity(isDark ? 0.78 : 0.88),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: cs.primary.withOpacity(isDark ? 0.20 : 0.18),
+              color: accent.withOpacity(isDark ? 0.20 : 0.26),
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
                     ? Colors.black.withOpacity(0.14)
-                    : cs.primary.withOpacity(0.07),
+                    : accent.withOpacity(0.10),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -746,14 +749,14 @@ class _NestLauncherTile extends StatelessWidget {
                   height: 52,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: cs.primary.withOpacity(isDark ? 0.16 : 0.10),
+                    color: Color.lerp(cs.surfaceContainerHighest, accent, isDark ? 0.12 : 0.22)!,
                     border: Border.all(
-                      color: cs.primary.withOpacity(isDark ? 0.28 : 0.22),
+                      color: accent.withOpacity(isDark ? 0.30 : 0.34),
                     ),
                   ),
                   child: Icon(
                     icon,
-                    color: cs.primary,
+                    color: accent,
                     size: 25,
                   ),
                 ),
@@ -799,10 +802,11 @@ class _NestQuickActionTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final accent = Color.lerp(color, cs.secondary, isDark ? 0.18 : 0.28)!;
     final tileColor = Color.lerp(
       cs.surface,
-      cs.primaryContainer,
-      isDark ? 0.08 : 0.13,
+      accent,
+      isDark ? 0.05 : 0.10,
     )!;
 
     return Material(
@@ -816,13 +820,13 @@ class _NestQuickActionTile extends StatelessWidget {
             color: tileColor.withOpacity(isDark ? 0.80 : 0.92),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: cs.primary.withOpacity(isDark ? 0.18 : 0.16),
+              color: accent.withOpacity(isDark ? 0.18 : 0.24),
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
                     ? Colors.black.withOpacity(0.14)
-                    : cs.primary.withOpacity(0.07),
+                    : accent.withOpacity(0.09),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -835,14 +839,14 @@ class _NestQuickActionTile extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: cs.primary.withOpacity(isDark ? 0.18 : 0.10),
+                  color: Color.lerp(cs.surfaceContainerHighest, accent, isDark ? 0.14 : 0.22)!,
                   border: Border.all(
-                    color: cs.primary.withOpacity(isDark ? 0.30 : 0.20),
+                    color: accent.withOpacity(isDark ? 0.30 : 0.32),
                   ),
                 ),
                 child: Icon(
                   icon,
-                  color: cs.primary,
+                  color: accent,
                   size: 24,
                 ),
               ),
@@ -879,7 +883,7 @@ class _NestQuickActionTile extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(
                 Icons.chevron_right_rounded,
-                color: cs.primary.withOpacity(isDark ? 0.75 : 0.68),
+                color: accent.withOpacity(isDark ? 0.75 : 0.78),
               ),
             ],
           ),

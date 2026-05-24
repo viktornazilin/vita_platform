@@ -3711,4 +3711,64 @@ class AppLocalizationsTr extends AppLocalizations {
   String launcherPlannedHoursDescription(Object hours) {
     return 'Plan: $hours sa';
   }
+
+  @override
+  String get profileGdprSection => 'Gizlilik ve GDPR';
+
+  @override
+  String get profileGdprExportTitle => 'Verilerimi dışa aktar';
+
+  @override
+  String get profileGdprExportSubtitle =>
+      'Hesabına bağlı tüm uygulama verilerinin JSON dışa aktarımını oluşturur.';
+
+  @override
+  String get profileGdprNotSignedInToast =>
+      'Oturum açmadın. Veri dışa aktarımı mümkün değil.';
+
+  @override
+  String get profileGdprDialogTitle => 'GDPR veri dışa aktarımı oluşturuldu';
+
+  @override
+  String profileGdprDialogFileName(String fileName) {
+    return 'Dosya adı: $fileName';
+  }
+
+  @override
+  String get profileGdprDialogBody =>
+      'Dışa aktarım JSON olarak oluşturuldu ve panoya kopyalandı.\n\nİçeriği artık .json uzantılı bir dosyaya yapıştırabilirsin.';
+
+  @override
+  String get profileGdprDialogPreviewLabel => 'Önizleme:';
+
+  @override
+  String get profileGdprCopyButton => 'Kopyala';
+
+  @override
+  String get profileGdprDoneButton => 'Tamam';
+
+  @override
+  String get profileGdprCopiedAgainToast =>
+      'Veri dışa aktarımı tekrar panoya kopyalandı.';
+
+  @override
+  String get profileGdprCreatedToast =>
+      'GDPR veri dışa aktarımı oluşturuldu ve kopyalandı.';
+
+  @override
+  String profileGdprFailedToast(String error) {
+    return 'Veri dışa aktarımı başarısız oldu: $error';
+  }
+
+  @override
+  String get profileGdprExportNoteAccount =>
+      'Bu dışa aktarım; kimliği doğrulanmış kullanıcı hesabını, public.users profil kaydını, kullanıcıya bağlı tüm uygulama tablolarını ve dışa aktarılan yanıtları anlamak için gerekli referans tablolarını içerir.';
+
+  @override
+  String get profileGdprExportNoteRls =>
+      'Dışa aktarım Supabase Row Level Security ile sınırlıdır. Var olmayan veya okunamayan tablolar _export_warning girdisiyle döndürülür.';
+
+  @override
+  String get profileGdprExportNoteEncrypted =>
+      'Şifrelenmiş payload alanları saklandıkları şekilde dışa aktarılır. Şifre çözme, uygulamanın şifreleme uygulamasına ve aktif kullanıcı oturumuna bağlıdır.';
 }

@@ -3710,4 +3710,64 @@ class AppLocalizationsRu extends AppLocalizations {
   String launcherPlannedHoursDescription(Object hours) {
     return 'План: $hours ч';
   }
+
+  @override
+  String get profileGdprSection => 'Конфиденциальность и GDPR';
+
+  @override
+  String get profileGdprExportTitle => 'Экспортировать мои данные';
+
+  @override
+  String get profileGdprExportSubtitle =>
+      'Создаёт JSON-экспорт всех данных приложения, связанных с твоим аккаунтом.';
+
+  @override
+  String get profileGdprNotSignedInToast =>
+      'Ты не вошёл в аккаунт. Экспорт данных невозможен.';
+
+  @override
+  String get profileGdprDialogTitle => 'GDPR-экспорт данных создан';
+
+  @override
+  String profileGdprDialogFileName(String fileName) {
+    return 'Имя файла: $fileName';
+  }
+
+  @override
+  String get profileGdprDialogBody =>
+      'Экспорт создан в формате JSON и скопирован в буфер обмена.\n\nТеперь ты можешь вставить содержимое в файл с расширением .json.';
+
+  @override
+  String get profileGdprDialogPreviewLabel => 'Предпросмотр:';
+
+  @override
+  String get profileGdprCopyButton => 'Копировать';
+
+  @override
+  String get profileGdprDoneButton => 'Готово';
+
+  @override
+  String get profileGdprCopiedAgainToast =>
+      'Экспорт данных снова скопирован в буфер обмена.';
+
+  @override
+  String get profileGdprCreatedToast =>
+      'GDPR-экспорт данных создан и скопирован.';
+
+  @override
+  String profileGdprFailedToast(String error) {
+    return 'Не удалось экспортировать данные: $error';
+  }
+
+  @override
+  String get profileGdprExportNoteAccount =>
+      'Этот экспорт содержит аутентифицированный аккаунт пользователя, профиль из public.users, все пользовательские таблицы приложения и справочные таблицы, необходимые для понимания экспортированных ответов.';
+
+  @override
+  String get profileGdprExportNoteRls =>
+      'Экспорт ограничен правилами Supabase Row Level Security. Таблицы, которые не существуют или недоступны для чтения, возвращаются с записью _export_warning.';
+
+  @override
+  String get profileGdprExportNoteEncrypted =>
+      'Зашифрованные поля encrypted_payload экспортируются в том виде, в котором они сохранены. Расшифровка зависит от реализации шифрования в приложении и активной пользовательской сессии.';
 }

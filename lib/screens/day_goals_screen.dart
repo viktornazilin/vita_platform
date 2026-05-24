@@ -425,6 +425,88 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
 enum _DaySection { morning, day, evening }
 
+
+Color _dgCardColor(BuildContext context, {double lightOpacity = 0.72}) {
+  final scheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  if (isDark) {
+    return Color.lerp(
+      scheme.surfaceContainerLow,
+      scheme.primary,
+      0.035,
+    )!.withOpacity(0.94);
+  }
+
+  return Colors.white.withOpacity(lightOpacity);
+}
+
+Color _dgInnerCardColor(BuildContext context, {double lightOpacity = 0.72}) {
+  final scheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  if (isDark) {
+    return Color.lerp(
+      scheme.surfaceContainer,
+      scheme.primary,
+      0.04,
+    )!.withOpacity(0.96);
+  }
+
+  return const Color(0xFFF4FAFF).withOpacity(lightOpacity);
+}
+
+Color _dgBorder(BuildContext context, [Color? accent]) {
+  final scheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return Color.lerp(
+    scheme.outlineVariant,
+    accent ?? scheme.primary,
+    isDark ? 0.16 : 0.06,
+  )!;
+}
+
+Color _dgText(BuildContext context) {
+  return Theme.of(context).colorScheme.onSurface;
+}
+
+Color _dgMuted(BuildContext context) {
+  return Theme.of(context).colorScheme.onSurfaceVariant;
+}
+
+Color _dgPrimary(BuildContext context) {
+  return Theme.of(context).colorScheme.primary;
+}
+
+Color _dgSuccess(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? const Color(0xFF46E08D) : const Color(0xFF22C55E);
+}
+
+Color _dgWarning(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return isDark ? const Color(0xFFFFD166) : const Color(0xFFF59E0B);
+}
+
+Color _dgDanger(BuildContext context) {
+  return Theme.of(context).colorScheme.error;
+}
+
+List<BoxShadow> _dgShadow(BuildContext context, {bool top = false}) {
+  final scheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return [
+    BoxShadow(
+      color: isDark ? Colors.black.withOpacity(0.24) : scheme.primary.withOpacity(0.07),
+      blurRadius: isDark ? 18 : 24,
+      offset: Offset(0, top ? -6 : 12),
+    ),
+  ];
+}
+
+
 class _KanbanDaySection extends StatelessWidget {
   final _DaySection section;
   final List<Goal> goals;
@@ -460,16 +542,10 @@ class _KanbanDaySection extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.58),
+            color: _dgCardColor(context, lightOpacity: 0.58),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x102B5B7A),
-                blurRadius: 22,
-                offset: Offset(0, 14),
-              ),
-            ],
+            border: Border.all(color: _dgBorder(context)),
+            boxShadow: _dgShadow(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -511,7 +587,7 @@ class _KanbanDaySection extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF2E4B5A),
+                                  color: _dgText(context),
                                 ),
                           ),
                         ),
@@ -523,9 +599,9 @@ class _KanbanDaySection extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanOpenShort, value: openGoals.length, accent: const Color(0xFFF59E0B)),
+                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanOpenShort, value: openGoals.length, accent: _dgWarning(context)),
                                 const SizedBox(width: 6),
-                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanDoneShort, value: doneGoals.length, accent: const Color(0xFF22C55E)),
+                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanDoneShort, value: doneGoals.length, accent: _dgSuccess(context)),
                               ],
                             ),
                           ),
@@ -604,7 +680,7 @@ class _KanbanBoard extends StatelessWidget {
           title: l.dayGoalsKanbanDoneTitle,
           subtitle: '${doneGoals.length}',
           icon: Icons.check_circle_rounded,
-          accent: const Color(0xFF22C55E),
+          accent: _dgSuccess(context),
           goals: doneGoals,
           doneColumn: true,
           emptyText: l.dayGoalsKanbanDoneEmpty,
@@ -677,10 +753,10 @@ class _KanbanColumn extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           constraints: const BoxConstraints(minHeight: 132),
           decoration: BoxDecoration(
-            color: isActiveDrop ? accent.withOpacity(0.12) : const Color(0xFFF4FAFF).withOpacity(0.72),
+            color: isActiveDrop ? accent.withOpacity(0.12) : _dgInnerCardColor(context, lightOpacity: 0.72).withOpacity(0.72),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: isActiveDrop ? accent.withOpacity(0.42) : const Color(0xFFD6E6F5),
+              color: isActiveDrop ? accent.withOpacity(0.42) : _dgBorder(context),
             ),
           ),
           child: Column(
@@ -698,7 +774,7 @@ class _KanbanColumn extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF2E4B5A),
+                            color: _dgText(context),
                           ),
                     ),
                   ),
@@ -712,7 +788,7 @@ class _KanbanColumn extends StatelessWidget {
                       subtitle,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF2E4B5A),
+                            color: _dgText(context),
                           ),
                     ),
                   ),
@@ -800,18 +876,18 @@ class _KanbanGoalCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(10, compact ? 9 : 10, 8, compact ? 9 : 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(isDone ? 0.58 : 0.82),
+        color: _dgCardColor(context, lightOpacity: isDone ? 0.58 : 0.82),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: dragging
-              ? const Color(0xFF3AA8E6).withOpacity(0.58)
+              ? _dgPrimary(context).withOpacity(0.58)
               : isDone
-                  ? const Color(0xFFD8EAD8)
-                  : const Color(0xFFD6E6F5),
+                  ? Color.lerp(_dgBorder(context), _dgSuccess(context), 0.24)!
+                  : _dgBorder(context),
         ),
         boxShadow: [
           BoxShadow(
-            color: dragging ? const Color(0x243AA8E6) : const Color(0x0F2B5B7A),
+            color: dragging ? _dgPrimary(context).withOpacity(0.18) : (Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.18) : _dgPrimary(context).withOpacity(0.06)),
             blurRadius: dragging ? 24 : 14,
             offset: Offset(0, dragging ? 14 : 8),
           ),
@@ -828,7 +904,7 @@ class _KanbanGoalCard extends StatelessWidget {
                 width: 4,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: isDone ? const Color(0xFF22C55E) : const Color(0xFF7AAECF),
+                  color: isDone ? _dgSuccess(context) : _dgMuted(context),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -842,7 +918,7 @@ class _KanbanGoalCard extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                         height: 1.12,
                         decoration: isDone ? TextDecoration.lineThrough : null,
-                        color: const Color(0xFF2E4B5A).withOpacity(isDone ? 0.58 : 1),
+                        color: _dgText(context).withOpacity(isDone ? 0.58 : 1),
                       ),
                 ),
               ),
@@ -855,7 +931,7 @@ class _KanbanGoalCard extends StatelessWidget {
                   child: Icon(
                     isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                     size: 19,
-                    color: isDone ? const Color(0xFF22C55E) : const Color(0xFF6A8190),
+                    color: isDone ? _dgSuccess(context) : _dgMuted(context),
                   ),
                 ),
               ),
@@ -901,14 +977,14 @@ class _GoalChip extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 118),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF6FF).withOpacity(0.82),
+        color: _dgInnerCardColor(context, lightOpacity: 0.82).withOpacity(0.82),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: _dgBorder(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: const Color(0xFF5D7B8F)),
+          Icon(icon, size: 13, color: _dgMuted(context)),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
@@ -917,7 +993,7 @@ class _GoalChip extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF5D7B8F),
+                    color: _dgMuted(context),
                   ),
             ),
           ),
@@ -947,16 +1023,16 @@ class _CardAction extends StatelessWidget {
         width: 31,
         height: 31,
         decoration: BoxDecoration(
-          color: danger ? const Color(0xFFFFEEF0) : const Color(0xFFEAF6FF),
+          color: danger ? Color.lerp(_dgCardColor(context), _dgDanger(context), 0.12)! : _dgInnerCardColor(context, lightOpacity: 0.82),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: danger ? const Color(0xFFFFCCD2) : const Color(0xFFD6E6F5),
+            color: danger ? Color.lerp(_dgBorder(context), _dgDanger(context), 0.42)! : _dgBorder(context),
           ),
         ),
         child: Icon(
           icon,
           size: 16,
-          color: danger ? const Color(0xFFEF4444) : const Color(0xFF5D7B8F),
+          color: danger ? _dgDanger(context) : _dgMuted(context),
         ),
       ),
     );
@@ -974,16 +1050,16 @@ class _KanbanEmptyHint extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.52),
+        color: _dgCardColor(context, lightOpacity: 0.52),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: _dgBorder(context)),
       ),
       child: Text(
         text,
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF6A8190),
+              color: _dgMuted(context),
             ),
       ),
     );
@@ -1013,7 +1089,7 @@ class _MiniCounter extends StatelessWidget {
         '$label $value',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
+              color: _dgText(context),
             ),
       ),
     );
@@ -1039,13 +1115,13 @@ _SectionMeta _sectionMeta(BuildContext context, _DaySection section) {
       return _SectionMeta(
         title: l.dayGoalsSectionMorning,
         icon: Icons.wb_sunny_rounded,
-        accent: Color(0xFFF59E0B),
+        accent: _dgWarning(context),
       );
     case _DaySection.day:
       return _SectionMeta(
         title: l.dayGoalsSectionDay,
         icon: Icons.light_mode_rounded,
-        accent: Color(0xFF3AA8E6),
+        accent: _dgPrimary(context),
       );
     case _DaySection.evening:
       return _SectionMeta(
@@ -1132,16 +1208,10 @@ class _DaySummaryCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.72),
+            color: _dgCardColor(context, lightOpacity: 0.72),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x142B5B7A),
-                blurRadius: 24,
-                offset: Offset(0, 16),
-              ),
-            ],
+            border: Border.all(color: _dgBorder(context)),
+            boxShadow: _dgShadow(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1150,14 +1220,14 @@ class _DaySummaryCard extends StatelessWidget {
                 AppLocalizations.of(context)!.dayGoalsSummaryTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFF2E4B5A),
+                      color: _dgText(context),
                     ),
               ),
               const SizedBox(height: 4),
               Text(
                 AppLocalizations.of(context)!.dayGoalsSummarySubtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF587282),
+                      color: _dgMuted(context),
                     ),
               ),
               const SizedBox(height: 14),
@@ -1166,9 +1236,9 @@ class _DaySummaryCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progress.clamp(0.0, 1.0),
                   minHeight: 10,
-                  backgroundColor: const Color(0xFFE8F2FA),
+                  backgroundColor: _dgInnerCardColor(context, lightOpacity: 0.70),
                   valueColor:
-                      const AlwaysStoppedAnimation(Color(0xFF3AA8E6)),
+                      AlwaysStoppedAnimation(_dgPrimary(context)),
                 ),
               ),
               const SizedBox(height: 14),
@@ -1178,7 +1248,7 @@ class _DaySummaryCard extends StatelessWidget {
                     child: _SummaryStat(
                       label: AppLocalizations.of(context)!.dayGoalsSummaryTotal,
                       value: '$totalGoals',
-                      accent: const Color(0xFF3AA8E6),
+                      accent: _dgPrimary(context),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1186,7 +1256,7 @@ class _DaySummaryCard extends StatelessWidget {
                     child: _SummaryStat(
                       label: AppLocalizations.of(context)!.dayGoalsSummaryDone,
                       value: '$completedGoals',
-                      accent: const Color(0xFF22C55E),
+                      accent: _dgSuccess(context),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1194,7 +1264,7 @@ class _DaySummaryCard extends StatelessWidget {
                     child: _SummaryStat(
                       label: AppLocalizations.of(context)!.dayGoalsSummaryRemaining,
                       value: '$remainingGoals',
-                      accent: const Color(0xFFF59E0B),
+                      accent: _dgWarning(context),
                     ),
                   ),
                 ],
@@ -1235,7 +1305,7 @@ class _SummaryStat extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
+                  color: _dgText(context),
                 ),
           ),
           const SizedBox(height: 2),
@@ -1243,7 +1313,7 @@ class _SummaryStat extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF587282),
+                  color: _dgMuted(context),
                 ),
           ),
         ],
@@ -1262,24 +1332,24 @@ class _HoursPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFF),
+        color: _dgInnerCardColor(context, lightOpacity: 0.72),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: _dgBorder(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.schedule_rounded,
             size: 18,
-            color: Color(0xFF3AA8E6),
+            color: _dgPrimary(context),
           ),
           const SizedBox(width: 8),
           Text(
             AppLocalizations.of(context)!.dayGoalsRemainingHours(hours.toStringAsFixed(1)),
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF385262),
+                  color: _dgText(context),
                 ),
           ),
         ],
@@ -1303,13 +1373,13 @@ class _HideCompletedToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.62),
+        color: _dgCardColor(context, lightOpacity: 0.62),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: _dgBorder(context)),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.visibility_off_rounded,
             color: Color(0xFF5D7B8F),
             size: 20,
@@ -1320,14 +1390,14 @@ class _HideCompletedToggle extends StatelessWidget {
               AppLocalizations.of(context)!.dayGoalsHideCompleted,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF2E4B5A),
+                    color: _dgText(context),
                   ),
             ),
           ),
           Switch.adaptive(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFF3AA8E6),
+            activeColor: _dgPrimary(context),
           ),
         ],
       ),
@@ -1340,21 +1410,33 @@ class _NestBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final colors = isDark
+        ? [
+            scheme.surfaceContainerLowest,
+            scheme.surface,
+            scheme.surfaceContainerLow,
+            scheme.surfaceContainerLowest,
+          ]
+        : const [
             Color(0xFFF7FCFF),
             Color(0xFFEAF6FF),
             Color(0xFFD7EEFF),
             Color(0xFFF2FAFF),
-          ],
+          ];
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: colors,
         ),
       ),
-      child: Stack(
-        children: const [
+      child: const Stack(
+        children: [
           Positioned(top: -140, left: -120, child: _SoftBlob(size: 360)),
           Positioned(bottom: -180, right: -140, child: _SoftBlob(size: 420)),
           Positioned(top: 120, right: -90, child: _SoftBlob(size: 240)),
@@ -1370,21 +1452,28 @@ class _SoftBlob extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return ImageFiltered(
       imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
       child: Container(
         width: size,
         height: size,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: [Color(0x663AA8E6), Color(0x0058B9FF)],
+            colors: [
+              scheme.primary.withOpacity(isDark ? 0.16 : 0.28),
+              scheme.primary.withOpacity(0.0),
+            ],
           ),
         ),
       ),
     );
   }
 }
+
 
 class _NestEmptyState extends StatelessWidget {
   final String message;
@@ -1400,23 +1489,17 @@ class _NestEmptyState extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.70),
+          color: _dgCardColor(context, lightOpacity: 0.70),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFD6E6F5)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1A2B5B7A),
-              blurRadius: 24,
-              offset: Offset(0, 14),
-            ),
-          ],
+          border: Border.all(color: _dgBorder(context)),
+          boxShadow: _dgShadow(context),
         ),
         child: Text(
           message.trim().isEmpty ? AppLocalizations.of(context)!.dayGoalsEmpty : message,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF2E4B5A),
+                color: _dgText(context),
               ),
         ),
       ),
@@ -1436,16 +1519,10 @@ class _NestSheet extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.75),
+            color: _dgCardColor(context, lightOpacity: 0.75),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A2B5B7A),
-                blurRadius: 28,
-                offset: Offset(0, -10),
-              ),
-            ],
+            border: Border.all(color: _dgBorder(context)),
+            boxShadow: _dgShadow(context, top: true),
           ),
           child: child,
         ),
@@ -1477,9 +1554,9 @@ class _MainFab extends StatelessWidget {
         heroTag: null,
         onPressed: () => _openMenu(context),
         elevation: 10,
-        backgroundColor: const Color(0xFF3AA8E6),
+        backgroundColor: _dgPrimary(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        child: const Icon(Icons.add, size: 30, color: Colors.white),
+        child: Icon(Icons.add, size: 30, color: Colors.white),
       ),
     );
   }
@@ -1517,15 +1594,9 @@ class _FabMenuSheet extends StatelessWidget {
         borderRadius: BorderRadius.circular(26),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A2B5B7A),
-                blurRadius: 28,
-                offset: Offset(0, -8),
-              ),
-            ],
+            color: _dgCardColor(context, lightOpacity: 0.92),
+            border: Border.all(color: _dgBorder(context)),
+            boxShadow: _dgShadow(context, top: true),
           ),
           child: SafeArea(
             top: false,
@@ -1538,7 +1609,7 @@ class _FabMenuSheet extends StatelessWidget {
                     width: 44,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF9BC7E6).withOpacity(0.55),
+                      color: _dgBorder(context).withOpacity(0.55),
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -1589,7 +1660,7 @@ class _FabMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF4FAFF),
+      color: _dgInnerCardColor(context, lightOpacity: 0.72),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -1598,7 +1669,7 @@ class _FabMenuButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
+            border: Border.all(color: _dgBorder(context)),
           ),
           child: Row(
             children: [
@@ -1607,18 +1678,12 @@ class _FabMenuButton extends StatelessWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
+                    colors: [_dgPrimary(context), Color(0xFF7DD3FC)],
                   ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x162B5B7A),
-                      blurRadius: 18,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
+                  boxShadow: _dgShadow(context),
                 ),
                 child: Icon(icon, color: Colors.white),
               ),
@@ -1631,20 +1696,20 @@ class _FabMenuButton extends StatelessWidget {
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF2E4B5A),
+                            color: _dgText(context),
                           ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF2E4B5A).withOpacity(0.65),
+                            color: _dgText(context).withOpacity(0.65),
                           ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF7AAECF)),
+              Icon(Icons.chevron_right_rounded, color: _dgMuted(context)),
             ],
           ),
         ),
