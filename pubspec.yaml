@@ -49,3 +49,5 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/images/logo_simple.png
+    - assets/images/logo_light.png
+    - assets/images/logo_dark.png

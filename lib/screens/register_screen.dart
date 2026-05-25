@@ -753,11 +753,18 @@ class _LegalInlineLink extends StatelessWidget {
 class _LogoPlate extends StatelessWidget {
   const _LogoPlate();
 
+  static const String _lightLogoAsset = 'assets/images/logo_light.png';
+  static const String _darkLogoAsset = 'assets/images/logo_dark.png';
+
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final assetPath =
+        brightness == Brightness.dark ? _darkLogoAsset : _lightLogoAsset;
+
     return Center(
       child: Image.asset(
-        'assets/images/logo.png',
+        assetPath,
         height: 112,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
