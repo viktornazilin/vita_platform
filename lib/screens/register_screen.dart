@@ -11,8 +11,26 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/register_model.dart';
 import '../services/user_service.dart';
-import '../widgets/nest/nest_background.dart';
-import '../widgets/nest/nest_blur_card.dart';
+
+
+String _registerErrNameMin2(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  switch (code) {
+    case 'en':
+      return 'Name must be at least 2 characters.';
+    case 'de':
+      return 'Der Name muss mindestens 2 Zeichen lang sein.';
+    case 'fr':
+      return 'Le nom doit contenir au moins 2 caractères.';
+    case 'es':
+      return 'El nombre debe tener al menos 2 caracteres.';
+    case 'tr':
+      return 'Ad en az 2 karakter olmalı.';
+    case 'ru':
+    default:
+      return 'Имя должно содержать минимум 2 символа.';
+  }
+}
 
 enum _LegalDoc { terms, privacy, datenschutz, impressum }
 
@@ -134,6 +152,7 @@ class _RegisterViewState extends State<_RegisterView> {
     final l = AppLocalizations.of(context)!;
     final s = (value ?? '').trim();
     if (s.isEmpty) return l.registerErrNameRequired;
+    if (s.length < 2) return _registerErrNameMin2(context);
     return null;
   }
 
@@ -173,9 +192,7 @@ class _RegisterViewState extends State<_RegisterView> {
     if (!_privacyAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '${l.registerLegalPrivacyPrefix} ${l.registerLegalPrivacyTitle}',
-          ),
+          content: Text('${l.registerLegalPrivacyPrefix} ${l.registerLegalPrivacyTitle}'),
         ),
       );
       return false;
@@ -205,11 +222,7 @@ class _RegisterViewState extends State<_RegisterView> {
     if (!opened) {
       final l = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l.registerLegalOpenFailed(_legalDocTitle(l, doc)),
-          ),
-        ),
+        SnackBar(content: Text(l.registerLegalOpenFailed(_legalDocTitle(l, doc)))),
       );
     }
   }
@@ -293,254 +306,193 @@ class _RegisterViewState extends State<_RegisterView> {
     final model = context.watch<RegisterModel>();
     final isLoading = model.loading || _busy;
     final canSubmitLegal = _privacyAccepted && model.termsAccepted;
-    final scheme = Theme.of(context).colorScheme;
+    final c = _AuthColors.of(context);
     final tt = Theme.of(context).textTheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardOpen = bottomInset > 0;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: NestBackground(
-        useSoftGradient: true,
+      backgroundColor: c.background,
+      body: _AuthBackground(
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final keyboardOpen = bottomInset > 0;
-
                 return AnimatedPadding(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    12,
-                    20,
-                    keyboardOpen ? 12 : 20,
-                  ),
+                  padding: EdgeInsets.fromLTRB(18, 14, 18, keyboardOpen ? 14 : 22),
                   child: SingleChildScrollView(
                     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 32,
-                      ),
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 36),
                       child: Align(
-                        alignment: keyboardOpen
-                            ? Alignment.topCenter
-                            : Alignment.center,
+                        alignment: keyboardOpen ? Alignment.topCenter : Alignment.center,
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 560),
-                          child: NestBlurCard(
-                            radius: 28,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 24,
-                            ),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const _LogoPlate(),
-                                  const SizedBox(height: 20),
-                                  Text(
-                                    l.registerTitle,
-                                    textAlign: TextAlign.center,
-                                    style: tt.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  TextFormField(
-                                    controller: _nameCtrl,
-                                    focusNode: _nameFocus,
-                                    validator: (v) => _validateName(context, v),
-                                    textInputAction: TextInputAction.next,
-                                    autofillHints: const [AutofillHints.name],
-                                    onFieldSubmitted: (_) =>
-                                        _emailFocus.requestFocus(),
-                                    decoration: InputDecoration(
-                                      labelText: l.registerNameLabel,
-                                      prefixIcon: const Icon(
-                                        Icons.person_outline_rounded,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _emailCtrl,
-                                    focusNode: _emailFocus,
-                                    validator: (v) => _validateEmail(context, v),
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    autofillHints: const [AutofillHints.email],
-                                    onFieldSubmitted: (_) =>
-                                        _passFocus.requestFocus(),
-                                    decoration: InputDecoration(
-                                      labelText: l.registerEmailLabel,
-                                      prefixIcon: const Icon(
-                                        Icons.alternate_email_rounded,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _passCtrl,
-                                    focusNode: _passFocus,
-                                    validator: (v) =>
-                                        _validateStrongPassword(context, v),
-                                    obscureText: _obscure1,
-                                    textInputAction: TextInputAction.next,
-                                    autofillHints: const [
-                                      AutofillHints.newPassword,
-                                    ],
-                                    onFieldSubmitted: (_) =>
-                                        _pass2Focus.requestFocus(),
-                                    decoration: InputDecoration(
-                                      labelText: l.registerPasswordLabel,
-                                      prefixIcon: const Icon(
-                                        Icons.lock_outline_rounded,
-                                      ),
-                                      suffixIcon: IconButton(
-                                        onPressed: () => setState(
-                                          () => _obscure1 = !_obscure1,
-                                        ),
-                                        icon: Icon(
-                                          _obscure1
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _pass2Ctrl,
-                                    focusNode: _pass2Focus,
-                                    validator: (v) => _validateConfirm(context, v),
-                                    obscureText: _obscure2,
-                                    textInputAction: TextInputAction.done,
-                                    autofillHints: const [
-                                      AutofillHints.newPassword,
-                                    ],
-                                    onFieldSubmitted: (_) => _onRegister(),
-                                    decoration: InputDecoration(
-                                      labelText: l.registerConfirmPasswordLabel,
-                                      prefixIcon: const Icon(
-                                        Icons.verified_user_outlined,
-                                      ),
-                                      suffixIcon: IconButton(
-                                        onPressed: () => setState(
-                                          () => _obscure2 = !_obscure2,
-                                        ),
-                                        icon: Icon(
-                                          _obscure2
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _LegalConsentSection(
-                                    privacyAccepted: _privacyAccepted,
-                                    termsAccepted: model.termsAccepted,
-                                    enabled: !isLoading,
-                                    onPrivacyChanged: (v) {
-                                      setState(() => _privacyAccepted = v);
-                                    },
-                                    onTermsChanged: (v) {
-                                      model.termsAccepted = v;
-                                      model.notifyListeners();
-                                    },
-                                    onOpenDoc: _openLegalDoc,
-                                  ),
-                                  if (model.error != null) ...[
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      model.error!,
-                                      style: tt.bodySmall?.copyWith(
-                                        color: scheme.error,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 16),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: isLoading
-                                        ? const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 10,
-                                            ),
-                                            child: Center(
-                                              child: CircularProgressIndicator.adaptive(),
-                                            ),
-                                          )
-                                        : FilledButton.icon(
-                                            onPressed:
-                                                canSubmitLegal ? _onRegister : null,
-                                            icon: const Icon(
-                                              Icons.person_add_alt_1_rounded,
-                                            ),
-                                            label: Text(l.registerBtnSignUp),
-                                          ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Divider(color: scheme.outlineVariant),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                        ),
-                                        child: Text(
-                                          l.commonOr,
-                                          style: tt.labelMedium?.copyWith(
-                                            color: scheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Divider(color: scheme.outlineVariant),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 14),
-                                  OutlinedButton.icon(
-                                    onPressed: isLoading || !canSubmitLegal
-                                        ? null
-                                        : _registerWithGoogle,
-                                    icon: const Icon(Icons.g_mobiledata_rounded),
-                                    label: Text(l.registerContinueGoogle),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  OutlinedButton.icon(
-                                    onPressed: isLoading || !canSubmitLegal
-                                        ? null
-                                        : _registerWithApple,
-                                    icon: const Icon(Icons.apple),
-                                    label: Text(
-                                      _isApplePlatform
-                                          ? l.registerContinueApple
-                                          : l.registerContinueAppleIos,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  TextButton(
-                                    onPressed: isLoading
-                                        ? null
-                                        : () => Navigator.pushReplacementNamed(
-                                              context,
-                                              '/login',
-                                            ),
-                                    child: Text(l.registerHaveAccountCta),
-                                  ),
-                                ],
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _AuthHeroCard(
+                                title: 'Ladna',
+                                subtitle: l.registerTitle,
+                                trailing: Icons.person_add_alt_1_rounded,
                               ),
-                            ),
+                              const SizedBox(height: 14),
+                              _AuthPanel(
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(
+                                        l.registerBtnSignUp,
+                                        style: tt.headlineSmall?.copyWith(
+                                          color: c.text,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.05,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        l.registerNameLabel,
+                                        style: tt.bodyMedium?.copyWith(
+                                          color: c.muted,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 18),
+                                      _AuthTextField(
+                                        controller: _nameCtrl,
+                                        focusNode: _nameFocus,
+                                        validator: (v) => _validateName(context, v),
+                                        textInputAction: TextInputAction.next,
+                                        autofillHints: const [AutofillHints.name],
+                                        onFieldSubmitted: (_) => _emailFocus.requestFocus(),
+                                        labelText: l.registerNameLabel,
+                                        prefixIcon: Icons.person_outline_rounded,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _AuthTextField(
+                                        controller: _emailCtrl,
+                                        focusNode: _emailFocus,
+                                        validator: (v) => _validateEmail(context, v),
+                                        keyboardType: TextInputType.emailAddress,
+                                        textInputAction: TextInputAction.next,
+                                        autofillHints: const [AutofillHints.email],
+                                        onFieldSubmitted: (_) => _passFocus.requestFocus(),
+                                        labelText: l.registerEmailLabel,
+                                        prefixIcon: Icons.alternate_email_rounded,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _AuthTextField(
+                                        controller: _passCtrl,
+                                        focusNode: _passFocus,
+                                        validator: (v) => _validateStrongPassword(context, v),
+                                        obscureText: _obscure1,
+                                        textInputAction: TextInputAction.next,
+                                        autofillHints: const [AutofillHints.newPassword],
+                                        onFieldSubmitted: (_) => _pass2Focus.requestFocus(),
+                                        labelText: l.registerPasswordLabel,
+                                        prefixIcon: Icons.lock_outline_rounded,
+                                        suffixIcon: IconButton(
+                                          onPressed: () => setState(() => _obscure1 = !_obscure1),
+                                          icon: Icon(
+                                            _obscure1
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                            color: c.muted,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _AuthTextField(
+                                        controller: _pass2Ctrl,
+                                        focusNode: _pass2Focus,
+                                        validator: (v) => _validateConfirm(context, v),
+                                        obscureText: _obscure2,
+                                        textInputAction: TextInputAction.done,
+                                        autofillHints: const [AutofillHints.newPassword],
+                                        onFieldSubmitted: (_) => _onRegister(),
+                                        labelText: l.registerConfirmPasswordLabel,
+                                        prefixIcon: Icons.verified_user_outlined,
+                                        suffixIcon: IconButton(
+                                          onPressed: () => setState(() => _obscure2 = !_obscure2),
+                                          icon: Icon(
+                                            _obscure2
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                            color: c.muted,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 18),
+                                      _LegalConsentSection(
+                                        privacyAccepted: _privacyAccepted,
+                                        termsAccepted: model.termsAccepted,
+                                        enabled: !isLoading,
+                                        onPrivacyChanged: (v) {
+                                          setState(() => _privacyAccepted = v);
+                                        },
+                                        onTermsChanged: (v) {
+                                          model.termsAccepted = v;
+                                          model.notifyListeners();
+                                        },
+                                        onOpenDoc: _openLegalDoc,
+                                      ),
+                                      if (model.error != null) ...[
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          model.error!,
+                                          style: tt.bodySmall?.copyWith(
+                                            color: c.error,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 16),
+                                      _PrimaryAuthButton(
+                                        busy: isLoading,
+                                        icon: Icons.arrow_forward_rounded,
+                                        label: l.registerBtnSignUp,
+                                        onPressed: canSubmitLegal ? _onRegister : null,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _AuthDivider(text: l.commonOr),
+                                      const SizedBox(height: 14),
+                                      _SecondaryAuthButton(
+                                        onPressed: isLoading || !canSubmitLegal
+                                            ? null
+                                            : _registerWithGoogle,
+                                        icon: Icons.g_mobiledata_rounded,
+                                        label: l.registerContinueGoogle,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _SecondaryAuthButton(
+                                        onPressed: isLoading || !canSubmitLegal
+                                            ? null
+                                            : _registerWithApple,
+                                        icon: Icons.apple,
+                                        label: _isApplePlatform
+                                            ? l.registerContinueApple
+                                            : l.registerContinueAppleIos,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      TextButton(
+                                        onPressed: isLoading
+                                            ? null
+                                            : () => Navigator.pushReplacementNamed(context, '/login'),
+                                        child: Text(l.registerHaveAccountCta),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -576,67 +528,74 @@ class _LegalConsentSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final scheme = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final c = _AuthColors.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _LegalConsentLine(
-          value: privacyAccepted,
-          enabled: enabled,
-          prefixText: l.registerLegalPrivacyPrefix,
-          linkText: l.registerLegalPrivacyTitle,
-          onChanged: onPrivacyChanged,
-          onTapLink: () => onOpenDoc(_LegalDoc.privacy),
-        ),
-        const SizedBox(height: 12),
-        _LegalConsentLine(
-          value: termsAccepted,
-          enabled: enabled,
-          prefixText: l.registerLegalTermsPrefix,
-          linkText: l.registerLegalTermsTitle,
-          onChanged: onTermsChanged,
-          onTapLink: () => onOpenDoc(_LegalDoc.terms),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.only(left: 34),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            alignment: WrapAlignment.start,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                l.registerLegalOptionalLinksPrefix,
-                style: tt.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  height: 1.25,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              _LegalInlineLink(
-                text: l.registerLegalDatenschutzTitle,
-                enabled: enabled,
-                onTap: () => onOpenDoc(_LegalDoc.datenschutz),
-              ),
-              Text(
-                '·',
-                style: tt.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant.withOpacity(0.7),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              _LegalInlineLink(
-                text: l.registerLegalImpressumTitle,
-                enabled: enabled,
-                onTap: () => onOpenDoc(_LegalDoc.impressum),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.input,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _LegalConsentLine(
+            value: privacyAccepted,
+            enabled: enabled,
+            prefixText: l.registerLegalPrivacyPrefix,
+            linkText: l.registerLegalPrivacyTitle,
+            onChanged: onPrivacyChanged,
+            onTapLink: () => onOpenDoc(_LegalDoc.privacy),
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          _LegalConsentLine(
+            value: termsAccepted,
+            enabled: enabled,
+            prefixText: l.registerLegalTermsPrefix,
+            linkText: l.registerLegalTermsTitle,
+            onChanged: onTermsChanged,
+            onTapLink: () => onOpenDoc(_LegalDoc.terms),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 34),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  l.registerLegalOptionalLinksPrefix,
+                  style: TextStyle(
+                    color: c.muted,
+                    height: 1.25,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                _LegalInlineLink(
+                  text: l.registerLegalDatenschutzTitle,
+                  enabled: enabled,
+                  onTap: () => onOpenDoc(_LegalDoc.datenschutz),
+                ),
+                Text(
+                  '·',
+                  style: TextStyle(
+                    color: c.muted.withOpacity(0.75),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                _LegalInlineLink(
+                  text: l.registerLegalImpressumTitle,
+                  enabled: enabled,
+                  onTap: () => onOpenDoc(_LegalDoc.impressum),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -660,7 +619,7 @@ class _LegalConsentLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final c = _AuthColors.of(context);
     final tt = Theme.of(context).textTheme;
 
     return Row(
@@ -674,13 +633,10 @@ class _LegalConsentLine extends StatelessWidget {
             onChanged: enabled ? (v) => onChanged(v ?? false) : null,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-            side: BorderSide(
-              color: scheme.outlineVariant,
-              width: 1.6,
-            ),
+            activeColor: c.primary,
+            checkColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+            side: BorderSide(color: c.border, width: 1.6),
           ),
         ),
         const SizedBox(width: 10),
@@ -690,9 +646,9 @@ class _LegalConsentLine extends StatelessWidget {
             child: RichText(
               text: TextSpan(
                 style: tt.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
+                  color: c.muted,
                   height: 1.28,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
                 children: [
                   TextSpan(text: '$prefixText '),
@@ -728,21 +684,18 @@ class _LegalInlineLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
+    final c = _AuthColors.of(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: enabled ? onTap : null,
       child: Text(
         text,
-        style: tt.bodyMedium?.copyWith(
-          color: enabled ? scheme.primary : scheme.onSurfaceVariant.withOpacity(0.55),
+        style: TextStyle(
+          color: enabled ? c.primary : c.muted.withOpacity(0.55),
           height: 1.28,
           fontWeight: FontWeight.w800,
           decoration: TextDecoration.underline,
-          decorationColor:
-              enabled ? scheme.primary : scheme.onSurfaceVariant.withOpacity(0.55),
+          decorationColor: enabled ? c.primary : c.muted.withOpacity(0.55),
           decorationThickness: 1.15,
         ),
       ),
@@ -750,25 +703,376 @@ class _LegalInlineLink extends StatelessWidget {
   }
 }
 
-class _LogoPlate extends StatelessWidget {
-  const _LogoPlate();
+class _AuthBackground extends StatelessWidget {
+  final Widget child;
 
-  static const String _lightLogoAsset = 'assets/images/logo_light.png';
-  static const String _darkLogoAsset = 'assets/images/logo_dark.png';
+  const _AuthBackground({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final assetPath =
-        brightness == Brightness.dark ? _darkLogoAsset : _lightLogoAsset;
-
-    return Center(
-      child: Image.asset(
-        assetPath,
-        height: 112,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.high,
+    final c = _AuthColors.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.background,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: c.isDark
+              ? const [Color(0xFF100C1E), Color(0xFF0A0614)]
+              : const [Color(0xFFF5F3FA), Color(0xFFEEF7F5), Color(0xFFF6F0DF)],
+        ),
       ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -90,
+            right: -70,
+            child: _Glow(size: 240, color: c.primary.withOpacity(c.isDark ? 0.20 : 0.12)),
+          ),
+          Positioned(
+            bottom: -80,
+            left: -80,
+            child: _Glow(size: 260, color: c.accent.withOpacity(c.isDark ? 0.12 : 0.18)),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthHeroCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData trailing;
+
+  const _AuthHeroCard({
+    required this.title,
+    required this.subtitle,
+    required this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _AuthColors.of(context);
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: c.isDark
+              ? const [Color(0xFF1E1548), Color(0xFF2A1C60)]
+              : const [Color(0xFF160E38), Color(0xFF2A1C5A)],
+        ),
+        border: Border.all(color: c.primary.withOpacity(c.isDark ? 0.30 : 0.16)),
+        boxShadow: [
+          BoxShadow(
+            color: c.isDark
+                ? c.primary.withOpacity(0.26)
+                : const Color(0xFF160E38).withOpacity(0.20),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: c.primary.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: c.primary.withOpacity(0.32)),
+            ),
+            child: const Center(
+              child: Text('✦', style: TextStyle(fontSize: 28, color: Colors.black)),
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: tt.displaySmall?.copyWith(
+                    color: const Color(0xFFFAF6EE),
+                    fontWeight: FontWeight.w700,
+                    height: 0.95,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: tt.bodyLarge?.copyWith(
+                    color: const Color(0xFFFAF6EE).withOpacity(0.45),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(trailing, color: const Color(0xFFFAF6EE).withOpacity(0.45)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthPanel extends StatelessWidget {
+  final Widget child;
+
+  const _AuthPanel({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _AuthColors.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: c.border),
+        boxShadow: [
+          BoxShadow(
+            color: c.isDark ? Colors.black.withOpacity(0.30) : c.primary.withOpacity(0.07),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _AuthTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode? focusNode;
+  final TextInputType? keyboardType;
+  final Iterable<String>? autofillHints;
+  final TextInputAction? textInputAction;
+  final String? Function(String?)? validator;
+  final String labelText;
+  final IconData prefixIcon;
+  final Widget? suffixIcon;
+  final bool obscureText;
+  final void Function(String)? onFieldSubmitted;
+
+  const _AuthTextField({
+    required this.controller,
+    required this.labelText,
+    required this.prefixIcon,
+    this.focusNode,
+    this.keyboardType,
+    this.autofillHints,
+    this.textInputAction,
+    this.validator,
+    this.suffixIcon,
+    this.obscureText = false,
+    this.onFieldSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _AuthColors.of(context);
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: keyboardType,
+      autofillHints: autofillHints,
+      textInputAction: textInputAction,
+      validator: validator,
+      obscureText: obscureText,
+      onFieldSubmitted: onFieldSubmitted,
+      style: TextStyle(color: c.text, fontWeight: FontWeight.w700),
+      decoration: InputDecoration(
+        labelText: labelText,
+        prefixIcon: Icon(prefixIcon, color: c.muted),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: c.input,
+        labelStyle: TextStyle(color: c.muted, fontWeight: FontWeight.w600),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: c.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: c.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: c.primary, width: 1.4),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryAuthButton extends StatelessWidget {
+  final bool busy;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _PrimaryAuthButton({
+    required this.busy,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _AuthColors.of(context);
+    if (busy) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: CircularProgressIndicator.adaptive(
+            valueColor: AlwaysStoppedAnimation<Color>(c.primary),
+          ),
+        ),
+      );
+    }
+    return SizedBox(
+      height: 52,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+        style: FilledButton.styleFrom(
+          backgroundColor: c.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryAuthButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+
+  const _SecondaryAuthButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _AuthColors.of(context);
+    return SizedBox(
+      height: 50,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c.text,
+          side: BorderSide(color: c.border, width: 1.2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
+          backgroundColor: c.input,
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthDivider extends StatelessWidget {
+  final String text;
+
+  const _AuthDivider({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _AuthColors.of(context);
+    return Row(
+      children: [
+        Expanded(child: Divider(color: c.border)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(
+            text,
+            style: TextStyle(color: c.muted, fontWeight: FontWeight.w700),
+          ),
+        ),
+        Expanded(child: Divider(color: c.border)),
+      ],
+    );
+  }
+}
+
+class _Glow extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _Glow({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthColors {
+  final bool isDark;
+  final Color background;
+  final Color card;
+  final Color input;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final Color primary;
+  final Color accent;
+  final Color error;
+
+  const _AuthColors({
+    required this.isDark,
+    required this.background,
+    required this.card,
+    required this.input,
+    required this.border,
+    required this.text,
+    required this.muted,
+    required this.primary,
+    required this.accent,
+    required this.error,
+  });
+
+  static _AuthColors of(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _AuthColors(
+      isDark: isDark,
+      background: isDark ? const Color(0xFF100C1E) : const Color(0xFFF5F3FA),
+      card: isDark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE),
+      input: isDark ? const Color(0x0DFFFFFF) : const Color(0xFFFFFFFF),
+      border: isDark ? const Color(0x2E6B54C0) : const Color(0x1A6B54C0),
+      text: isDark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38),
+      muted: isDark ? const Color(0x66FFFFFF) : const Color(0xFF9090A8),
+      primary: const Color(0xFF6B54C0),
+      accent: const Color(0xFFD4E040),
+      error: const Color(0xFFEF6A6A),
     );
   }
 }

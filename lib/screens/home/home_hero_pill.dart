@@ -14,48 +14,58 @@ class HomeHeroPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = cs.secondary;
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color.lerp(cs.surfaceContainerHighest, accent, isDark ? 0.06 : 0.14)!,
-            cs.surfaceContainerHighest.withOpacity(isDark ? 0.58 : 0.82),
-          ],
-        ),
+        color: const Color(0xFFFAFAFE),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: Color.lerp(cs.outlineVariant, accent, isDark ? 0.18 : 0.30)!,
-        ),
+        border: Border.all(color: const Color(0x1A6B54C0)),
         boxShadow: [
           BoxShadow(
-            color: accent.withOpacity(isDark ? 0.06 : 0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF1C1812).withOpacity(0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: accent),
-          const SizedBox(width: 8),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0x1F6B54C0),
+            ),
+            child: Icon(icon, size: 16, color: const Color(0xFF6B54C0)),
+          ),
+          const SizedBox(width: 9),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w900),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF160E38),
+                  height: 1.05,
+                ),
               ),
+              const SizedBox(height: 1),
               Text(
                 sublabel,
-                style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.labelSmall?.copyWith(
+                  color: const Color(0xFF9090A8),
+                  fontWeight: FontWeight.w500,
+                  height: 1.05,
+                ),
               ),
             ],
           ),

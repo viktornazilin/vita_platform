@@ -1,10 +1,7 @@
-import 'dart:ui';
+// lib/widgets/goal_card.dart
 import 'package:flutter/material.dart';
-import '../models/goal.dart';
-import 'package:nest_app/l10n/app_localizations.dart';
 
-import '../widgets/nest_card.dart';
-import '../widgets/nest_pill.dart';
+import '../models/goal.dart';
 
 class GoalCard extends StatelessWidget {
   final Goal goal;
@@ -20,153 +17,141 @@ class GoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final t = AppLocalizations.of(context)!;
-
     final done = goal.isCompleted;
+    final accent = _blockColor(goal.lifeBlock);
+    final time = TimeOfDay.fromDateTime(goal.startTime.toLocal()).format(context);
 
-    // ✅ LifeBlock accent (used for subtle card highlight + chips/icons)
-    final lifeBlock = (goal.lifeBlock ?? '').trim();
-    final accent = _LifeBlockColors.accentFor(lifeBlock, cs);
-
-    final titleStyle = tt.titleMedium?.copyWith(
-      fontWeight: FontWeight.w900,
-      height: 1.05,
-      decoration: done ? TextDecoration.lineThrough : null,
-      decorationThickness: 2.2,
-      decorationColor: cs.onSurface.withOpacity(0.35),
-    );
-
-    final descStyle = tt.bodySmall?.copyWith(
-      color: cs.onSurfaceVariant.withOpacity(0.9),
-      height: 1.25,
-    );
-
-    final statusText = done ? t.goalStatusDone : t.goalStatusInProgress;
-
-    // ✅ Subtle highlight styling (dense + contrast, works in dark)
-    final highlightOpacity = isDark ? 0.18 : 0.14;
-    final borderOpacity = isDark ? 0.40 : 0.30;
-
-    final highlight = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        accent.withOpacity(highlightOpacity),
-        accent.withOpacity(0.02),
-      ],
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Stack(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFE),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x1A6B54C0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x121C1812),
+            blurRadius: 12,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ Accent overlay behind the card (keeps NestCard unchanged)
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: highlight,
+          GestureDetector(
+            onTap: onToggle,
+            child: Container(
+              width: 22,
+              height: 22,
+              margin: const EdgeInsets.only(top: 1),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done ? const Color(0xFF6B54C0) : Colors.transparent,
+                border: Border.all(
+                  color: done
+                      ? const Color(0xFF6B54C0)
+                      : const Color(0xFF6B54C0).withOpacity(.30),
+                  width: 1.5,
                 ),
               ),
+              child: done
+                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
+                  : null,
             ),
           ),
-          NestCard(
-            padding: const EdgeInsets.all(12),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: accent.withOpacity(borderOpacity),
-                  width: 1,
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  goal.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    fontWeight: FontWeight.w800,
+                    color: done ? const Color(0xFF9090A8) : const Color(0xFF160E38),
+                    decoration: done ? TextDecoration.lineThrough : null,
+                  ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                if (goal.description.trim().isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    goal.description.trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF555268),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 9),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
-                    _StatusBubble(
-                      done: done,
-                      onTap: onToggle,
-                      accent: accent,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  goal.title,
-                                  style: titleStyle,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              _IconPillButton(
-                                icon: Icons.delete_outline_rounded,
-                                tooltip: t.actionDelete,
-                                onTap: onDelete,
-                                accent: accent,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          if (goal.description.trim().isNotEmpty)
-                            Text(
-                              goal.description,
-                              style: descStyle,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              NestPill(
-                                leading: Icon(
-                                  done
-                                      ? Icons.check_circle_rounded
-                                      : Icons.timelapse_rounded,
-                                  size: 16,
-                                  color: done ? cs.primary : cs.onSurfaceVariant,
-                                ),
-                                text: statusText,
-                              ),
-                              if (lifeBlock.isNotEmpty)
-                                NestPill(
-                                  leading: Icon(
-                                    Icons.grid_view_rounded,
-                                    size: 16,
-                                    color: accent,
-                                  ),
-                                  text: lifeBlock,
-                                ),
-                              if ((goal.emotion).trim().isNotEmpty)
-                                NestPill(
-                                  leading: Icon(
-                                    Icons.emoji_emotions_outlined,
-                                    size: 16,
-                                    color: accent.withOpacity(0.85),
-                                  ),
-                                  text: goal.emotion.trim(),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                    _Chip(icon: Icons.schedule_rounded, label: time, color: const Color(0xFF6B54C0)),
+                    _Chip(icon: Icons.timer_rounded, label: '${goal.spentHours.toStringAsFixed(1)} h', color: const Color(0xFF16B8A8)),
+                    _Chip(icon: Icons.circle_rounded, label: _prettyBlock(goal.lifeBlock), color: accent),
+                    if (goal.emotion.trim().isNotEmpty)
+                      _Chip(label: goal.emotion.trim(), color: const Color(0xFFEAE6F5)),
                   ],
                 ),
-              ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onDelete,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFF9090A8)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final IconData? icon;
+  final String label;
+  final Color color;
+
+  const _Chip({
+    this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isNeutral = color.value == const Color(0xFFEAE6F5).value;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isNeutral ? 1 : .12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(isNeutral ? 1 : .18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: isNeutral ? const Color(0xFF555268) : color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF555268),
             ),
           ),
         ],
@@ -175,176 +160,44 @@ class GoalCard extends StatelessWidget {
   }
 }
 
-class _StatusBubble extends StatelessWidget {
-  final bool done;
-  final VoidCallback onTap;
-  final Color accent;
-
-  const _StatusBubble({
-    required this.done,
-    required this.onTap,
-    required this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final gradient = done
-        ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              cs.primary.withOpacity(0.95),
-              cs.primary.withOpacity(0.55),
-            ],
-          )
-        : LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accent.withOpacity(isDark ? 0.22 : 0.18),
-              cs.surfaceContainerHighest.withOpacity(isDark ? 0.35 : 0.55),
-            ],
-          );
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: done
-                    ? cs.primary.withOpacity(0.25)
-                    : accent.withOpacity(isDark ? 0.45 : 0.35),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.35 : 0.20),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: Colors.white.withOpacity(isDark ? 0.06 : 0.10),
-                  blurRadius: 14,
-                  offset: const Offset(0, -6),
-                ),
-              ],
-            ),
-            child: Icon(
-              done ? Icons.check_rounded : Icons.circle_outlined,
-              color: done ? Colors.white : cs.onSurfaceVariant,
-              size: 22,
-            ),
-          ),
-        ),
-      ),
-    );
+String _prettyBlock(String key) {
+  switch (key.trim().toLowerCase()) {
+    case 'health':
+      return 'Здоровье';
+    case 'career':
+      return 'Карьера';
+    case 'family':
+      return 'Семья';
+    case 'finance':
+      return 'Финансы';
+    case 'education':
+      return 'Образование';
+    case 'hobbies':
+    case 'hobby':
+      return 'Хобби';
+    case 'general':
+      return 'Общее';
+    default:
+      return key.isEmpty ? 'Общее' : key;
   }
 }
 
-class _IconPillButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final Color accent;
-
-  const _IconPillButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    required this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: accent.withOpacity(isDark ? 0.16 : 0.12),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: accent.withOpacity(isDark ? 0.38 : 0.30),
-            ),
-          ),
-          child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
-        ),
-      ),
-    );
-  }
-}
-
-/// Centralized mapping: lifeBlock -> accent color.
-/// Uses dense, premium palette aligned with Nest-blue concept.
-/// - If you already store lifeBlocks in RU, this handles both RU/EN keys.
-class _LifeBlockColors {
-  static Color accentFor(String raw, ColorScheme cs) {
-    final k = raw.trim().toLowerCase();
-
-    // Brand anchors
-    const blue = Color(0xFF42B8FD); // brand accent
-    const deepBlue = Color(0xFF005DBF);
-
-    // Premium accents per life block
-    switch (k) {
-      case 'health':
-      case 'здоровье':
-        return const Color(0xFF34D399); // emerald
-      case 'career':
-      case 'работа':
-      case 'карьера':
-        return deepBlue; // strong blue
-      case 'family':
-      case 'семья':
-        return const Color(0xFFA78BFA); // purple
-      case 'finance':
-      case 'финансы':
-      case 'money':
-      case 'деньги':
-        return const Color(0xFFFBBF24); // amber
-      case 'learning':
-      case 'education':
-      case 'study':
-      case 'учёба':
-      case 'развитие':
-        return const Color(0xFF22D3EE); // cyan
-      case 'social':
-      case 'friends':
-      case 'друзья':
-        return const Color(0xFFFB7185); // rose
-      case 'rest':
-      case 'fun':
-      case 'отдых':
-        return const Color(0xFF60A5FA); // light blue
-      case 'balance':
-      case 'баланс':
-        return const Color(0xFF2DD4BF); // teal
-      case 'love':
-      case 'любовь':
-        return const Color(0xFFF43F5E); // red-rose
-      case 'creativity':
-      case 'творчество':
-        return const Color(0xFFF97316); // orange
-      case 'general':
-      default:
-        return blue; // default brand accent
-    }
+Color _blockColor(String key) {
+  switch (key.trim().toLowerCase()) {
+    case 'career':
+      return const Color(0xFFD4E040);
+    case 'finance':
+      return const Color(0xFF16B8A8);
+    case 'education':
+      return const Color(0xFF6B54C0);
+    case 'family':
+      return const Color(0xFF555268);
+    case 'health':
+      return const Color(0xFFEB9898);
+    case 'hobbies':
+    case 'hobby':
+      return const Color(0xFF825ABE);
+    default:
+      return const Color(0xFF6B54C0);
   }
 }

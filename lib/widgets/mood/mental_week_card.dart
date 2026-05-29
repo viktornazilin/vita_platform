@@ -97,6 +97,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = _isDark(context);
 
     final normDays =
         widget.days
@@ -178,7 +179,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
                 Text(
                   l.mentalWeekNoAnswers,
                   style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
+                    color: isDark ? const Color(0x99FFFFFF) : cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -208,7 +209,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
                   l.mentalWeekYesNoHeader,
                   style: tt.titleSmall?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: cs.onSurface,
+                    color: isDark ? const Color(0xFFF0EEFF) : cs.onSurface,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -223,7 +224,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
                   l.mentalWeekScalesHeader,
                   style: tt.titleSmall?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: cs.onSurface,
+                    color: isDark ? const Color(0xFFF0EEFF) : cs.onSurface,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -239,7 +240,7 @@ class _MentalWeekCardState extends State<MentalWeekCard> {
               Text(
                 l.mentalWeekFooterHint,
                 style: tt.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
+                  color: isDark ? const Color(0x99FFFFFF) : cs.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -288,7 +289,7 @@ class _DebugBlock extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isDark
-            ? cs.surfaceContainerHighest.withOpacity(0.45)
+            ? const Color(0xFF221A38)
             : cs.surfaceContainerHighest.withOpacity(0.82),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -298,7 +299,7 @@ class _DebugBlock extends StatelessWidget {
       child: Text(
         lines.join('\n'),
         style: tt.bodySmall?.copyWith(
-          color: cs.onSurfaceVariant,
+          color: isDark ? const Color(0x99FFFFFF) : cs.onSurfaceVariant,
           fontFamily: 'monospace',
           height: 1.25,
           fontWeight: FontWeight.w500,
@@ -334,7 +335,7 @@ class _YesNoBar extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: tt.titleSmall?.copyWith(
             fontWeight: FontWeight.w800,
-            color: cs.onSurface,
+            color: isDark ? const Color(0xFFF0EEFF) : cs.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -342,7 +343,7 @@ class _YesNoBar extends StatelessWidget {
           height: 12,
           decoration: BoxDecoration(
             color: isDark
-                ? cs.surfaceContainerHighest.withOpacity(0.45)
+                ? const Color(0xFF221A38)
                 : cs.surfaceContainerHighest.withOpacity(0.82),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
@@ -373,7 +374,7 @@ class _YesNoBar extends StatelessWidget {
               ? l.mentalWeekNoData
               : l.mentalWeekYesCount(stat.yes, stat.total),
           style: tt.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
+            color: isDark ? const Color(0x99FFFFFF) : cs.onSurfaceVariant,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -421,7 +422,7 @@ class _ScaleSparkline extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: tt.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: cs.onSurface,
+                  color: isDark ? const Color(0xFFF0EEFF) : cs.onSurface,
                 ),
               ),
             ),
@@ -430,19 +431,19 @@ class _ScaleSparkline extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: isDark
-                    ? cs.surfaceContainerHighest.withOpacity(0.42)
+                    ? const Color(0xFF221A38)
                     : cs.primary.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
                   color: isDark
-                      ? cs.outlineVariant.withOpacity(0.45)
+                      ? const Color(0x2E6B54C0)
                       : cs.primary.withOpacity(0.18),
                 ),
               ),
               child: Text(
                 avg == null ? l.commonDash : avg.toStringAsFixed(1),
                 style: tt.labelLarge?.copyWith(
-                  color: cs.onSurface,
+                  color: isDark ? const Color(0xFFF0EEFF) : cs.onSurface,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -454,7 +455,7 @@ class _ScaleSparkline extends StatelessWidget {
           height: 54,
           decoration: BoxDecoration(
             color: isDark
-                ? cs.surfaceContainerHighest.withOpacity(0.45)
+                ? const Color(0xFF221A38)
                 : cs.surfaceContainerHighest.withOpacity(0.82),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
@@ -488,7 +489,7 @@ class _ScaleSparkline extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: tt.bodySmall?.copyWith(
                   fontSize: 11,
-                  color: cs.onSurfaceVariant,
+                  color: isDark ? const Color(0x99FFFFFF) : cs.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                 ),
               ),

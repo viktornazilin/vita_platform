@@ -1,31 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../main.dart';
+import '../../models/goal.dart';
 import '../../models/home_model.dart';
-import '../../models/reports_model.dart';
-import '../../models/mood_model.dart';
 import '../../models/mood.dart';
-import 'package:nest_app/l10n/app_localizations.dart';
+import '../../models/mood_model.dart';
+import '../../models/reports_model.dart';
+import '../../services/home_ai_insight_service.dart';
+import '../day_goals_screen.dart';
 
-// ✅ week insights types
-import '../../models/habit.dart';
-import '../../models/mental_question.dart';
-import '../../models/week_insights.dart';
-import '../mood_screen.dart';
 
-// ✅ new widgets (week cards)
-import '../../widgets/mood/mood_week_card.dart';
-import '../../widgets/mood/habits_week_card.dart';
-import '../../widgets/mood/mental_week_card.dart';
-import '../../widgets/home/hobby_tracker_card.dart';
-import '../../widgets/home/health_tracker_card.dart';
-import '../../widgets/home/shopping_tracker_card.dart';
+bool get _ladnaDarkMode =>
+    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
 
-import '../../widgets/report_section_card.dart';
-import '../../widgets/mood_selector.dart';
-import '../../widgets/expense_analytics.dart';
-
-import '../../main.dart'; // dbRepo
+Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
 
 class HomeDashboardTab extends StatelessWidget {
   const HomeDashboardTab({super.key});
@@ -36,10 +25,10 @@ class HomeDashboardTab extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (_) {
-            final r = ReportsModel();
-            r.setPeriod(ReportPeriod.week);
-            r.loadAll();
-            return r;
+            final model = ReportsModel();
+            model.setPeriod(ReportPeriod.week);
+            model.loadAll();
+            return model;
           },
         ),
         ChangeNotifierProvider(create: (_) => MoodModel(repo: dbRepo)..load()),
@@ -58,12 +47,11 @@ class _HomeDashboardBody extends StatefulWidget {
 
 class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     with AutomaticKeepAliveClientMixin {
-  bool _editingMood = false;
-  String _selectedEmoji = '😊';
-  final TextEditingController _noteCtrl = TextEditingController();
-  bool _savingMood = false;
+  Future<_HabitsSnapshot>? _habitsFuture;
+  Future<HomeAiInsightResult>? _aiInsightFuture;
+  String? _aiLocale;
 
-  Future<WeekInsights>? _weekFuture;
+  static Color get _primary => const Color(0xFF6B54C0);
 
   @override
   bool get wantKeepAlive => true;
@@ -71,20 +59,47 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      setState(() {
-        _weekFuture = _loadWeekInsights();
-      });
-    });
+    _habitsFuture = _loadHabits();
   }
 
   @override
-  void dispose() {
-    _noteCtrl.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
+    if (_aiLocale != locale) {
+      _aiLocale = locale;
+      _aiInsightFuture = HomeAiInsightService.instance.fetch(locale: locale);
+    }
+  }
+
+  Future<_HabitsSnapshot> _loadHabits() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    try {
+      final habits = await dbRepo.listHabits();
+      final entries = await dbRepo.getHabitEntriesForDay(today);
+      var done = 0;
+      for (final h in habits) {
+        final id = _readDynamicString(h, 'id');
+        final dynamic entry = entries[id];
+        if (entry is Map && entry['done'] == true) done++;
+      }
+      return _HabitsSnapshot(done: done, total: habits.length);
+    } catch (_) {
+      return const _HabitsSnapshot(done: 0, total: 0);
+    }
+  }
+
+  String? _readDynamicString(dynamic object, String field) {
+    try {
+      if (object is Map) return object[field]?.toString();
+      final dynamic value = switch (field) {
+        'id' => object.id,
+        _ => null,
+      };
+      return value?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _refreshAll(BuildContext context) async {
@@ -92,1139 +107,330 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
       context.read<ReportsModel>().loadAll(),
       context.read<MoodModel>().load(),
     ]);
-
     if (!mounted) return;
-
+    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
     setState(() {
-      _weekFuture = _loadWeekInsights();
+      _habitsFuture = _loadHabits();
+      _aiInsightFuture = HomeAiInsightService.instance.fetch(locale: locale);
     });
+  }
+
+  Future<void> _toggleGoal(Goal goal) async {
+    try {
+      await dbRepo.toggleGoalCompleted(goal.id, value: !goal.isCompleted);
+      if (!mounted) return;
+      await context.read<ReportsModel>().loadAll();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  void _openDayGoals(DateTime date) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DayGoalsScreen(
+          date: DateUtils.dateOnly(date),
+          lifeBlock: null,
+          availableBlocks: const [],
+        ),
+      ),
+    );
   }
 
   Mood? _todayMood(List<Mood> moods) {
     final today = DateUtils.dateOnly(DateTime.now());
-
-    for (final m in moods) {
-      if (DateUtils.isSameDay(DateUtils.dateOnly(m.date), today)) {
-        return m;
-      }
+    for (final mood in moods) {
+      if (DateUtils.isSameDay(DateUtils.dateOnly(mood.date), today)) return mood;
     }
-
     return null;
   }
 
-  String _rangeLabelShort(ReportsModel r, BuildContext context) {
-    final loc = MaterialLocalizations.of(context);
-    final start = loc.formatShortMonthDay(r.range.start);
-    final end = loc.formatShortMonthDay(
-      r.range.end.subtract(const Duration(days: 1)),
-    );
-
-    return '$start – $end';
-  }
-
-  Future<void> _saveTodayMood(BuildContext context) async {
-    if (_savingMood) return;
-
-    setState(() {
-      _savingMood = true;
-    });
-
+  List<Goal> _todayGoals(List<Goal> goals) {
     final today = DateUtils.dateOnly(DateTime.now());
-    final note = _noteCtrl.text.trim();
+    final list = goals.where((g) {
+      return DateUtils.isSameDay(DateUtils.dateOnly(g.startTime), today) ||
+          DateUtils.isSameDay(DateUtils.dateOnly(g.deadline), today);
+    }).toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    return list;
+  }
 
-    try {
-      await dbRepo.upsertMood(
-        date: today,
-        emoji: _selectedEmoji,
-        note: note,
-      );
+  double _todayHours(List<Goal> goals) =>
+      goals.fold<double>(0, (sum, g) => sum + g.spentHours);
 
-      if (!mounted) return;
+  String _pick(Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
 
-      await context.read<MoodModel>().load();
+  String _fmt(double value) {
+    if (value == value.roundToDouble()) return value.round().toString();
+    return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
 
-      if (!mounted) return;
+  int _weekNumber(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final dayOfYear = date.difference(firstDayOfYear).inDays + 1;
+    return ((dayOfYear - date.weekday + 10) / 7).floor();
+  }
 
-      _noteCtrl.clear();
+  String _shortMonth(int month) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    final ru = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    final en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return (code == 'ru' ? ru : en)[month - 1];
+  }
 
-      setState(() {
-        _editingMood = false;
-        _selectedEmoji = '😊';
-        _savingMood = false;
-        _weekFuture = _loadWeekInsights();
+  String _weekRangeLabel() {
+    final now = DateTime.now();
+    final monday = DateUtils.dateOnly(now).subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+    return '${monday.day}–${sunday.day} ${_shortMonth(sunday.month)}';
+  }
+
+
+  String _homeTitle() => _pick(const {
+        'ru': 'Главная',
+        'en': 'Home',
+        'de': 'Home',
+        'fr': 'Accueil',
+        'es': 'Inicio',
+        'tr': 'Ana sayfa',
       });
 
-      final l = AppLocalizations.of(context)!;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l.homeMoodSaved),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _savingMood = false;
-      });
-
-      final l = AppLocalizations.of(context)!;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l.homeMoodSaveFailed(e.toString())),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+  String _dateLabel() {
+    final now = DateTime.now();
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    final weekdays = switch (code) {
+      'ru' => ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'],
+      'de' => ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+      'fr' => ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'],
+      'es' => ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'],
+      'tr' => ['pzt', 'sal', 'çar', 'per', 'cum', 'cmt', 'paz'],
+      _ => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    };
+    final months = switch (code) {
+      'ru' => ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+      'de' => ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'],
+      'fr' => ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+      'es' => ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+      'tr' => ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+      _ => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    };
+    return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
   }
-
-  void _go(BuildContext context, int index) {
-    context.read<HomeModel>().select(index);
-  }
-
-  MapEntry<String, double>? _topCategory(Map<String, double> byCategory) {
-    if (byCategory.isEmpty) return null;
-
-    MapEntry<String, double>? best;
-
-    for (final e in byCategory.entries) {
-      if (best == null || e.value > best!.value) {
-        best = e;
-      }
-    }
-
-    return best;
-  }
-
-  MapEntry<DateTime, double>? _peakDay(Map<DateTime, double> byDay) {
-    if (byDay.isEmpty) return null;
-
-    MapEntry<DateTime, double>? best;
-
-    for (final e in byDay.entries) {
-      if (best == null || e.value > best!.value) {
-        best = e;
-      }
-    }
-
-    return best;
-  }
-
-  String _formatDayShort(BuildContext context, DateTime d) {
-    final loc = MaterialLocalizations.of(context);
-    return loc.formatShortMonthDay(d);
-  }
-
-  Widget _cta(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Text(label),
-        ),
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Week insights logic
-  // ---------------------------------------------------------------------------
-
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  List<DateTime> _calendarWeekDays({DateTime? anchor}) {
-    final a = _dateOnly(anchor ?? DateTime.now());
-    final start = a.subtract(Duration(days: a.weekday - DateTime.monday));
-
-    return List.generate(7, (i) => start.add(Duration(days: i)));
-  }
-
-  String _weekdayShort(DateTime d) {
-    const names = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    return names[d.weekday % 7];
-  }
-
-  int _emojiToScore(String e) {
-    switch (e) {
-      case '😫':
-      case '😭':
-      case '😡':
-      case '😞':
-      case '😢':
-        return 1;
-      case '😕':
-      case '😐':
-      case '😟':
-        return 2;
-      case '🙂':
-      case '😊':
-        return 3;
-      case '😄':
-      case '😁':
-        return 4;
-      case '🤩':
-      case '😍':
-      case '🥳':
-        return 5;
-      default:
-        return 3;
-    }
-  }
-
-  bool _isYesNoQuestion(MentalQuestion q) {
-    final raw = q.answerType.toString().toLowerCase();
-
-    return raw.contains('yes_no') ||
-        raw.contains('yesno') ||
-        raw.contains('boolean') ||
-        raw.contains('bool');
-  }
-
-  bool _isScaleQuestion(MentalQuestion q) {
-    final raw = q.answerType.toString().toLowerCase();
-
-    return raw.contains('scale') ||
-        raw.contains('rating') ||
-        raw.contains('integer') ||
-        raw.contains('int');
-  }
-
-  Future<WeekInsights> _loadWeekInsights() async {
-    final days = _calendarWeekDays();
-
-    // habits
-    final habits = await dbRepo.listHabits();
-
-    final habitEntriesByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
-
-    for (final d in days) {
-      habitEntriesByDay[d] = await dbRepo.getHabitEntriesForDay(d);
-    }
-
-    final habitDoneCount = <String, int>{};
-
-    for (final h in habits) {
-      habitDoneCount[h.id] = 0;
-    }
-
-    for (final d in days) {
-      final map = habitEntriesByDay[d] ?? {};
-
-      for (final h in habits) {
-        final e = map[h.id];
-        final done = (e?['done'] as bool?) ?? false;
-
-        if (done) {
-          habitDoneCount[h.id] = (habitDoneCount[h.id] ?? 0) + 1;
-        }
-      }
-    }
-
-    final topHabits = habits.toList()
-      ..sort((a, b) {
-        final ca = habitDoneCount[a.id] ?? 0;
-        final cb = habitDoneCount[b.id] ?? 0;
-
-        return cb.compareTo(ca);
-      });
-
-    // mental questions
-    final questions = await dbRepo.listMentalQuestions(onlyActive: true);
-
-    final answersByDay = <DateTime, Map<String, Map<String, dynamic>>>{};
-
-    for (final d in days) {
-      answersByDay[d] = await dbRepo.getMentalAnswersForDay(d);
-    }
-
-    // moods from MoodModel
-    final moods = context.read<MoodModel>().moods;
-    final moodByDay = <DateTime, Mood>{};
-
-    for (final m in moods) {
-      final k = DateUtils.dateOnly(m.date);
-      moodByDay.putIfAbsent(k, () => m);
-    }
-
-    final moodScores = days.map((d) {
-      final m = moodByDay[d];
-
-      if (m == null) return 0;
-
-      return _emojiToScore(m.emoji);
-    }).toList();
-
-    final yesNoQuestions = questions.where(_isYesNoQuestion).toList();
-    final scaleQuestions = questions.where(_isScaleQuestion).toList();
-
-    final yesNoStats = <String, YesNoStat>{};
-
-    for (final q in yesNoQuestions) {
-      int yes = 0;
-      int total = 0;
-
-      for (final d in days) {
-        final map = answersByDay[d] ?? {};
-        final a = map[q.id];
-
-        if (a == null) continue;
-
-        final v = a['value_bool'];
-
-        if (v is bool) {
-          total++;
-
-          if (v) yes++;
-        }
-      }
-
-      yesNoStats[q.id] = YesNoStat(
-        question: q,
-        yes: yes,
-        total: total,
-      );
-    }
-
-    final scaleStats = <String, ScaleStat>{};
-
-    for (final q in scaleQuestions) {
-      final series = <int?>[];
-
-      for (final d in days) {
-        final map = answersByDay[d] ?? {};
-        final a = map[q.id];
-
-        if (a == null) {
-          series.add(null);
-          continue;
-        }
-
-        final v = a['value_int'];
-
-        if (v is int) {
-          series.add(v);
-        } else if (v is num) {
-          series.add(v.toInt());
-        } else {
-          series.add(null);
-        }
-      }
-
-      final vals = series.whereType<int>().toList();
-
-      final avg = vals.isEmpty
-          ? null
-          : (vals.reduce((a, b) => a + b) / vals.length);
-
-      scaleStats[q.id] = ScaleStat(
-        question: q,
-        series: series,
-        avg: avg,
-      );
-    }
-
-    return WeekInsights(
-      days: days,
-      moodScores: moodScores,
-      habits: habits,
-      habitEntriesByDay: habitEntriesByDay,
-      habitDoneCount: habitDoneCount,
-      questions: questions,
-      yesNoStats: yesNoStats,
-      scaleStats: scaleStats,
-      topHabits: topHabits,
-    );
-  }
-
-  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
-    final l = AppLocalizations.of(context)!;
     final reports = context.watch<ReportsModel>();
     final moodModel = context.watch<MoodModel>();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final mq = MediaQuery.of(context);
 
-    if (reports.period != ReportPeriod.week) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.read<ReportsModel>().setPeriod(ReportPeriod.week);
-      });
-    }
-
+    final todayGoals = _todayGoals(reports.allGoals);
+    final doneGoals = todayGoals.where((g) => g.isCompleted).length;
+    final totalGoals = todayGoals.length;
+    final visibleGoals = todayGoals.take(3).toList();
+    final todayHours = _todayHours(todayGoals);
+    final targetHours = reports.targetHours <= 0 ? 14.0 : reports.targetHours;
+    final progressPercent = totalGoals == 0 ? 0 : ((doneGoals / totalGoals) * 100).round();
     final todayMood = _todayMood(moodModel.moods);
-    final totalTasks = reports.loading ? null : reports.goalsInRange.length;
-    final doneTasks = reports.loading
-        ? null
-        : reports.goalsInRange.where((g) => g.isCompleted).length;
 
-    final taskProgress =
-        (reports.loading || totalTasks == null || totalTasks == 0)
-            ? null
-            : (doneTasks! / totalTasks).clamp(0.0, 1.0);
-
-    final daysInRange = reports.loading
-        ? null
-        : (reports.range.end.difference(reports.range.start).inDays).clamp(1, 366);
-
-    final hoursPerDay =
-        (reports.loading || daysInRange == null || daysInRange == 0)
-            ? null
-            : (reports.totalHours / daysInRange);
-
-    final efficiency = reports.loading ? null : reports.efficiency;
-    final isPhone = mq.size.width < 600;
-
-    final today = DateUtils.dateOnly(DateTime.now());
-    final todayGoals = reports.loading
-        ? reports.goalsInRange.where((_) => false).toList()
-        : reports.goalsInRange
-            .where((g) => DateUtils.isSameDay(DateUtils.dateOnly(g.startTime), today))
-            .toList();
-
-    final todayIncomplete = todayGoals.where((g) => !g.isCompleted).toList()
-      ..sort((a, b) => b.importance.compareTo(a.importance));
-
-    final weekIncomplete = reports.loading
-        ? reports.goalsInRange.where((_) => false).toList()
-        : (reports.goalsInRange.where((g) => !g.isCompleted).toList()
-          ..sort((a, b) => b.importance.compareTo(a.importance)));
-
-    final focusGoals = todayIncomplete.isNotEmpty
-        ? todayIncomplete.take(3).toList()
-        : weekIncomplete.take(3).toList();
-
-    final todayHours = todayGoals.fold<double>(
-      0,
-      (sum, g) => sum + (g.spentHours as num).toDouble(),
-    );
-
-    final insightText = _buildInsightText(
-      context,
-      todayMood: todayMood,
-      totalTasks: totalTasks ?? 0,
-      doneTasks: doneTasks ?? 0,
-      taskProgress: taskProgress,
-      hoursPerDay: hoursPerDay,
-      efficiency: efficiency,
-    );
-
-    return RefreshIndicator.adaptive(
+    return RefreshIndicator(
+      color: _primary,
       onRefresh: () => _refreshAll(context),
-      child: CustomScrollView(
-        key: const PageStorageKey('home-dashboard-scroll'),
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l.homeTodayAndWeekTitle,
-                    style: tt.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.8,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l.homeTodayAndWeekSubtitle,
-                    style: tt.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _TodayFocusCard(
-                    loading: reports.loading,
-                    focusGoals: focusGoals,
-                    todayGoalsCount: todayGoals.length,
-                    todayDoneCount: todayGoals.where((g) => g.isCompleted).length,
-                    todayHours: todayHours,
-                    onOpenGoals: () => _go(context, 1),
-                  ),
-                  const SizedBox(height: 12),
-                  _MetricsGrid(
-                    isPhone: isPhone,
-                    items: [
-                      _MetricItem(
-                        title: l.homeMetricMoodTitle,
-                        value: todayMood?.emoji ?? '—',
-                        subtitle: todayMood == null
-                            ? l.homeMoodNoEntry
-                            : (todayMood.note.trim().isEmpty
-                                ? l.homeMoodNoNote
-                                : l.homeMoodHasNote),
-                        icon: Icons.mood_rounded,
-                        progress: todayMood == null ? 0.0 : 1.0,
-                      ),
-                      _MetricItem(
-                        title: l.homeMetricTasksTitle,
-                        value: reports.loading
-                            ? '…'
-                            : (totalTasks == null || totalTasks == 0
-                                ? '0%'
-                                : '${((taskProgress ?? 0) * 100).round()}%'),
-                        subtitle: reports.loading
-                            ? l.commonLoading
-                            : '${doneTasks ?? 0}/${totalTasks ?? 0}',
-                        icon: Icons.check_circle_rounded,
-                        progress: taskProgress ?? (reports.loading ? null : 0.0),
-                      ),
-                      _MetricItem(
-                        title: _dashText(context, 'Фокус-часы', 'Focus hours', 'Fokuszeit', 'Heures focus', 'Horas foco', 'Odak saatleri'),
-                        value: hoursPerDay == null ? '…' : hoursPerDay.toStringAsFixed(1),
-                        subtitle: reports.loading ? l.commonLoading : _rangeLabelShort(reports, context),
-                        icon: Icons.timer_outlined,
-                        progress: (reports.loading || hoursPerDay == null)
-                            ? null
-                            : (hoursPerDay / 8).clamp(0.0, 1.0),
-                      ),
-                      _MetricItem(
-                        title: _dashText(context, 'Баланс недели', 'Week balance', 'Wochenbalance', 'Équilibre', 'Balance semanal', 'Hafta dengesi'),
-                        value: efficiency == null ? '…' : '${(efficiency * 100).round()}%',
-                        subtitle: reports.loading
-                            ? l.commonLoading
-                            : l.homeEfficiencyPlannedHours(reports.plannedHours.toStringAsFixed(0)),
-                        icon: Icons.speed_rounded,
-                        progress: efficiency,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _AiInsightCard(text: insightText),
-                ],
-              ),
-            ),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 116),
+        children: [
+          _HomeHeader(
+            title: _homeTitle(),
+            date: _dateLabel(),
+            onProfileTap: () => context.read<HomeModel>().select(3),
           ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
-              child: FutureBuilder<WeekInsights>(
-                future: _weekFuture,
-                builder: (context, snap) {
-                  if (_weekFuture == null || snap.connectionState == ConnectionState.waiting) {
-                    return const _WeekLoadingCard();
-                  }
-
-                  if (snap.hasError || !snap.hasData) {
-                    return _WeekErrorCard(
-                      onRetry: () {
-                        setState(() {
-                          _weekFuture = _loadWeekInsights();
-                        });
-                      },
-                    );
-                  }
-
-                  final data = snap.data!;
-                  return Column(
-                    children: [
-                      _WeekStateCompactCard(
-                        days: data.days,
-                        scores: data.moodScores,
-                        weekdayLabel: _weekdayShort,
-                      ),
-                      const SizedBox(height: 10),
-                      HabitsWeekCard(
-                        days: data.days,
-                        habits: data.topHabits.take(2).toList(),
-                        entriesByDay: data.habitEntriesByDay,
-                        doneCount: data.habitDoneCount,
-                        weekdayLabel: _weekdayShort,
-                      ),
-                      const SizedBox(height: 10),
-                      MentalWeekCard(
-                        days: data.days,
-                        weekdayLabel: _weekdayShort,
-                        maxItems: 1,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+          const SizedBox(height: 18),
+          _SectionLabel(text: _pick(const {
+            'ru': 'Фокус сегодня',
+            'en': 'Today focus',
+            'de': 'Fokus heute',
+            'fr': 'Focus du jour',
+            'es': 'Foco de hoy',
+            'tr': 'Bugünün odağı',
+          })),
+          const SizedBox(height: 9),
+          _FocusCard(
+            done: doneGoals,
+            total: totalGoals,
+            goals: visibleGoals,
+            onToggleGoal: _toggleGoal,
+            onOpenTasks: () => context.read<HomeModel>().select(1),
           ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: ReportSectionCard(
-                title: l.homeMoodTodayTitle,
-                child: moodModel.loading
-                    ? const SizedBox(
-                        height: 92,
-                        child: Center(child: CircularProgressIndicator.adaptive()),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: cs.surfaceContainerHighest.withOpacity(0.55),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: cs.outlineVariant.withOpacity(0.7)),
-                                ),
-                                child: Text(todayMood?.emoji ?? '📝', style: const TextStyle(fontSize: 22)),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      todayMood == null
-                                          ? l.homeMoodNoTodayEntry
-                                          : (todayMood.note.trim().isEmpty ? l.homeMoodEntryNoNote : todayMood.note.trim()),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      todayMood == null ? l.homeMoodQuickHint : l.homeMoodUpdateHint,
-                                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant.withOpacity(0.95)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                tooltip: _editingMood ? l.commonCollapse : l.commonUpdate,
-                                onPressed: () => setState(() => _editingMood = !_editingMood),
-                                icon: Icon(_editingMood ? Icons.expand_less : Icons.edit_rounded),
-                              ),
-                            ],
-                          ),
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                            child: _editingMood
-                                ? Padding(
-                                    padding: const EdgeInsets.only(top: 14),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                                          decoration: BoxDecoration(
-                                            color: cs.surfaceContainerHighest.withOpacity(0.55),
-                                            borderRadius: BorderRadius.circular(18),
-                                            border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
-                                          ),
-                                          child: MoodSelector(
-                                            selectedEmoji: _selectedEmoji,
-                                            onSelect: (e) => setState(() => _selectedEmoji = e),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        TextField(
-                                          controller: _noteCtrl,
-                                          maxLines: 2,
-                                          textInputAction: TextInputAction.done,
-                                          decoration: InputDecoration(
-                                            labelText: l.homeMoodNoteLabel,
-                                            hintText: l.homeMoodNoteHint,
-                                            prefixIcon: const Icon(Icons.edit_note_rounded),
-                                            filled: true,
-                                            fillColor: cs.surfaceContainerHighest.withOpacity(0.45),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(18),
-                                              borderSide: BorderSide(color: cs.outlineVariant),
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(18),
-                                              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.7)),
-                                            ),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(18),
-                                              borderSide: BorderSide(color: cs.primary, width: 1.4),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        SizedBox(
-                                          height: 52,
-                                          width: double.infinity,
-                                          child: FilledButton.icon(
-                                            onPressed: _savingMood ? null : () => _saveTodayMood(context),
-                                            icon: _savingMood
-                                                ? SizedBox(
-                                                    width: 18,
-                                                    height: 18,
-                                                    child: CircularProgressIndicator.adaptive(
-                                                      strokeWidth: 2,
-                                                      valueColor: AlwaysStoppedAnimation<Color>(cs.onPrimary),
-                                                    ),
-                                                  )
-                                                : const Icon(Icons.check_rounded),
-                                            label: Text(_savingMood ? l.commonSaving : l.commonSave),
-                                            style: FilledButton.styleFrom(
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                          const SizedBox(height: 12),
-                          _cta(
-                            context,
-                            icon: Icons.open_in_new,
-                            label: l.homeOpenMoodHistoryCta,
-                            onPressed: () {
-                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MoodScreen()));
-                            },
-                          ),
-                        ],
-                      ),
-              ),
-            ),
+          const SizedBox(height: 18),
+          _SectionLabel(text: _pick(const {
+            'ru': 'Обзор дня',
+            'en': 'Day overview',
+            'de': 'Tagesübersicht',
+            'fr': 'Aperçu du jour',
+            'es': 'Resumen del día',
+            'tr': 'Gün özeti',
+          })),
+          const SizedBox(height: 9),
+          FutureBuilder<_HabitsSnapshot>(
+            future: _habitsFuture,
+            builder: (context, snapshot) {
+              final habits = snapshot.data ?? const _HabitsSnapshot(done: 0, total: 0);
+              return _MiniGrid(
+                moodLabel: todayMood?.emoji ?? '😊',
+                moodValue: todayMood == null
+                    ? _pick(const {
+                        'ru': 'Нет отметки',
+                        'en': 'No entry',
+                        'de': 'Kein Eintrag',
+                        'fr': 'Aucune note',
+                        'es': 'Sin registro',
+                        'tr': 'Kayıt yok',
+                      })
+                    : _pick(const {
+                        'ru': 'Хорошее',
+                        'en': 'Good',
+                        'de': 'Gut',
+                        'fr': 'Bonne',
+                        'es': 'Bueno',
+                        'tr': 'İyi',
+                      }),
+                taskPercent: progressPercent,
+                doneTasks: doneGoals,
+                totalTasks: totalGoals,
+                habitDone: habits.done,
+                habitTotal: habits.total,
+                hours: todayHours,
+                targetHours: targetHours,
+              );
+            },
           ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-              child: _SectionHeading(
-                title: _dashText(context, 'Трекеры', 'Trackers', 'Tracker', 'Trackers', 'Seguidores', 'Takipçiler'),
-                subtitle: _dashText(
-                  context,
-                  'Здоровье, хобби и покупки — ниже, чтобы главный экран не перегружался.',
-                  'Health, hobbies and shopping sit below the daily focus.',
-                  'Gesundheit, Hobbys und Einkäufe bleiben unter dem Tagesfokus.',
-                  'Santé, loisirs et achats restent sous le focus du jour.',
-                  'Salud, aficiones y compras quedan bajo el foco diario.',
-                  'Sağlık, hobiler ve alışveriş günlük odağın altında.',
-                ),
-              ),
-            ),
+          const SizedBox(height: 12),
+          _WeekCard(
+            weekNumber: _weekNumber(DateTime.now()),
+            range: _weekRangeLabel(),
+            goals: reports.allGoals,
+            onDayTap: _openDayGoals,
           ),
-
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
-              child: Column(
-                children: [
-                  HealthTrackerCard(),
-                  SizedBox(height: 10),
-                  HobbyTrackerCard(),
-                  SizedBox(height: 10),
-                  ShoppingTrackerCard(),
-                ],
-              ),
-            ),
+          const SizedBox(height: 12),
+          _HomeAiInsightCard(
+            future: _aiInsightFuture,
+            fallbackText: _pick(const {
+              'ru': 'AI-наблюдение скоро появится здесь. Пока добавь задачи, настроение или привычки — так инсайты станут точнее.',
+              'en': 'AI observations will appear here soon. Add tasks, mood, or habits to make insights more accurate.',
+              'de': 'AI-Beobachtungen erscheinen bald hier. Füge Aufgaben, Stimmung oder Gewohnheiten hinzu, damit Insights genauer werden.',
+              'fr': 'Les observations IA apparaîtront bientôt ici. Ajoute des tâches, ton humeur ou des habitudes pour les rendre plus précises.',
+              'es': 'Las observaciones de IA aparecerán aquí pronto. Añade tareas, estado de ánimo o hábitos para mejorar los insights.',
+              'tr': 'AI gözlemleri yakında burada görünecek. İçgörüleri iyileştirmek için görev, ruh hali veya alışkanlık ekle.',
+            }),
           ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: ReportSectionCard(
-                title: l.homeWeekSummaryTitle,
-                child: reports.loading
-                    ? const SizedBox(
-                        height: 92,
-                        child: Center(child: CircularProgressIndicator.adaptive()),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _rangeLabelShort(reports, context),
-                            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: 12),
-                          _cta(
-                            context,
-                            icon: Icons.insights_rounded,
-                            label: l.homeOpenReportsCta,
-                            onPressed: () => _go(context, 4),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
     );
   }
-
-  String _buildInsightText(
-    BuildContext context, {
-    required Mood? todayMood,
-    required int totalTasks,
-    required int doneTasks,
-    required double? taskProgress,
-    required double? hoursPerDay,
-    required double? efficiency,
-  }) {
-    final lang = Localizations.localeOf(context).languageCode;
-
-    String pick({required String ru, required String en, required String de, required String fr, required String es, required String tr}) {
-      switch (lang) {
-        case 'de': return de;
-        case 'fr': return fr;
-        case 'es': return es;
-        case 'tr': return tr;
-        case 'en': return en;
-        default: return ru;
-      }
-    }
-
-    if (todayMood == null) {
-      return pick(
-        ru: 'Начни с короткой отметки настроения. Это займёт 10 секунд и сделает недельную аналитику заметно точнее.',
-        en: 'Start with a quick mood check. It takes 10 seconds and makes weekly insights much more accurate.',
-        de: 'Starte mit einem kurzen Stimmungscheck. Das dauert 10 Sekunden und verbessert die Wochenanalyse deutlich.',
-        fr: 'Commence par une note d’humeur rapide. Cela prend 10 secondes et rend l’analyse hebdomadaire plus précise.',
-        es: 'Empieza con una nota rápida de ánimo. Toma 10 segundos y mejora mucho el análisis semanal.',
-        tr: 'Kısa bir ruh hali kaydıyla başla. 10 saniye sürer ve haftalık analizleri çok daha doğru yapar.',
-      );
-    }
-
-    if (totalTasks > 8 && doneTasks == 0) {
-      return pick(
-        ru: 'Задач много, но прогресс пока нулевой. Выбери 3 ключевые задачи и начни с самой важной.',
-        en: 'There are many tasks, but progress is still at zero. Pick 3 key tasks and start with the most important one.',
-        de: 'Es gibt viele Aufgaben, aber noch keinen Fortschritt. Wähle 3 Kernaufgaben und starte mit der wichtigsten.',
-        fr: 'Il y a beaucoup de tâches, mais aucun progrès pour l’instant. Choisis 3 priorités et commence par la plus importante.',
-        es: 'Hay muchas tareas, pero el progreso aún está en cero. Elige 3 tareas clave y empieza por la más importante.',
-        tr: 'Çok görev var ama ilerleme henüz sıfır. 3 ana görev seç ve en önemlisinden başla.',
-      );
-    }
-
-    if ((efficiency ?? 0) < 0.35 && totalTasks > 0) {
-      return pick(
-        ru: 'Неделя выглядит перегруженной. Лучше сократить план и оставить только то, что реально двигает тебя вперёд.',
-        en: 'The week looks overloaded. Reduce the plan and keep only what truly moves you forward.',
-        de: 'Die Woche wirkt überladen. Reduziere den Plan und behalte nur das, was dich wirklich voranbringt.',
-        fr: 'La semaine semble chargée. Réduis le plan et garde seulement ce qui te fait vraiment avancer.',
-        es: 'La semana parece sobrecargada. Reduce el plan y deja solo lo que realmente te hace avanzar.',
-        tr: 'Hafta biraz yoğun görünüyor. Planı sadeleştir ve seni gerçekten ilerleten şeyleri bırak.',
-      );
-    }
-
-    if ((hoursPerDay ?? 0) > 6) {
-      return pick(
-        ru: 'Фокус-часы высокие. Добавь паузы и не планируй день без восстановления.',
-        en: 'Focus hours are high. Add breaks and avoid planning without recovery time.',
-        de: 'Die Fokuszeit ist hoch. Plane Pausen ein und vergiss Erholung nicht.',
-        fr: 'Les heures de focus sont élevées. Ajoute des pauses et garde du temps de récupération.',
-        es: 'Las horas de foco son altas. Añade pausas y deja tiempo para recuperarte.',
-        tr: 'Odak saatlerin yüksek. Molalar ekle ve toparlanma süresi bırak.',
-      );
-    }
-
-    return pick(
-      ru: 'Хороший момент для спокойного старта: зафиксируй настроение, выбери главный фокус и двигайся маленькими шагами.',
-      en: 'A good moment for a calm start: log your mood, choose the main focus, and move in small steps.',
-      de: 'Ein guter Moment für einen ruhigen Start: Stimmung festhalten, Fokus wählen und in kleinen Schritten vorangehen.',
-      fr: 'Bon moment pour démarrer calmement : note ton humeur, choisis ton focus et avance par petits pas.',
-      es: 'Buen momento para empezar con calma: registra tu ánimo, elige el foco principal y avanza paso a paso.',
-      tr: 'Sakin bir başlangıç için iyi bir an: ruh halini kaydet, ana odağı seç ve küçük adımlarla ilerle.',
-    );
-  }
 }
 
 
-// ===================== DASHBOARD helper cards =====================
-
-String _dashText(
-  BuildContext context,
-  String ru,
-  String en,
-  String de,
-  String fr,
-  String es,
-  String tr,
-) {
-  switch (Localizations.localeOf(context).languageCode) {
-    case 'de':
-      return de;
-    case 'fr':
-      return fr;
-    case 'es':
-      return es;
-    case 'tr':
-      return tr;
-    case 'en':
-      return en;
-    default:
-      return ru;
-  }
-}
-
-class _TodayFocusCard extends StatelessWidget {
-  final bool loading;
-  final List<dynamic> focusGoals;
-  final int todayGoalsCount;
-  final int todayDoneCount;
-  final double todayHours;
-  final VoidCallback onOpenGoals;
-
-  const _TodayFocusCard({
-    required this.loading,
-    required this.focusGoals,
-    required this.todayGoalsCount,
-    required this.todayDoneCount,
-    required this.todayHours,
-    required this.onOpenGoals,
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({
+    required this.title,
+    required this.date,
+    required this.onProfileTap,
   });
+
+  final String title;
+  final String date;
+  final VoidCallback onProfileTap;
+
+  static Color get _dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
+  static Color get _muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
+  static Color get _primary => const Color(0xFF6B54C0);
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final title = _dashText(
-      context,
-      'Фокус сегодня',
-      'Today’s focus',
-      'Fokus heute',
-      'Focus du jour',
-      'Foco de hoy',
-      'Bugünün odağı',
-    );
-    final empty = _dashText(
-      context,
-      'На сегодня нет задач. Создай 1–3 фокус-задачи, чтобы день был управляемым.',
-      'No tasks for today. Create 1–3 focus tasks to make the day manageable.',
-      'Für heute gibt es keine Aufgaben. Erstelle 1–3 Fokusaufgaben.',
-      'Aucune tâche pour aujourd’hui. Crée 1 à 3 tâches focus.',
-      'No hay tareas para hoy. Crea 1–3 tareas de foco.',
-      'Bugün için görev yok. Günü yönetilebilir yapmak için 1–3 odak görevi oluştur.',
-    );
-    final cta = _dashText(context, 'Открыть задачи', 'Open tasks', 'Aufgaben öffnen', 'Ouvrir les tâches', 'Abrir tareas', 'Görevleri aç');
-
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      height: 70,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  Color.lerp(cs.surfaceContainerHigh, cs.primary, 0.12)!,
-                  Color.lerp(cs.surfaceContainerHigh, cs.secondary, 0.10)!,
-                ]
-              : [
-                  Color.lerp(cs.surfaceContainerLowest, cs.secondary, 0.34)!,
-                  Color.lerp(cs.surfaceContainerLowest, cs.primary, 0.12)!,
-                  Color.lerp(cs.surfaceContainerLowest, cs.tertiary, 0.16)!,
-                ],
+          colors: [
+            _ladnaAdaptive(const Color(0xFFF0EEF8), const Color(0x1F6B54C0)),
+            _ladnaAdaptive(const Color(0xFFE6E2F4), const Color(0x1F6B54C0)),
+          ],
         ),
-        border: Border.all(
-          color: Color.lerp(cs.outlineVariant, cs.secondary, isDark ? 0.34 : 0.58)!,
-          width: 1.6,
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _primary.withOpacity(_ladnaDarkMode ? .25 : .15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: cs.secondary.withOpacity(isDark ? 0.08 : 0.18),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
+            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.40 : 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: loading
-          ? const SizedBox(
-              height: 118,
-              child: Center(child: CircularProgressIndicator.adaptive()),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: cs.primary.withOpacity(isDark ? 0.20 : 0.12),
-                        border: Border.all(color: cs.primary.withOpacity(0.28)),
-                      ),
-                      child: Icon(Icons.track_changes_rounded, color: cs.primary),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: tt.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$todayDoneCount/$todayGoalsCount · ${todayHours.toStringAsFixed(1)} ч',
-                            style: tt.bodyMedium?.copyWith(
-                              color: cs.onSurfaceVariant,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                if (focusGoals.isEmpty)
-                  Text(
-                    empty,
-                    style: tt.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
-                      height: 1.35,
-                    ),
-                  )
-                else
-                  Column(
-                    children: [
-                      for (final g in focusGoals) ...[
-                        _FocusTaskLine(title: '${g.title}', importance: g.importance as int),
-                        if (g != focusGoals.last) const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: onOpenGoals,
-                    icon: const Icon(Icons.arrow_forward_rounded),
-                    label: Text(cta),
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
-
-class _FocusTaskLine extends StatelessWidget {
-  final String title;
-  final int importance;
-
-  const _FocusTaskLine({required this.title, required this.importance});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final tone = importance >= 3 ? cs.secondary : (importance == 2 ? cs.primary : cs.tertiary);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Color.lerp(cs.surfaceContainerHighest, tone, 0.16),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Color.lerp(cs.outlineVariant, tone, 0.36)!),
-      ),
       child: Row(
-        children: [
-          Icon(Icons.flag_rounded, color: tone, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w900),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AiInsightCard extends StatelessWidget {
-  final String text;
-  const _AiInsightCard({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final title = _dashText(context, 'AI-наблюдение', 'AI insight', 'AI-Hinweis', 'Insight IA', 'Insight IA', 'AI içgörüsü');
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Color.lerp(cs.surfaceContainerLow, cs.primary, isDark ? 0.06 : 0.10),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Color.lerp(cs.outlineVariant, cs.primary, 0.34)!),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: LinearGradient(colors: [cs.primary, cs.secondary]),
+              color: _primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(Icons.auto_awesome_rounded, color: cs.onPrimary, size: 20),
+            child: const Text('🏠', style: TextStyle(fontSize: 26)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 5),
                 Text(
-                  text,
-                  style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Playfair Display',
+                    fontSize: 25,
+                    height: 1.0,
                     fontWeight: FontWeight.w700,
-                    height: 1.32,
+                    color: _dark,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  date,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    height: 1.0,
+                    fontWeight: FontWeight.w600,
+                    color: _muted,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onProfileTap,
+            child: Container(
+              width: 43,
+              height: 43,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _primary.withOpacity(0.16),
+                shape: BoxShape.circle,
+                border: Border.all(color: _primary.withOpacity(0.25), width: 1.5),
+              ),
+              child: const Text('👤', style: TextStyle(fontSize: 22)),
             ),
           ),
         ],
@@ -1233,84 +439,185 @@ class _AiInsightCard extends StatelessWidget {
   }
 }
 
-class _WeekStateCompactCard extends StatelessWidget {
-  final List<DateTime> days;
-  final List<int> scores;
-  final String Function(DateTime) weekdayLabel;
+class _HabitsSnapshot {
+  const _HabitsSnapshot({required this.done, required this.total});
+  final int done;
+  final int total;
+}
 
-  const _WeekStateCompactCard({
-    required this.days,
-    required this.scores,
-    required this.weekdayLabel,
-  });
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.text});
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 12,
+        height: 1,
+        fontWeight: FontWeight.w900,
+        color: Color(0xFF9090A8),
+        letterSpacing: 2.2,
+      ),
+    );
+  }
+}
 
-    final filled = scores.where((v) => v > 0).length;
-    final valid = scores.where((v) => v > 0).toList();
-    final avg = valid.isEmpty ? null : valid.reduce((a, b) => a + b) / valid.length;
+class _FocusCard extends StatelessWidget {
+  const _FocusCard({
+    required this.done,
+    required this.total,
+    required this.goals,
+    required this.onToggleGoal,
+    required this.onOpenTasks,
+  });
 
-    return ReportSectionCard(
-      title: _dashText(context, 'Состояние недели', 'Week state', 'Wochenstatus', 'État de la semaine', 'Estado semanal', 'Hafta durumu'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  final int done;
+  final int total;
+  final List<Goal> goals;
+  final ValueChanged<Goal> onToggleGoal;
+  final VoidCallback onOpenTasks;
+
+  static Color get _primary => const Color(0xFF6B54C0);
+  static Color get _focusStart => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFF1E1548));
+  static Color get _focusEnd => _ladnaAdaptive(const Color(0xFF2A1C5A), const Color(0xFF2A1C60));
+  static Color get _focusDot => _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040));
+  static const Color _mutedOnDark = Color(0xFFB6AED6);
+
+  String _pick(BuildContext context, Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shownTotal = total == 0 ? 3 : total;
+    final rows = goals.isEmpty
+        ? <_FocusRowData>[
+            _FocusRowData(_pick(context, const {'ru': 'Утренняя пробежка', 'en': 'Morning run'}), true, null),
+            _FocusRowData(_pick(context, const {'ru': 'Написать отчёт по проекту', 'en': 'Write project report'}), false, null),
+            _FocusRowData(_pick(context, const {'ru': 'Проверить бюджет недели', 'en': 'Check weekly budget'}), false, null),
+          ]
+        : goals.map((g) {
+            final title = g.title.trim().isEmpty ? '—' : g.title.trim();
+            return _FocusRowData(title, g.isCompleted, g);
+          }).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_focusStart, _focusEnd],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.24), blurRadius: 22, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Color.lerp(cs.surfaceContainerHighest, cs.secondary, 0.10),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Color.lerp(cs.outlineVariant, cs.secondary, 0.30)!),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(days.length, (i) {
-                final v = scores[i].clamp(0, 5);
-                final accent = v >= 4 ? cs.secondary : (v >= 3 ? cs.primary : cs.outlineVariant);
-                return Expanded(
-                  child: Column(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        height: v == 0 ? 8 : 18 + v * 10,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Color.lerp(cs.surfaceContainerHigh, accent, v == 0 ? 0.12 : 0.72),
-                          border: Border.all(color: Color.lerp(cs.outlineVariant, accent, v == 0 ? 0.10 : 0.42)!),
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        weekdayLabel(days[i]),
-                        style: tt.labelSmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+          Positioned(
+            top: -70,
+            right: -60,
+            child: Container(
+              width: 170,
+              height: 170,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [_primary.withOpacity(0.20), Colors.transparent]),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _MiniInfoPill(
-                icon: Icons.check_circle_rounded,
-                label: _dashText(context, 'Отмечено: $filled/7', 'Marked: $filled/7', 'Erfasst: $filled/7', 'Noté : $filled/7', 'Marcado: $filled/7', 'İşaretlendi: $filled/7'),
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: _focusDot,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: _focusDot.withOpacity(0.7), blurRadius: 8)],
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Text(
+                    _pick(context, const {
+                      'ru': '{done} из {total} выполнено',
+                      'en': '{done} of {total} done',
+                      'de': '{done} von {total} erledigt',
+                      'fr': '{done} sur {total} terminé',
+                      'es': '{done} de {total} hecho',
+                      'tr': '{done}/{total} tamamlandı',
+                    }).replaceAll('{done}', done.toString()).replaceAll('{total}', shownTotal.toString()).toUpperCase(),
+                    style: TextStyle(fontSize: 12, height: 1, fontWeight: FontWeight.w900, color: _focusDot, letterSpacing: 1.4),
+                  ),
+                ],
               ),
-              _MiniInfoPill(
-                icon: Icons.auto_graph_rounded,
-                label: avg == null
-                    ? _dashText(context, 'Среднее: —', 'Average: —', 'Schnitt: —', 'Moyenne : —', 'Media: —', 'Ortalama: —')
-                    : _dashText(context, 'Среднее: ${avg.toStringAsFixed(1)}/5', 'Average: ${avg.toStringAsFixed(1)}/5', 'Schnitt: ${avg.toStringAsFixed(1)}/5', 'Moyenne : ${avg.toStringAsFixed(1)}/5', 'Media: ${avg.toStringAsFixed(1)}/5', 'Ortalama: ${avg.toStringAsFixed(1)}/5'),
+              const SizedBox(height: 18),
+              Text(
+                _pick(context, const {
+                  'ru': 'День под контролем',
+                  'en': 'Day under control',
+                  'de': 'Tag im Griff',
+                  'fr': 'Journée maîtrisée',
+                  'es': 'Día bajo control',
+                  'tr': 'Gün kontrol altında',
+                }),
+                style: const TextStyle(
+                  fontFamily: 'Playfair Display',
+                  fontSize: 28,
+                  height: 1.05,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFFAF6EE),
+                  letterSpacing: -0.6,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _pick(context, const {
+                  'ru': 'Три задачи — это достаточно',
+                  'en': 'Three tasks are enough',
+                  'de': 'Drei Aufgaben reichen',
+                  'fr': 'Trois tâches suffisent',
+                  'es': 'Tres tareas son suficientes',
+                  'tr': 'Üç görev yeterlidir',
+                }),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _mutedOnDark),
+              ),
+              const SizedBox(height: 18),
+              ...rows.take(3).map((row) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _FocusTaskRow(
+                      title: row.title,
+                      done: row.done,
+                      onTap: row.goal == null ? null : () => onToggleGoal(row.goal!),
+                    ),
+                  )),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: onOpenTasks,
+                child: Container(
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(12)),
+                  child: Text(
+                    _pick(context, const {
+                      'ru': '→ Все задачи',
+                      'en': '→ All tasks',
+                      'de': '→ Alle Aufgaben',
+                      'fr': '→ Toutes les tâches',
+                      'es': '→ Todas las tareas',
+                      'tr': '→ Tüm görevler',
+                    }),
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1320,77 +627,152 @@ class _WeekStateCompactCard extends StatelessWidget {
   }
 }
 
-class _MiniInfoPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
+class _FocusRowData {
+  const _FocusRowData(this.title, this.done, this.goal);
+  final String title;
+  final bool done;
+  final Goal? goal;
+}
 
-  const _MiniInfoPill({required this.icon, required this.label});
+class _FocusTaskRow extends StatelessWidget {
+  const _FocusTaskRow({required this.title, required this.done, this.onTap});
+  final String title;
+  final bool done;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: Color.lerp(cs.surfaceContainerHighest, cs.secondary, 0.15),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Color.lerp(cs.outlineVariant, cs.secondary, 0.24)!),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: cs.secondary),
-          const SizedBox(width: 8),
-          Text(label, style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w900)),
-        ],
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 46,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(color: Colors.white.withOpacity(0.07), borderRadius: BorderRadius.circular(12)),
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: done ? const Color(0xFF6B54C0) : Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: done ? const Color(0xFF6B54C0) : const Color(0xFFFAF6EE).withOpacity(0.28),
+                  width: 1.8,
+                ),
+              ),
+              child: done ? const Icon(Icons.check_rounded, size: 15, color: Colors.white) : null,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: done ? const Color(0xFFFAF6EE).withOpacity(0.35) : const Color(0xFFFAF6EE).withOpacity(0.90),
+                  decoration: done ? TextDecoration.lineThrough : null,
+                  decorationColor: const Color(0xFFFAF6EE).withOpacity(0.35),
+                  decorationThickness: 2,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SectionHeading extends StatelessWidget {
-  final String title;
-  final String subtitle;
+class _MiniGrid extends StatelessWidget {
+  const _MiniGrid({
+    required this.moodLabel,
+    required this.moodValue,
+    required this.taskPercent,
+    required this.doneTasks,
+    required this.totalTasks,
+    required this.habitDone,
+    required this.habitTotal,
+    required this.hours,
+    required this.targetHours,
+  });
 
-  const _SectionHeading({required this.title, required this.subtitle});
+  final String moodLabel;
+  final String moodValue;
+  final int taskPercent;
+  final int doneTasks;
+  final int totalTasks;
+  final int habitDone;
+  final int habitTotal;
+  final double hours;
+  final double targetHours;
+
+  String _pick(BuildContext context, Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
+
+  String _fmt(double value) {
+    if (value == value.roundToDouble()) return value.round().toString();
+    return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final cards = <Widget>[
+      _MiniCard(
+        icon: moodLabel,
+        label: _pick(context, const {'ru': 'Настроение', 'en': 'Mood', 'de': 'Stimmung', 'fr': 'Humeur', 'es': 'Ánimo', 'tr': 'Ruh hali'}),
+        value: moodValue,
+        valueIsSerif: false,
+        subtitle: _pick(context, const {'ru': 'сегодня', 'en': 'today', 'de': 'heute', 'fr': 'aujourd’hui', 'es': 'hoy', 'tr': 'bugün'}),
+      ),
+      _MiniCard(
+        icon: '✅',
+        label: _pick(context, const {'ru': 'Задачи', 'en': 'Tasks', 'de': 'Aufgaben', 'fr': 'Tâches', 'es': 'Tareas', 'tr': 'Görevler'}),
+        value: '$taskPercent%',
+        subtitle: '$doneTasks ${_pick(context, const {'ru': 'из', 'en': 'of', 'de': 'von', 'fr': 'sur', 'es': 'de', 'tr': '/'})} ${totalTasks == 0 ? 3 : totalTasks}',
+      ),
+      _MiniCard(
+        icon: '🔥',
+        label: _pick(context, const {'ru': 'Привычки', 'en': 'Habits', 'de': 'Gewohnheiten', 'fr': 'Habitudes', 'es': 'Hábitos', 'tr': 'Alışkanlıklar'}),
+        value: '$habitDone/${habitTotal == 0 ? 5 : habitTotal}',
+        subtitle: _pick(context, const {'ru': 'сегодня', 'en': 'today', 'de': 'heute', 'fr': 'aujourd’hui', 'es': 'hoy', 'tr': 'bugün'}),
+      ),
+      _MiniCard(
+        icon: '⏱',
+        label: _pick(context, const {'ru': 'Фокус-часы', 'en': 'Focus hours', 'de': 'Fokusstunden', 'fr': 'Heures focus', 'es': 'Horas foco', 'tr': 'Odak saatleri'}),
+        value: _fmt(hours),
+        subtitle: '${_pick(context, const {'ru': 'из', 'en': 'of', 'de': 'von', 'fr': 'sur', 'es': 'de', 'tr': '/'})} ${_fmt(targetHours)} ч',
+      ),
+    ];
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 30,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [cs.secondary, cs.primary],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w900, letterSpacing: -0.4),
-              ),
-            ),
-          ],
+        SizedBox(
+          height: 132,
+          child: Row(
+            children: [
+              Expanded(child: cards[0]),
+              const SizedBox(width: 12),
+              Expanded(child: cards[1]),
+            ],
+          ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          subtitle,
-          style: tt.bodyMedium?.copyWith(
-            color: cs.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 132,
+          child: Row(
+            children: [
+              Expanded(child: cards[2]),
+              const SizedBox(width: 12),
+              Expanded(child: cards[3]),
+            ],
           ),
         ),
       ],
@@ -1398,58 +780,155 @@ class _SectionHeading extends StatelessWidget {
   }
 }
 
-// ===================== WEEK helper cards =====================
+class _MiniCard extends StatelessWidget {
+  const _MiniCard({required this.icon, required this.label, required this.value, required this.subtitle, this.valueIsSerif = true});
 
-class _WeekLoadingCard extends StatelessWidget {
-  const _WeekLoadingCard();
+  final String icon;
+  final String label;
+  final String value;
+  final String subtitle;
+  final bool valueIsSerif;
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-
-    return ReportSectionCard(
-      title: l.homeWeekCardTitle,
-      child: const SizedBox(
-        height: 140,
-        child: Center(child: CircularProgressIndicator.adaptive()),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0)), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 27, height: 1)),
+          const Spacer(),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: valueIsSerif ? 'Playfair Display' : null,
+              fontSize: valueIsSerif ? 24 : 16,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, height: 1, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
+        ],
       ),
     );
   }
 }
 
-class _WeekErrorCard extends StatelessWidget {
-  final VoidCallback onRetry;
+class _WeekCard extends StatelessWidget {
+  const _WeekCard({required this.weekNumber, required this.range, required this.goals, required this.onDayTap});
 
-  const _WeekErrorCard({required this.onRetry});
+  final int weekNumber;
+  final String range;
+  final List<Goal> goals;
+  final ValueChanged<DateTime> onDayTap;
+
+  static const List<String> _ruDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  static const List<String> _enDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  String _pick(BuildContext context, Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final now = DateTime.now();
+    final today = DateUtils.dateOnly(now);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    final labels = code == 'ru' ? _ruDays : _enDays;
 
-    return ReportSectionCard(
-      title: l.homeWeekCardTitle,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0)), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l.homeWeekLoadFailedTitle,
-            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_pick(context, const {'ru': 'Неделя', 'en': 'Week', 'de': 'Woche', 'fr': 'Semaine', 'es': 'Semana', 'tr': 'Hafta'})} $weekNumber',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF))),
+                ),
+              ),
+              Text(range, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            l.homeWeekLoadFailedSubtitle,
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(l.commonRetry),
-            ),
+          const SizedBox(height: 13),
+          Row(
+            children: List.generate(7, (index) {
+              final day = monday.add(Duration(days: index));
+              final isToday = DateUtils.isSameDay(day, today);
+              final isDone = goals.any((g) =>
+                  g.isCompleted &&
+                  (DateUtils.isSameDay(DateUtils.dateOnly(g.startTime), day) ||
+                      DateUtils.isSameDay(DateUtils.dateOnly(g.deadline), day)));
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onDayTap(day),
+                  child: Column(
+                    children: [
+                      Text(labels[index], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
+                      const SizedBox(height: 7),
+                      Container(
+                        width: 30,
+                        height: 30,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isToday
+                              ? const Color(0xFF6B54C0)
+                              : isDone
+                                  ? const Color(0xFF16B8A8).withOpacity(0.12)
+                                  : _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0x0DFFFFFF)),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isToday
+                                ? const Color(0xFF6B54C0)
+                                : isDone
+                                    ? const Color(0xFF16B8A8).withOpacity(0.45)
+                                    : _ladnaAdaptive(const Color(0xFFDCD5F2), const Color(0x336B54C0)),
+                            width: 1.5,
+                          ),
+                          boxShadow: isToday ? [BoxShadow(color: const Color(0xFF6B54C0).withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                        ),
+                        child: Text(
+                          isDone && !isToday ? '✓' : '${day.day}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: isToday
+                                ? Colors.white
+                                : isDone
+                                    ? const Color(0xFF16B8A8)
+                                    : _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -1457,196 +936,109 @@ class _WeekErrorCard extends StatelessWidget {
   }
 }
 
-// ===================== UI: compact, mobile-friendly grid =====================
 
-class _MetricItem {
-  final String title;
-  final String value;
-  final String subtitle;
-  final IconData icon;
-  final double? progress;
+class _HomeAiInsightCard extends StatelessWidget {
+  const _HomeAiInsightCard({required this.future, required this.fallbackText});
 
-  const _MetricItem({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.icon,
-    required this.progress,
-  });
-}
+  final Future<HomeAiInsightResult>? future;
+  final String fallbackText;
 
-class _MetricsGrid extends StatelessWidget {
-  final bool isPhone;
-  final List<_MetricItem> items;
-
-  const _MetricsGrid({
-    required this.isPhone,
-    required this.items,
-  });
+  String _pick(BuildContext context, Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final columns = isPhone ? 2 : 4;
+    final loadingText = _pick(context, const {
+      'ru': 'AI анализирует твой день…',
+      'en': 'AI is analyzing your day…',
+      'de': 'AI analysiert deinen Tag…',
+      'fr': 'L’IA analyse ta journée…',
+      'es': 'La IA analiza tu día…',
+      'tr': 'AI gününü analiz ediyor…',
+    });
 
-    return LayoutBuilder(
-      builder: (ctx, c) {
-        final gap = 12.0;
-        final totalGap = gap * (columns - 1);
-        final w = (c.maxWidth - totalGap) / columns;
+    if (future == null) return _AiCard(text: fallbackText);
 
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final it in items)
-              SizedBox(
-                width: w,
-                child: _MetricTile(item: it),
-              ),
-          ],
+    return FutureBuilder<HomeAiInsightResult>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _AiCard(text: loadingText, isLoading: true);
+        }
+        if (snapshot.hasError) {
+          return _AiCard(text: fallbackText, sourceLabel: 'offline');
+        }
+        final result = snapshot.data;
+        final text = (result?.insight ?? '').trim();
+        return _AiCard(
+          text: text.isEmpty ? fallbackText : text,
+          sourceLabel: result?.source,
+          aiUsed: result?.aiUsed ?? false,
         );
       },
     );
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  final _MetricItem item;
+class _AiCard extends StatelessWidget {
+  const _AiCard({
+    required this.text,
+    this.isLoading = false,
+    this.sourceLabel,
+    this.aiUsed = false,
+  });
 
-  const _MetricTile({required this.item});
+  final String text;
+  final bool isLoading;
+  final String? sourceLabel;
+  final bool aiUsed;
 
-  Color _accent(ColorScheme cs) {
-    if (item.icon == Icons.mood_rounded || item.icon == Icons.timer_outlined) {
-      return cs.secondary;
-    }
-    if (item.icon == Icons.speed_rounded) return cs.tertiary;
-    return cs.primary;
+  String _pick(BuildContext context, Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = _accent(cs);
-
-    final bg = isDark
-        ? Color.lerp(cs.surfaceContainerLow, accent, 0.08)!
-        : Color.lerp(cs.surfaceContainerLowest, accent, 0.16)!;
-    final border = Color.lerp(cs.outlineVariant, accent, isDark ? 0.32 : 0.56)!;
-
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: border, width: 1.45),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withOpacity(isDark ? 0.08 : 0.15),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0xFF1C1630)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _ladnaAdaptive(const Color(0xFFD8CCF0), const Color(0x33D4E040))),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MiniRing(progress: item.progress, icon: item.icon, accent: accent),
-          const SizedBox(width: 10),
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0x26D4E040)), borderRadius: BorderRadius.circular(12), border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x40D4E040)))),
+            child: isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6B54C0)),
+                  )
+                : Text('✦', style: TextStyle(fontSize: 22, color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040)))),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: cs.onSurface,
-                  ),
+                  _pick(context, const {'ru': 'AI-наблюдение', 'en': 'AI observation', 'de': 'AI-Beobachtung', 'fr': 'Observation IA', 'es': 'Observación IA', 'tr': 'AI gözlemi'}).toUpperCase(),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.6, color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040))),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  item.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: cs.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
+                const SizedBox(height: 6),
+                Text(text, style: TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF)))),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniRing extends StatelessWidget {
-  final double? progress;
-  final IconData icon;
-  final Color accent;
-
-  const _MiniRing({
-    required this.progress,
-    required this.icon,
-    required this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final p = progress;
-
-    const size = 46.0;
-    const stroke = 5.5;
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CircularProgressIndicator(
-            value: 1,
-            strokeWidth: stroke,
-            valueColor: AlwaysStoppedAnimation<Color>(cs.outlineVariant.withOpacity(0.58)),
-          ),
-          if (p == null)
-            const CircularProgressIndicator.adaptive(strokeWidth: stroke)
-          else
-            CircularProgressIndicator(
-              value: p.clamp(0.0, 1.0),
-              strokeWidth: stroke,
-              valueColor: AlwaysStoppedAnimation<Color>(accent),
-              backgroundColor: Colors.transparent,
-            ),
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: Color.lerp(cs.surfaceContainerHighest, accent, 0.20),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Color.lerp(cs.outlineVariant, accent, 0.38)!,
-                width: 1.2,
-              ),
-            ),
-            child: Icon(icon, size: 16, color: accent),
           ),
         ],
       ),

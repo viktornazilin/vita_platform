@@ -129,8 +129,8 @@ class _VitaAppState extends State<VitaApp> {
     final themeCtl = context.watch<ThemeController>();
     final localeCtl = context.watch<LocaleController>();
 
-    final ThemeData light = _patchLadnaTheme(themeCtl.lightTheme, isDark: false);
-    final ThemeData dark = _patchLadnaTheme(themeCtl.darkTheme, isDark: true);
+    final ThemeData light = themeCtl.lightTheme;
+    final ThemeData dark = themeCtl.darkTheme;
 
     final bool isLoggedIn = _isReady && _userService.currentUser != null;
 
@@ -140,7 +140,9 @@ class _VitaAppState extends State<VitaApp> {
       locale: localeCtl.locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      themeMode: themeCtl.mode,
+      // Follow the iOS/Android system appearance so Simulator → Toggle Appearance works.
+      // The user's in-app preference can still be wired back later through ThemeController.
+      themeMode: ThemeMode.system,
       theme: light,
       darkTheme: dark,
       routes: {

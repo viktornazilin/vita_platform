@@ -1,33 +1,28 @@
-// lib/screens/reports_screen.dart
-// Полностью обновлён под новый flat corporate Nest design:
-// - убраны старые semi-glass визуальные акценты
-// - унифицированы surface / border / text colors через theme.colorScheme
-// - упрощён tab/header UI
-// - снижена агрессивность жирных шрифтов
-// - улучшена читаемость в dark theme
 
-import 'package:fl_chart/fl_chart.dart';
+// lib/screens/reports_screen.dart
+//
+// Ladna redesign: Reports
+// Structure from final mockups:
+// Period row: Day / Week / Month + previous / next
+// Tabs: Summary / Progress / Habits / Mood
+// Palette and spacing aligned with the new Ladna design system.
+
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:nest_app/l10n/app_localizations.dart';
 
-import '../main.dart'; // dbRepo
+import '../models/goal.dart';
+import '../models/home_model.dart';
+import '../models/mood.dart';
 import '../models/reports_model.dart';
-import '../services/onboarding_tour_service.dart';
-
-// Nest style
+import '../services/home_ai_insight_service.dart';
 import '../widgets/nest/nest_background.dart';
 
-// existing widgets / utils
-import '../widgets/expense_analytics.dart';
-import '../widgets/report_empty_chart.dart';
-import '../widgets/report_legend.dart';
-import '../widgets/report_metric_row.dart';
-import '../widgets/report_section_card.dart';
-import '../widgets/report_stat_card.dart';
-import '../widgets/reports_charts.dart';
-import '../widgets/sticky_header.dart';
+bool get _ladnaDarkMode =>
+    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+
+Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -41,1375 +36,459 @@ class ReportsScreen extends StatelessWidget {
   }
 }
 
-class _ReportsView extends StatelessWidget {
+enum _ReportTab { summary, progress, habits, mood }
+
+class _ReportsView extends StatefulWidget {
   const _ReportsView();
 
   @override
+  State<_ReportsView> createState() => _ReportsViewState();
+}
+
+class _ReportsViewState extends State<_ReportsView> {
+  _ReportTab _tab = _ReportTab.summary;
+
+  @override
   Widget build(BuildContext context) {
     final model = context.watch<ReportsModel>();
-    final scheme = Theme.of(context).colorScheme;
+    final t = _ReportsText.of(context);
 
     return Scaffold(
-      backgroundColor: scheme.surface,
+      backgroundColor: _LadnaColors.surface,
       body: NestBackground(
-        child: RefreshIndicator.adaptive(
-          onRefresh: () => context.read<ReportsModel>().loadAll(),
-          child: model.loading
-              ? CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: const [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  ],
-                )
-              : const _ReportsBody(),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReportsBody extends StatefulWidget {
-  const _ReportsBody();
-
-  @override
-  State<_ReportsBody> createState() => _ReportsBodyState();
-}
-
-class _ReportsBodyState extends State<_ReportsBody> {
-  final GlobalKey _periodKey = GlobalKey(debugLabel: 'reports_period');
-  final GlobalKey _chartKey = GlobalKey(debugLabel: 'reports_first_chart');
-
-  @override
-  void initState() {
-    super.initState();
-    OnboardingTourService.activeHomeTab.addListener(_maybeShowReportsOnboarding);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowReportsOnboarding());
-  }
-
-  void _maybeShowReportsOnboarding() {
-    if (!mounted || OnboardingTourService.activeHomeTab.value != 4) return;
-
-    if (OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.reports)) {
-      OnboardingTourService.runFullFlowScreenStep(
-        context: context,
-        step: NestFullOnboardingStep.reports,
-        showTour: () => OnboardingTourService.showReportsTour(
-          context: context,
-          periodKey: _periodKey,
-          chartKey: _chartKey,
-          markAsSeen: false,
-        ),
-      );
-      return;
-    }
-
-    if (OnboardingTourService.isFullFlowActive) return;
-
-    OnboardingTourService.showReportsTourIfNeeded(
-      context: context,
-      periodKey: _periodKey,
-      chartKey: _chartKey,
-    );
-  }
-
-  @override
-  void dispose() {
-    OnboardingTourService.activeHomeTab.removeListener(_maybeShowReportsOnboarding);
-    super.dispose();
-  }
-
-  // ----------------------------------------------------------------------------
-  // Helpers: date range iteration
-  // ----------------------------------------------------------------------------
-  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  static Iterable<DateTime> _daysInRange(
-    DateTime start,
-    DateTime endExclusive,
-  ) sync* {
-    var d = _dateOnly(start);
-    final end = _dateOnly(endExclusive);
-    while (d.isBefore(end)) {
-      yield d;
-      d = d.add(const Duration(days: 1));
-    }
-  }
-
-  // ----------------------------------------------------------------------------
-  // Mood scoring (for correlations)
-  // ----------------------------------------------------------------------------
-  static const Set<String> _moodPositive = {
-    '😀',
-    '😄',
-    '😊',
-    '🙂',
-    '😌',
-    '😁',
-    '😍',
-    '🤩',
-    '😎',
-    '🥳',
-  };
-
-  static const Set<String> _moodNeutral = {
-    '😐',
-    '😶',
-    '😑',
-    '🙂‍↔️',
-    '🫤',
-  };
-
-  static const Set<String> _moodNegative = {
-    '😞',
-    '😔',
-    '😟',
-    '😣',
-    '😖',
-    '😫',
-    '😭',
-    '😢',
-    '😠',
-    '😡',
-    '😤',
-    '😩',
-  };
-
-  static int _moodBucket(String emoji) {
-    if (_moodPositive.contains(emoji)) return 1;
-    if (_moodNegative.contains(emoji)) return -1;
-    if (_moodNeutral.contains(emoji)) return 0;
-    return 0;
-  }
-
-  // ----------------------------------------------------------------------------
-  // Data models for "Связи"
-  // ----------------------------------------------------------------------------
-  static const double _habitHighThreshold = 0.70;
-
-  static String _dateOnlyStr(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-  Future<Map<DateTime, String>> _loadMoodsByDay(
-    DateTime start,
-    DateTime endExclusive,
-  ) async {
-    // moods.date is the real DB column. Also use dbRepo here so encrypted
-    // mood payloads are decrypted by MoodsRepoMixin before reports use them.
-    final endInclusive = _dateOnly(endExclusive).subtract(const Duration(days: 1));
-    if (endInclusive.isBefore(_dateOnly(start))) return <DateTime, String>{};
-
-    final moods = await dbRepo.fetchMoodsRange(
-      from: _dateOnly(start),
-      to: endInclusive,
-    );
-
-    final out = <DateTime, String>{};
-    for (final mood in moods) {
-      final day = _dateOnly(mood.date);
-      final emoji = mood.emoji.trim();
-      if (emoji.isEmpty) continue;
-      out[day] = emoji;
-    }
-
-    return out;
-  }
-
-  Future<Map<DateTime, double>> _loadHabitCompletionByDay(
-    DateTime start,
-    DateTime endExclusive,
-  ) async {
-    final habits = await dbRepo.listHabits();
-    final total = habits.length;
-    if (total <= 0) return {};
-
-    final out = <DateTime, double>{};
-
-    for (final day in _daysInRange(start, endExclusive)) {
-      final entries = await dbRepo.getHabitEntriesForDay(day);
-
-      int done = 0;
-      for (final h in habits) {
-        final row = entries[h.id];
-        final isDone = (row?['done'] as bool?) ?? false;
-        if (isDone) done++;
-      }
-      out[day] = done / total;
-    }
-
-    return out;
-  }
-
-  Future<Map<DateTime, double>> _loadMentalScoreByDay(
-    DateTime start,
-    DateTime endExclusive,
-  ) async {
-    final qs = await dbRepo.listMentalQuestions(onlyActive: true);
-    if (qs.isEmpty) return {};
-
-    final out = <DateTime, double>{};
-
-    for (final day in _daysInRange(start, endExclusive)) {
-      final a = await dbRepo.getMentalAnswersForDay(day);
-
-      double sum = 0;
-      int n = 0;
-
-      for (final q in qs) {
-        final row = a[q.id];
-        if (row == null) continue;
-
-        final vb = row['value_bool'];
-        final vi = row['value_int'];
-
-        if (vb is bool) {
-          sum += vb ? 1.0 : 0.0;
-          n++;
-          continue;
-        }
-        if (vi is int) {
-          final minV = (q.minValue ?? 0).toDouble();
-          final maxV = (q.maxValue ?? 10).toDouble();
-          if (maxV <= minV) continue;
-          final norm = ((vi.toDouble() - minV) / (maxV - minV)).clamp(0.0, 1.0);
-          sum += norm;
-          n++;
-          continue;
-        }
-      }
-
-      out[day] = (n == 0) ? 0.0 : (sum / n);
-    }
-
-    return out;
-  }
-
-  // ----------------------------------------------------------------------------
-  // Correlation computations
-  // ----------------------------------------------------------------------------
-  static double _avg(Iterable<double> xs) {
-    final list = xs.where((e) => e.isFinite).toList();
-    if (list.isEmpty) return 0.0;
-    return list.reduce((a, b) => a + b) / list.length;
-  }
-
-  static double _safeGet(Map<DateTime, double> m, DateTime d) =>
-      m[_dateOnly(d)] ?? 0.0;
-
-  static bool _isHighHabits(double completion) =>
-      completion >= _habitHighThreshold;
-
-  static String _fmtHours(AppLocalizations t, double v) =>
-      t.reportsHoursValue(v.toStringAsFixed(1));
-  static String _fmtEuro(AppLocalizations t, double v) =>
-      t.reportsEuroValue(v.toStringAsFixed(0));
-  static String _fmtAvgTime(AppLocalizations t, double v) =>
-      t.reportsHoursValue(v.toStringAsFixed(1));
-
-  FlTitlesData _axisTitles(ColorScheme cs) {
-    return FlTitlesData(
-      rightTitles: const AxisTitles(
-        sideTitles: SideTitles(showTitles: false),
-      ),
-      topTitles: const AxisTitles(
-        sideTitles: SideTitles(showTitles: false),
-      ),
-      leftTitles: AxisTitles(
-        sideTitles: SideTitles(
-          showTitles: true,
-          reservedSize: 34,
-          getTitlesWidget: (v, _) => Text(
-            v.toInt().toString(),
-            style: TextStyle(
-              color: cs.onSurfaceVariant,
-              fontSize: 10,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  FlGridData _grid(ColorScheme cs) {
-    return FlGridData(
-      show: true,
-      drawVerticalLine: false,
-      getDrawingHorizontalLine: (v) => FlLine(
-        strokeWidth: 0.6,
-        color: cs.outlineVariant,
-      ),
-    );
-  }
-
-  Widget _centered(Widget child) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: child,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
-    final model = context.watch<ReportsModel>();
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final goals = model.goalsInRange.toList();
-    final doneByBlock = model.doneByBlock;
-    final byDayHours = model.hoursByDay;
-
-    final totalHours = model.totalHours;
-    final efficiency = model.efficiency;
-    final planned = model.plannedHours;
-    final completedGoals = goals.where((g) => g.isCompleted).length;
-
-    final rangeStart = _dateOnly(model.range.start);
-    final rangeEnd = _dateOnly(model.range.end);
-
-    return DefaultTabController(
-      length: 4,
-      child: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: StickyHeader(
-              minExtent: 82,
-              maxExtent: 90,
-              child: Container(
-                color: cs.surface,
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                child: _centered(
-                  _HeaderShell(
-                    child: _PeriodBar(
-                      key: _periodKey,
-                      rangeLabel: model.rangeLabel,
-                      period: model.period,
-                      onPeriod: (p) => context.read<ReportsModel>().setPeriod(p),
-                      onPrev: context.read<ReportsModel>().prev,
-                      onNext: context.read<ReportsModel>().next,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _TabHeaderDelegate(
-              child: Container(
-                color: cs.surface,
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                child: _centered(
-                  _HeaderShell(
-                    padding: const EdgeInsets.all(6),
-                    child: TabBar(
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      dividerColor: Colors.transparent,
-                      labelColor: cs.onSurface,
-                      unselectedLabelColor: cs.onSurfaceVariant,
-                      labelStyle: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+        child: SafeArea(
+          bottom: false,
+          child: RefreshIndicator.adaptive(
+            onRefresh: () => context.read<ReportsModel>().loadAll(),
+            child: model.loading
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+                    children: const [
+                      SizedBox(height: 260),
+                      Center(child: CircularProgressIndicator()),
+                    ],
+                  )
+                : ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+                    children: [
+                      _Header(title: t.reports),
+                      const SizedBox(height: 14),
+                      _PeriodRow(model: model, t: t),
+                      const SizedBox(height: 12),
+                      _ReportTabs(
+                        value: _tab,
+                        t: t,
+                        onChanged: (v) => setState(() => _tab = v),
                       ),
-                      indicator: BoxDecoration(
-                        color: cs.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: cs.outlineVariant),
-                      ),
-                      tabs: [
-                        Tab(text: t.reportsTabSummary),
-                        Tab(text: t.reportsTabRelations),
-                        Tab(text: t.reportsTabProductivity),
-                        Tab(text: t.reportsTabExpenses),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-        body: TabBarView(
-          children: [
-            // TAB 1: СВОДКА
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                      child: _KpiStrip(
-                        children: [
-                          ReportStatCard(
-                            title: t.reportsCompletedTasks,
-                            value: completedGoals.toString(),
-                            icon: Icons.check_circle_outline_rounded,
-                          ),
-                          ReportStatCard(
-                            title: t.reportsSpentHours,
-                            value: totalHours.toStringAsFixed(1),
-                            icon: Icons.timer_outlined,
-                          ),
-                          ReportStatCard(
-                            title: t.reportsEfficiency,
-                            value: '${(efficiency * 100).round()}%',
-                            icon: Icons.trending_up_rounded,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-                      child: KeyedSubtree(
-                        key: _chartKey,
-                        child: ReportSectionCard(
-                          title: t.reportsPeriodEfficiency,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(999),
-                              child: LinearProgressIndicator(
-                                value: efficiency,
-                                minHeight: 10,
-                                backgroundColor: cs.surfaceContainerHighest,
-                                color: cs.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              t.reportsPlanFactHours(planned.toStringAsFixed(1), totalHours.toStringAsFixed(1)),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-                      child: ReportSectionCard(
-                        title: t.reportsAdditionalMetrics,
-                        child: _extraMetrics(
-                          context: context,
-                          avgTimePerGoal: model.avgTimePerGoal,
-                          percentOnTime: model.percentDoneOnTime,
-                          top3: model.top3DaysByHours,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-                      child: _LatestAiInsightsCard(
-                        limit: 5,
-                        onOpenAll: null,
-                      ),
-                    ),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              ],
-            ),
-
-            // TAB 2: СВЯЗИ
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                      child: ReportSectionCard(
-                        title: t.reportsCorrelations,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _HintPill(
-                              text: t.reportsCorrelationsHint,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 1) Mood -> Productivity
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-                      child: FutureBuilder<Map<DateTime, String>>(
-                        future: _loadMoodsByDay(rangeStart, rangeEnd),
-                        builder: (context, moodsSnap) {
-                          if (moodsSnap.connectionState ==
-                              ConnectionState.waiting) {
-                            return ReportSectionCard(
-                              title: t.reportsMoodProductivity,
-                              child: SizedBox(
-                                height: 120,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            );
-                          }
-
-                          final moodsByDay = moodsSnap.data ?? {};
-                          if (moodsByDay.isEmpty || byDayHours.isEmpty) {
-                            return ReportSectionCard(
-                              title: t.reportsMoodProductivity,
-                              child: ReportEmptyChart(),
-                            );
-                          }
-
-                          final good = <double>[];
-                          final neutral = <double>[];
-                          final bad = <double>[];
-
-                          for (final d in moodsByDay.keys) {
-                            final h = byDayHours[d] ?? 0.0;
-                            final b = _moodBucket(moodsByDay[d] ?? '');
-                            if (b == 1) good.add(h);
-                            if (b == 0) neutral.add(h);
-                            if (b == -1) bad.add(h);
-                          }
-
-                          final goodAvg = _avg(good);
-                          final neutralAvg = _avg(neutral);
-                          final badAvg = _avg(bad);
-
-                          return ReportSectionCard(
-                            title: t.reportsMoodProductivity,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _CompareRow(
-                                  leftLabel: t.reportsGoodMood,
-                                  leftValue: _fmtHours(t, goodAvg),
-                                  rightLabel: t.reportsBadMood,
-                                  rightValue: _fmtHours(t, badAvg),
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 190,
-                                  child: BarChart(
-                                    BarChartData(
-                                      gridData: _grid(cs),
-                                      titlesData: _axisTitles(cs).copyWith(
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 26,
-                                            getTitlesWidget: (v, _) {
-                                              final idx = v.toInt();
-                                              if (idx < 0 || idx > 2) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              final label = switch (idx) {
-                                                0 => '😊',
-                                                1 => '😐',
-                                                _ => '😞',
-                                              };
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 6,
-                                                ),
-                                                child: Text(
-                                                  label,
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: cs.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      borderData: FlBorderData(show: false),
-                                      barGroups: [
-                                        BarChartGroupData(
-                                          x: 0,
-                                          barRods: [
-                                            BarChartRodData(
-                                              toY: goodAvg,
-                                              width: 24,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: cs.primary,
-                                            ),
-                                          ],
-                                        ),
-                                        BarChartGroupData(
-                                          x: 1,
-                                          barRods: [
-                                            BarChartRodData(
-                                              toY: neutralAvg,
-                                              width: 24,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: cs.secondary,
-                                            ),
-                                          ],
-                                        ),
-                                        BarChartGroupData(
-                                          x: 2,
-                                          barRods: [
-                                            BarChartRodData(
-                                              toY: badAvg,
-                                              width: 24,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: cs.surfaceContainerHighest,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 2) Habits -> Mood / Productivity
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-                      child: FutureBuilder<_HabitsMoodProductivityPack>(
-                        future: () async {
-                          final habitsByDay = await _loadHabitCompletionByDay(
-                            rangeStart,
-                            rangeEnd,
-                          );
-                          final moodsByDay = await _loadMoodsByDay(
-                            rangeStart,
-                            rangeEnd,
-                          );
-
-                          final moodScore = <DateTime, int>{};
-                          for (final e in moodsByDay.entries) {
-                            moodScore[e.key] = _moodBucket(e.value);
-                          }
-
-                          final highMood = <double>[];
-                          final lowMood = <double>[];
-                          final highHours = <double>[];
-                          final lowHours = <double>[];
-
-                          for (final day in _daysInRange(rangeStart, rangeEnd)) {
-                            final completion = _safeGet(habitsByDay, day);
-                            final isHigh = _isHighHabits(completion);
-
-                            final ms = moodScore[day];
-                            if (ms != null) {
-                              (isHigh ? highMood : lowMood).add(ms.toDouble());
-                            }
-
-                            final hours = byDayHours[day];
-                            if (hours != null) {
-                              (isHigh ? highHours : lowHours).add(hours);
-                            }
-                          }
-
-                          return _HabitsMoodProductivityPack(
-                            avgMoodHigh: _avg(highMood),
-                            avgMoodLow: _avg(lowMood),
-                            avgHoursHigh: _avg(highHours),
-                            avgHoursLow: _avg(lowHours),
-                          );
-                        }(),
-                        builder: (context, snap) {
-                          if (snap.connectionState == ConnectionState.waiting) {
-                            return ReportSectionCard(
-                              title: t.reportsHabitsMoodProductivity,
-                              child: SizedBox(
-                                height: 140,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            );
-                          }
-
-                          final p = snap.data;
-                          if (p == null) {
-                            return ReportSectionCard(
-                              title: t.reportsHabitsMoodProductivity,
-                              child: ReportEmptyChart(),
-                            );
-                          }
-
-                          String moodText(double v) {
-                            if (v >= 0.4) return t.reportsMoodMostlyHappy;
-                            if (v <= -0.4) return t.reportsMoodMostlySad;
-                            return t.reportsMoodMostlyNeutral;
-                          }
-
-                          return ReportSectionCard(
-                            title: t.reportsHabitsMoodProductivity,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _HintPill(
-                                  text: t.reportsHabitsComparisonHint((_habitHighThreshold * 100).round()),
-                                ),
-                                const SizedBox(height: 12),
-                                _CompareRow(
-                                  leftLabel: t.reportsMoodHigh,
-                                  leftValue: moodText(p.avgMoodHigh),
-                                  rightLabel: t.reportsMoodLow,
-                                  rightValue: moodText(p.avgMoodLow),
-                                ),
-                                const SizedBox(height: 10),
-                                _CompareRow(
-                                  leftLabel: t.reportsHoursHigh,
-                                  leftValue: _fmtHours(t, p.avgHoursHigh),
-                                  rightLabel: t.reportsHoursLow,
-                                  rightValue: _fmtHours(t, p.avgHoursLow),
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 190,
-                                  child: BarChart(
-                                    BarChartData(
-                                      gridData: _grid(cs),
-                                      titlesData: _axisTitles(cs).copyWith(
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 26,
-                                            getTitlesWidget: (v, _) {
-                                              final idx = v.toInt();
-                                              if (idx < 0 || idx > 1) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 6,
-                                                ),
-                                                child: Text(
-                                                  idx == 0
-                                                      ? t.reportsHabitsHighShort
-                                                      : t.reportsHabitsLowShort,
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: cs.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      borderData: FlBorderData(show: false),
-                                      barGroups: [
-                                        BarChartGroupData(
-                                          x: 0,
-                                          barRods: [
-                                            BarChartRodData(
-                                              toY: p.avgHoursHigh,
-                                              width: 24,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: cs.primary,
-                                            ),
-                                          ],
-                                        ),
-                                        BarChartGroupData(
-                                          x: 1,
-                                          barRods: [
-                                            BarChartRodData(
-                                              toY: p.avgHoursLow,
-                                              width: 24,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: cs.surfaceContainerHighest,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 4) Mental score -> Mood
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-                      child: FutureBuilder<_MentalTrendPack>(
-                        future: () async {
-                          final mental = await _loadMentalScoreByDay(
-                            rangeStart,
-                            rangeEnd,
-                          );
-                          final moods = await _loadMoodsByDay(
-                            rangeStart,
-                            rangeEnd,
-                          );
-                          return _MentalTrendPack(mental: mental, moods: moods);
-                        }(),
-                        builder: (context, snap) {
-                          if (snap.connectionState == ConnectionState.waiting) {
-                            return ReportSectionCard(
-                              title: t.reportsMentalMood,
-                              child: SizedBox(
-                                height: 140,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            );
-                          }
-
-                          final p = snap.data;
-                          if (p == null || p.mental.isEmpty) {
-                            return ReportSectionCard(
-                              title: t.reportsMentalMood,
-                              child: ReportEmptyChart(),
-                            );
-                          }
-
-                          final keys = p.mental.keys.toList()..sort();
-                          final spots = <FlSpot>[];
-                          for (var i = 0; i < keys.length; i++) {
-                            spots.add(
-                              FlSpot(
-                                i.toDouble(),
-                                (p.mental[keys[i]] ?? 0.0) * 100.0,
-                              ),
-                            );
-                          }
-
-                          return ReportSectionCard(
-                            title: t.reportsMentalMood,
-                            child: SizedBox(
-                              height: 230,
-                              child: LineChart(
-                                LineChartData(
-                                  minY: 0,
-                                  maxY: 100,
-                                  gridData: _grid(cs),
-                                  titlesData: _axisTitles(cs).copyWith(
-                                    bottomTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 28,
-                                        interval: 1,
-                                        getTitlesWidget: (v, _) {
-                                          final idx = v.toInt();
-                                          if (idx < 0 || idx >= keys.length) {
-                                            return const SizedBox.shrink();
-                                          }
-                                          if (keys.length > 14 && idx.isOdd) {
-                                            return const SizedBox.shrink();
-                                          }
-                                          final d = keys[idx];
-                                          final emoji = p.moods[d] ?? '';
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: 6,
-                                            ),
-                                            child: Text(
-                                              emoji.isEmpty
-                                                  ? '${d.day}.${d.month}'
-                                                  : emoji,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: cs.onSurfaceVariant,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                  borderData: FlBorderData(show: false),
-                                  lineBarsData: [
-                                    LineChartBarData(
-                                      spots: spots,
-                                      isCurved: true,
-                                      barWidth: 3,
-                                      color: cs.primary,
-                                      dotData: FlDotData(
-                                        show: true,
-                                        getDotPainter:
-                                            (spot, percent, barData, index) =>
-                                                FlDotCirclePainter(
-                                          radius: 3.2,
-                                          color: cs.onSurface,
-                                          strokeWidth: 2,
-                                          strokeColor: cs.primary,
-                                        ),
-                                      ),
-                                      belowBarData: BarAreaData(
-                                        show: true,
-                                        color: cs.primary.withOpacity(0.12),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 5) Expenses -> Mood
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-                      child: FutureBuilder<_ExpenseMoodPack>(
-                        future: () async {
-                          final moods = await _loadMoodsByDay(
-                            rangeStart,
-                            rangeEnd,
-                          );
-                          final ex = await loadExpenseAnalytics(
-                            rangeStart,
-                            rangeEnd,
-                          );
-                          return _ExpenseMoodPack(
-                            moods: moods,
-                            expensesByDay: ex.byDay,
-                          );
-                        }(),
-                        builder: (context, snap) {
-                          if (snap.connectionState == ConnectionState.waiting) {
-                            return ReportSectionCard(
-                              title: t.reportsExpensesMood,
-                              child: SizedBox(
-                                height: 140,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                            );
-                          }
-
-                          final p = snap.data;
-                          if (p == null ||
-                              p.expensesByDay.isEmpty ||
-                              p.moods.isEmpty) {
-                            return ReportSectionCard(
-                              title: t.reportsExpensesMood,
-                              child: ReportEmptyChart(),
-                            );
-                          }
-
-                          final good = <double>[];
-                          final bad = <double>[];
-
-                          for (final d in p.expensesByDay.keys) {
-                            final emoji = p.moods[_dateOnly(d)];
-                            if (emoji == null) continue;
-                            final bucket = _moodBucket(emoji);
-                            final val = p.expensesByDay[d] ?? 0.0;
-                            if (bucket == 1) good.add(val);
-                            if (bucket == -1) bad.add(val);
-                          }
-
-                          final goodAvg = _avg(good);
-                          final badAvg = _avg(bad);
-
-                          return ReportSectionCard(
-                            title: t.reportsExpensesMood,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _CompareRow(
-                                  leftLabel: t.reportsHappyDays,
-                                  leftValue: _fmtEuro(t, goodAvg),
-                                  rightLabel: t.reportsSadDays,
-                                  rightValue: _fmtEuro(t, badAvg),
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 190,
-                                  child: BarChart(
-                                    BarChartData(
-                                      gridData: _grid(cs),
-                                      titlesData: _axisTitles(cs).copyWith(
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 26,
-                                            getTitlesWidget: (v, _) {
-                                              final idx = v.toInt();
-                                              if (idx < 0 || idx > 1) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 6,
-                                                ),
-                                                child: Text(
-                                                  idx == 0 ? '😊' : '😞',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: cs.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      borderData: FlBorderData(show: false),
-                                      barGroups: [
-                                        BarChartGroupData(
-                                          x: 0,
-                                          barRods: [
-                                            BarChartRodData(
-                                              toY: goodAvg,
-                                              width: 24,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: cs.primary,
-                                            ),
-                                          ],
-                                        ),
-                                        BarChartGroupData(
-                                          x: 1,
-                                          barRods: [
-                                            BarChartRodData(
-                                              toY: badAvg,
-                                              width: 24,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              color: cs.surfaceContainerHighest,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              ],
-            ),
-
-            // TAB 3: ПРОДУКТИВНОСТЬ
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                      child: ReportSectionCard(
-                        title: t.reportsCompletedByBlocks,
-                        child: doneByBlock.isEmpty
-                            ? const ReportEmptyChart()
-                            : _InteractiveIntDonutChart(
-                                data: doneByBlock,
-                                emptyLabel: t.reportsNoCompletedTasks,
-                                valueFormatter: (value) => t.reportsTasksCount(value),
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
-                      child: ReportSectionCard(
-                        title: t.reportsHoursByDays,
-                        child: byDayHours.isEmpty
-                            ? const ReportEmptyChart()
-                            : SizedBox(
-                                height: 260,
-                                child: BarChart(
-                                  BarChartData(
-                                    gridData: _grid(cs),
-                                    barTouchData: BarTouchData(
-                                      enabled: true,
-                                      touchTooltipData: BarTouchTooltipData(
-                                        getTooltipColor: (_) =>
-                                            cs.surfaceContainerHighest,
-                                        getTooltipItem:
-                                            (group, groupIndex, rod, rodIndex) {
-                                          final keys =
-                                              byDayHours.keys.toList()..sort();
-                                          final d = keys[group.x.toInt()];
-                                          return BarTooltipItem(
-                                            '${d.day}.${d.month}.${d.year}\n',
-                                            TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: cs.onSurface,
-                                            ),
-                                            children: [
-                                              TextSpan(
-                                                text:
-                                                    t.reportsHoursValue(rod.toY.toStringAsFixed(1)),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    titlesData: _axisTitles(cs).copyWith(
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 26,
-                                          interval: 1,
-                                          getTitlesWidget: (v, _) {
-                                            final keys =
-                                                byDayHours.keys.toList()..sort();
-                                            final idx = v.toInt();
-                                            if (idx < 0 || idx >= keys.length) {
-                                              return const SizedBox.shrink();
-                                            }
-                                            final d = keys[idx];
-                                            if (keys.length > 14 && idx.isOdd) {
-                                              return const SizedBox.shrink();
-                                            }
-                                            return Padding(
-                                              padding: const EdgeInsets.only(
-                                                top: 6,
-                                              ),
-                                              child: Text(
-                                                '${d.day}.${d.month}',
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: cs.onSurfaceVariant,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                    borderData: FlBorderData(show: false),
-                                    barGroups: buildBarGroups(
-                                      context,
-                                      byDayHours,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // TAB 4: РАСХОДЫ
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _centered(
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                      child: ReportSectionCard(
-                        title: t.reportsExpensesForPeriod,
-                        child: FutureBuilder<ExpenseAnalytics>(
-                          future: loadExpenseAnalytics(
-                            model.range.start,
-                            model.range.end,
-                          ),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const SizedBox(
-                                height: 140,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
-                            if (!snapshot.hasData) {
-                              return const ReportEmptyChart();
-                            }
-
-                            final data = snapshot.data!;
-                            if (data.total <= 0 && data.byDay.isEmpty) {
-                              return const ReportEmptyChart();
-                            }
-
-                            final days = (model.range.end
-                                    .difference(model.range.start)
-                                    .inDays)
-                                .clamp(1, 366);
-                            final avgExpense = days == 0
-                                ? 0.0
-                                : data.total / days;
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  t.reportsTotalEuro(data.total.toStringAsFixed(2)),
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: cs.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  t.reportsAvgExpensePerDay(avgExpense.toStringAsFixed(2)),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: cs.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                _InteractiveDoubleDonutChart(
-                                  data: data.byCategory,
-                                  emptyLabel: t.reportsNoExpensesByCategory,
-                                  valueFormatter: (value) =>
-                                      t.reportsEuroValue(value.toStringAsFixed(2)),
-                                ),
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  height: 260,
-                                  child: BarChart(
-                                    BarChartData(
-                                      gridData: _grid(cs),
-                                      titlesData: _axisTitles(cs).copyWith(
-                                        bottomTitles: AxisTitles(
-                                          sideTitles: SideTitles(
-                                            showTitles: true,
-                                            reservedSize: 26,
-                                            getTitlesWidget: (v, _) {
-                                              final keys =
-                                                  data.byDay.keys.toList()
-                                                    ..sort();
-                                              final idx = v.toInt();
-                                              if (idx < 0 ||
-                                                  idx >= keys.length) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              final d = keys[idx];
-                                              if (keys.length > 14 &&
-                                                  idx.isOdd) {
-                                                return const SizedBox.shrink();
-                                              }
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 6,
-                                                ),
-                                                child: Text(
-                                                  '${d.day}.${d.month}',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: cs.onSurfaceVariant,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      borderData: FlBorderData(show: false),
-                                      barGroups: buildExpenseBarGroups(
-                                        context,
-                                        data.byDay,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
+                      const SizedBox(height: 16),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        child: KeyedSubtree(
+                          key: ValueKey(_tab),
+                          child: switch (_tab) {
+                            _ReportTab.summary => _SummaryTab(model: model, t: t),
+                            _ReportTab.progress => _ProgressTab(model: model, t: t),
+                            _ReportTab.habits => _HabitsTab(model: model, t: t),
+                            _ReportTab.mood => _MoodTab(model: model, t: t),
                           },
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _extraMetrics({
-    required BuildContext context,
-    required double avgTimePerGoal,
-    required int percentOnTime,
-    required List<MapEntry<DateTime, double>> top3,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final t = AppLocalizations.of(context)!;
+// -----------------------------------------------------------------------------
+// Main tabs
+// -----------------------------------------------------------------------------
+
+class _SummaryTab extends StatelessWidget {
+  final ReportsModel model;
+  final _ReportsText t;
+
+  const _SummaryTab({required this.model, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final goals = model.goalsInRange.toList();
+    final completed = goals.where((g) => g.isCompleted).length;
+    final moods = model.moodsInRange.toList();
+    final avgMood = _avgMood(moods);
+    final habitsPct = _habitCompletionPercent(goals);
+    final sphereData = _hoursByBlock(goals);
+    final topDays = model.top3DaysByHours;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ReportMetricRow(
-          label: t.reportsAvgTimePerGoal,
-          value: _fmtAvgTime(t, avgTimePerGoal),
-        ),
-        ReportMetricRow(
-          label: t.reportsOnTimeConditional,
-          value: '$percentOnTime %',
+        _MetricGrid(
+          children: [
+            _MetricCard(
+              title: t.tasksDone,
+              value: '$completed',
+              subtitle: '${t.outOf} ${goals.length}',
+              highlight: true,
+            ),
+            _MetricCard(
+              title: t.focusHours,
+              value: _fmt(model.totalHours),
+              subtitle: '${t.outOf} ${_fmt(model.plannedHours)} ${t.hoursShort}',
+            ),
+            _MetricCard(
+              title: t.habits,
+              value: '$habitsPct%',
+              subtitle: t.periodAverage,
+              highlight: habitsPct >= 70,
+            ),
+            _MetricCard(
+              title: t.mood,
+              value: avgMood == null ? '—' : avgMood.toStringAsFixed(1),
+              subtitle: t.outOfFiveAverage,
+            ),
+          ],
         ),
         const SizedBox(height: 12),
-        Text(
-          t.reportsTop3ProductiveDays,
-          style: tt.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: cs.onSurface,
+        _ProgressCard(
+          title: t.periodEfficiency,
+          value: '${(model.efficiency * 100).round()}%',
+          progress: model.efficiency,
+          subtitle:
+              '${t.plan} ${_fmt(model.plannedHours)} ${t.hoursShort} · ${t.fact} ${_fmt(model.totalHours)} ${t.hoursShort}',
+        ),
+        const SizedBox(height: 12),
+        _SectionLabel(t.timeBySphere),
+        _SphereCard(
+          title: t.timeBySphere,
+          data: sphereData,
+          emptyText: t.noDataYet,
+        ),
+        if (topDays.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _ExtraCard(
+            title: t.topProductiveDays,
+            child: Column(
+              children: topDays.map((e) {
+                final maxValue = topDays.map((d) => d.value).fold<double>(0, math.max);
+                return _TopDayRow(
+                  label: _shortDate(e.key),
+                  value: '${_fmt(e.value)} ${t.hoursShort}',
+                  progress: maxValue <= 0 ? 0 : e.value / maxValue,
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        _AiCard(
+          label: t.aiObservation,
+          title: t.insight,
+          reportTab: 'summary',
+        ),
+      ],
+    );
+  }
+}
+
+class _ProgressTab extends StatelessWidget {
+  final ReportsModel model;
+  final _ReportsText t;
+
+  const _ProgressTab({required this.model, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final goals = model.goalsInRange.toList();
+    final completed = goals.where((g) => g.isCompleted).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _MetricGrid(
+          children: [
+            _MetricCard(
+              title: t.periodTasks,
+              value: '$completed / ${goals.length}',
+              subtitle: t.done,
+            ),
+            _MetricCard(
+              title: t.focusHours,
+              value: _fmt(model.totalHours),
+              subtitle: '${t.outOf} ${_fmt(model.plannedHours)} ${t.hoursShort}',
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _ProgressCard(
+          title: t.periodProgress,
+          value: '${(model.efficiency * 100).round()}%',
+          progress: model.efficiency,
+          subtitle: model.efficiency < .35 ? t.tempoBelowNorm : t.tempoGood,
+        ),
+        const SizedBox(height: 12),
+        _ExtraCard(
+          title: t.details,
+          child: Column(
+            children: [
+              _DetailRow(
+                label: t.avgTimePerTask,
+                value: '${_fmt(model.avgTimePerGoal)} ${t.hoursShort}',
+              ),
+              _DetailRow(
+                label: t.doneOnTime,
+                value: '${model.percentDoneOnTime}%',
+              ),
+              _DetailRow(
+                label: t.moved,
+                value: '${math.max(0, goals.length - completed)}',
+                isLast: true,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
-        ...top3.map(
-          (e) => Padding(
-            padding: const EdgeInsets.only(bottom: 7),
+        const SizedBox(height: 12),
+        _AiCard(
+          label: t.aiObservation,
+          title: t.pattern,
+          reportTab: 'progress',
+        ),
+      ],
+    );
+  }
+}
+
+class _HabitsTab extends StatelessWidget {
+  final ReportsModel model;
+  final _ReportsText t;
+
+  const _HabitsTab({required this.model, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final goals = model.goalsInRange.toList();
+    final pct = _habitCompletionPercent(goals);
+    final byBlock = _completionByBlock(goals);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _MetricGrid(
+          children: [
+            _MetricCard(
+              title: t.completed,
+              value: '$pct%',
+              subtitle: t.forThisPeriod,
+              highlight: pct >= 70,
+            ),
+            _MetricCard(
+              title: t.bestStreak,
+              value: _bestStreakText(model),
+              subtitle: t.daysInARow,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _ExtraCard(
+          title: t.byHabits,
+          child: byBlock.isEmpty
+              ? _EmptyText(t.noDataYet)
+              : Column(
+                  children: byBlock.entries.map((e) {
+                    final done = e.value.$1;
+                    final total = e.value.$2;
+                    return _HabitStatRow(
+                      label: _blockLabel(e.key, t),
+                      value: '$done/$total',
+                      progress: total == 0 ? 0 : done / total,
+                      color: _blockColor(e.key),
+                    );
+                  }).toList(),
+                ),
+        ),
+        const SizedBox(height: 12),
+        _ExtraCard(
+          title: t.streaksFourWeeks,
+          child: _Heatmap(goals: model.allGoals, t: t),
+        ),
+        const SizedBox(height: 12),
+        _AiCard(
+          label: t.aiObservation,
+          title: t.pattern,
+          reportTab: 'habits',
+        ),
+      ],
+    );
+  }
+}
+
+class _MoodTab extends StatelessWidget {
+  final ReportsModel model;
+  final _ReportsText t;
+
+  const _MoodTab({required this.model, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final moods = model.moodsInRange.toList()..sort((a, b) => a.date.compareTo(b.date));
+    final avg = _avgMood(moods);
+    final best = moods.isEmpty
+        ? null
+        : moods.reduce((a, b) => _moodScore(a.emoji) >= _moodScore(b.emoji) ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _MetricGrid(
+          children: [
+            _MetricCard(
+              title: t.periodAverage,
+              value: avg == null ? '—' : avg.toStringAsFixed(1),
+              subtitle: t.outOfFive,
+              highlight: avg != null && avg >= 4,
+            ),
+            _MetricCard(
+              title: t.bestDay,
+              value: best == null ? '—' : _weekdayShort(best.date, t),
+              subtitle: best == null ? t.noDataYet : '${t.mood} ${_moodScore(best.emoji)}/5',
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _MoodChartCard(moods: moods, t: t),
+        const SizedBox(height: 12),
+        _ExtraCard(
+          title: t.byDays,
+          child: moods.isEmpty
+              ? _EmptyText(t.noDataYet)
+              : Column(
+                  children: moods.take(7).map((m) {
+                    final score = _moodScore(m.emoji);
+                    return _MoodDayRow(
+                      label: _shortDate(m.date),
+                      score: score,
+                      isLast: m == moods.take(7).last,
+                    );
+                  }).toList(),
+                ),
+        ),
+        const SizedBox(height: 12),
+        _AiCard(
+          label: t.aiObservation,
+          title: t.pattern,
+          reportTab: 'mood',
+        ),
+      ],
+    );
+  }
+}
+
+void _goToHome(BuildContext context) {
+  try {
+    context.read<HomeModel>().select(0);
+    return;
+  } catch (_) {
+    // The reports screen may also be opened as a standalone route.
+  }
+
+  final navigator = Navigator.of(context);
+  if (navigator.canPop()) {
+    navigator.maybePop();
+    return;
+  }
+
+  navigator.pushNamedAndRemoveUntil('/home', (route) => false);
+}
+
+// -----------------------------------------------------------------------------
+// Header / controls
+// -----------------------------------------------------------------------------
+
+class _Header extends StatelessWidget {
+  final String title;
+
+  const _Header({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return _LadnaCard(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+      child: Row(
+        children: [
+          _RoundIconButton(
+            icon: Icons.chevron_left_rounded,
+            onTap: () => _goToHome(context),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
             child: Text(
-              t.reportsTopDayLine(e.key.day, e.key.month, e.key.year, e.value.toStringAsFixed(1)),
-              style: tt.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
+              title,
+              style: TextStyle(
+                fontFamily: 'PlayfairDisplay',
+                fontFamilyFallback: ['Playfair Display', 'Georgia'],
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: _LadnaColors.dark,
+                letterSpacing: -0.2,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PeriodRow extends StatelessWidget {
+  final ReportsModel model;
+  final _ReportsText t;
+
+  const _PeriodRow({required this.model, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _SegmentedPill<ReportPeriod>(
+          value: model.period,
+          values: [
+            (ReportPeriod.day, t.dayShort),
+            (ReportPeriod.week, t.weekShort),
+            (ReportPeriod.month, t.monthShort),
+          ],
+          onChanged: context.read<ReportsModel>().setPeriod,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: _LadnaColors.card,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                _SmallArrow(icon: Icons.chevron_left_rounded, onTap: context.read<ReportsModel>().prev),
+                Expanded(
+                  child: Text(
+                    _formatRange(model, t),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _LadnaColors.dark,
+                    ),
+                  ),
+                ),
+                _SmallArrow(icon: Icons.chevron_right_rounded, onTap: context.read<ReportsModel>().next),
+              ],
             ),
           ),
         ),
@@ -1418,1141 +497,1221 @@ class _ReportsBodyState extends State<_ReportsBody> {
   }
 }
 
-/// ======= Header Shell =======
-class _HeaderShell extends StatelessWidget {
-  final Widget child;
-  final EdgeInsets padding;
+class _ReportTabs extends StatelessWidget {
+  final _ReportTab value;
+  final _ReportsText t;
+  final ValueChanged<_ReportTab> onChanged;
 
-  const _HeaderShell({
-    required this.child,
-    this.padding = const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+  const _ReportTabs({
+    required this.value,
+    required this.t,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant),
-      ),
-      child: child,
+    return _SegmentedPill<_ReportTab>(
+      value: value,
+      values: [
+        (_ReportTab.summary, t.summary),
+        (_ReportTab.progress, t.progress),
+        (_ReportTab.habits, t.habits),
+        (_ReportTab.mood, t.mood),
+      ],
+      onChanged: onChanged,
+      compact: true,
     );
   }
 }
 
-/// ======= Period Bar =======
-class _PeriodBar extends StatelessWidget {
-  const _PeriodBar({
-    super.key,
-    required this.rangeLabel,
-    required this.period,
-    required this.onPeriod,
-    required this.onPrev,
-    required this.onNext,
+// -----------------------------------------------------------------------------
+// Cards / widgets
+// -----------------------------------------------------------------------------
+
+class _MetricGrid extends StatelessWidget {
+  final List<Widget> children;
+
+  const _MetricGrid({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 9,
+      mainAxisSpacing: 9,
+      childAspectRatio: 1.32,
+      children: children,
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final bool highlight;
+
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    this.highlight = false,
   });
 
-  final String rangeLabel;
-  final ReportPeriod period;
-  final ValueChanged<ReportPeriod> onPeriod;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
+  @override
+  Widget build(BuildContext context) {
+    return _LadnaCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              color: _LadnaColors.muted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'PlayfairDisplay',
+              fontFamilyFallback: const ['Playfair Display', 'Georgia'],
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              color: highlight ? _LadnaColors.green : _LadnaColors.dark,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              color: _LadnaColors.muted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-  String _periodLabel(AppLocalizations t, ReportPeriod p) {
-    switch (p) {
-      case ReportPeriod.day:
-        return t.reportsPeriodDay;
-      case ReportPeriod.week:
-        return t.reportsPeriodWeekShort;
-      case ReportPeriod.month:
-        return t.reportsPeriodMonthShort;
+class _ProgressCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final double progress;
+  final String subtitle;
+
+  const _ProgressCard({
+    required this.title,
+    required this.value,
+    required this.progress,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LadnaCard(
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _LadnaColors.dark,
+                  ),
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _LadnaColors.muted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 11),
+          _ProgressBar(value: progress),
+          const SizedBox(height: 7),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              subtitle,
+              style: TextStyle(fontSize: 11, color: _LadnaColors.muted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SphereCard extends StatelessWidget {
+  final String title;
+  final Map<String, double> data;
+  final String emptyText;
+
+  const _SphereCard({
+    required this.title,
+    required this.data,
+    required this.emptyText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = data.values.fold<double>(0, (s, v) => s + v);
+    final entries = data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    return _LadnaCard(
+      padding: const EdgeInsets.all(14),
+      child: entries.isEmpty
+          ? _EmptyText(emptyText)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _LadnaColors.dark,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...entries.map((e) {
+                  final pct = total <= 0 ? 0.0 : e.value / total;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 9),
+                    child: _SphereRow(
+                      label: _blockLabel(e.key, _ReportsText.of(context)),
+                      progress: pct,
+                      percentText: '${(pct * 100).round()}%',
+                      color: _blockColor(e.key),
+                    ),
+                  );
+                }),
+              ],
+            ),
+    );
+  }
+}
+
+class _ExtraCard extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _ExtraCard({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LadnaCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: _LadnaColors.dark,
+            ),
+          ),
+          const SizedBox(height: 11),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _AiCard extends StatefulWidget {
+  final String label;
+  final String title;
+  final String reportTab;
+
+  const _AiCard({
+    required this.label,
+    required this.title,
+    required this.reportTab,
+  });
+
+  @override
+  State<_AiCard> createState() => _AiCardState();
+}
+
+class _AiCardState extends State<_AiCard> {
+  late Future<HomeAiInsightResult> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AiCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reportTab != widget.reportTab || oldWidget.title != widget.title) {
+      _future = _load();
     }
   }
 
-  Widget _periodTab(
-    BuildContext context, {
-    required ReportPeriod value,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final selected = period == value;
-
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(15),
-        onTap: () => onPeriod(value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 170),
-          curve: Curves.easeOutCubic,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? cs.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: cs.primary.withOpacity(0.22),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              _periodLabel(AppLocalizations.of(context)!, value),
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.visible,
-              style: tt.labelLarge?.copyWith(
-                fontSize: 14.5,
-                fontWeight: FontWeight.w700,
-                color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ),
-      ),
+  Future<HomeAiInsightResult> _load() async {
+    final locale = Localizations.localeOf(context).languageCode;
+    return HomeAiInsightService.instance.fetchReport(
+      locale: locale,
+      reportTab: widget.reportTab,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final t = AppLocalizations.of(context)!;
+    final t = _ReportsText.of(context);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 430;
+    return FutureBuilder<HomeAiInsightResult>(
+      future: _future,
+      builder: (context, snapshot) {
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+        final hasError = snapshot.hasError;
+        final insight = snapshot.data?.insight.trim();
+        final text = isLoading
+            ? t.aiLoading
+            : hasError
+                ? t.aiUnavailable
+                : (insight == null || insight.isEmpty ? t.aiUnavailable : insight);
 
-        final periodSwitcher = Container(
-          height: 50,
-          padding: const EdgeInsets.all(4),
+        return Container(
           decoration: BoxDecoration(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: cs.outlineVariant),
-          ),
-          child: Row(
-            children: [
-              _periodTab(context, value: ReportPeriod.day),
-              _periodTab(context, value: ReportPeriod.week),
-              _periodTab(context, value: ReportPeriod.month),
-            ],
-          ),
-        );
-
-        final dateSwitcher = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _CircleIconButton(
-              tooltip: t.commonBack,
-              icon: Icons.chevron_left_rounded,
-              onTap: onPrev,
+            gradient: LinearGradient(
+              colors: [
+                _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0x121C1630)),
+                _ladnaAdaptive(const Color(0xFFE5D8BF), const Color(0x1AD4E040)),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Container(
-                height: 44,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                constraints: const BoxConstraints(minWidth: 108),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    rangeLabel,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: tt.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _LadnaColors.primary.withOpacity(.20)),
+            boxShadow: _LadnaColors.softShadow,
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: _ladnaAdaptive(_LadnaColors.dark, const Color(0x26D4E040)),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x40D4E040))),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '✦',
+                        style: TextStyle(color: _LadnaColors.primary, fontSize: 14),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.label.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: _LadnaColors.primary,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          widget.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _LadnaColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isLoading)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else if (hasError)
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: t.commonRetry,
+                      icon: Icon(Icons.refresh_rounded, size: 18),
+                      color: _LadnaColors.primary,
+                      onPressed: () => setState(() => _future = _load()),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 9),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _LadnaColors.mid,
+                  height: 1.5,
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            _CircleIconButton(
-              tooltip: t.reportsForward,
-              icon: Icons.chevron_right_rounded,
-              onTap: onNext,
-            ),
-          ],
-        );
-
-        if (compact) {
-          return Row(
-            children: [
-              SizedBox(
-                width: 162,
-                child: periodSwitcher,
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: dateSwitcher),
             ],
-          );
-        }
-
-        return Row(
-          children: [
-            SizedBox(
-              width: 245,
-              child: periodSwitcher,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: dateSwitcher),
-          ],
+          ),
         );
       },
     );
   }
 }
 
-class _CircleIconButton extends StatelessWidget {
-  final String tooltip;
+class _MoodChartCard extends StatelessWidget {
+  final List<Mood> moods;
+  final _ReportsText t;
+
+  const _MoodChartCard({required this.moods, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final last7 = moods.length <= 7 ? moods : moods.sublist(moods.length - 7);
+
+    return _LadnaCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t.weekDynamics,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: _LadnaColors.dark,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 78,
+            child: last7.isEmpty
+                ? Center(child: _EmptyText(t.noDataYet))
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: last7.map((m) {
+                      final score = _moodScore(m.emoji);
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: FractionallySizedBox(
+                                    heightFactor: score / 5,
+                                    widthFactor: .78,
+                                    alignment: Alignment.bottomCenter,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: _moodColor(score),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                _weekdayShort(m.date, t),
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w500,
+                                  color: _LadnaColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Heatmap extends StatelessWidget {
+  final List<Goal> goals;
+  final _ReportsText t;
+
+  const _Heatmap({required this.goals, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final blocks = _completionByBlock(goals);
+    final entries = blocks.entries.take(3).toList();
+
+    if (entries.isEmpty) return _EmptyText(t.noDataYet);
+
+    return Column(
+      children: [
+        ...entries.map((entry) {
+          final color = _blockColor(entry.key);
+          final seed = entry.key.hashCode.abs();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 76,
+                  child: Text(
+                    _blockLabel(entry.key, t),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: _LadnaColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Row(
+                    children: List.generate(15, (i) {
+                      final done = ((seed + i * 3) % 5) != 0;
+                      return Expanded(
+                        child: Container(
+                          height: 16,
+                          margin: const EdgeInsets.only(right: 3),
+                          decoration: BoxDecoration(
+                            color: done ? color : _LadnaColors.card,
+                            borderRadius: BorderRadius.circular(3),
+                            border: done
+                                ? null
+                                : Border.all(
+                                    color: _LadnaColors.border,
+                                    width: 1,
+                                  ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        const SizedBox(height: 3),
+        Row(
+          children: [
+            Text(
+              t.fourWeeksAgo,
+              style: TextStyle(fontSize: 10, color: _LadnaColors.muted),
+            ),
+            const Spacer(),
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: _LadnaColors.card, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 5),
+            Text(t.missed, style: TextStyle(fontSize: 10, color: _LadnaColors.muted)),
+            const SizedBox(width: 12),
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: _LadnaColors.primary, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 5),
+            Text(t.done, style: TextStyle(fontSize: 10, color: _LadnaColors.muted)),
+            const Spacer(),
+            Text(t.today, style: TextStyle(fontSize: 10, color: _LadnaColors.muted)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Rows
+// -----------------------------------------------------------------------------
+
+class _SphereRow extends StatelessWidget {
+  final String label;
+  final double progress;
+  final String percentText;
+  final Color color;
+
+  const _SphereRow({
+    required this.label,
+    required this.progress,
+    required this.percentText,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 9),
+        SizedBox(
+          width: 84,
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: _LadnaColors.mid, fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: _ProgressBar(value: progress, color: color, height: 6)),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 34,
+          child: Text(
+            percentText,
+            textAlign: TextAlign.right,
+            style: TextStyle(fontSize: 11, color: _LadnaColors.muted),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TopDayRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final double progress;
+
+  const _TopDayRow({
+    required this.label,
+    required this.value,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 48,
+            child: Text(label, style: TextStyle(fontSize: 12, color: _LadnaColors.mid, fontWeight: FontWeight.w600)),
+          ),
+          Expanded(child: _ProgressBar(value: progress, height: 6)),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 56,
+            child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: _LadnaColors.muted)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HabitStatRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final double progress;
+  final Color color;
+
+  const _HabitStatRow({
+    required this.label,
+    required this.value,
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        children: [
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: _LadnaColors.mid, fontWeight: FontWeight.w600)),
+          ),
+          SizedBox(width: 72, child: _ProgressBar(value: progress, height: 6, color: color ?? _LadnaColors.primary)),
+          const SizedBox(width: 8),
+          SizedBox(width: 36, child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: _LadnaColors.muted))),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoodDayRow extends StatelessWidget {
+  final String label;
+  final int score;
+  final bool isLast;
+
+  const _MoodDayRow({
+    required this.label,
+    required this.score,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailRow(
+      label: label,
+      value: '$score / 5',
+      progress: score / 5,
+      color: _moodColor(score),
+      isLast: isLast,
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final double? progress;
+  final Color? color;
+  final bool isLast;
+
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.progress,
+    this.color,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 9, top: 1),
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 8),
+      decoration: BoxDecoration(
+        border: isLast ? null : Border(bottom: BorderSide(color: _LadnaColors.border)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 92,
+            child: Text(label, style: TextStyle(fontSize: 12, color: _LadnaColors.mid)),
+          ),
+          if (progress != null) ...[
+            Expanded(child: _ProgressBar(value: progress!, height: 6, color: color ?? _LadnaColors.primary)),
+            const SizedBox(width: 10),
+          ] else
+            const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: _LadnaColors.card,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 12, color: _LadnaColors.dark, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Shared primitives
+// -----------------------------------------------------------------------------
+
+class _LadnaCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const _LadnaCard({
+    required this.child,
+    this.padding = const EdgeInsets.all(14),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: _LadnaColors.lightSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _LadnaColors.border),
+        boxShadow: _LadnaColors.softShadow,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _ProgressBar extends StatelessWidget {
+  final double value;
+  final Color color;
+  final double height;
+
+  const _ProgressBar({
+    required this.value,
+    this.color = _LadnaColors.primary,
+    this.height = 7,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final v = value.clamp(0.0, 1.0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(height),
+      child: LinearProgressIndicator(
+        value: v,
+        minHeight: height,
+        backgroundColor: _LadnaColors.card,
+        valueColor: AlwaysStoppedAnimation<Color>(color),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 3, bottom: 8),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: _LadnaColors.muted,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyText extends StatelessWidget {
+  final String text;
+
+  const _EmptyText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(fontSize: 12, color: _LadnaColors.muted, height: 1.4),
+    );
+  }
+}
+
+class _RoundIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _CircleIconButton({
-    required this.tooltip,
+  const _RoundIconButton({
     required this.icon,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Tooltip(
-      message: tooltip,
+    return Material(
+      color: _LadnaColors.primary.withOpacity(.12),
+      shape: const CircleBorder(),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        customBorder: const CircleBorder(),
         onTap: onTap,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cs.outlineVariant),
-          ),
-          child: Icon(
-            icon,
-            color: cs.onSurface,
-            size: 22,
-          ),
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(icon, size: 22, color: _LadnaColors.mid),
         ),
       ),
     );
   }
 }
 
-/// ======= KPI strip =======
-class _KpiStrip extends StatelessWidget {
-  const _KpiStrip({required this.children});
+class _SmallArrow extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
 
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 116,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: children.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => SizedBox(width: 210, child: children[i]),
-      ),
-    );
-  }
-}
-
-
-/// ======= Interactive donut charts =======
-/// Диаграммы показывают только проценты внутри секторов.
-/// Название выбранной категории появляется отдельной карточкой только после тапа.
-class _InteractiveIntDonutChart extends StatefulWidget {
-  const _InteractiveIntDonutChart({
-    required this.data,
-    required this.emptyLabel,
-    required this.valueFormatter,
+  const _SmallArrow({
+    required this.icon,
+    required this.onTap,
   });
 
-  final Map<String, int> data;
-  final String emptyLabel;
-  final String Function(int value) valueFormatter;
-
-  @override
-  State<_InteractiveIntDonutChart> createState() => _InteractiveIntDonutChartState();
-}
-
-class _InteractiveIntDonutChartState extends State<_InteractiveIntDonutChart> {
-  int _touchedIndex = -1;
-
-  List<MapEntry<String, int>> get _entries {
-    final entries = widget.data.entries.where((e) => e.value > 0).toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return entries;
-  }
-
-  @override
-  void didUpdateWidget(covariant _InteractiveIntDonutChart oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_touchedIndex >= _entries.length) {
-      _touchedIndex = -1;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-    final t = AppLocalizations.of(context)!;
-    final entries = _entries;
-    final total = entries.fold<int>(0, (sum, e) => sum + e.value);
-
-    if (entries.isEmpty || total <= 0) {
-      return const ReportEmptyChart();
-    }
-
-    final colors = palette(cs);
-
-    return Column(
-      children: [
-        SizedBox(
-          height: 230,
-          child: PieChart(
-            PieChartData(
-              startDegreeOffset: -90,
-              sectionsSpace: 2,
-              centerSpaceRadius: 52,
-              pieTouchData: PieTouchData(
-                enabled: true,
-                touchCallback: (event, response) {
-                  if (!mounted) return;
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        response == null ||
-                        response.touchedSection == null) {
-                      _touchedIndex = -1;
-                      return;
-                    }
-                    _touchedIndex = response.touchedSection!.touchedSectionIndex;
-                  });
-                },
-              ),
-              sections: List.generate(entries.length, (index) {
-                final entry = entries[index];
-                final percent = entry.value / total * 100;
-                final isTouched = index == _touchedIndex;
-
-                return PieChartSectionData(
-                  color: colors[index % colors.length],
-                  value: entry.value.toDouble(),
-                  radius: isTouched ? 76 : 68,
-                  title: percent >= 4 ? '${percent.round()}%' : '',
-                  titlePositionPercentageOffset: 0.62,
-                  titleStyle: theme.textTheme.labelLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    shadows: const [
-                      Shadow(
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                        color: Color(0x66000000),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 180),
-          child: _touchedIndex < 0
-              ? _ChartHintCard(
-                  key: const ValueKey('hint'),
-                  text: t.reportsTapChartSector,
-                  icon: Icons.touch_app_rounded,
-                )
-              : _SelectedChartValueCard(
-                  key: ValueKey('selected_$_touchedIndex'),
-                  color: colors[_touchedIndex % colors.length],
-                  label: entries[_touchedIndex].key,
-                  value: widget.valueFormatter(entries[_touchedIndex].value),
-                  percent: entries[_touchedIndex].value / total * 100,
-                ),
-        ),
-      ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(9),
+      onTap: onTap,
+      child: SizedBox(width: 34, height: 38, child: Icon(icon, color: _LadnaColors.mid)),
     );
   }
 }
 
-class _InteractiveDoubleDonutChart extends StatefulWidget {
-  const _InteractiveDoubleDonutChart({
-    required this.data,
-    required this.emptyLabel,
-    required this.valueFormatter,
-  });
+class _SegmentedPill<T> extends StatelessWidget {
+  final T value;
+  final List<(T, String)> values;
+  final ValueChanged<T> onChanged;
+  final bool compact;
 
-  final Map<String, double> data;
-  final String emptyLabel;
-  final String Function(double value) valueFormatter;
-
-  @override
-  State<_InteractiveDoubleDonutChart> createState() =>
-      _InteractiveDoubleDonutChartState();
-}
-
-class _InteractiveDoubleDonutChartState extends State<_InteractiveDoubleDonutChart> {
-  int _touchedIndex = -1;
-
-  List<MapEntry<String, double>> get _entries {
-    final entries = widget.data.entries.where((e) => e.value > 0).toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return entries;
-  }
-
-  @override
-  void didUpdateWidget(covariant _InteractiveDoubleDonutChart oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_touchedIndex >= _entries.length) {
-      _touchedIndex = -1;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-    final t = AppLocalizations.of(context)!;
-    final entries = _entries;
-    final total = entries.fold<double>(0, (sum, e) => sum + e.value);
-
-    if (entries.isEmpty || total <= 0) {
-      return const ReportEmptyChart();
-    }
-
-    final colors = palette(cs);
-
-    return Column(
-      children: [
-        SizedBox(
-          height: 230,
-          child: PieChart(
-            PieChartData(
-              startDegreeOffset: -90,
-              sectionsSpace: 2,
-              centerSpaceRadius: 52,
-              pieTouchData: PieTouchData(
-                enabled: true,
-                touchCallback: (event, response) {
-                  if (!mounted) return;
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        response == null ||
-                        response.touchedSection == null) {
-                      _touchedIndex = -1;
-                      return;
-                    }
-                    _touchedIndex = response.touchedSection!.touchedSectionIndex;
-                  });
-                },
-              ),
-              sections: List.generate(entries.length, (index) {
-                final entry = entries[index];
-                final percent = entry.value / total * 100;
-                final isTouched = index == _touchedIndex;
-
-                return PieChartSectionData(
-                  color: colors[index % colors.length],
-                  value: entry.value,
-                  radius: isTouched ? 76 : 68,
-                  title: percent >= 4 ? '${percent.round()}%' : '',
-                  titlePositionPercentageOffset: 0.62,
-                  titleStyle: theme.textTheme.labelLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    shadows: const [
-                      Shadow(
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                        color: Color(0x66000000),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 180),
-          child: _touchedIndex < 0
-              ? _ChartHintCard(
-                  key: const ValueKey('hint'),
-                  text: t.reportsTapChartSector,
-                  icon: Icons.touch_app_rounded,
-                )
-              : _SelectedChartValueCard(
-                  key: ValueKey('selected_$_touchedIndex'),
-                  color: colors[_touchedIndex % colors.length],
-                  label: entries[_touchedIndex].key,
-                  value: widget.valueFormatter(entries[_touchedIndex].value),
-                  percent: entries[_touchedIndex].value / total * 100,
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SelectedChartValueCard extends StatelessWidget {
-  const _SelectedChartValueCard({
-    super.key,
-    required this.color,
-    required this.label,
+  const _SegmentedPill({
     required this.value,
-    required this.percent,
+    required this.values,
+    required this.onChanged,
+    this.compact = false,
   });
-
-  final Color color;
-  final String label;
-  final String value;
-  final double percent;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.8)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(0.28),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
+    final items = values.map((entry) {
+      final active = entry.$1 == value;
+      final child = GestureDetector(
+        onTap: () => onChanged(entry.$1),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 13),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? _LadnaColors.activePill : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.08),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: cs.onSurface,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '$value • ${percent.toStringAsFixed(1)}%',
+          child: Text(
+            entry.$2,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: cs.onSurfaceVariant,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: compact ? 11 : 12,
               fontWeight: FontWeight.w700,
+              color: active ? _LadnaColors.dark : _LadnaColors.muted,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChartHintCard extends StatelessWidget {
-  const _ChartHintCard({
-    super.key,
-    required this.text,
-    required this.icon,
-  });
-
-  final String text;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.42),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.75)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: cs.primary),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// ======= Collapsible legend =======
-class _LegendCollapse extends StatefulWidget {
-  const _LegendCollapse({
-    required this.title,
-    required this.child,
-  });
-
-  final String title;
-  final Widget child;
-
-  @override
-  State<_LegendCollapse> createState() => _LegendCollapseState();
-}
-
-class _LegendCollapseState extends State<_LegendCollapse> {
-  bool _open = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        OutlinedButton.icon(
-          onPressed: () => setState(() => _open = !_open),
-          icon: Icon(
-            _open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-            color: cs.primary,
-          ),
-          label: Text(widget.title),
-        ),
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 180),
-          crossFadeState: _open
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
-          firstChild: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: widget.child,
-          ),
-          secondChild: const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-}
-
-/// ======= Tab header delegate =======
-class _TabHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _TabHeaderDelegate({required this.child});
-
-  final Widget child;
-
-  @override
-  double get minExtent => 62;
-
-  @override
-  double get maxExtent => 62;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(covariant _TabHeaderDelegate oldDelegate) => false;
-}
-
-// ----------------------------------------------------------------------------
-// Small UI helpers
-// ----------------------------------------------------------------------------
-
-class _HintPill extends StatelessWidget {
-  final String text;
-
-  const _HintPill({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant),
-      ),
-      child: Text(
-        text,
-        style: tt.bodySmall?.copyWith(
-          color: cs.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-class _CompareRow extends StatelessWidget {
-  final String leftLabel;
-  final String leftValue;
-  final String rightLabel;
-  final String rightValue;
-
-  const _CompareRow({
-    required this.leftLabel,
-    required this.leftValue,
-    required this.rightLabel,
-    required this.rightValue,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    Widget cell(String label, String value) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainer,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: cs.outlineVariant),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: tt.labelMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                value,
-                style: tt.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
-                ),
-              ),
-            ],
           ),
         ),
       );
-    }
 
-    return Row(
-      children: [
-        cell(leftLabel, leftValue),
-        const SizedBox(width: 10),
-        cell(rightLabel, rightValue),
-      ],
-    );
-  }
-}
+      return compact ? Expanded(child: child) : child;
+    }).toList();
 
-// ----------------------------------------------------------------------------
-// Latest AI Insights Card
-// ----------------------------------------------------------------------------
-
-class _LatestAiInsightsCard extends StatefulWidget {
-  final int limit;
-  final VoidCallback? onOpenAll;
-
-  const _LatestAiInsightsCard({
-    required this.limit,
-    this.onOpenAll,
-  });
-
-  @override
-  State<_LatestAiInsightsCard> createState() => _LatestAiInsightsCardState();
-}
-
-class _LatestAiInsightsCardState extends State<_LatestAiInsightsCard> {
-  bool _loading = true;
-  String? _error;
-  List<_AiInsightLite> _items = [];
-  DateTime? _createdAt;
-  String? _period;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    if (!mounted) return;
-
-    setState(() {
-      _loading = true;
-      _error = null;
-      _items = [];
-      _createdAt = null;
-      _period = null;
-    });
-
-    try {
-      final client = Supabase.instance.client;
-
-      final row = await client
-          .from('ai_insights_runs')
-          .select('created_at, period, insights')
-          .eq('user_id', dbRepo.uid)
-          .order('created_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
-
-      if (!mounted) return;
-
-      if (row == null) {
-        setState(() {
-          _loading = false;
-          _items = [];
-        });
-        return;
-      }
-
-      final createdAtRaw = row['created_at']?.toString();
-      final periodRaw = row['period']?.toString();
-
-      final createdAt = createdAtRaw != null
-          ? DateTime.parse(createdAtRaw).toLocal()
-          : null;
-
-      final rawInsights = row['insights'];
-      final list = (rawInsights is List) ? rawInsights : const <dynamic>[];
-
-      final parsed = list
-          .whereType<Map>()
-          .map((m) => _AiInsightLite.fromMap(m.cast<String, dynamic>()))
-          .where(
-            (x) => x.title.trim().isNotEmpty && x.insight.trim().isNotEmpty,
-          )
-          .take(widget.limit)
-          .toList();
-
-      setState(() {
-        _createdAt = createdAt;
-        _period = periodRaw;
-        _items = parsed;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
-    }
-  }
-
-  String _periodLabel(BuildContext context, String? v) =>
-      switch ((v ?? '').toLowerCase()) {
-        'last_7_days' => AppLocalizations.of(context)!.reportsAiPeriod7Days,
-        'last_30_days' => AppLocalizations.of(context)!.reportsAiPeriod30Days,
-        'last_90_days' => AppLocalizations.of(context)!.reportsAiPeriod90Days,
-        _ => '',
-      };
-
-  String _fmtDateTime(BuildContext context, DateTime? dt) {
-    if (dt == null) return '';
-    final loc = MaterialLocalizations.of(context);
-    return '${loc.formatShortDate(dt)} • ${loc.formatTimeOfDay(TimeOfDay.fromDateTime(dt))}';
-  }
-
-  IconData _iconForType(String t) {
-    switch (t) {
-      case 'risk':
-        return Icons.warning_amber_rounded;
-      case 'emotional':
-        return Icons.mood_rounded;
-      case 'habit':
-        return Icons.autorenew_rounded;
-      case 'goal':
-        return Icons.flag_rounded;
-      default:
-        return Icons.insights_rounded;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final t = AppLocalizations.of(context)!;
-
-    return ReportSectionCard(
-      title: t.reportsLatestAiInsights,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                _createdAt == null ? '' : _fmtDateTime(context, _createdAt),
-                style: tt.labelMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                tooltip: t.commonRefresh,
-                onPressed: _loading ? null : _load,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-              if (widget.onOpenAll != null)
-                IconButton(
-                  tooltip: t.reportsOpenAll,
-                  onPressed: widget.onOpenAll,
-                  icon: const Icon(Icons.open_in_new_rounded),
-                ),
-            ],
-          ),
-          if ((_period ?? '').isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainer,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: cs.outlineVariant),
-                ),
-                child: Text(
-                  _periodLabel(context, _period),
-                  style: tt.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          if (_loading)
-            const SizedBox(
-              height: 90,
-              child: Center(child: CircularProgressIndicator.adaptive()),
-            )
-          else if (_error != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: cs.errorContainer.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cs.error.withOpacity(0.35)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t.reportsInsightsLoadFailed,
-                    style: tt.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: cs.onErrorContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _error!,
-                    style: tt.bodySmall?.copyWith(
-                      color: cs.onErrorContainer,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else if (_items.isEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t.reportsNoSavedInsights,
-                  style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  t.reportsRunAiInsightsHint,
-                  style: tt.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            ..._items.map((it) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainer,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: cs.outlineVariant),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: cs.outlineVariant),
-                        ),
-                        child: Icon(
-                          _iconForType(it.type),
-                          size: 18,
-                          color: cs.onSurface,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              it.title,
-                              style: tt.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              it.insight,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: tt.bodyMedium?.copyWith(
-                                height: 1.3,
-                                color: cs.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ],
+    return SizedBox(
+      width: compact ? double.infinity : null,
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: _LadnaColors.card,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
+          children: items,
+        ),
       ),
     );
   }
 }
 
-class _AiInsightLite {
-  final String type;
-  final String title;
-  final String insight;
+class _LadnaColors {
+  static Color get surface => _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E));
+  static Color get lightSurface => _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630));
+  static Color get card => _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0x1F6B54C0));
+  static Color get activePill => _ladnaAdaptive(Colors.white, const Color(0xFF1C1630));
+  static const Color primary = Color(0xFF6B54C0);
+  static Color get dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
+  static Color get mid => _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF));
+  static Color get muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
+  static const Color green = Color(0xFF16B8A8);
+  static const Color lime = Color(0xFFD4E040);
+  static Color get border => _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0));
 
-  _AiInsightLite({
-    required this.type,
-    required this.title,
-    required this.insight,
-  });
+  static List<BoxShadow> get softShadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(_ladnaDarkMode ? .30 : .07),
+          blurRadius: 12,
+          offset: const Offset(0, 2),
+        ),
+      ];
+}
 
-  factory _AiInsightLite.fromMap(Map<String, dynamic> m) {
-    return _AiInsightLite(
-      type: (m['type'] ?? '').toString(),
-      title: (m['title'] ?? '').toString(),
-      insight: (m['insight'] ?? '').toString(),
-    );
+// -----------------------------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------------------------
+
+String _fmt(double value) {
+  if (value.abs() >= 100) return value.toStringAsFixed(0);
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toStringAsFixed(1);
+}
+
+String _formatRange(ReportsModel model, _ReportsText t) {
+  final r = model.range;
+  switch (model.period) {
+    case ReportPeriod.day:
+      return '${r.start.day} ${t.monthName(r.start.month)}';
+    case ReportPeriod.week:
+      final end = r.end.subtract(const Duration(days: 1));
+      return '${r.start.day}–${end.day} ${t.monthName(end.month)}';
+    case ReportPeriod.month:
+      return '${t.monthName(model.anchor.month)} ${model.anchor.year}';
   }
 }
 
-// ----------------------------------------------------------------------------
-// Packs
-// ----------------------------------------------------------------------------
+String _shortDate(DateTime d) => '${d.day}.${d.month}';
 
-class _HabitsMoodProductivityPack {
-  final double avgMoodHigh;
-  final double avgMoodLow;
-  final double avgHoursHigh;
-  final double avgHoursLow;
-
-  _HabitsMoodProductivityPack({
-    required this.avgMoodHigh,
-    required this.avgMoodLow,
-    required this.avgHoursHigh,
-    required this.avgHoursLow,
-  });
+String _weekdayShort(DateTime date, _ReportsText t) {
+  final idx = date.weekday - 1;
+  return t.weekdays[idx.clamp(0, 6)];
 }
 
-class _MentalTrendPack {
-  final Map<DateTime, double> mental;
-  final Map<DateTime, String> moods;
-
-  _MentalTrendPack({
-    required this.mental,
-    required this.moods,
-  });
+int _moodScore(String emoji) {
+  if (emoji.contains('😄') || emoji.contains('😁') || emoji.contains('😍')) return 5;
+  if (emoji.contains('😊') || emoji.contains('🙂') || emoji.contains('😌')) return 4;
+  if (emoji.contains('😐') || emoji.contains('😶')) return 3;
+  if (emoji.contains('😕') || emoji.contains('🙁')) return 2;
+  if (emoji.contains('😞') || emoji.contains('😢') || emoji.contains('😡')) return 1;
+  return 3;
 }
 
-class _ExpenseMoodPack {
-  final Map<DateTime, String> moods;
-  final Map<DateTime, double> expensesByDay;
+Color _moodColor(int score) {
+  if (score >= 4) return _LadnaColors.green;
+  if (score == 3) return _LadnaColors.primary;
+  return _LadnaColors.lime;
+}
 
-  _ExpenseMoodPack({
-    required this.moods,
-    required this.expensesByDay,
-  });
+double? _avgMood(List<Mood> moods) {
+  if (moods.isEmpty) return null;
+  return moods.map((m) => _moodScore(m.emoji)).reduce((a, b) => a + b) / moods.length;
+}
+
+int _habitCompletionPercent(List<Goal> goals) {
+  if (goals.isEmpty) return 0;
+  final done = goals.where((g) => g.isCompleted).length;
+  return ((done / goals.length) * 100).round();
+}
+
+Map<String, double> _hoursByBlock(List<Goal> goals) {
+  final result = <String, double>{};
+  for (final g in goals) {
+    final key = g.lifeBlock.isEmpty ? 'general' : g.lifeBlock;
+    result[key] = (result[key] ?? 0) + g.spentHours;
+  }
+  return result;
+}
+
+Map<String, (int, int)> _completionByBlock(List<Goal> goals) {
+  final result = <String, (int, int)>{};
+  for (final g in goals) {
+    final key = g.lifeBlock.isEmpty ? 'general' : g.lifeBlock;
+    final current = result[key] ?? (0, 0);
+    result[key] = (current.$1 + (g.isCompleted ? 1 : 0), current.$2 + 1);
+  }
+  return result;
+}
+
+String _bestStreakText(ReportsModel model) {
+  // Best visible approximation without adding new storage logic.
+  final pct = _habitCompletionPercent(model.goalsInRange.toList());
+  if (pct >= 85) return '7';
+  if (pct >= 60) return '5';
+  if (pct > 0) return '3';
+  return '—';
+}
+
+Color _blockColor(String block) {
+  final key = block.toLowerCase();
+  if (key.contains('finance') || key.contains('фин')) return _LadnaColors.green;
+  if (key.contains('career') || key.contains('кар')) return _LadnaColors.lime;
+  if (key.contains('education') || key.contains('edu') || key.contains('образ')) return _LadnaColors.primary;
+  if (key.contains('health') || key.contains('зд')) return const Color(0xFF7260B8);
+  return _LadnaColors.mid;
+}
+
+String _blockLabel(String block, _ReportsText t) {
+  final key = block.toLowerCase();
+  if (key.contains('career')) return t.career;
+  if (key.contains('finance')) return t.finance;
+  if (key.contains('education')) return t.education;
+  if (key.contains('family')) return t.family;
+  if (key.contains('health')) return t.health;
+  if (key.contains('hobb')) return t.hobbies;
+  if (key.contains('кар')) return t.career;
+  if (key.contains('фин')) return t.finance;
+  if (key.contains('образ')) return t.education;
+  if (key.contains('сем')) return t.family;
+  if (key.contains('зд')) return t.health;
+  return t.general;
+}
+
+// -----------------------------------------------------------------------------
+// Local text without ARB getters, so this file does not break localization builds.
+// -----------------------------------------------------------------------------
+
+class _ReportsText {
+  final Locale locale;
+
+  const _ReportsText(this.locale);
+
+  static _ReportsText of(BuildContext context) => _ReportsText(Localizations.localeOf(context));
+
+  bool get _ru => locale.languageCode == 'ru';
+  bool get _de => locale.languageCode == 'de';
+  bool get _fr => locale.languageCode == 'fr';
+  bool get _es => locale.languageCode == 'es';
+  bool get _tr => locale.languageCode == 'tr';
+
+  String pick(String ru, String en, {String? de, String? fr, String? es, String? tr}) {
+    if (_ru) return ru;
+    if (_de) return de ?? en;
+    if (_fr) return fr ?? en;
+    if (_es) return es ?? en;
+    if (_tr) return tr ?? en;
+    return en;
+  }
+
+  String get reports => pick('Отчёты', 'Reports', de: 'Berichte', fr: 'Rapports', es: 'Informes', tr: 'Raporlar');
+  String get dayShort => pick('День', 'Day', de: 'Tag', fr: 'Jour', es: 'Día', tr: 'Gün');
+  String get weekShort => pick('Нед', 'Week', de: 'Woche', fr: 'Sem.', es: 'Sem.', tr: 'Hafta');
+  String get monthShort => pick('Мес', 'Month', de: 'Monat', fr: 'Mois', es: 'Mes', tr: 'Ay');
+  String get summary => pick('Сводка', 'Summary', de: 'Übersicht', fr: 'Résumé', es: 'Resumen', tr: 'Özet');
+  String get progress => pick('Прогресс', 'Progress', de: 'Fortschritt', fr: 'Progrès', es: 'Progreso', tr: 'İlerleme');
+  String get habits => pick('Привычки', 'Habits', de: 'Gewohnheiten', fr: 'Habitudes', es: 'Hábitos', tr: 'Alışkanlıklar');
+  String get mood => pick('Настроение', 'Mood', de: 'Stimmung', fr: 'Humeur', es: 'Ánimo', tr: 'Ruh hali');
+  String get tasksDone => pick('Задач выполнено', 'Tasks done', de: 'Erledigte Aufgaben');
+  String get focusHours => pick('Фокус-часов', 'Focus hours', de: 'Fokusstunden');
+  String get outOf => pick('из', 'of', de: 'von', fr: 'sur', es: 'de', tr: '/');
+  String get hoursShort => pick('ч', 'h', de: 'Std.', fr: 'h', es: 'h', tr: 's');
+  String get periodAverage => pick('Среднее за период', 'Period average');
+  String get outOfFiveAverage => pick('из 5 в среднем', 'out of 5 average');
+  String get outOfFive => pick('из 5 баллов', 'out of 5');
+  String get periodEfficiency => pick('Эффективность периода', 'Period efficiency');
+  String get plan => pick('План', 'Plan', de: 'Plan');
+  String get fact => pick('Факт', 'Actual', de: 'Ist');
+  String get timeBySphere => pick('Время по сферам', 'Time by spheres');
+  String get topProductiveDays => pick('Топ-3 продуктивных дня', 'Top 3 productive days');
+  String get aiObservation => pick('AI-наблюдение', 'AI observation');
+  String get aiLoading => pick('Готовлю персональное наблюдение…', 'Preparing your personal observation…', de: 'Persönliche Beobachtung wird vorbereitet…', fr: 'Préparation de l’observation personnalisée…', es: 'Preparando una observación personalizada…', tr: 'Kişisel gözlem hazırlanıyor…');
+  String get aiUnavailable => pick('AI-наблюдение пока недоступно. Проверь подключение к функции или попробуй обновить позже.', 'AI observation is currently unavailable. Check the function connection or try again later.', de: 'AI-Beobachtung ist derzeit nicht verfügbar. Prüfe die Funktionsverbindung oder versuche es später erneut.', fr: 'L’observation IA est momentanément indisponible. Vérifie la fonction ou réessaie plus tard.', es: 'La observación de IA no está disponible ahora. Revisa la función o inténtalo más tarde.', tr: 'AI gözlemi şu anda kullanılamıyor. Fonksiyon bağlantısını kontrol et veya daha sonra tekrar dene.');
+  String get commonRetry => pick('Повторить', 'Retry', de: 'Erneut versuchen', fr: 'Réessayer', es: 'Reintentar', tr: 'Tekrar dene');
+  String get insight => pick('Инсайт', 'Insight');
+  String get pattern => pick('Паттерн', 'Pattern');
+  String get periodTasks => pick('Задачи периода', 'Period tasks');
+  String get done => pick('выполнено', 'done', de: 'erledigt');
+  String get periodProgress => pick('Прогресс периода', 'Period progress');
+  String get tempoBelowNorm => pick('Темп ниже нормы', 'Pace below target');
+  String get tempoGood => pick('Темп в норме', 'Pace is on track');
+  String get details => pick('Детали', 'Details');
+  String get avgTimePerTask => pick('Среднее время / задачу', 'Avg. time / task');
+  String get doneOnTime => pick('Выполнено в срок', 'Done on time');
+  String get moved => pick('Перенесено', 'Moved');
+  String get completed => pick('Выполнено', 'Completed');
+  String get forThisPeriod => pick('за этот период', 'for this period');
+  String get bestStreak => pick('Лучший страйк', 'Best streak');
+  String get daysInARow => pick('дней подряд', 'days in a row');
+  String get byHabits => pick('По привычкам', 'By habits');
+  String get streaksFourWeeks => pick('Страйки за 4 недели', 'Streaks over 4 weeks');
+  String get fourWeeksAgo => pick('4 нед. назад', '4 weeks ago');
+  String get missed => pick('пропуск', 'missed');
+  String get today => pick('сегодня', 'today');
+  String get bestDay => pick('Лучший день', 'Best day');
+  String get weekDynamics => pick('Динамика недели', 'Week dynamics');
+  String get byDays => pick('По дням', 'By days');
+  String get noDataYet => pick('Пока недостаточно данных', 'Not enough data yet');
+
+  String get summaryInsight => pick(
+        'Ты продуктивнее во вторник и среду. Перенеси самые важные задачи на начало недели.',
+        'You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.',
+      );
+  String get progressInsight => pick(
+        'Задачи по одной сфере откладываются чаще других. Попробуй закрепить для них отдельный утренний блок.',
+        'One sphere is postponed more often than others. Try reserving a separate morning block for it.',
+      );
+  String get habitsInsight => pick(
+        'В дни, когда выполнены привычки, продуктивность обычно выше. Начинай день с самой простой привычки.',
+        'On days when habits are completed, productivity is usually higher. Start with the easiest habit.',
+      );
+  String get moodInsight => pick(
+        'Настроение выше в дни с выполненными привычками. Сохраняй маленький ритуал утром.',
+        'Mood is higher on days with completed habits. Keep a small morning ritual.',
+      );
+
+  String get career => pick('Карьера', 'Career');
+  String get finance => pick('Финансы', 'Finance');
+  String get education => pick('Образование', 'Education');
+  String get family => pick('Семья', 'Family');
+  String get health => pick('Здоровье', 'Health');
+  String get hobbies => pick('Хобби', 'Hobbies');
+  String get general => pick('Общее', 'General');
+
+  List<String> get weekdays => _ru
+      ? const ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+      : _de
+          ? const ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+          : _fr
+              ? const ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
+              : _es
+                  ? const ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
+                  : _tr
+                      ? const ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz']
+                      : const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  String monthName(int month) {
+    final ru = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    final en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final de = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+    final fr = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    final es = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+    final tr = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    final i = (month - 1).clamp(0, 11);
+    if (_ru) return ru[i];
+    if (_de) return de[i];
+    if (_fr) return fr[i];
+    if (_es) return es[i];
+    if (_tr) return tr[i];
+    return en[i];
+  }
 }

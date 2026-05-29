@@ -22,11 +22,11 @@ class ReportSectionCard extends StatelessWidget {
     final isDark = _isDark(context);
 
     final cardColor = isDark
-        ? cs.surface.withOpacity(0.72)
+        ? const Color(0xFF1C1630)
         : cs.surface.withOpacity(0.88);
 
     final borderColor = isDark
-        ? cs.outlineVariant.withOpacity(0.42)
+        ? const Color(0x2E6B54C0)
         : cs.outlineVariant.withOpacity(0.72);
 
     final shadowColor = isDark
@@ -103,7 +103,7 @@ class _TitleRow extends StatelessWidget {
             title,
             style: tt.titleMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: cs.onSurface,
+              color: isDark ? const Color(0xFFF0EEFF) : cs.onSurface,
               height: 1.1,
             ),
           ),

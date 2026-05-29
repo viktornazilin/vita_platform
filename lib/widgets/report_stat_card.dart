@@ -1,6 +1,4 @@
 // lib/widgets/report_stat_card.dart
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 class ReportStatCard extends StatelessWidget {
@@ -15,98 +13,77 @@ class ReportStatCard extends StatelessWidget {
     required this.icon,
   });
 
+  static const _surface = Color(0xFFFAFAFE);
+  static const _border = Color(0xFFE0DCF0);
+  static const _primary = Color(0xFF6B54C0);
+  static const _dark = Color(0xFF160E38);
+  static const _muted = Color(0xFF9090A8);
+
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-
-    return SizedBox(
-      width: 200, // под твой _KpiStrip (там width:200)
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            padding: const EdgeInsets.all(16),
+    return Container(
+      width: 200,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1C1812).withOpacity(.07),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.70),
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: const Color(0xFFD6E6F5)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1A2B5B7A),
-                  blurRadius: 26,
-                  offset: Offset(0, 14),
-                ),
-              ],
+              color: _primary.withOpacity(.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _primary.withOpacity(.18)),
             ),
-            child: Row(
+            child: Icon(icon, color: _primary, size: 20),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _IconTile(icon: icon),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF2E4B5A),
-                          height: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                        style: tt.labelMedium?.copyWith(
-                          color: const Color(0xFF2E4B5A).withOpacity(0.70),
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    fontFamilyFallback: ['Playfair Display', 'Georgia'],
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: _dark,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: _muted,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconTile extends StatelessWidget {
-  final IconData icon;
-  const _IconTile({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3AA8E6), Color(0xFF7DD3FC)],
-        ),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x162B5B7A),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: 22),
     );
   }
 }

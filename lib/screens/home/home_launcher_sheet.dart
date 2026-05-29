@@ -1,971 +1,654 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/home_model.dart';
+import '../../models/profile_model.dart';
 import '../../models/goals_calendar_model.dart';
-import 'home_google_calendar_sheet.dart';
-import 'package:nest_app/l10n/app_localizations.dart';
-
 import '../../services/habits_repo_mixin.dart' show HabitEntryUpsert;
 import '../../services/mental_repo_mixin.dart';
-
-import '../../widgets/mass_daily_entry_sheet.dart';
-import '../../widgets/recurring_goal_sheet.dart';
-import '../../widgets/ai_plan_sheet.dart';
 import '../../widgets/ai_insights_sheet.dart';
+import '../../widgets/ai_plan_sheet.dart';
+import '../../widgets/mass_daily_entry_sheet.dart';
+import '../../main.dart';
 
-import '../../main.dart'; // dbRepo
+
+bool get _ladnaDarkMode =>
+    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+
+Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
+
+String _ladnaText(BuildContext context, Map<String, String> values) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  return values[code] ?? values['en'] ?? values.values.first;
+}
 
 void showHomeLauncherSheet({
   required BuildContext context,
   required HomeModel model,
 }) {
-  showModalBottomSheet<MassDailyEntryResult>(
+  showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    enableDrag: true,
+    isDismissible: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => _NestSheet(
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            10,
-            16,
-            16 +
-                MediaQuery.of(ctx).viewInsets.bottom +
-                MediaQuery.of(ctx).padding.bottom,
-          ),
-          child: Column(
-            children: [
-              _NestSheetHeader(
-                title: AppLocalizations.of(ctx)!.launcherQuickFunctionsTitle,
-                subtitle: AppLocalizations.of(
-                  ctx,
-                )!.launcherQuickFunctionsSubtitle,
-              ),
-              const SizedBox(height: 14),
+    barrierColor: Colors.black.withOpacity(_ladnaDarkMode ? 0.55 : 0.25),
+    builder: (ctx) => _LauncherSheet(model: model),
+  );
+}
 
-              _NestSectionTitle(
-                AppLocalizations.of(ctx)!.launcherSectionsTitle,
-              ),
-              const SizedBox(height: 10),
+class _LauncherSheet extends StatelessWidget {
+  const _LauncherSheet({required this.model});
 
-              GridView(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: .95,
+  final HomeModel model;
+
+  static Color get _surface => _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E));
+  static Color get _card => _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630));
+  static Color get _primary => const Color(0xFF6B54C0);
+  static Color get _dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
+  static Color get _muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
+
+  Future<void> _openMassAdd(BuildContext context) async {
+    final goalsModel = GoalsCalendarModel();
+    await goalsModel.loadBlocks();
+
+    if (!context.mounted) return;
+
+    final result = await showModalBottomSheet<MassDailyEntryResult>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => MassDailyEntrySheet(availableBlocks: goalsModel.lifeBlocks),
+    );
+
+    if (result == null) return;
+
+    try {
+      if (result.mood != null) {
+        await dbRepo.upsertMood(
+          date: DateUtils.dateOnly(result.date),
+          emoji: result.mood!.emoji,
+          note: result.mood!.note,
+        );
+      }
+
+      for (final e in result.expenses) {
+        final ts = DateTime(result.date.year, result.date.month, result.date.day, 12);
+        await dbRepo.addTransaction(
+          ts: ts,
+          kind: 'expense',
+          categoryId: e.categoryId,
+          amount: e.amount,
+          note: e.note.isEmpty ? null : e.note,
+        );
+      }
+
+      for (final i in result.incomes) {
+        final ts = DateTime(result.date.year, result.date.month, result.date.day, 12);
+        await dbRepo.addTransaction(
+          ts: ts,
+          kind: 'income',
+          categoryId: i.categoryId,
+          amount: i.amount,
+          note: i.note.isEmpty ? null : i.note,
+        );
+      }
+
+      if (result.habits.isNotEmpty) {
+        await dbRepo.upsertHabitEntries(
+          result.habits
+              .map(
+                (h) => HabitEntryUpsert(
+                  habitId: h.habitId,
+                  day: DateUtils.dateOnly(result.date),
+                  done: h.done,
+                  value: h.value,
                 ),
+              )
+              .toList(),
+        );
+      }
+
+      if (result.mental.isNotEmpty) {
+        await dbRepo.upsertMentalAnswers(
+          result.mental.map((a) {
+            if (a.valueBool != null) {
+              return MentalAnswerUpsert.yesNo(
+                questionId: a.questionId,
+                day: DateUtils.dateOnly(result.date),
+                value: a.valueBool!,
+              );
+            }
+            if (a.valueInt != null) {
+              return MentalAnswerUpsert.scale(
+                questionId: a.questionId,
+                day: DateUtils.dateOnly(result.date),
+                value: a.valueInt!,
+              );
+            }
+            return MentalAnswerUpsert.text(
+              questionId: a.questionId,
+              day: DateUtils.dateOnly(result.date),
+              value: (a.valueText ?? '').trim(),
+            );
+          }).toList(),
+        );
+      }
+
+      DateTime combine(DateTime day, TimeOfDay t) => DateTime(day.year, day.month, day.day, t.hour, t.minute);
+
+      for (final g in result.goals) {
+        final start = combine(result.date, g.startTime ?? const TimeOfDay(hour: 9, minute: 0));
+        final deadline = DateTime(result.date.year, result.date.month, result.date.day, 23, 59);
+        final hoursText = g.hours.toStringAsFixed(
+          g.hours.truncateToDouble() == g.hours ? 0 : 1,
+        );
+        final desc = g.hours > 0
+            ? _ladnaText(context, const {
+                'ru': 'План: {hours} ч',
+                'en': 'Plan: {hours} h',
+                'de': 'Plan: {hours} Std.',
+                'fr': 'Plan : {hours} h',
+                'es': 'Plan: {hours} h',
+                'tr': 'Plan: {hours} sa',
+              }).replaceAll('{hours}', hoursText)
+            : '';
+        await dbRepo.createGoal(
+          title: g.title,
+          description: desc,
+          deadline: deadline,
+          startTime: start,
+          lifeBlock: g.lifeBlock,
+          importance: g.importance,
+          emotion: g.emotion ?? '',
+          spentHours: g.hours,
+        );
+      }
+    } catch (_) {
+      // keep launcher resilient; detailed errors are handled in the underlying sheets/screens
+    }
+  }
+
+  void _select(BuildContext context, int index) {
+    Navigator.of(context).pop();
+    model.select(index);
+  }
+
+  void _openProfile(BuildContext context) => _select(context, 3);
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.78,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (context, controller) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E)),
+                _ladnaAdaptive(const Color(0xFFEFE8D8), const Color(0xFF0A0614)),
+              ],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            border: Border(top: BorderSide(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0)))),
+          ),
+          child: ListView(
+            controller: controller,
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 18 + bottom),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _ladnaAdaptive(const Color(0xFF1C1812).withOpacity(0.15), const Color(0x4DFFFFFF)),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _HeroLogoCard(onProfileTap: () => _openProfile(context)),
+              const SizedBox(height: 14),
+              Row(
                 children: [
-                  _NestLauncherTile(
-                    icon: Icons.home,
-                    label: AppLocalizations.of(ctx)!.launcherHome,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      model.select(0);
-                    },
+                  Expanded(
+                    child: SizedBox(
+                      height: 118,
+                      child: _MenuCard(
+                        emoji: '🏠',
+                        label: _ladnaText(context, const {'ru': 'Главная', 'en': 'Home', 'de': 'Home', 'fr': 'Accueil', 'es': 'Inicio', 'tr': 'Ana sayfa'}),
+                        tint: _primary.withOpacity(0.12),
+                        onTap: () => _select(context, 0),
+                      ),
+                    ),
                   ),
-                  _NestLauncherTile(
-                    icon: Icons.flag,
-                    label: AppLocalizations.of(ctx)!.launcherGoals,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      model.select(1);
-                    },
-                  ),
-                  _NestLauncherTile(
-                    icon: Icons.track_changes_rounded,
-                    label: AppLocalizations.of(ctx)!.launcherDayGoals,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      model.select(2);
-                    },
-                  ),
-                  _NestLauncherTile(
-                    icon: Icons.person,
-                    label: AppLocalizations.of(ctx)!.launcherProfile,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      model.select(3);
-                    },
-                  ),
-                  _NestLauncherTile(
-                    icon: Icons.insights,
-                    label: AppLocalizations.of(ctx)!.launcherInsights,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      model.select(4);
-                    },
-                  ),
-                  _NestLauncherTile(
-                    icon: Icons.account_balance_wallet,
-                    label: AppLocalizations.of(ctx)!.launcherReports,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      model.select(5);
-                    },
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: SizedBox(
+                      height: 118,
+                      child: _MenuCard(
+                        emoji: '🎯',
+                        label: _ladnaText(context, const {'ru': 'Цели и задачи', 'en': 'Goals & tasks', 'de': 'Ziele & Aufgaben', 'fr': 'Objectifs & tâches', 'es': 'Metas y tareas', 'tr': 'Hedefler ve görevler'}),
+                        tint: const Color(0xFFEBDADA),
+                        onTap: () => _select(context, 1),
+                      ),
+                    ),
                   ),
                 ],
               ),
-
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 106,
+                      child: _MenuCard(
+                        emoji: '💛',
+                        label: _ladnaText(context, const {'ru': 'Личное', 'en': 'Personal', 'de': 'Persönlich', 'fr': 'Personnel', 'es': 'Personal', 'tr': 'Kişisel'}),
+                        tint: const Color(0xFFDDEEEB),
+                        onTap: () => _select(context, 2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: SizedBox(
+                      height: 106,
+                      child: _MenuCard(
+                        emoji: '📊',
+                        label: _ladnaText(context, const {'ru': 'Отчёты', 'en': 'Reports', 'de': 'Berichte', 'fr': 'Rapports', 'es': 'Informes', 'tr': 'Raporlar'}),
+                        tint: const Color(0xFFE8EDF8),
+                        onTap: () => _select(context, 4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: SizedBox(
+                      height: 106,
+                      child: _MenuCard(
+                        emoji: '💰',
+                        label: _ladnaText(context, const {'ru': 'Бюджет', 'en': 'Budget', 'de': 'Budget', 'fr': 'Budget', 'es': 'Presupuesto', 'tr': 'Bütçe'}),
+                        tint: const Color(0xFFEDE7F7),
+                        onTap: () => _select(context, 5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 18),
-              _NestSectionTitle(AppLocalizations.of(ctx)!.launcherQuickTitle),
+              _SectionTitle(_ladnaText(context, const {
+                'ru': 'Быстрые действия',
+                'en': 'Quick actions',
+                'de': 'Schnellaktionen',
+                'fr': 'Actions rapides',
+                'es': 'Acciones rápidas',
+                'tr': 'Hızlı işlemler',
+              })),
               const SizedBox(height: 10),
-
-              Builder(
-                builder: (_) {
-                  final cs = Theme.of(ctx).colorScheme;
-                  final l = AppLocalizations.of(ctx)!;
-
-                  return Column(
-                    children: [
-                      _NestQuickActionTile(
-                        icon: Icons.bolt,
-                        color: cs.primary,
-                        title: l.launcherMassAddTitle,
-                        subtitle: l.launcherMassAddSubtitle,
-                        onTap: () async {
-                          final goalsModel = GoalsCalendarModel();
-                          await goalsModel.loadBlocks();
-
-                          final result =
-                              await showModalBottomSheet<MassDailyEntryResult>(
-                                context: ctx,
-                                useSafeArea: true,
-                                isScrollControlled: true,
-                                backgroundColor: cs.surface,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(20),
-                                  ),
-                                ),
-                                builder: (_) => MassDailyEntrySheet(
-                                  availableBlocks: goalsModel.lifeBlocks,
-                                ),
-                              );
-
-                          if (result != null && context.mounted) {
-                            Navigator.pop(ctx);
-
-                            try {
-                              if (result.mood != null) {
-                                await dbRepo.upsertMood(
-                                  date: DateUtils.dateOnly(result.date),
-                                  emoji: result.mood!.emoji,
-                                  note: result.mood!.note,
-                                );
-                              }
-
-                              for (final e in result.expenses) {
-                                final ts = DateTime(
-                                  result.date.year,
-                                  result.date.month,
-                                  result.date.day,
-                                  12,
-                                  0,
-                                );
-
-                                await dbRepo.addTransaction(
-                                  ts: ts,
-                                  kind: 'expense',
-                                  categoryId: e.categoryId,
-                                  amount: e.amount,
-                                  note: e.note.isEmpty ? null : e.note,
-                                );
-                              }
-
-                              if (result.habits.isNotEmpty) {
-                                final habitRows = result.habits
-                                    .map(
-                                      (h) => HabitEntryUpsert(
-                                        habitId: h.habitId,
-                                        day: DateUtils.dateOnly(result.date),
-                                        done: h.done,
-                                        value: h.value,
-                                      ),
-                                    )
-                                    .toList();
-
-                                await dbRepo.upsertHabitEntries(habitRows);
-                              }
-
-                              if (result.mental.isNotEmpty) {
-                                final rows = result.mental.map((a) {
-                                  if (a.valueBool != null) {
-                                    return MentalAnswerUpsert.yesNo(
-                                      questionId: a.questionId,
-                                      day: DateUtils.dateOnly(result.date),
-                                      value: a.valueBool!,
-                                    );
-                                  }
-
-                                  if (a.valueInt != null) {
-                                    return MentalAnswerUpsert.scale(
-                                      questionId: a.questionId,
-                                      day: DateUtils.dateOnly(result.date),
-                                      value: a.valueInt!,
-                                    );
-                                  }
-
-                                  return MentalAnswerUpsert.text(
-                                    questionId: a.questionId,
-                                    day: DateUtils.dateOnly(result.date),
-                                    value: (a.valueText ?? '').trim(),
-                                  );
-                                }).toList();
-
-                                await dbRepo.upsertMentalAnswers(rows);
-                              }
-
-                              for (final i in result.incomes) {
-                                final ts = DateTime(
-                                  result.date.year,
-                                  result.date.month,
-                                  result.date.day,
-                                  12,
-                                  0,
-                                );
-
-                                await dbRepo.addTransaction(
-                                  ts: ts,
-                                  kind: 'income',
-                                  categoryId: i.categoryId,
-                                  amount: i.amount,
-                                  note: i.note.isEmpty ? null : i.note,
-                                );
-                              }
-
-                              DateTime combine(DateTime day, TimeOfDay t) =>
-                                  DateTime(
-                                    day.year,
-                                    day.month,
-                                    day.day,
-                                    t.hour,
-                                    t.minute,
-                                  );
-
-                              for (final g in result.goals) {
-                                final start = combine(
-                                  result.date,
-                                  g.startTime ??
-                                      const TimeOfDay(hour: 9, minute: 0),
-                                );
-                                final deadline = DateTime(
-                                  result.date.year,
-                                  result.date.month,
-                                  result.date.day,
-                                  23,
-                                  59,
-                                  0,
-                                );
-
-                                final hoursText = g.hours.toStringAsFixed(
-                                  g.hours.truncateToDouble() == g.hours
-                                      ? 0
-                                      : 1,
-                                );
-
-                                final desc = g.hours > 0
-                                    ? l.launcherPlannedHoursDescription(
-                                        hoursText,
-                                      )
-                                    : '';
-
-                                await dbRepo.createGoal(
-                                  title: g.title,
-                                  description: desc,
-                                  deadline: deadline,
-                                  lifeBlock: g.lifeBlock,
-                                  importance: g.importance,
-                                  emotion: g.emotion ?? '',
-                                  spentHours: g.hours,
-                                  startTime: start,
-                                );
-                              }
-
-                              final habitRows = result.habits
-                                  .map(
-                                    (h) => HabitEntryUpsert(
-                                      habitId: h.habitId,
-                                      day: DateUtils.dateOnly(result.date),
-                                      done: h.done,
-                                      value: h.value,
-                                    ),
-                                  )
-                                  .toList();
-
-                              if (habitRows.isNotEmpty) {
-                                await dbRepo.upsertHabitEntries(habitRows);
-                              }
-
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    l.launcherSavedSummary(
-                                      result.expenses.length,
-                                      result.incomes.length,
-                                      result.goals.length,
-                                      result.habits.length,
-                                      result.mood != null,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l.launcherSaveError('$e')),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _NestQuickActionTile(
-                        icon: Icons.auto_awesome,
-                        color: cs.primary,
-                        title: l.launcherAiPlanTitle,
-                        subtitle: l.launcherAiPlanSubtitle,
-                        onTap: () async {
-                          final created = await showModalBottomSheet<int>(
-                            context: ctx,
-                            useSafeArea: true,
-                            isScrollControlled: true,
-                            showDragHandle: true,
-                            backgroundColor: cs.surface,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(20),
-                              ),
-                            ),
-                            builder: (_) => AiPlanSheet(date: DateTime.now()),
-                          );
-
-                          if (created != null && context.mounted) {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l.launcherCreatedGoalsCount(created),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _NestQuickActionTile(
-                        icon: Icons.psychology_alt,
-                        color: cs.primary,
-                        title: l.launcherAiInsightsTitle,
-                        subtitle: l.launcherAiInsightsSubtitle,
-                        onTap: () async {
-                          await showModalBottomSheet<void>(
-                            context: ctx,
-                            useSafeArea: true,
-                            isScrollControlled: true,
-                            backgroundColor: cs.surface,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(20),
-                              ),
-                            ),
-                            builder: (_) => const AiInsightsSheet(),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _NestQuickActionTile(
-                        icon: Icons.event_repeat_rounded,
-                        color: cs.primary,
-                        title: l.launcherRecurringGoalTitle,
-                        subtitle: l.launcherRecurringGoalSubtitle,
-                        onTap: () async {
-                          final plan =
-                              await showModalBottomSheet<RecurringGoalPlan>(
-                                context: ctx,
-                                useSafeArea: true,
-                                isScrollControlled: true,
-                                showDragHandle: true,
-                                backgroundColor: cs.surface,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(20),
-                                  ),
-                                ),
-                                builder: (_) => const RecurringGoalSheet(),
-                              );
-
-                          if (plan == null) return;
-
-                          final today = DateUtils.dateOnly(DateTime.now());
-
-                          DateTime combine(DateTime day, TimeOfDay t) =>
-                              DateTime(
-                                day.year,
-                                day.month,
-                                day.day,
-                                t.hour,
-                                t.minute,
-                              );
-
-                          List<DateTime> buildOccurrences() {
-                            final start = DateUtils.dateOnly(today);
-                            final until = DateUtils.dateOnly(plan.until);
-
-                            final out = <DateTime>[];
-                            if (until.isBefore(start)) return out;
-
-                            if (plan.type == RecurrenceType.everyNDays) {
-                              final step = plan.everyNDays < 1
-                                  ? 1
-                                  : plan.everyNDays;
-                              for (
-                                var day = start;
-                                !day.isAfter(until);
-                                day = day.add(Duration(days: step))
-                              ) {
-                                out.add(combine(day, plan.time));
-                              }
-                              return out;
-                            }
-
-                            final wds = plan.weekdays.isEmpty
-                                ? {start.weekday}
-                                : plan.weekdays;
-                            for (
-                              var day = start;
-                              !day.isAfter(until);
-                              day = day.add(const Duration(days: 1))
-                            ) {
-                              if (wds.contains(day.weekday)) {
-                                out.add(combine(day, plan.time));
-                              }
-                            }
-                            return out;
-                          }
-
-                          final occurrences = buildOccurrences();
-
-                          if (occurrences.isEmpty) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l.launcherNoDatesToCreate),
-                              ),
-                            );
-                            return;
-                          }
-
-                          try {
-                            Navigator.pop(ctx);
-
-                            for (final start in occurrences) {
-                              final deadline = DateTime(
-                                start.year,
-                                start.month,
-                                start.day,
-                                23,
-                                59,
-                              );
-
-                              final hoursText =
-                                  plan.plannedHours.toStringAsFixed(
-                                plan.plannedHours.truncateToDouble() ==
-                                        plan.plannedHours
-                                    ? 0
-                                    : 1,
-                              );
-
-                              final desc = plan.plannedHours > 0
-                                  ? l.launcherPlannedHoursDescription(
-                                      hoursText,
-                                    )
-                                  : '';
-
-                              await dbRepo.createGoal(
-                                title: plan.title,
-                                description: desc,
-                                deadline: deadline,
-                                lifeBlock: plan.lifeBlock,
-                                importance: plan.importance,
-                                emotion: plan.emotion,
-                                spentHours: plan.plannedHours,
-                                startTime: start,
-                              );
-                            }
-
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l.launcherCreatedGoalsCount(
-                                    occurrences.length,
-                                  ),
-                                ),
-                              ),
-                            );
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l.launcherCreateSeriesFailed('$e'),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _NestQuickActionTile(
-                        icon: Icons.calendar_month_rounded,
-                        color: cs.primary,
-                        title: l.launcherGoogleCalendarSyncTitle,
-                        subtitle: l.launcherGoogleCalendarSyncSubtitle,
-                        onTap: () async {
-                          Navigator.pop(ctx);
-
-                          await showModalBottomSheet<void>(
-                            context: context,
-                            useSafeArea: true,
-                            isScrollControlled: true,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surface,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(20),
-                              ),
-                            ),
-                            builder: (_) => const HomeGoogleCalendarSheet(),
-                          );
-                        },
-                      ),
-                    ],
+              _QuickAction(
+                emoji: '⚡',
+                tint: _primary.withOpacity(0.12),
+                title: _ladnaText(context, const {'ru': 'Массовое добавление', 'en': 'Bulk add', 'de': 'Schnellerfassung', 'fr': 'Ajout groupé', 'es': 'Añadir en bloque', 'tr': 'Toplu ekleme'}),
+                subtitle: _ladnaText(context, const {'ru': 'Расходы + Задачи + Настроение', 'en': 'Expenses + Tasks + Mood', 'de': 'Ausgaben + Aufgaben + Stimmung', 'fr': 'Dépenses + tâches + humeur', 'es': 'Gastos + tareas + ánimo', 'tr': 'Gider + görev + ruh hali'}),
+                onTap: () => _openMassAdd(context),
+              ),
+              const SizedBox(height: 8),
+              _QuickAction(
+                emoji: '✦',
+                tint: const Color(0xFFE8EDF8),
+                title: _ladnaText(context, const {'ru': 'AI-план на неделю', 'en': 'AI weekly plan', 'de': 'AI-Wochenplan', 'fr': 'Plan IA hebdo', 'es': 'Plan semanal IA', 'tr': 'AI haftalık plan'}),
+                subtitle: _ladnaText(context, const {'ru': 'Анализ целей и прогресса', 'en': 'Goals and progress analysis', 'de': 'Analyse von Zielen und Fortschritt', 'fr': 'Analyse des objectifs et progrès', 'es': 'Análisis de metas y progreso', 'tr': 'Hedef ve ilerleme analizi'}),
+                onTap: () => AiPlanSheet.open(context, date: DateTime.now()),
+              ),
+              const SizedBox(height: 8),
+              _QuickAction(
+                emoji: '💡',
+                tint: const Color(0xFFEDE7F7),
+                title: _ladnaText(context, const {'ru': 'AI-инсайты', 'en': 'AI insights', 'de': 'AI-Insights', 'fr': 'Insights IA', 'es': 'Insights IA', 'tr': 'AI içgörüleri'}),
+                subtitle: _ladnaText(context, const {'ru': 'Как события влияют на цели', 'en': 'How events influence goals', 'de': 'Wie Ereignisse Ziele beeinflussen', 'fr': 'Comment les événements influencent les objectifs', 'es': 'Cómo los eventos influyen en metas', 'tr': 'Olaylar hedefleri nasıl etkiler'}),
+                onTap: () {
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    showDragHandle: true,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    builder: (_) => const AiInsightsSheet(),
                   );
                 },
               ),
             ],
           ),
-        ),
-      ),
-    ),
-  );
+        );
+      },
+    );
+  }
 }
 
-class _NestSheet extends StatelessWidget {
-  final Widget child;
-  const _NestSheet({required this.child});
+
+Future<String> _loadDisplayName() async {
+  final client = Supabase.instance.client;
+  final user = client.auth.currentUser;
+  final email = user?.email;
+  final metadata = user?.userMetadata ?? const <String, dynamic>{};
+  for (final key in const ['name', 'full_name', 'display_name', 'username']) {
+    final metadataName = metadata[key]?.toString().trim();
+    if (metadataName != null && metadataName.isNotEmpty) return metadataName;
+  }
+
+  try {
+    final uid = user?.id;
+    if (uid != null) {
+      final row = await client.from('users').select('name,email').eq('id', uid).maybeSingle();
+      final name = row?['name']?.toString().trim();
+      if (name != null && name.isNotEmpty) return name;
+      final rowEmail = row?['email']?.toString().trim();
+      if (rowEmail != null && rowEmail.isNotEmpty) return rowEmail.split('@').first;
+    }
+  } catch (_) {
+    // fallback below
+  }
+
+  if (email != null && email.trim().isNotEmpty) return email.split('@').first;
+  return 'Ladna';
+}
+
+class _HeroLogoCard extends StatelessWidget {
+  const _HeroLogoCard({required this.onProfileTap});
+
+  final VoidCallback onProfileTap;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = cs.secondary;
-
-    final sheetColor = Color.lerp(
-      cs.surface,
-      cs.primaryContainer,
-      isDark ? 0.06 : 0.10,
-    )!;
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: sheetColor.withOpacity(isDark ? 0.96 : 0.98),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          border: Border.all(
-            color: accent.withOpacity(isDark ? 0.18 : 0.24),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF160E38), Color(0xFF1E1248)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -48,
+            right: -42,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [const Color(0xFF6B54C0).withOpacity(0.22), Colors.transparent],
+                ),
+              ),
+            ),
           ),
+          Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6B54C0).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF6B54C0).withOpacity(0.30)),
+                    ),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 34,
+                      height: 34,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Text(
+                        '✦',
+                        style: TextStyle(fontSize: 30, color: Color(0xFFFAF6EE)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ladna',
+                          style: TextStyle(
+                            fontFamily: 'Playfair Display',
+                            fontSize: 31,
+                            height: 1.0,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFFAF6EE),
+                            letterSpacing: -0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          _ladnaText(context, const {
+                            'ru': 'Навигация и действия',
+                            'en': 'Navigation and actions',
+                            'de': 'Navigation und Aktionen',
+                            'fr': 'Navigation et actions',
+                            'es': 'Navegación y acciones',
+                            'tr': 'Gezinme ve işlemler',
+                          }),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF9F95C8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: onProfileTap,
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: FutureBuilder<String>(
+                    future: _loadDisplayName(),
+                    builder: (context, snapshot) {
+                      String? profileName;
+                      try {
+                        final profile = context.watch<ProfileModel>();
+                        final raw = profile.name?.trim();
+                        if (raw != null && raw.isNotEmpty) profileName = raw;
+                      } catch (_) {
+                        // ProfileModel is not always available above this bottom sheet.
+                      }
+                      final displayName = (profileName ?? snapshot.data ?? 'Ladna').trim();
+                      return Row(
+                        children: [
+                          const Text('👤', style: TextStyle(fontSize: 22)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              displayName.isEmpty ? 'Ladna' : displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Color(0xFFFAF6EE),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const Text('›', style: TextStyle(color: Color(0xFF9F95C8), fontSize: 25)),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        color: _LauncherSheet._muted,
+        fontSize: 12,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 2.2,
+      ),
+    );
+  }
+}
+
+class _MenuCard extends StatelessWidget {
+  const _MenuCard({required this.emoji, required this.label, required this.tint, required this.onTap});
+
+  final String emoji;
+  final String label;
+  final Color tint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: _LauncherSheet._card,
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0))),
           boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withOpacity(0.30)
-                  : cs.primary.withOpacity(0.10),
-              blurRadius: 34,
-              offset: const Offset(0, -12),
+            BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.035), blurRadius: 12, offset: const Offset(0, 5)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: _ladnaDarkMode ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(14), border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x336B54C0)))),
+              child: Text(emoji, style: TextStyle(fontSize: 25)),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _LauncherSheet._dark,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ],
         ),
-        child: child,
       ),
     );
   }
 }
 
-class _NestSheetHeader extends StatelessWidget {
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({required this.emoji, required this.tint, required this.title, required this.subtitle, required this.onTap});
+
+  final String emoji;
+  final Color tint;
   final String title;
   final String subtitle;
-
-  const _NestSheetHeader({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = cs.secondary;
-    final headerEnd = Color.lerp(
-      accent,
-      cs.primary,
-      isDark ? 0.26 : 0.34,
-    )!;
-
-    return Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [accent, headerEnd],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withOpacity(isDark ? 0.16 : 0.24),
-                blurRadius: 16,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Icon(Icons.auto_awesome, color: cs.onPrimary, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: tt.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: cs.onSurface,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: tt.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _NestSectionTitle extends StatelessWidget {
-  final String text;
-  const _NestSectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: cs.onSurface,
-            ),
-      ),
-    );
-  }
-}
-
-
-class _NestLauncherTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
   final VoidCallback onTap;
 
-  const _NestLauncherTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final accent = cs.secondary;
-    final cardColor = Color.lerp(
-      cs.surface,
-      accent,
-      isDark ? 0.05 : 0.12,
-    )!;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: cardColor.withOpacity(isDark ? 0.78 : 0.88),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: accent.withOpacity(isDark ? 0.20 : 0.26),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.14)
-                    : accent.withOpacity(0.10),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    color: Color.lerp(cs.surfaceContainerHighest, accent, isDark ? 0.12 : 0.22)!,
-                    border: Border.all(
-                      color: accent.withOpacity(isDark ? 0.30 : 0.34),
-                    ),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: accent,
-                    size: 25,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: tt.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: cs.onSurface,
-                    height: 1.12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NestQuickActionTile extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final Future<void> Function() onTap;
-
-  const _NestQuickActionTile({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final accent = Color.lerp(color, cs.secondary, isDark ? 0.18 : 0.28)!;
-    final tileColor = Color.lerp(
-      cs.surface,
-      accent,
-      isDark ? 0.05 : 0.10,
-    )!;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => onTap(),
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-          decoration: BoxDecoration(
-            color: tileColor.withOpacity(isDark ? 0.80 : 0.92),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: accent.withOpacity(isDark ? 0.18 : 0.24),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withOpacity(0.14)
-                    : accent.withOpacity(0.09),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color.lerp(cs.surfaceContainerHighest, accent, isDark ? 0.14 : 0.22)!,
-                  border: Border.all(
-                    color: accent.withOpacity(isDark ? 0.30 : 0.32),
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  color: accent,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: cs.onSurface,
-                        height: 1.15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: tt.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                        height: 1.18,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: accent.withOpacity(isDark ? 0.75 : 0.78),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-}
-
-class _NestQuickActionTileDisabled extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _NestQuickActionTileDisabled({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Opacity(
-      opacity: 0.62,
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: isDark
-              ? cs.surfaceContainerHigh.withOpacity(0.72)
-              : cs.surface.withOpacity(0.90),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: cs.outlineVariant.withOpacity(isDark ? 0.34 : 0.60),
-          ),
+          color: _LauncherSheet._card,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0))),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.035), blurRadius: 12, offset: const Offset(0, 5))],
         ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: cs.surfaceContainerHighest.withOpacity(
-                  isDark ? 0.34 : 0.78,
-                ),
-                border: Border.all(
-                  color: cs.outlineVariant.withOpacity(isDark ? 0.34 : 0.60),
-                ),
-              ),
-              child: Icon(
-                icon,
-                color: cs.onSurfaceVariant.withOpacity(0.85),
-              ),
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: _ladnaDarkMode ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(11), border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x336B54C0)))),
+              child: Text(emoji, style: TextStyle(fontSize: 22)),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 13),
             Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: tt.titleSmall?.copyWith(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _LauncherSheet._dark,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: cs.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: tt.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _LauncherSheet._muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
             ),
+            Text('›', style: TextStyle(color: _LauncherSheet._muted, fontSize: 25, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

@@ -14,55 +14,57 @@ class NestBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final decoration = BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: isDark
-            ? [
-                scheme.surface,
-                scheme.surfaceContainerLow,
-                Color.lerp(scheme.surfaceContainer, scheme.primary, 0.12)!,
-              ]
-            : [
-                const Color(0xFFF7F2E6),
-                const Color(0xFFEFF6F7),
-                const Color(0xFFEAF3FF),
-              ],
-        stops: const [0.0, 0.48, 1.0],
-      ),
-    );
-
     return Container(
-      decoration: decoration,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF100C1E) : const Color(0xFFF5F3FA),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF100C1E),
+                  Color(0xFF0A0614),
+                  Color(0xFF151026),
+                ]
+              : const [
+                  Color(0xFFF5F3FA),
+                  Color(0xFFF8F6EF),
+                  Color(0xFFEFF7FA),
+                ],
+          stops: const [0.0, 0.55, 1.0],
+        ),
+      ),
       child: Stack(
         children: [
           if (useAccentGlow) ...[
             Positioned(
-              top: -125,
-              right: -95,
+              top: -130,
+              right: -110,
               child: _NestGlowOrb(
                 size: 300,
-                color: scheme.secondary.withOpacity(isDark ? 0.24 : 0.36),
+                color: isDark
+                    ? const Color(0xFF6B54C0).withOpacity(0.22)
+                    : const Color(0xFF16B8A8).withOpacity(0.18),
               ),
             ),
             Positioned(
-              top: 185,
+              top: 160,
               left: -135,
               child: _NestGlowOrb(
                 size: 300,
-                color: scheme.tertiary.withOpacity(isDark ? 0.18 : 0.28),
+                color: isDark
+                    ? const Color(0xFFD4E040).withOpacity(0.08)
+                    : const Color(0xFFD4E040).withOpacity(0.18),
               ),
             ),
             Positioned(
               bottom: -165,
-              right: -120,
+              right: -125,
               child: _NestGlowOrb(
-                size: 340,
-                color: scheme.primary.withOpacity(isDark ? 0.16 : 0.22),
+                size: 360,
+                color: const Color(0xFF6B54C0).withOpacity(isDark ? 0.16 : 0.14),
               ),
             ),
           ],
@@ -77,10 +79,7 @@ class _NestGlowOrb extends StatelessWidget {
   final double size;
   final Color color;
 
-  const _NestGlowOrb({
-    required this.size,
-    required this.color,
-  });
+  const _NestGlowOrb({required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {

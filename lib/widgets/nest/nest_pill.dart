@@ -1,63 +1,84 @@
 import 'package:flutter/material.dart';
 
 class NestPill extends StatelessWidget {
-  final Widget leading;
-  final String text;
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+  final Widget? leading;
+  final EdgeInsets padding;
   final Color? accentColor;
 
   const NestPill({
     super.key,
-    required this.leading,
-    required this.text,
+    String? label,
+    String? text,
+    this.selected = false,
+    this.onTap,
+    this.leading,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
     this.accentColor,
-  });
+  }) : label = label ?? text ?? '';
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = accentColor ?? scheme.secondary;
+    final accent = accentColor ?? (isDark ? const Color(0xFFD4E040) : scheme.primary);
 
-    final backgroundColor = isDark
-        ? Color.lerp(scheme.surfaceContainer, accent, 0.20)!
-        : Color.lerp(scheme.surfaceContainerHighest, accent, 0.32)!;
+    final bg = selected
+        ? (isDark ? accent.withOpacity(0.15) : scheme.primaryContainer)
+        : (isDark ? const Color(0xFF1C1630) : const Color(0xFFEAE6F5));
+    final fg = selected
+        ? (isDark ? accent : scheme.onPrimaryContainer)
+        : (isDark ? Colors.white.withOpacity(0.55) : scheme.onSurfaceVariant);
+    final border = selected
+        ? (isDark ? accent.withOpacity(0.30) : scheme.primary.withOpacity(0.18))
+        : (isDark ? const Color(0x2E6B54C0) : const Color(0xFFE0DCF0));
 
-    final borderColor = Color.lerp(
-      scheme.outlineVariant,
-      accent,
-      isDark ? 0.40 : 0.54,
-    )!;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: backgroundColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: borderColor, width: 1.25),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withOpacity(isDark ? 0.08 : 0.14),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: border, width: 1),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withOpacity(isDark ? 0.12 : 0.16),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconTheme(
-            data: IconThemeData(color: accent, size: 18),
-            child: leading,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onSurface,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leading != null) ...[
+                IconTheme(
+                  data: IconThemeData(color: fg, size: 16),
+                  child: leading!,
                 ),
+                const SizedBox(width: 7),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

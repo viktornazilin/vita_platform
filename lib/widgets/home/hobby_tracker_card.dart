@@ -4,6 +4,186 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../../services/home_trackers_repo.dart';
 import '../report_section_card.dart';
 
+bool _ladnaIsDark(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark;
+
+Color _ladnaCardBg(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE);
+
+Color _ladnaCardBorder(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0xFF3A2A63) : const Color(0xFFE0DCF0);
+
+Color _ladnaText(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0xFFF0EEFF) : const Color(0xFF160E38);
+
+Color _ladnaMuted(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0x99FFFFFF) : const Color(0xFF9090A8);
+
+Color _ladnaSoftText(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0xB3FFFFFF) : const Color(0xFF555268);
+
+Color _ladnaSubtleBg(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0xFF2A2142) : const Color(0xFFEAE6F5);
+
+Color _ladnaSubtleBorder(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0xFF4A377A) : const Color(0xFFE0DCF0);
+
+Color _ladnaAccent(BuildContext context) =>
+    _ladnaIsDark(context) ? const Color(0xFFD4E040) : const Color(0xFF6B54C0);
+
+Color _ladnaPurple(BuildContext context) => const Color(0xFF6B54C0);
+
+class _PersonalText {
+  final Locale locale;
+  const _PersonalText(this.locale);
+
+  static _PersonalText of(BuildContext context) =>
+      _PersonalText(Localizations.localeOf(context));
+
+  String pick(
+    String ru,
+    String en, {
+    String? de,
+    String? fr,
+    String? es,
+    String? tr,
+  }) {
+    switch (locale.languageCode) {
+      case 'de':
+        return de ?? en;
+      case 'fr':
+        return fr ?? en;
+      case 'es':
+        return es ?? en;
+      case 'tr':
+        return tr ?? en;
+      case 'en':
+        return en;
+      case 'ru':
+      default:
+        return ru;
+    }
+  }
+
+  String get mealsSection => pick(
+        'Приёмы пищи',
+        'Meals',
+        de: 'Mahlzeiten',
+        fr: 'Repas',
+        es: 'Comidas',
+        tr: 'Öğünler',
+      );
+
+  String get activitySection => pick(
+        'Активность',
+        'Activity',
+        de: 'Aktivität',
+        fr: 'Activité',
+        es: 'Actividad',
+        tr: 'Aktivite',
+      );
+
+  String get consumedKcal => pick(
+        'Съедено ккал',
+        'Eaten kcal',
+        de: 'Gegessene kcal',
+        fr: 'Kcal consommées',
+        es: 'Kcal consumidas',
+        tr: 'Alınan kcal',
+      );
+
+  String get burnedKcal => pick(
+        'Потрачено ккал',
+        'Burned kcal',
+        de: 'Verbrannte kcal',
+        fr: 'Kcal brûlées',
+        es: 'Kcal quemadas',
+        tr: 'Yakılan kcal',
+      );
+
+  String get balanceKcal => pick(
+        'Баланс ккал',
+        'Balance kcal',
+        de: 'Bilanz kcal',
+        fr: 'Solde kcal',
+        es: 'Balance kcal',
+        tr: 'Denge kcal',
+      );
+
+  String get targetNotSet => pick(
+        'Норма не задана',
+        'Target not set',
+        de: 'Ziel nicht gesetzt',
+        fr: 'Objectif non défini',
+        es: 'Objetivo no definido',
+        tr: 'Hedef belirlenmedi',
+      );
+
+  String remainingToTarget(int target) => pick(
+        'До нормы $target ккал',
+        '$target kcal to target',
+        de: '$target kcal bis zum Ziel',
+        fr: '$target kcal jusqu’à l’objectif',
+        es: '$target kcal hasta el objetivo',
+        tr: 'Hedefe $target kcal kaldı',
+      );
+
+  String todayWithDate(String date) => pick(
+        'Сегодня · $date',
+        'Today · $date',
+        de: 'Heute · $date',
+        fr: 'Aujourd’hui · $date',
+        es: 'Hoy · $date',
+        tr: 'Bugün · $date',
+      );
+
+  String get water => pick(
+        'Вода',
+        'Water',
+        de: 'Wasser',
+        fr: 'Eau',
+        es: 'Agua',
+        tr: 'Su',
+      );
+
+  String waterLiters(double liters) => pick(
+        '${liters.toStringAsFixed(1)} / 2.0 л',
+        '${liters.toStringAsFixed(1)} / 2.0 L',
+        de: '${liters.toStringAsFixed(1)} / 2,0 L',
+        fr: '${liters.toStringAsFixed(1)} / 2,0 L',
+        es: '${liters.toStringAsFixed(1)} / 2,0 L',
+        tr: '${liters.toStringAsFixed(1)} / 2,0 L',
+      );
+
+  String get hobbyDirections => pick(
+        'Направления',
+        'Directions',
+        de: 'Bereiche',
+        fr: 'Domaines',
+        es: 'Áreas',
+        tr: 'Alanlar',
+      );
+
+  String get today => pick(
+        'Сегодня',
+        'Today',
+        de: 'Heute',
+        fr: 'Aujourd’hui',
+        es: 'Hoy',
+        tr: 'Bugün',
+      );
+
+  String get hobbyWeek => pick(
+        'Хобби за неделю',
+        'Hobbies this week',
+        de: 'Hobbys diese Woche',
+        fr: 'Loisirs cette semaine',
+        es: 'Hobbies esta semana',
+        tr: 'Bu haftaki hobiler',
+      );
+}
+
+
 class HobbyTrackerCard extends StatefulWidget {
   const HobbyTrackerCard({super.key});
 
@@ -135,7 +315,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                         Navigator.pop(ctx);
                         await _load();
                       },
-                      icon: const Icon(Icons.add_rounded),
+                      icon: Icon(Icons.add_rounded),
                       label: Text(l.hobbyTrackerCreateButton),
                     ),
                   ),
@@ -235,7 +415,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                       Navigator.pop(ctx);
                       await _load();
                     },
-                    icon: const Icon(Icons.timer_rounded),
+                    icon: Icon(Icons.timer_rounded),
                     label: Text(l.commonSave),
                   ),
                 ),
@@ -277,168 +457,436 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ReportSectionCard(
-      title: l.hobbyTrackerTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              tooltip: l.hobbyTrackerAddHobbyTooltip,
-              style: IconButton.styleFrom(
-                backgroundColor: Color.lerp(
-                  cs.surfaceContainerHighest,
-                  cs.secondary,
-                  isDark ? 0.12 : 0.18,
-                ),
-                foregroundColor: cs.secondary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: _showCreateHobbySheet,
-              icon: const Icon(Icons.add_circle_outline_rounded),
-            ),
-          ),
-          if (_loading)
-            const SizedBox(
-              height: 96,
-              child: Center(child: CircularProgressIndicator.adaptive()),
-            )
-          else if (_items.isEmpty)
-            Column(
+    final totalWeek = _items.fold<int>(
+      0,
+      (sum, item) => sum + item.spentMinutesWeek,
+    );
+    final totalTarget = _items.fold<int>(
+      0,
+      (sum, item) => sum + item.targetMinutesWeek,
+    );
+    final progress = totalTarget <= 0 ? 0.0 : (totalWeek / totalTarget).clamp(0.0, 1.0).toDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _HobbyHero(
+          total: _fmtMinutes(context, totalWeek),
+          target: totalTarget <= 0 ? '—' : _fmtMinutes(context, totalTarget),
+          progress: progress,
+          onAdd: _showCreateHobbySheet,
+        ),
+        const SizedBox(height: 14),
+        _SectionLabel(text: _PersonalText.of(context).hobbyDirections),
+        const SizedBox(height: 8),
+        if (_loading)
+          const SizedBox(
+            height: 120,
+            child: Center(child: CircularProgressIndicator.adaptive()),
+          )
+        else if (_items.isEmpty)
+          _LadnaCard(
+            padding: const EdgeInsets.all(14),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   l.hobbyTrackerEmptyText,
-                  style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
+                  style: TextStyle(
+                    color: _ladnaMuted(context),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: _showCreateHobbySheet,
-                  icon: const Icon(Icons.add_rounded),
+                  icon: Icon(Icons.add_rounded),
                   label: Text(l.hobbyTrackerCreateHobbyButton),
                 ),
               ],
-            )
-          else
-            Column(
+            ),
+          )
+        else
+          _LadnaCard(
+            padding: EdgeInsets.zero,
+            child: Column(
               children: [
                 for (final hobby in _items) ...[
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color.lerp(
-                            cs.surfaceContainerLowest,
-                            cs.secondary,
-                            isDark ? 0.045 : 0.070,
-                          )!,
-                          Color.lerp(
-                            cs.surfaceContainerLow,
-                            cs.primary,
-                            isDark ? 0.030 : 0.040,
-                          )!,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: Color.lerp(
-                          cs.outlineVariant,
-                          cs.secondary,
-                          isDark ? 0.16 : 0.22,
-                        )!,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: cs.secondary.withOpacity(isDark ? 0.04 : 0.08),
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                hobby.hobbyTitle,
-                                style: tt.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => _deleteHobby(hobby),
-                              icon: const Icon(Icons.delete_outline_rounded),
-                              tooltip: l.hobbyTrackerDeleteHobbyTooltip,
-                            ),
-                            FilledButton.tonalIcon(
-                              onPressed: () => _showAddEntrySheet(hobby),
-                              icon: const Icon(Icons.add_rounded),
-                              label: Text(l.hobbyTrackerAddEntryButton),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _InfoPill(
-                              icon: Icons.today_rounded,
-                              text: l.hobbyTrackerToday(
-                                _fmtMinutes(context, hobby.spentMinutesToday),
-                              ),
-                            ),
-                            _InfoPill(
-                              icon: Icons.date_range_rounded,
-                              text: l.hobbyTrackerWeek(
-                                _fmtMinutes(context, hobby.spentMinutesWeek),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        LinearProgressIndicator(
-                          value: hobby.weekProgress,
-                          minHeight: 10,
-                          borderRadius: BorderRadius.circular(999),
-                          backgroundColor: cs.surfaceContainerHighest
-                              .withOpacity(isDark ? 0.28 : 0.50),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            hobby.weekProgress >= 0.75 ? cs.secondary : cs.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          l.hobbyTrackerGoal(
-                            _fmtMinutes(context, hobby.targetMinutesWeek),
-                          ),
-                          style: tt.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                  _HobbyRow(
+                    title: hobby.hobbyTitle,
+                    today: _fmtMinutes(context, hobby.spentMinutesToday),
+                    week: _fmtMinutes(context, hobby.spentMinutesWeek),
+                    target: _fmtMinutes(context, hobby.targetMinutesWeek),
+                    progress: hobby.weekProgress,
+                    onAdd: () => _showAddEntrySheet(hobby),
+                    onDelete: () => _deleteHobby(hobby),
                   ),
-                  const SizedBox(height: 10),
+                  if (hobby != _items.last)
+                    Divider(height: 1, color: _ladnaCardBorder(context)),
                 ],
               ],
             ),
+          ),
+        const SizedBox(height: 14),
+        _SectionLabel(text: _PersonalText.of(context).today),
+        const SizedBox(height: 8),
+        _LadnaCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              for (final hobby in _items.where((h) => h.spentMinutesToday > 0)) ...[
+                _TodayRow(
+                  title: hobby.hobbyTitle,
+                  value: _fmtMinutes(context, hobby.spentMinutesToday),
+                  onTap: () => _showAddEntrySheet(hobby),
+                ),
+                if (hobby != _items.where((h) => h.spentMinutesToday > 0).last)
+                  Divider(height: 1, color: _ladnaCardBorder(context)),
+              ],
+              if (_items.where((h) => h.spentMinutesToday > 0).isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Text(
+                    l.hobbyTrackerEmptyText,
+                    style: TextStyle(
+                      color: _ladnaMuted(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              InkWell(
+                onTap: _items.isEmpty ? _showCreateHobbySheet : () => _showAddEntrySheet(_items.first),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    l.hobbyTrackerAddEntryButton,
+                    style: TextStyle(
+                      color: _ladnaAccent(context),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HobbyHero extends StatelessWidget {
+  final String total;
+  final String target;
+  final double progress;
+  final VoidCallback onAdd;
+
+  const _HobbyHero({
+    required this.total,
+    required this.target,
+    required this.progress,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LadnaCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _PersonalText.of(context).hobbyWeek,
+                  style: TextStyle(
+                    color: _ladnaText(context),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: onAdd,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: _ladnaSubtleBg(context),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _ladnaSubtleBorder(context)),
+                  ),
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 18,
+                    color: _ladnaAccent(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                total,
+                style: TextStyle(
+                  fontFamily: 'Playfair Display',
+                  fontSize: 30,
+                  height: 1,
+                  color: _ladnaText(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '/ $target',
+                  style: TextStyle(
+                    color: _ladnaMuted(context),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: _ladnaSubtleBg(context),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Color(0xFF6B54C0),
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _HobbyRow extends StatelessWidget {
+  final String title;
+  final String today;
+  final String week;
+  final String target;
+  final double progress;
+  final VoidCallback onAdd;
+  final VoidCallback onDelete;
+
+  const _HobbyRow({
+    required this.title,
+    required this.today,
+    required this.week,
+    required this.target,
+    required this.progress,
+    required this.onAdd,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(13),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _ladnaAccent(context),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: _ladnaText(context),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                onPressed: onDelete,
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 18,
+                  color: _ladnaMuted(context),
+                ),
+              ),
+              InkWell(
+                onTap: onAdd,
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _ladnaSubtleBg(context),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '+',
+                    style: TextStyle(
+                      color: _ladnaAccent(context),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                'Сегодня $today',
+                style: TextStyle(
+                  color: _ladnaMuted(context),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$week / $target',
+                style: TextStyle(
+                  color: _ladnaMuted(context),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0).toDouble(),
+              minHeight: 6,
+              backgroundColor: _ladnaSubtleBg(context),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                progress >= 0.75
+                    ? const Color(0xFF16B8A8)
+                    : const Color(0xFF6B54C0),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TodayRow extends StatelessWidget {
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+
+  const _TodayRow({
+    required this.title,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            Icon(
+              Icons.palette_rounded,
+              size: 18,
+              color: _ladnaAccent(context),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: _ladnaText(context),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                color: _ladnaMuted(context),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LadnaCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const _LadnaCard({
+    required this.child,
+    required this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: _ladnaCardBg(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _ladnaSubtleBorder(context)),
+        boxShadow: [
+          BoxShadow(
+            color: _ladnaIsDark(context) ? Colors.black.withOpacity(0.30) : Colors.black.withOpacity(0.045),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+
+  const _SectionLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w800,
+        color: _ladnaMuted(context),
+        letterSpacing: 1.2,
       ),
     );
   }
@@ -452,34 +900,24 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = cs.secondary;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Color.lerp(
-          cs.surfaceContainerHighest,
-          accent,
-          isDark ? 0.10 : 0.16,
-        ),
+        color: _ladnaSubtleBg(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Color.lerp(cs.outlineVariant, accent, isDark ? 0.18 : 0.26)!,
-        ),
+        border: Border.all(color: _ladnaSubtleBorder(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: accent),
+          Icon(icon, size: 16, color: _ladnaAccent(context)),
           const SizedBox(width: 6),
           Text(
             text,
-            style: tt.labelMedium?.copyWith(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: cs.onSurface,
+              color: _ladnaText(context),
+              fontSize: 12,
             ),
           ),
         ],

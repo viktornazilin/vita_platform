@@ -12,7 +12,7 @@ class NestCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.onTap,
-    this.radius = 24,
+    this.radius = 15,
     this.accentColor,
   });
 
@@ -20,49 +20,29 @@ class NestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = accentColor ?? scheme.secondary;
+    final accent = accentColor ?? (isDark ? const Color(0xFFD4E040) : scheme.primary);
 
-    final backgroundColor = isDark
-        ? Color.lerp(scheme.surfaceContainerLow, accent, 0.065)!
-        : Color.lerp(scheme.surfaceContainerLowest, accent, 0.105)!;
+    final backgroundColor = isDark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE);
+    final borderColor = isDark
+        ? Color.lerp(const Color(0x2E6B54C0), accent, 0.12)!
+        : const Color(0xFFE0DCF0);
 
-    final borderColor = Color.lerp(
-      scheme.outlineVariant,
-      accent,
-      isDark ? 0.26 : 0.38,
-    )!;
-
-    final shadow = isDark
-        ? <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withOpacity(0.22),
-              blurRadius: 20,
-              offset: const Offset(0, 9),
-            ),
-          ]
-        : <BoxShadow>[
-            BoxShadow(
-              color: scheme.primary.withOpacity(0.10),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-            BoxShadow(
-              color: accent.withOpacity(0.13),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
-            ),
-          ];
-
-    final body = Padding(padding: padding, child: child);
-
-    final decorated = Container(
+    final decorated = AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderColor, width: 1.35),
-        boxShadow: shadow,
+        border: Border.all(color: borderColor, width: isDark ? 1.1 : 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withOpacity(0.30) : scheme.primary.withOpacity(0.07),
+            blurRadius: isDark ? 12 : 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: body,
+      child: Padding(padding: padding, child: child),
     );
 
     if (onTap == null) return decorated;

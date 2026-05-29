@@ -1,19 +1,22 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
-import '../widgets/mood_selector.dart';
-
-import '../models/mood_model.dart';
-import '../models/mood.dart';
-
-import '../widgets/nest/nest_background.dart';
-import '../widgets/nest/nest_blur_card.dart';
-
 import '../main.dart'; // dbRepo
+import '../models/mood.dart';
+import '../models/mood_model.dart';
+import '../models/home_model.dart';
+import '../widgets/nest/nest_background.dart';
+import '../widgets/home/health_tracker_card.dart';
+import '../widgets/home/hobby_tracker_card.dart';
+import '../widgets/mood/mental_week_card.dart';
+
+
+bool get _ladnaDarkMode =>
+    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+
+Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
 
 class MoodScreen extends StatelessWidget {
   const MoodScreen({super.key});
@@ -22,26 +25,25 @@ class MoodScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => MoodModel(repo: dbRepo)..load(),
-      child: const _MoodView(),
+      child: const _PersonalView(),
     );
   }
 }
 
-class _MoodView extends StatefulWidget {
-  const _MoodView();
+class _PersonalView extends StatefulWidget {
+  const _PersonalView();
 
   @override
-  State<_MoodView> createState() => _MoodViewState();
+  State<_PersonalView> createState() => _PersonalViewState();
 }
 
-class _MoodViewState extends State<_MoodView> {
+class _PersonalViewState extends State<_PersonalView> {
+  int _tab = 1;
   String _selectedEmoji = '😊';
   final _noteController = TextEditingController();
-  DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
-  DateTime _visibleWeekStart = _startOfWeek(DateUtils.dateOnly(DateTime.now()));
   bool _saving = false;
 
-  static const int _maxLen = 200;
+  static const _maxLen = 200;
 
   @override
   void dispose() {
@@ -49,129 +51,91 @@ class _MoodViewState extends State<_MoodView> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------------
-  // Date helpers
-  // ---------------------------------------------------------------------------
-
-  static DateTime _startOfWeek(DateTime date) {
-    final d = DateUtils.dateOnly(date);
-    final weekday = d.weekday; // Mon=1 ... Sun=7
-    return d.subtract(Duration(days: weekday - 1));
-  }
-
-  List<DateTime> _daysOfWeek(DateTime weekStart) {
-    return List.generate(
-      7,
-      (index) => DateUtils.dateOnly(weekStart.add(Duration(days: index))),
-    );
-  }
-
-  String _formatDateShort(BuildContext context, DateTime d) {
-    final loc = MaterialLocalizations.of(context);
-    return loc.formatMediumDate(d);
-  }
-
-  String _formatWeekRange(BuildContext context, DateTime weekStart) {
-    final loc = MaterialLocalizations.of(context);
-    final weekEnd = weekStart.add(const Duration(days: 6));
-    return '${loc.formatMediumDate(weekStart)} – ${loc.formatMediumDate(weekEnd)}';
-  }
-
-  String _weekdayShort(BuildContext context, DateTime date) {
-    switch (date.weekday) {
-      case DateTime.monday:
-        return 'Mo';
-      case DateTime.tuesday:
-        return 'Tu';
-      case DateTime.wednesday:
-        return 'We';
-      case DateTime.thursday:
-        return 'Th';
-      case DateTime.friday:
-        return 'Fr';
-      case DateTime.saturday:
-        return 'Sa';
-      case DateTime.sunday:
-        return 'Su';
+  String _t(
+    BuildContext context, {
+    required String ru,
+    required String en,
+    String? de,
+    String? fr,
+    String? es,
+    String? tr,
+  }) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    switch (code) {
+      case 'de':
+        return de ?? en;
+      case 'fr':
+        return fr ?? en;
+      case 'es':
+        return es ?? en;
+      case 'tr':
+        return tr ?? en;
+      case 'ru':
+        return ru;
       default:
-        return '';
+        return en;
     }
   }
 
-  Map<DateTime, Mood> _moodMapByDay(List<Mood> moods) {
-    final map = <DateTime, Mood>{};
-    for (final mood in moods) {
-      map[DateUtils.dateOnly(mood.date)] = mood;
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  String _dateLabel(BuildContext context, DateTime date) {
+    return MaterialLocalizations.of(context).formatMediumDate(date);
+  }
+
+  DateTime _startOfWeek(DateTime date) {
+    final d = _dateOnly(date);
+    return d.subtract(Duration(days: d.weekday - 1));
+  }
+
+  List<DateTime> _currentWeekDays() {
+    final start = _startOfWeek(DateTime.now());
+    return List.generate(7, (index) => _dateOnly(start.add(Duration(days: index))));
+  }
+
+  String _weekdayLabel(BuildContext context, DateTime date) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    final labels = switch (code) {
+      'ru' => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+      'de' => ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+      'fr' => ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'],
+      'es' => ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'],
+      'tr' => ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pa'],
+      _ => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    };
+    return labels[date.weekday - 1];
+  }
+
+  String _scoreForEmoji(String emoji) {
+    switch (emoji) {
+      case '😞':
+        return '1';
+      case '😕':
+        return '2';
+      case '😐':
+        return '3';
+      case '😊':
+        return '4';
+      case '😄':
+        return '5';
+      default:
+        return '4';
     }
-    return map;
   }
-
-  bool _isToday(DateTime date) {
-    return DateUtils.isSameDay(date, DateTime.now());
-  }
-
-  bool _isSelected(DateTime date) {
-    return DateUtils.isSameDay(date, _selectedDate);
-  }
-
-  void _snack(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(text),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Actions
-  // ---------------------------------------------------------------------------
 
   void _goBack() {
-    final navigator = Navigator.of(context);
-
-    if (navigator.canPop()) {
-      navigator.pop();
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
       return;
     }
 
-    // Если экран открыт как tab/root screen, pop может быть невозможен.
-    // В таком случае просто показываем пользователю понятное сообщение,
-    // не ломая навигацию неизвестным route name.
-    final l = AppLocalizations.of(context)!;
-    _snack(l.commonCancel);
-  }
-
-  Future<void> _pickDate() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        final cs = Theme.of(context).colorScheme;
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: cs.copyWith(surface: cs.surface),
-            dialogTheme: const DialogThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(22)),
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (d != null) {
-      final normalized = DateUtils.dateOnly(d);
-      setState(() {
-        _selectedDate = normalized;
-        _visibleWeekStart = _startOfWeek(normalized);
-      });
+    // When the screen is opened as a tab inside HomeScreen, there is no route to pop.
+    // In that case we return to the main dashboard tab.
+    try {
+      context.read<HomeModel>().select(0);
+    } catch (_) {
+      Navigator.of(context).pushReplacementNamed('/home');
     }
   }
 
@@ -179,856 +143,132 @@ class _MoodViewState extends State<_MoodView> {
     await context.read<MoodModel>().load();
   }
 
-  Future<String?> _saveMood({
-    required DateTime date,
-    required String emoji,
-    required String note,
-  }) async {
-    try {
-      final model = context.read<MoodModel>();
-      await model.repo.upsertMood(
-        date: DateUtils.dateOnly(date),
-        emoji: emoji,
-        note: note,
-      );
-      await model.load();
-      return null;
-    } catch (e) {
-      final l = AppLocalizations.of(context)!;
-      return l.moodErrSaveFailed('$e');
-    }
-  }
-
-  Future<String?> _updateMood({
-    required DateTime originalDate,
-    required DateTime newDate,
-    required String emoji,
-    required String note,
-  }) async {
-    try {
-      final model = context.read<MoodModel>();
-      final orig = DateUtils.dateOnly(originalDate);
-      final next = DateUtils.dateOnly(newDate);
-
-      await model.repo.upsertMood(date: next, emoji: emoji, note: note);
-      if (orig != next) {
-        await model.repo.deleteMoodByDate(orig);
-      }
-      await model.load();
-      return null;
-    } catch (e) {
-      final l = AppLocalizations.of(context)!;
-      return l.moodErrUpdateFailed('$e');
-    }
-  }
-
-  Future<String?> _deleteMood(DateTime date) async {
-    try {
-      final model = context.read<MoodModel>();
-      await model.repo.deleteMoodByDate(DateUtils.dateOnly(date));
-      await model.load();
-      return null;
-    } catch (e) {
-      final l = AppLocalizations.of(context)!;
-      return l.moodErrDeleteFailed('$e');
-    }
-  }
-
-  Future<void> _save() async {
+  Future<void> _saveMood() async {
     if (_saving) return;
-
     final l = AppLocalizations.of(context)!;
-    final note = _noteController.text.trim();
 
     setState(() => _saving = true);
-    final err = await _saveMood(
-      date: _selectedDate,
-      emoji: _selectedEmoji,
-      note: note,
-    );
-
-    if (!mounted) return;
-    setState(() => _saving = false);
-
-    if (err != null) {
-      _snack(err);
-      return;
-    }
-
-    _noteController.clear();
-    setState(() {
-      _selectedEmoji = '😊';
-      _selectedDate = DateUtils.dateOnly(DateTime.now());
-      _visibleWeekStart = _startOfWeek(_selectedDate);
-    });
-
-    _snack(l.moodSaved);
-  }
-
-  Future<void> _editMood(Mood mood) async {
-    final res = await showDialog<_EditMoodResult>(
-      context: context,
-      builder: (_) => _EditMoodDialog(initial: mood),
-    );
-    if (res == null) return;
-
-    final l = AppLocalizations.of(context)!;
-
-    if (res.delete) {
-      final err = await _deleteMood(mood.date);
-      if (err != null && mounted) _snack(err);
-      return;
-    }
-
-    final err = await _updateMood(
-      originalDate: mood.date,
-      newDate: res.date,
-      emoji: res.emoji,
-      note: res.note,
-    );
-
-    if (!mounted) return;
-
-    if (err != null) {
-      _snack(err);
-    } else {
-      setState(() {
-        _selectedDate = DateUtils.dateOnly(res.date);
-        _visibleWeekStart = _startOfWeek(_selectedDate);
-      });
-      _snack(l.moodUpdated);
+    try {
+      await context.read<MoodModel>().repo.upsertMood(
+            date: _dateOnly(DateTime.now()),
+            emoji: _selectedEmoji,
+            note: _noteController.text.trim(),
+          );
+      await context.read<MoodModel>().load();
+      if (!mounted) return;
+      _noteController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.moodSaved),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.moodErrSaveFailed('$e')),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
-
-  Future<void> _confirmDeleteMood(Mood mood) async {
-    final l = AppLocalizations.of(context)!;
-
-    final ok =
-        await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-            ),
-            title: Text(l.commonDeleteConfirmTitle),
-            content: Text(
-              '${_formatDateShort(context, DateUtils.dateOnly(mood.date))}: '
-              '${mood.emoji}'
-              '${mood.note.trim().isEmpty ? '' : '\n\n${mood.note.trim()}'}',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l.commonCancel),
-              ),
-              FilledButton.tonal(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(l.commonDelete),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-
-    if (!ok) return;
-
-    final err = await _deleteMood(mood.date);
-    if (err != null && mounted) {
-      _snack(err);
-    }
-  }
-
-  Future<void> _openDayPopup(DateTime day, Mood? mood) async {
-    if (mood == null) {
-      setState(() {
-        _selectedDate = DateUtils.dateOnly(day);
-      });
-      return;
-    }
-
-    final action = await showModalBottomSheet<_DayMoodAction>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _DayMoodSheet(
-        date: day,
-        mood: mood,
-        formatDate: (d) => _formatDateShort(context, d),
-      ),
-    );
-
-    if (!mounted || action == null) return;
-
-    switch (action) {
-      case _DayMoodAction.edit:
-        await _editMood(mood);
-        break;
-      case _DayMoodAction.delete:
-        await _confirmDeleteMood(mood);
-        break;
-    }
-  }
-
-  void _goToPreviousWeek() {
-    setState(() {
-      _visibleWeekStart = _visibleWeekStart.subtract(const Duration(days: 7));
-    });
-  }
-
-  void _goToNextWeek() {
-    final next = _visibleWeekStart.add(const Duration(days: 7));
-    final currentWeek = _startOfWeek(DateUtils.dateOnly(DateTime.now()));
-
-    if (next.isAfter(currentWeek)) return;
-
-    setState(() {
-      _visibleWeekStart = next;
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Build
-  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final model = context.watch<MoodModel>();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final moods = model.moods;
-    final loading = model.loading;
-    final moodByDay = _moodMapByDay(moods);
-    final weekDays = _daysOfWeek(_visibleWeekStart);
-    final currentWeekStart = _startOfWeek(DateUtils.dateOnly(DateTime.now()));
-    final canGoNext = !_visibleWeekStart.isAtSameMomentAs(currentWeekStart);
-
     return Scaffold(
       extendBody: true,
       body: NestBackground(
         child: SafeArea(
           bottom: false,
-          child: RefreshIndicator.adaptive(
-            onRefresh: _refresh,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                    child: _MoodHeader(
-                      title: l.moodHistoryTitle.replaceAll(' history', ''),
-                      subtitle: l.moodHowDoYouFeel,
-                      onBack: _goBack,
-                    ),
-                  ),
-                ),
-
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                    child: NestBlurCard(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _NestChipButton(
-                                    icon: Icons.calendar_month_rounded,
-                                    label: _formatDateShort(
-                                      context,
-                                      _selectedDate,
-                                    ),
-                                    onTap: _pickDate,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                _NestChipInfo(
-                                  icon: Icons.auto_awesome_rounded,
-                                  label: l.moodOnePerDay,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            Text(
-                              l.moodHowDoYouFeel,
-                              style: tt.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _MoodSelectorPanel(
-                              selectedEmoji: _selectedEmoji,
-                              onSelect: (emoji) =>
-                                  setState(() => _selectedEmoji = emoji),
-                            ),
-                            const SizedBox(height: 14),
-                            _NestTextField(
-                              controller: _noteController,
-                              maxLines: 3,
-                              maxLength: _maxLen,
-                              labelText: l.moodNoteLabel,
-                              hintText: l.moodNoteHint,
-                              prefixIcon: Icons.edit_note_rounded,
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 54,
-                              child: FilledButton.icon(
-                                onPressed: _saving ? null : _save,
-                                icon: _saving
-                                    ? SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child:
-                                            CircularProgressIndicator.adaptive(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                            cs.onPrimary,
-                                          ),
-                                        ),
-                                      )
-                                    : const Icon(Icons.check_rounded),
-                                label: Text(
-                                  _saving ? l.commonSaving : l.commonSave,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                style: FilledButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          l.moodHistoryTitle,
-                          style: tt.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (!loading && moods.isNotEmpty)
-                          _CountPill(count: moods.length),
-                      ],
-                    ),
-                  ),
-                ),
-
-                if (loading)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(child: CircularProgressIndicator.adaptive()),
-                  )
-                else if (moods.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _EmptyState(
-                      emoji: '📝',
-                      title: null,
-                      subtitle: null,
-                    ),
-                  )
-                else
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                      child: NestBlurCard(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  _CircleIconButton(
-                                    icon: Icons.chevron_left_rounded,
-                                    onPressed: _goToPreviousWeek,
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(
-                                        _formatWeekRange(
-                                          context,
-                                          _visibleWeekStart,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: tt.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: -0.1,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  _CircleIconButton(
-                                    icon: Icons.chevron_right_rounded,
-                                    onPressed: canGoNext ? _goToNextWeek : null,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: weekDays
-                                    .map(
-                                      (day) => Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 3,
-                                          ),
-                                          child: _WeekDayCell(
-                                            day: day,
-                                            weekdayLabel:
-                                                _weekdayShort(context, day),
-                                            mood: moodByDay[day],
-                                            isToday: _isToday(day),
-                                            isSelected: _isSelected(day),
-                                            onTap: () => _openDayPopup(
-                                              day,
-                                              moodByDay[day],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                const SliverToBoxAdapter(child: SizedBox(height: 28)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Header
-// ============================================================================
-
-class _MoodHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final VoidCallback onBack;
-
-  const _MoodHeader({
-    required this.title,
-    required this.subtitle,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Row(
-      children: [
-        _GlassIconButton(
-          icon: Icons.arrow_back_ios_new_rounded,
-          onPressed: onBack,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title.trim().isEmpty ? 'Mood' : title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.4,
-                  color: cs.onSurface,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlassIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _GlassIconButton({
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onPressed,
-        child: Ink(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: cs.surface.withOpacity(0.78),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.45)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Icon(icon, size: 18, color: cs.onSurface),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Mood selector panel
-// ============================================================================
-
-class _MoodSelectorPanel extends StatelessWidget {
-  final String selectedEmoji;
-  final ValueChanged<String> onSelect;
-
-  const _MoodSelectorPanel({
-    required this.selectedEmoji,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return _NestInset(
-      radius: 24,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: MoodSelector(
-          selectedEmoji: selectedEmoji,
-          onSelect: onSelect,
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Weekly calendar cell
-// ============================================================================
-
-class _WeekDayCell extends StatelessWidget {
-  final DateTime day;
-  final String weekdayLabel;
-  final Mood? mood;
-  final bool isToday;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _WeekDayCell({
-    required this.day,
-    required this.weekdayLabel,
-    required this.mood,
-    required this.isToday,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final hasMood = mood != null;
-
-    Color bgColor;
-    Color borderColor;
-    Color foregroundColor;
-
-    if (isSelected) {
-      bgColor = cs.primary.withOpacity(0.13);
-      borderColor = cs.primary.withOpacity(0.75);
-      foregroundColor = cs.primary;
-    } else if (isToday) {
-      bgColor = cs.secondaryContainer.withOpacity(0.36);
-      borderColor = cs.secondary.withOpacity(0.50);
-      foregroundColor = cs.onSecondaryContainer;
-    } else {
-      bgColor = cs.surfaceContainerHighest.withOpacity(0.20);
-      borderColor = cs.outlineVariant.withOpacity(0.38);
-      foregroundColor = cs.onSurface;
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          height: 110,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            color: bgColor,
-            border: Border.all(
-              color: borderColor,
-              width: isSelected ? 1.4 : 1,
-            ),
-          ),
           child: Column(
             children: [
-              Text(
-                weekdayLabel,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-                textAlign: TextAlign.center,
-                style: tt.labelMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${day.day}',
-                maxLines: 1,
-                style: tt.titleMedium?.copyWith(
-                  color: foregroundColor,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                ),
-              ),
-              const Spacer(),
-              SizedBox(
-                height: 30,
-                child: Center(
-                  child: hasMood
-                      ? Text(
-                          mood!.emoji,
-                          maxLines: 1,
-                          style: const TextStyle(fontSize: 22, height: 1),
-                        )
-                      : Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: cs.outlineVariant.withOpacity(0.55),
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Bottom sheet for selected day
-// ============================================================================
-
-enum _DayMoodAction { edit, delete }
-
-class _DayMoodSheet extends StatelessWidget {
-  final DateTime date;
-  final Mood mood;
-  final String Function(DateTime d) formatDate;
-
-  const _DayMoodSheet({
-    required this.date,
-    required this.mood,
-    required this.formatDate,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final note = mood.note.trim();
-
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        child: NestBlurCard(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 42,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: cs.outlineVariant.withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(999),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: _LadnaHeader(
+                  title: _t(
+                    context,
+                    ru: 'Личное',
+                    en: 'Personal',
+                    de: 'Persönlich',
+                    fr: 'Personnel',
+                    es: 'Personal',
+                    tr: 'Kişisel',
                   ),
+                  onBack: _goBack,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  mood.emoji,
-                  style: const TextStyle(fontSize: 42),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  formatDate(date),
-                  style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: cs.outlineVariant.withOpacity(0.35),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _LadnaTabs(
+                  selectedIndex: _tab,
+                  labels: [
+                    _t(
+                      context,
+                      ru: 'Здоровье',
+                      en: 'Health',
+                      de: 'Gesundheit',
+                      fr: 'Santé',
+                      es: 'Salud',
+                      tr: 'Sağlık',
                     ),
-                  ),
-                  child: Text(
-                    note.isEmpty ? '—' : note,
-                    style: tt.bodyMedium,
-                  ),
+                    _t(
+                      context,
+                      ru: 'Настроение',
+                      en: 'Mood',
+                      de: 'Stimmung',
+                      fr: 'Humeur',
+                      es: 'Ánimo',
+                      tr: 'Ruh hali',
+                    ),
+                    _t(
+                      context,
+                      ru: 'Хобби',
+                      en: 'Hobbies',
+                      de: 'Hobbys',
+                      fr: 'Loisirs',
+                      es: 'Hobbies',
+                      tr: 'Hobiler',
+                    ),
+                  ],
+                  onChanged: (index) => setState(() => _tab = index),
                 ),
-                const SizedBox(height: 16),
-                Row(
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: IndexedStack(
+                  index: _tab,
                   children: [
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: () =>
-                            Navigator.pop(context, _DayMoodAction.edit),
-                        icon: const Icon(Icons.edit_rounded),
-                        label: Text(
-                          AppLocalizations.of(context)!.commonEdit,
-                        ),
+                    _TabScroller(
+                      onRefresh: _refresh,
+                      child: const HealthTrackerCard(),
+                    ),
+                    _TabScroller(
+                      onRefresh: _refresh,
+                      child: _MoodTab(
+                        selectedEmoji: _selectedEmoji,
+                        noteController: _noteController,
+                        maxLen: _maxLen,
+                        saving: _saving,
+                        score: _scoreForEmoji(_selectedEmoji),
+                        dateLabel: _dateLabel(context, DateTime.now()),
+                        weekDays: _currentWeekDays(),
+                        weekdayLabel: (day) => _weekdayLabel(context, day),
+                        onEmojiChanged: (emoji) =>
+                            setState(() => _selectedEmoji = emoji),
+                        onSave: _saveMood,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: () =>
-                            Navigator.pop(context, _DayMoodAction.delete),
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        label: Text(
-                          AppLocalizations.of(context)!.commonDelete,
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: cs.errorContainer.withOpacity(0.75),
-                          foregroundColor: cs.onErrorContainer,
-                        ),
-                      ),
+                    _TabScroller(
+                      onRefresh: _refresh,
+                      child: const HobbyTrackerCard(),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// Nest small UI helpers
-// ============================================================================
-
-class _NestInset extends StatelessWidget {
-  final Widget child;
-  final double radius;
-  const _NestInset({required this.child, this.radius = 18});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withOpacity(0.35),
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
-          ),
-          child: Stack(
-            children: [
-              child,
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(radius),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.center,
-                        colors: [
-                          Colors.white.withOpacity(0.18),
-                          Colors.white.withOpacity(0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
@@ -1038,380 +278,526 @@ class _NestInset extends StatelessWidget {
   }
 }
 
-class _NestChipButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
+class _TabScroller extends StatelessWidget {
+  final Widget child;
+  final Future<void> Function() onRefresh;
 
-  const _NestChipButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
+  const _TabScroller({
+    required this.child,
+    required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: _NestInset(
-          radius: 999,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 18, color: cs.onSurfaceVariant),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    return RefreshIndicator.adaptive(
+      onRefresh: onRefresh,
+      child: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+        children: [child],
       ),
     );
   }
 }
 
-class _NestChipInfo extends StatelessWidget {
-  final IconData icon;
-  final String label;
+class _MoodTab extends StatelessWidget {
+  final String selectedEmoji;
+  final TextEditingController noteController;
+  final int maxLen;
+  final bool saving;
+  final String score;
+  final String dateLabel;
+  final List<DateTime> weekDays;
+  final String Function(DateTime day) weekdayLabel;
+  final ValueChanged<String> onEmojiChanged;
+  final VoidCallback onSave;
 
-  const _NestChipInfo({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return _NestInset(
-      radius: 999,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: cs.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: tt.labelLarge?.copyWith(
-                color: cs.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NestTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final int maxLines;
-  final int? maxLength;
-  final String labelText;
-  final String hintText;
-  final IconData prefixIcon;
-
-  const _NestTextField({
-    required this.controller,
-    required this.maxLines,
-    required this.maxLength,
-    required this.labelText,
-    required this.hintText,
-    required this.prefixIcon,
+  const _MoodTab({
+    required this.selectedEmoji,
+    required this.noteController,
+    required this.maxLen,
+    required this.saving,
+    required this.score,
+    required this.dateLabel,
+    required this.weekDays,
+    required this.weekdayLabel,
+    required this.onEmojiChanged,
+    required this.onSave,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      maxLength: maxLength,
-      textInputAction: TextInputAction.done,
-      decoration: InputDecoration(
-        labelText: labelText,
-        hintText: hintText,
-        prefixIcon: Icon(prefixIcon),
-        filled: true,
-        fillColor: cs.surfaceContainerHighest.withOpacity(0.30),
-        counterStyle: TextStyle(
-          color: cs.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(22),
-          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.65)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(22),
-          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.55)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(22),
-          borderSide: BorderSide(color: cs.primary, width: 1.5),
-        ),
-      ),
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onPressed;
-
-  const _CircleIconButton({
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return IconButton.filledTonal(
-      onPressed: onPressed,
-      icon: Icon(icon),
-      style: IconButton.styleFrom(
-        fixedSize: const Size(42, 42),
-        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.42),
-        disabledBackgroundColor: cs.surfaceContainerHighest.withOpacity(0.16),
-        foregroundColor: cs.onSurface,
-        disabledForegroundColor: cs.onSurfaceVariant.withOpacity(0.45),
-      ),
-    );
-  }
-}
-
-class _CountPill extends StatelessWidget {
-  final int count;
-
-  const _CountPill({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.45)),
-      ),
-      child: Text(
-        '$count',
-        style: tt.labelLarge?.copyWith(
-          color: cs.onSurfaceVariant,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Dialog
-// -----------------------------------------------------------------------------
-
-class _EditMoodResult {
-  final bool delete;
-  final DateTime date;
-  final String emoji;
-  final String note;
-
-  _EditMoodResult({
-    required this.delete,
-    required this.date,
-    required this.emoji,
-    required this.note,
-  });
-}
-
-class _EditMoodDialog extends StatefulWidget {
-  final Mood initial;
-  const _EditMoodDialog({required this.initial});
-
-  @override
-  State<_EditMoodDialog> createState() => _EditMoodDialogState();
-}
-
-class _EditMoodDialogState extends State<_EditMoodDialog> {
-  late DateTime _date;
-  late String _emoji;
-  late TextEditingController _note;
-
-  @override
-  void initState() {
-    super.initState();
-    _date = DateUtils.dateOnly(widget.initial.date);
-    _emoji = widget.initial.emoji;
-    _note = TextEditingController(text: widget.initial.note);
-  }
-
-  @override
-  void dispose() {
-    _note.dispose();
-    super.dispose();
-  }
-
-  String _format(BuildContext context, DateTime d) {
-    return MaterialLocalizations.of(context).formatMediumDate(d);
-  }
-
-  Future<void> _pickDate() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _date,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-    if (d != null) setState(() => _date = DateUtils.dateOnly(d));
+  String _t(
+    BuildContext context, {
+    required String ru,
+    required String en,
+    String? de,
+    String? fr,
+    String? es,
+    String? tr,
+  }) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    switch (code) {
+      case 'de':
+        return de ?? en;
+      case 'fr':
+        return fr ?? en;
+      case 'es':
+        return es ?? en;
+      case 'tr':
+        return tr ?? en;
+      case 'ru':
+        return ru;
+      default:
+        return en;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final cs = Theme.of(context).colorScheme;
+    final model = context.watch<MoodModel>();
+    final moods = model.moods;
 
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      title: Text(l.moodEditTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _LadnaCard(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text('${l.commonDate}: ${_format(context, _date)}'),
+              _CardHeader(
+                title: _t(
+                  context,
+                  ru: 'Как ты сегодня?',
+                  en: 'How are you today?',
+                  de: 'Wie geht es dir heute?',
+                  fr: 'Comment ça va aujourd’hui ?',
+                  es: '¿Cómo estás hoy?',
+                  tr: 'Bugün nasılsın?',
+                ),
+                trailing: dateLabel,
               ),
-              TextButton.icon(
-                onPressed: _pickDate,
-                icon: const Icon(Icons.calendar_month_rounded),
-                label: Text(l.commonChange),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: ['😞', '😕', '😐', '😊', '😄']
+                    .map(
+                      (emoji) => _MoodBubble(
+                        emoji: emoji,
+                        selected: emoji == selectedEmoji,
+                        onTap: () => onEmojiChanged(emoji),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                minLines: 3,
+                maxLines: 4,
+                maxLength: maxLen,
+                decoration: InputDecoration(
+                  hintText: _t(
+                    context,
+                    ru: 'Что повлияло на настроение?',
+                    en: 'What affected your mood?',
+                    de: 'Was hat deine Stimmung beeinflusst?',
+                    fr: 'Qu’est-ce qui a influencé ton humeur ?',
+                    es: '¿Qué influyó en tu ánimo?',
+                    tr: 'Ruh halini ne etkiledi?',
+                  ),
+                  counterText: '',
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: FilledButton.icon(
+                  onPressed: saving ? null : onSave,
+                  icon: saving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator.adaptive(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.check_rounded),
+                  label: Text(saving ? l.commonSaving : l.commonSave),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          MoodSelector(
-            selectedEmoji: _emoji,
-            onSelect: (e) => setState(() => _emoji = e),
+        ),
+        const SizedBox(height: 10),
+        MentalWeekCard(
+          days: weekDays,
+          weekdayLabel: weekdayLabel,
+          maxItems: 3,
+          debug: false,
+        ),
+        const SizedBox(height: 14),
+        _SectionLabel(
+          text: _t(
+            context,
+            ru: 'Последние записи',
+            en: 'Recent entries',
+            de: 'Letzte Einträge',
+            fr: 'Entrées récentes',
+            es: 'Entradas recientes',
+            tr: 'Son kayıtlar',
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _note,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: l.moodNoteLabel,
-              filled: true,
-              fillColor: cs.surfaceContainerHighest.withOpacity(0.30),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+        ),
+        const SizedBox(height: 8),
+        if (model.loading)
+          const SizedBox(
+            height: 120,
+            child: Center(child: CircularProgressIndicator.adaptive()),
+          )
+        else if (moods.isEmpty)
+          _LadnaCard(
+            padding: const EdgeInsets.all(14),
+            child: Text(
+              _t(
+                context,
+                ru: 'Пока нет записей. Отметь настроение сегодня.',
+                en: 'No entries yet. Save today’s mood.',
+                de: 'Noch keine Einträge. Speichere deine Stimmung heute.',
+                fr: 'Aucune entrée pour le moment.',
+                es: 'Todavía no hay entradas.',
+                tr: 'Henüz kayıt yok.',
+              ),
+              style: TextStyle(
+                color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          )
+        else
+          _LadnaCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (final mood in moods.take(5)) ...[
+                  _MoodHistoryRow(mood: mood),
+                  if (mood != moods.take(5).last)
+                    Divider(height: 1, color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MoodHistoryRow extends StatelessWidget {
+  final Mood mood;
+
+  const _MoodHistoryRow({required this.mood});
+
+  @override
+  Widget build(BuildContext context) {
+    final date = MaterialLocalizations.of(context).formatMediumDate(mood.date);
+    final note = mood.note.trim();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      child: Row(
+        children: [
+          Text(mood.emoji, style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  note.isEmpty ? '—' : note,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '5 / 5',
+              style: TextStyle(
+                fontSize: 11,
+                color: _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF)),
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
         ],
       ),
-      actions: [
-        TextButton.icon(
-          onPressed: () => Navigator.pop(
-            context,
-            _EditMoodResult(
-              delete: true,
-              date: _date,
-              emoji: _emoji,
-              note: _note.text.trim(),
+    );
+  }
+}
+
+class _LadnaHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback onBack;
+
+  const _LadnaHeader({
+    required this.title,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E)), _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0x1F6B54C0))],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.045),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: onBack,
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+                shape: BoxShape.circle,
+                border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
+              ),
+              child: const Icon(
+                Icons.chevron_left_rounded,
+                color: Color(0xFF555268),
+              ),
             ),
           ),
-          icon: Icon(Icons.delete_outline_rounded, color: cs.error),
-          label: Text(l.commonDelete, style: TextStyle(color: cs.error)),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l.commonCancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            _EditMoodResult(
-              delete: false,
-              date: _date,
-              emoji: _emoji,
-              note: _note.text.trim(),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontFamily: 'Playfair Display',
+                    fontWeight: FontWeight.w600,
+                    color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                  ),
             ),
           ),
-          child: Text(l.commonSave),
+        ],
+      ),
+    );
+  }
+}
+
+class _LadnaTabs extends StatelessWidget {
+  final int selectedIndex;
+  final List<String> labels;
+  final ValueChanged<int> onChanged;
+
+  const _LadnaTabs({
+    required this.selectedIndex,
+    required this.labels,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: List.generate(labels.length, (index) {
+          final selected = index == selectedIndex;
+          return Expanded(
+            child: InkWell(
+              onTap: () => onChanged(index),
+              borderRadius: BorderRadius.circular(11),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  color: selected ? _ladnaAdaptive(Colors.white, const Color(0xFF1C1630)) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  labels[index],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: selected
+                        ? _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF))
+                        : _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _LadnaCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const _LadnaCard({
+    required this.child,
+    required this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.045),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _CardHeader extends StatelessWidget {
+  final String title;
+  final String trailing;
+
+  const _CardHeader({
+    required this.title,
+    required this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          trailing,
+          style: TextStyle(
+            fontSize: 11,
+            color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// Empty state
-// -----------------------------------------------------------------------------
-
-class _EmptyState extends StatelessWidget {
+class _MoodBubble extends StatelessWidget {
   final String emoji;
-  final String? title;
-  final String? subtitle;
+  final bool selected;
+  final VoidCallback onTap;
 
-  const _EmptyState({required this.emoji, this.title, this.subtitle});
+  const _MoodBubble({
+    required this.emoji,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: Container(
-                width: 72,
-                height: 72,
-                color: cs.surfaceContainerHighest.withOpacity(0.30),
-                alignment: Alignment.center,
-                child: Text(emoji, style: const TextStyle(fontSize: 28)),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              title ?? l.moodEmptyTitle,
-              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle ?? l.moodEmptySubtitle,
-              textAlign: TextAlign.center,
-              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-            ),
-          ],
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: selected ? _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)) : _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+          border: Border.all(
+            color: selected ? const Color(0xFF6B54C0) : Colors.transparent,
+            width: 2,
+          ),
         ),
+        child: Center(
+          child: Text(emoji, style: TextStyle(fontSize: 22)),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+
+  const _SectionLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF9090A8),
+        letterSpacing: 1.2,
       ),
     );
   }
