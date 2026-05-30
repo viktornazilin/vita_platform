@@ -6,12 +6,14 @@ import 'package:provider/provider.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
+import '../main.dart';
 import '../models/goal.dart';
 import '../models/day_goals_model.dart';
 import '../widgets/add_day_goal_sheet.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
 import '../widgets/day_google_calendar_sync_sheet.dart';
+import '../widgets/recurring_goal_sheet.dart';
 
 /// запуск: flutter run -d chrome --dart-define=VISION_API_KEY=xxxxx
 const String _kVisionApiKey = String.fromEnvironment(
@@ -129,6 +131,100 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
         _snack(l.dayGoalsAddFailed(e.toString()));
       }
     });
+  }
+
+
+
+  Future<void> _openRecurring() async {
+    final vm = context.read<DayGoalsModel>();
+
+    final plan = await showModalBottomSheet<RecurringGoalPlan>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _NestSheet(
+        child: const RecurringGoalSheet(),
+      ),
+    );
+
+    if (plan == null) return;
+
+    final dates = _buildRecurringDates(plan, DateUtils.dateOnly(vm.date));
+    if (dates.isEmpty) {
+      final l = AppLocalizations.of(context)!;
+      _snack(_dgRecurringEmptyMessage(l.localeName));
+      return;
+    }
+
+    await _withBusy(() async {
+      try {
+        await dbRepo.createGoalsBulk(
+          dates.map((day) {
+            final deadline = DateTime.utc(day.year, day.month, day.day);
+            final startTime = DateTime.utc(
+              day.year,
+              day.month,
+              day.day,
+              plan.time.hour,
+              plan.time.minute,
+            );
+
+            return <String, dynamic>{
+              'title': plan.title,
+              'description': '',
+              'deadline': deadline,
+              'is_completed': false,
+              'life_block': plan.lifeBlock,
+              'importance': plan.importance,
+              'emotion': plan.emotion,
+              'spent_hours': plan.plannedHours,
+              'start_time': startTime,
+              'user_goal_id': plan.userGoalId,
+            };
+          }).toList(),
+        );
+
+        await vm.load();
+
+        if (!mounted) return;
+        final l = AppLocalizations.of(context)!;
+        _snack(_dgRecurringCreatedMessage(l.localeName, dates.length));
+      } catch (e) {
+        final l = AppLocalizations.of(context)!;
+        _snack(l.dayGoalsAddFailed(e.toString()));
+      }
+    });
+  }
+
+  List<DateTime> _buildRecurringDates(
+    RecurringGoalPlan plan,
+    DateTime startDate,
+  ) {
+    final start = DateUtils.dateOnly(startDate);
+    final until = DateUtils.dateOnly(plan.until);
+    if (until.isBefore(start)) return const [];
+
+    final result = <DateTime>[];
+
+    if (plan.type == RecurrenceType.everyNDays) {
+      final step = plan.everyNDays <= 0 ? 1 : plan.everyNDays;
+      var current = start;
+      while (!current.isAfter(until)) {
+        result.add(current);
+        current = current.add(Duration(days: step));
+      }
+      return result;
+    }
+
+    var current = start;
+    while (!current.isAfter(until)) {
+      if (plan.weekdays.contains(current.weekday)) {
+        result.add(current);
+      }
+      current = current.add(const Duration(days: 1));
+    }
+    return result;
   }
 
   Future<void> _openEdit(Goal g) async {
@@ -290,6 +386,10 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
             onAdd: () {
               if (_busy) return;
               _openAdd();
+            },
+            onRecurring: () {
+              if (_busy) return;
+              _openRecurring();
             },
             onScan: () {
               if (_busy) return;
@@ -1507,6 +1607,79 @@ class _NestEmptyState extends StatelessWidget {
   }
 }
 
+
+String _dgRecurringMenuTitle(String localeName) {
+  final lang = localeName.toLowerCase().split('_').first.split('-').first;
+  switch (lang) {
+    case 'en':
+      return 'Recurring task';
+    case 'de':
+      return 'Wiederkehrende Aufgabe';
+    case 'fr':
+      return 'Tâche récurrente';
+    case 'es':
+      return 'Tarea recurrente';
+    case 'tr':
+      return 'Tekrarlanan görev';
+    default:
+      return 'Повторяющаяся задача';
+  }
+}
+
+String _dgRecurringMenuSubtitle(String localeName) {
+  final lang = localeName.toLowerCase().split('_').first.split('-').first;
+  switch (lang) {
+    case 'en':
+      return 'Create tasks on schedule';
+    case 'de':
+      return 'Aufgaben nach Zeitplan erstellen';
+    case 'fr':
+      return 'Créer selon un planning';
+    case 'es':
+      return 'Crear tareas programadas';
+    case 'tr':
+      return 'Programa göre görev oluştur';
+    default:
+      return 'Создать задачи по расписанию';
+  }
+}
+
+String _dgRecurringEmptyMessage(String localeName) {
+  final lang = localeName.toLowerCase().split('_').first.split('-').first;
+  switch (lang) {
+    case 'en':
+      return 'No dates match this schedule.';
+    case 'de':
+      return 'Für diesen Plan wurden keine Termine gefunden.';
+    case 'fr':
+      return 'Aucune date ne correspond à ce planning.';
+    case 'es':
+      return 'No hay fechas para este calendario.';
+    case 'tr':
+      return 'Bu programa uygun tarih yok.';
+    default:
+      return 'Для этого расписания нет подходящих дат.';
+  }
+}
+
+String _dgRecurringCreatedMessage(String localeName, int count) {
+  final lang = localeName.toLowerCase().split('_').first.split('-').first;
+  switch (lang) {
+    case 'en':
+      return 'Created tasks: $count';
+    case 'de':
+      return 'Aufgaben erstellt: $count';
+    case 'fr':
+      return 'Tâches créées : $count';
+    case 'es':
+      return 'Tareas creadas: $count';
+    case 'tr':
+      return 'Oluşturulan görevler: $count';
+    default:
+      return 'Создано задач: $count';
+  }
+}
+
 class _NestSheet extends StatelessWidget {
   final Widget child;
   const _NestSheet({required this.child});
@@ -1531,16 +1704,18 @@ class _NestSheet extends StatelessWidget {
   }
 }
 
-enum _FabAction { add, scan, calendar }
+enum _FabAction { add, recurring, scan, calendar }
 
 class _MainFab extends StatelessWidget {
   final VoidCallback onAdd;
+  final VoidCallback onRecurring;
   final VoidCallback onScan;
   final VoidCallback onCalendar;
 
   const _MainFab({
     super.key,
     required this.onAdd,
+    required this.onRecurring,
     required this.onScan,
     required this.onCalendar,
   });
@@ -1573,6 +1748,8 @@ class _MainFab extends StatelessWidget {
 
     if (action == _FabAction.add) {
       onAdd();
+    } else if (action == _FabAction.recurring) {
+      onRecurring();
     } else if (action == _FabAction.scan) {
       onScan();
     } else {
@@ -1587,58 +1764,70 @@ class _FabMenuSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final bottom = MediaQuery.of(context).padding.bottom;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      padding: EdgeInsets.fromLTRB(14, 0, 14, bottom + 14),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(28),
         child: Container(
           decoration: BoxDecoration(
             color: _dgCardColor(context, lightOpacity: 0.92),
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(color: _dgBorder(context)),
             boxShadow: _dgShadow(context, top: true),
           ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: _dgBorder(context).withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _FabMenuButton(
-                    icon: Icons.edit_rounded,
-                    title: l.dayGoalsFabAddTitle,
-                    subtitle: l.dayGoalsFabAddSubtitle,
-                    onTap: () => Navigator.pop(context, _FabAction.add),
-                  ),
-                  const SizedBox(height: 10),
-                  _FabMenuButton(
-                    icon: Icons.document_scanner_rounded,
-                    title: l.dayGoalsFabScanTitle,
-                    subtitle: l.dayGoalsFabScanSubtitle,
-                    onTap: () => Navigator.pop(context, _FabAction.scan),
-                  ),
-                  const SizedBox(height: 10),
-                  _FabMenuButton(
-                    icon: Icons.calendar_month_rounded,
-                    title: l.dayGoalsFabCalendarTitle,
-                    subtitle: l.dayGoalsFabCalendarSubtitle,
-                    onTap: () => Navigator.pop(context, _FabAction.calendar),
-                  ),
-                ],
-              ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _FabSheetHandle(),
+                const SizedBox(height: 10),
+                _FabMenuButton(
+                  icon: Icons.edit_rounded,
+                  title: l.dayGoalsFabAddTitle,
+                  subtitle: l.dayGoalsFabAddSubtitle,
+                  onTap: () => Navigator.pop(context, _FabAction.add),
+                ),
+                _FabMenuButton(
+                  icon: Icons.repeat_rounded,
+                  title: _dgRecurringMenuTitle(l.localeName),
+                  subtitle: _dgRecurringMenuSubtitle(l.localeName),
+                  onTap: () => Navigator.pop(context, _FabAction.recurring),
+                ),
+                _FabMenuButton(
+                  icon: Icons.document_scanner_rounded,
+                  title: l.dayGoalsFabScanTitle,
+                  subtitle: l.dayGoalsFabScanSubtitle,
+                  onTap: () => Navigator.pop(context, _FabAction.scan),
+                ),
+                _FabMenuButton(
+                  icon: Icons.calendar_month_rounded,
+                  title: l.dayGoalsFabCalendarTitle,
+                  subtitle: l.dayGoalsFabCalendarSubtitle,
+                  onTap: () => Navigator.pop(context, _FabAction.calendar),
+                ),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FabSheetHandle extends StatelessWidget {
+  const _FabSheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 4,
+      decoration: BoxDecoration(
+        color: _dgText(context).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(999),
       ),
     );
   }
@@ -1659,57 +1848,59 @@ class _FabMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = _dgPrimary(context);
+
     return Material(
-      color: _dgInnerCardColor(context, lightOpacity: 0.72),
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _dgBorder(context)),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [_dgPrimary(context), Color(0xFF7DD3FC)],
-                  ),
-                  boxShadow: _dgShadow(context),
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: Colors.white),
+                child: Icon(icon, color: color, size: 18),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: _dgText(context),
-                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _dgText(context),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        height: 1.12,
+                      ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: _dgText(context).withOpacity(0.65),
-                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _dgMuted(context),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
+                        height: 1.2,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: _dgMuted(context)),
+              Icon(Icons.chevron_right_rounded, color: _dgMuted(context), size: 24),
             ],
           ),
         ),

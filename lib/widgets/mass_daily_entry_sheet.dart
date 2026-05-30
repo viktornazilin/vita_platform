@@ -50,17 +50,13 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
   bool _incomeCatsLoading = false;
   List<dm.Category> _incomeCats = [];
 
+  // Unified 1–5 mood/emotion scale used across Mood and Reports.
   static const List<String> _goalEmojis = [
-    '😄',
-    '🙂',
+    '😞',
+    '🙁',
     '😐',
-    '😕',
-    '😢',
-    '😡',
-    '🤩',
-    '😴',
-    '🤒',
-    '🤯',
+    '🙂',
+    '😄',
   ];
 
   @override
@@ -746,10 +742,10 @@ class _TopHeader extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
@@ -757,15 +753,16 @@ class _TopHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: tt.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+              style: tt.titleLarge?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
                 color: cs.onSurface,
                 height: 1.05,
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             decoration: BoxDecoration(
               color: cs.surfaceContainer,
               borderRadius: BorderRadius.circular(14),
@@ -773,8 +770,8 @@ class _TopHeader extends StatelessWidget {
             ),
             child: Text(
               '$step/$totalSteps',
-              style: tt.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+              style: tt.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
                 color: cs.onSurface,
               ),
             ),
@@ -800,7 +797,7 @@ class _SubHeader extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(20),
@@ -811,18 +808,18 @@ class _SubHeader extends StatelessWidget {
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: tt.bodyMedium?.copyWith(color: cs.onSurface),
+                style: tt.bodySmall?.copyWith(color: cs.onSurface),
                 children: [
                   TextSpan(
                     text: AppLocalizations.of(context)!.massDailyDatePrefix,
-                    style: tt.bodyMedium?.copyWith(
+                    style: tt.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
                   ),
                   TextSpan(
                     text: dateLabel,
-                    style: tt.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    style: tt.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                       color: cs.onSurface,
                     ),
                   ),
@@ -895,8 +892,8 @@ class _InlineIconButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
-          width: 38,
-          height: 38,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             color: cs.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
@@ -904,7 +901,7 @@ class _InlineIconButton extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            size: 18,
+            size: 17,
             color: cs.onSurface,
           ),
         ),
@@ -938,7 +935,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -952,8 +949,9 @@ class _SectionCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: tt.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        style: tt.titleMedium?.copyWith(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
                           color: cs.onSurface,
                         ),
                       ),
@@ -962,8 +960,9 @@ class _SectionCard extends StatelessWidget {
                         Text(
                           subtitle!,
                           style: tt.bodySmall?.copyWith(
+                            fontSize: 12,
                             color: cs.onSurfaceVariant,
-                            height: 1.35,
+                            height: 1.25,
                           ),
                         ),
                       ],
@@ -976,7 +975,7 @@ class _SectionCard extends StatelessWidget {
                 ],
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             child,
           ],
         ),
@@ -997,42 +996,102 @@ class _EmojiPicker extends StatelessWidget {
   });
 
   static const _emojis = [
-    '😄',
-    '🙂',
+    '😞',
+    '🙁',
     '😐',
-    '😕',
-    '😢',
-    '😡',
-    '🤩',
-    '😴',
-    '🤒',
-    '🤯',
+    '🙂',
+    '😄',
   ];
+
+  String _label(BuildContext context, String emoji) {
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+
+    switch (emoji) {
+      case '😞':
+        return switch (lang) {
+          'en' => 'Very hard',
+          'de' => 'Sehr schwer',
+          'fr' => 'Très dur',
+          'es' => 'Muy difícil',
+          'tr' => 'Çok zor',
+          _ => 'Очень тяжело',
+        };
+      case '🙁':
+        return switch (lang) {
+          'en' => 'Hard',
+          'de' => 'Schwer',
+          'fr' => 'Difficile',
+          'es' => 'Difícil',
+          'tr' => 'Zor',
+          _ => 'Сложно',
+        };
+      case '😐':
+        return switch (lang) {
+          'en' => 'Neutral',
+          'de' => 'Neutral',
+          'fr' => 'Neutre',
+          'es' => 'Neutral',
+          'tr' => 'Nötr',
+          _ => 'Нейтрально',
+        };
+      case '🙂':
+        return switch (lang) {
+          'en' => 'Good',
+          'de' => 'Gut',
+          'fr' => 'Bien',
+          'es' => 'Bien',
+          'tr' => 'İyi',
+          _ => 'Хорошо',
+        };
+      case '😄':
+        return switch (lang) {
+          'en' => 'Great',
+          'de' => 'Sehr gut',
+          'fr' => 'Très bien',
+          'es' => 'Genial',
+          'tr' => 'Harika',
+          _ => 'Отлично',
+        };
+      default:
+        return emoji;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 7,
+      runSpacing: 7,
       children: [
         for (final e in _emojis)
           ChoiceChip(
             label: Text(
-              e,
-              style: const TextStyle(fontSize: 18),
+              '$e ${_label(context, e)}',
+              style: tt.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: initial == e ? cs.onPrimaryContainer : cs.onSurface,
+              ),
             ),
             selected: initial == e,
             onSelected: (_) => onSelect(e),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ActionChip(
           avatar: Icon(
             Icons.close_rounded,
-            size: 16,
+            size: 14,
             color: cs.onSurfaceVariant,
           ),
-          label: Text(AppLocalizations.of(context)!.massDailyNoMood),
+          label: Text(
+            AppLocalizations.of(context)!.massDailyNoMood,
+            style: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           onPressed: onClear,
         ),
       ],
@@ -2071,7 +2130,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
               ChoiceChip(
                 label: Text(
                   e,
-                  style: const TextStyle(fontSize: 20),
+                  style: const TextStyle(fontSize: 16),
                 ),
                 selected: widget.row._emotion == e,
                 onSelected: (_) => Navigator.pop(ctx, e),
@@ -2115,22 +2174,74 @@ class _GoalRowViewState extends State<_GoalRowView> {
     }
   }
 
+  String _titleHint(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+    return switch (lang) {
+      'en' => 'Training / Work',
+      'de' => 'Training / Arbeit',
+      'fr' => 'Entraînement / Travail',
+      'es' => 'Entreno / Trabajo',
+      'tr' => 'Antrenman / İş',
+      _ => 'Тренировка / Работа',
+    };
+  }
+
+  InputDecoration _compactInputDecoration(
+    BuildContext context, {
+    required String labelText,
+    String? hintText,
+    Widget? suffixIcon,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      isDense: true,
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      labelStyle: TextStyle(
+        fontSize: 11,
+        height: 1.1,
+        fontWeight: FontWeight.w600,
+        color: cs.onSurfaceVariant,
+      ),
+      hintStyle: TextStyle(
+        fontSize: 13,
+        height: 1.1,
+        fontWeight: FontWeight.w600,
+        color: cs.onSurfaceVariant.withOpacity(0.62),
+      ),
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+    );
+  }
+
+  ButtonStyle _compactButtonStyle(BuildContext context) {
+    return OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 46),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+      textStyle: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        height: 1.05,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final timeLabel = widget.row._time == null
-        ? AppLocalizations.of(context)!.massDailyTime
-        : widget.row._time!.format(context);
-    final emotionLabel = widget.row._emotion ?? AppLocalizations.of(context)!.massDailyEmotion;
+    final tt = Theme.of(context).textTheme;
+    final l = AppLocalizations.of(context)!;
+    final timeLabel = widget.row._time == null ? l.massDailyTime : widget.row._time!.format(context);
 
     final goals = _userGoalsForSelectedBlock;
     final dropdownGoalValue =
-        goals.any((g) => g.id == widget.row._userGoalId)
-            ? widget.row._userGoalId
-            : null;
+        goals.any((g) => g.id == widget.row._userGoalId) ? widget.row._userGoalId : null;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(18),
@@ -2138,8 +2249,6 @@ class _GoalRowViewState extends State<_GoalRowView> {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final narrow = constraints.maxWidth < 720;
-
           final titleField = Autocomplete<String>(
             optionsBuilder: (TextEditingValue v) {
               final q = v.text.trim();
@@ -2152,231 +2261,200 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 TextPosition(offset: val.length),
               );
             },
-            fieldViewBuilder:
-                (context, textCtrl, focusNode, onFieldSubmitted) {
+            fieldViewBuilder: (context, textCtrl, focusNode, onFieldSubmitted) {
               if (textCtrl.text != widget.row._titleCtrl.text) {
                 textCtrl.text = widget.row._titleCtrl.text;
                 textCtrl.selection = widget.row._titleCtrl.selection;
               }
 
-              return TextField(
-                controller: textCtrl,
-                focusNode: focusNode,
-                decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)!.massDailyTaskTitle,
-                  isDense: true,
-                  suffixIcon: _titleSugLoading
-                      ? const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : (_titleSuggestions.isNotEmpty
-                          ? const Icon(Icons.history_rounded)
-                          : null),
+              return SizedBox(
+                height: 46,
+                child: TextField(
+                  controller: textCtrl,
+                  focusNode: focusNode,
+                  textInputAction: TextInputAction.next,
+                  style: tt.bodyMedium?.copyWith(
+                    fontSize: 13.5,
+                    height: 1.1,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                  decoration: _compactInputDecoration(
+                    context,
+                    labelText: l.massDailyTaskTitle,
+                    hintText: _titleHint(context),
+                    suffixIcon: _titleSugLoading
+                        ? const Padding(
+                            padding: EdgeInsets.all(10),
+                            child: SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : (_titleSuggestions.isNotEmpty
+                            ? const Icon(Icons.history_rounded, size: 17)
+                            : null),
+                  ),
+                  onChanged: (v) {
+                    widget.row._titleCtrl.value = textCtrl.value;
+                    _debouncer.run(() => _searchTitles(v));
+                  },
+                  onSubmitted: (_) => onFieldSubmitted(),
                 ),
-                onChanged: (v) {
-                  widget.row._titleCtrl.value = textCtrl.value;
-                  _debouncer.run(() => _searchTitles(v));
-                },
-                onSubmitted: (_) => onFieldSubmitted(),
               );
             },
           );
 
-          final titleHoursTime = Row(
-            children: [
-              Expanded(flex: 2, child: titleField),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 96,
-                child: TextField(
-                  controller: widget.row._hoursCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.massDailyHours,
-                    isDense: true,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 128,
-                child: OutlinedButton.icon(
-                  onPressed: _pickTime,
-                  icon: const Icon(Icons.access_time_rounded),
-                  label: Text(
-                    timeLabel,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ],
-          );
-
-          final categoryField = DropdownButtonFormField<String>(
-            value: widget.row._lifeBlock,
-            isExpanded: true,
-            items: widget.lifeBlocks
-                .map(
-                  (b) => DropdownMenuItem(
-                    value: b,
-                    child: Text(
-                      _labelForBlock(b),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) async {
-              final next = _normalizeBlock(v ?? 'general');
-              if (next == widget.row._lifeBlock) return;
-
-              setState(() {
-                widget.row._lifeBlock = next;
-                widget.row._userGoalId = null;
-                _userGoalsForSelectedBlock = const [];
-              });
-
-              await _loadUserGoalsForCurrentBlock();
-            },
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.massDailyCategory,
-              isDense: true,
-            ),
-          );
-
-          final emotionBtn = SizedBox(
-            width: narrow ? double.infinity : 148,
+          final timeButton = SizedBox(
+            height: 46,
             child: OutlinedButton.icon(
-              onPressed: _pickEmotion,
-              icon: const Icon(Icons.mood_rounded),
+              onPressed: _pickTime,
+              style: _compactButtonStyle(context),
+              icon: const Icon(Icons.access_time_rounded, size: 17),
               label: Text(
-                emotionLabel,
+                timeLabel,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           );
 
-          final importanceField = DropdownButtonFormField<int>(
-            value: widget.row._importance,
-            items: [
-              DropdownMenuItem(value: 1, child: Text('1')),
-              DropdownMenuItem(value: 2, child: Text('2')),
-              DropdownMenuItem(value: 3, child: Text('3')),
-            ],
-            onChanged: (v) => setState(() => widget.row._importance = v ?? 1),
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.massDailyImportance,
-              isDense: true,
+          final hoursField = SizedBox(
+            height: 46,
+            child: TextField(
+              controller: widget.row._hoursCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textAlignVertical: TextAlignVertical.center,
+              style: tt.bodyMedium?.copyWith(
+                fontSize: 13.5,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+              ),
+              decoration: _compactInputDecoration(
+                context,
+                labelText: l.massDailyHours,
+              ),
             ),
           );
 
-          final userGoalField = DropdownButtonFormField<String?>(
-            value: dropdownGoalValue,
-            isExpanded: true,
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.massDailyBigGoal,
-              isDense: true,
+          final categoryField = SizedBox(
+            height: 46,
+            child: DropdownButtonFormField<String>(
+              value: widget.row._lifeBlock,
+              isExpanded: true,
+              style: tt.bodyMedium?.copyWith(
+                fontSize: 13.5,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+              ),
+              items: widget.lifeBlocks
+                  .map(
+                    (b) => DropdownMenuItem(
+                      value: b,
+                      child: Text(
+                        _labelForBlock(b),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) async {
+                final next = _normalizeBlock(v ?? 'general');
+                if (next == widget.row._lifeBlock) return;
+
+                setState(() {
+                  widget.row._lifeBlock = next;
+                  widget.row._userGoalId = null;
+                  _userGoalsForSelectedBlock = const [];
+                });
+
+                await _loadUserGoalsForCurrentBlock();
+              },
+              decoration: _compactInputDecoration(
+                context,
+                labelText: l.massDailyCategory,
+              ),
             ),
-            items: [
-              DropdownMenuItem<String?>(
-                value: null,
-                child: Text(AppLocalizations.of(context)!.massDailyNoLink),
-              ),
-              ...goals.map(
-                (g) => DropdownMenuItem<String?>(
-                  value: g.id,
-                  child: Text(
-                    '${g.title} · ${_horizonLabel(context, g.horizon)}',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ],
-            onChanged: (v) {
-              setState(() => widget.row._userGoalId = v);
-            },
           );
 
-          if (narrow) {
-            return Column(
-              children: [
-                titleHoursTime,
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: categoryField),
-                    const SizedBox(width: 8),
-                    SizedBox(width: 140, child: importanceField),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                emotionBtn,
-                const SizedBox(height: 8),
-                userGoalField,
-                if (_loadingUserGoals) ...[
-                  const SizedBox(height: 6),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            AppLocalizations.of(context)!.massDailyLoadingUserGoals,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (!_loadingUserGoals && goals.isEmpty) ...[
-                  const SizedBox(height: 6),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      AppLocalizations.of(context)!.massDailyNoUserGoalsForCategory,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                    ),
-                  ),
-                ],
+          final importanceField = SizedBox(
+            height: 46,
+            child: DropdownButtonFormField<int>(
+              value: widget.row._importance,
+              style: tt.bodyMedium?.copyWith(
+                fontSize: 13.5,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+              ),
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('1')),
+                DropdownMenuItem(value: 2, child: Text('2')),
+                DropdownMenuItem(value: 3, child: Text('3')),
               ],
-            );
-          }
+              onChanged: (v) => setState(() => widget.row._importance = v ?? 1),
+              decoration: _compactInputDecoration(
+                context,
+                labelText: l.massDailyImportance,
+              ),
+            ),
+          );
+
+          final userGoalField = SizedBox(
+            height: 46,
+            child: DropdownButtonFormField<String?>(
+              value: dropdownGoalValue,
+              isExpanded: true,
+              style: tt.bodyMedium?.copyWith(
+                fontSize: 13.5,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+              ),
+              decoration: _compactInputDecoration(
+                context,
+                labelText: l.massDailyBigGoal,
+              ),
+              items: [
+                DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(l.massDailyNoLink),
+                ),
+                ...goals.map(
+                  (g) => DropdownMenuItem<String?>(
+                    value: g.id,
+                    child: Text(
+                      '${g.title} · ${_horizonLabel(context, g.horizon)}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+              onChanged: (v) {
+                setState(() => widget.row._userGoalId = v);
+              },
+            ),
+          );
 
           return Column(
             children: [
-              titleHoursTime,
+              titleField,
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: timeButton),
+                  const SizedBox(width: 8),
+                  SizedBox(width: 112, child: hoursField),
+                ],
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(child: categoryField),
                   const SizedBox(width: 8),
-                  emotionBtn,
-                  const SizedBox(width: 8),
-                  SizedBox(width: 120, child: importanceField),
+                  SizedBox(width: 116, child: importanceField),
                 ],
               ),
               const SizedBox(height: 8),
@@ -2398,12 +2476,11 @@ class _GoalRowViewState extends State<_GoalRowView> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          AppLocalizations.of(context)!.massDailyLoadingUserGoals,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
+                          l.massDailyLoadingUserGoals,
+                          style: tt.bodySmall?.copyWith(
+                            fontSize: 11.5,
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],
@@ -2415,12 +2492,11 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    AppLocalizations.of(context)!.massDailyNoUserGoalsForCategory,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
-                        ),
+                    l.massDailyNoUserGoalsForCategory,
+                    style: tt.bodySmall?.copyWith(
+                      fontSize: 11.5,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -2431,7 +2507,6 @@ class _GoalRowViewState extends State<_GoalRowView> {
     );
   }
 }
-
 class MassDailyEntryResult {
   final DateTime date;
   final _MoodEntry? mood;

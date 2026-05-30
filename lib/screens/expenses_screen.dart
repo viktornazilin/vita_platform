@@ -453,12 +453,13 @@ class _ExpensesViewState extends State<_ExpensesView> {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    RefreshIndicator.adaptive(
-                      onRefresh: () async {
-                        await m.load();
-                        _invalidatePeriodData();
-                      },
-                      child: ListView(
+                    Positioned.fill(
+                      child: RefreshIndicator.adaptive(
+                        onRefresh: () async {
+                          await m.load();
+                          _invalidatePeriodData();
+                        },
+                        child: ListView(
                         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                         padding: EdgeInsets.fromLTRB(
                           16,
@@ -524,15 +525,13 @@ class _ExpensesViewState extends State<_ExpensesView> {
                                 ),
                             },
                           ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     Positioned(
                       right: 18,
-                      // The screen is rendered inside the app shell above the shared bottom nav.
-                      // A small negative offset visually attaches the FAB to that bottom nav,
-                      // matching the Goals screen placement without touching GoalsScreen.
-                      bottom: bottom - 74,
+                      bottom: bottom - 90,
                       child: _Fab(
                         label: t.add,
                         onTap: () => _showAddMenu(context),
@@ -750,10 +749,12 @@ class _LadnaHeader extends StatelessWidget {
             child: Text(
               title,
               style: TextStyle(
-                fontFamily: 'Playfair Display',
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontFamily: 'PlayfairDisplay',
+                fontSize: 22,
+                height: 1.05,
+                fontWeight: FontWeight.w700,
                 color: _LadnaColors.dark,
+                letterSpacing: -0.3,
               ),
             ),
           ),
@@ -1000,7 +1001,7 @@ class _BalanceHero extends StatelessWidget {
               Text(
                 '${_formatMoney(free)} €',
                 style: TextStyle(
-                  fontFamily: 'Playfair Display',
+                  fontFamily: 'PlayfairDisplay',
                   color: Colors.white,
                   fontSize: 38,
                   height: 1,
@@ -1088,7 +1089,7 @@ class _CompactBalance extends StatelessWidget {
                 Text(
                   '${_formatMoney(free)} €',
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: 'PlayfairDisplay',
                     color: Colors.white,
                     fontSize: 26,
                     height: 1,
@@ -1137,7 +1138,7 @@ class _DarkMetric extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: valueColor,
-              fontFamily: 'Playfair Display',
+              fontFamily: 'PlayfairDisplay',
               fontWeight: FontWeight.w700,
               fontSize: 17,
             ),
@@ -1621,7 +1622,7 @@ class _TransactionRow extends StatelessWidget {
                 amount,
                 style: TextStyle(
                   color: amountColor,
-                  fontFamily: 'Playfair Display',
+                  fontFamily: 'PlayfairDisplay',
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),

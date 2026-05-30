@@ -20,15 +20,15 @@ class AppNavigationBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+        padding: const EdgeInsets.fromLTRB(12, 5, 12, 8),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: cs.surface.withOpacity(0.82),
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: cs.outlineVariant.withOpacity(0.55)),
                 boxShadow: [
                   BoxShadow(
@@ -38,14 +38,38 @@ class AppNavigationBar extends StatelessWidget {
                   ),
                 ],
               ),
-              child: NavigationBar(
-                height: 66,
+              child: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  labelTextStyle: MaterialStateProperty.resolveWith((states) {
+                    final selected = states.contains(MaterialState.selected);
+                    return TextStyle(
+                      fontFamily: 'Geologica',
+                      fontSize: 10.5,
+                      height: 1.05,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                      color: selected
+                          ? cs.primary
+                          : cs.onSurface.withOpacity(0.62),
+                    );
+                  }),
+                  iconTheme: MaterialStateProperty.resolveWith((states) {
+                    final selected = states.contains(MaterialState.selected);
+                    return IconThemeData(
+                      size: selected ? 22 : 20,
+                      color: selected
+                          ? cs.primary
+                          : cs.onSurface.withOpacity(0.56),
+                    );
+                  }),
+                ),
+                child: NavigationBar(
+                height: 60,
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 selectedIndex: selectedIndex,
                 onDestinationSelected: onSelect,
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
-                indicatorColor: cs.primary.withOpacity(0.16),
+                indicatorColor: cs.primary.withOpacity(0.14),
                 destinations: [
                   NavigationDestination(
                     icon: const Icon(Icons.flag_outlined),
@@ -73,6 +97,7 @@ class AppNavigationBar extends StatelessWidget {
                     label: t9n.navExpenses,
                   ),
                 ],
+                ),
               ),
             ),
           ),

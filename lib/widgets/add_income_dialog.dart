@@ -132,24 +132,24 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF5F3FA),
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: const Color(0xFFE0DCF0)),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x26000000),
-                blurRadius: 30,
-                offset: Offset(0, 16),
+                blurRadius: 22,
+                offset: Offset(0, 12),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(24),
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
-                18,
                 16,
-                18,
-                18 + media.viewInsets.bottom,
+                14,
+                16,
+                16 + media.viewInsets.bottom,
               ),
               child: Form(
                 key: _formKey,
@@ -162,14 +162,14 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                       title: isEdit ? l.addIncomeEditTitle : l.addIncomeNewTitle,
                       onClose: () => Navigator.pop(context),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     _LadnaTextField(
                       controller: _amountController,
                       label: l.addIncomeAmountLabel,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       validator: _validateAmount,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _CategoryPicker(
                       label: l.addIncomeCategoryLabel,
                       value: _selectedCategoryId,
@@ -177,7 +177,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                       validatorText: l.addIncomeCategoryRequired,
                       onChanged: (v) => setState(() => _selectedCategoryId = v),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
@@ -198,7 +198,7 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                       label: l.addIncomeNoteLabel,
                       maxLines: 2,
                     ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -207,16 +207,16 @@ class _AddIncomeDialogState extends State<AddIncomeDialog> {
                             child: Text(l.commonCancel),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: FilledButton(
                             onPressed: _submit,
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFF6B54C0),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
                             child: Text(isEdit ? l.commonSave : l.commonAdd),
@@ -247,15 +247,15 @@ class _DialogHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
             color: const Color(0xFFEAE6F5),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: const Color(0xFF6B54C0)),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             title,
@@ -263,7 +263,7 @@ class _DialogHeader extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontFamily: 'Geologica',
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.w900,
               color: Color(0xFF160E38),
             ),
@@ -300,20 +300,35 @@ class _LadnaTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       maxLines: maxLines,
+      style: const TextStyle(
+        fontFamily: 'Geologica',
+        fontSize: 13,
+        height: 1.1,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF17123A),
+      ),
       decoration: InputDecoration(
         labelText: label,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        labelStyle: const TextStyle(
+          fontFamily: 'Geologica',
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF8B84A3),
+        ),
         filled: true,
         fillColor: Colors.white.withOpacity(0.72),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFF6B54C0), width: 1.4),
         ),
       ),
@@ -357,16 +372,31 @@ class _CategoryPicker extends StatelessWidget {
           .toList(),
       onChanged: onChanged,
       validator: (v) => v == null ? validatorText : null,
+      style: const TextStyle(
+        fontFamily: 'Geologica',
+        fontSize: 13,
+        height: 1.1,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF17123A),
+      ),
       decoration: InputDecoration(
         labelText: label,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        labelStyle: const TextStyle(
+          fontFamily: 'Geologica',
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF8B84A3),
+        ),
         filled: true,
         fillColor: Colors.white.withOpacity(0.72),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
         ),
       ),
@@ -392,12 +422,12 @@ class _LadnaCategoryDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text(title),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      title: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
       content: TextField(
         controller: controller,
         autofocus: true,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(labelText: label, isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
         textInputAction: TextInputAction.done,
         onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
       ),

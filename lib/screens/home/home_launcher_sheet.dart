@@ -407,23 +407,38 @@ class _HeroLogoCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6B54C0).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF6B54C0).withOpacity(0.30)),
-                    ),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 34,
-                      height: 34,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Text(
-                        '✦',
-                        style: TextStyle(fontSize: 30, color: Color(0xFFFAF6EE)),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF6B54C0).withOpacity(0.30)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6B54C0).withOpacity(0.28),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6B54C0).withOpacity(0.20),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            '✦',
+                            style: TextStyle(fontSize: 30, color: Color(0xFFFAF6EE)),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -435,7 +450,7 @@ class _HeroLogoCard extends StatelessWidget {
                         const Text(
                           'Ladna',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: 'PlayfairDisplay',
                             fontSize: 31,
                             height: 1.0,
                             fontWeight: FontWeight.w700,

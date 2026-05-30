@@ -41,6 +41,33 @@ class UserService {
     return _cachedOnboardingCompleted ?? false;
   }
 
+  List<String> get selectedLifeBlocks {
+    final v = _currentUserData?['life_blocks'];
+    if (v is List) {
+      return v
+          .whereType<String>()
+          .where((e) => e.trim().isNotEmpty)
+          .map((e) => e.trim())
+          .toSet()
+          .toList();
+    }
+
+    final d = _cachedOnboardingDraft;
+    final draftBlocks = d?['life_blocks'];
+    if (draftBlocks is List) {
+      return draftBlocks
+          .whereType<String>()
+          .where((e) => e.trim().isNotEmpty)
+          .map((e) => e.trim())
+          .toSet()
+          .toList();
+    }
+
+    return const <String>[];
+  }
+
+  bool get needsLifeBlocksSetup => selectedLifeBlocks.isEmpty;
+
   // локальный кэш для гостей
   bool? _cachedSeenIntro;
   String? _cachedArchetype;
@@ -238,6 +265,40 @@ class UserService {
     if (updates.containsKey('has_completed_questionnaire')) {
       final v = updates['has_completed_questionnaire'] == true;
       await setHasCompletedQuestionnaire(v);
+    }
+  }
+
+  Future<void> completeLifeBlocksSetup(List<String> blocks) async {
+    final cleaned = blocks
+        .where((e) => e.trim().isNotEmpty)
+        .map((e) => e.trim())
+        .toSet()
+        .toList();
+
+    if (cleaned.isEmpty) return;
+
+    _cachedOnboardingCompleted = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefOnboardingCompleted, true);
+    await prefs.setString(
+      _prefOnboardingDraft,
+      jsonEncode({
+        'life_blocks': cleaned,
+        'priorities': cleaned,
+      }),
+    );
+
+    final id = _currentUserData?['id'];
+    if (id != null) {
+      final updates = <String, dynamic>{
+        'life_blocks': cleaned,
+        'priorities': cleaned,
+        'has_completed_questionnaire': true,
+      };
+
+      await _client.from('users').update(updates).eq('id', id);
+      _currentUserData = {...?_currentUserData, ...updates};
     }
   }
 

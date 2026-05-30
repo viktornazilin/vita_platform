@@ -24,7 +24,9 @@ class AddGoalResult {
   final int importance;
   final String emotion;
   final double hours;
+  final DateTime? selectedDate;
   final TimeOfDay startTime;
+  final TimeOfDay? endTime;
   final String? userGoalId;
 
   const AddGoalResult({
@@ -34,7 +36,9 @@ class AddGoalResult {
     required this.importance,
     required this.emotion,
     required this.hours,
+    this.selectedDate,
     required this.startTime,
+    this.endTime,
     this.userGoalId,
   });
 }
@@ -48,6 +52,7 @@ class AddDayGoalSheet extends StatefulWidget {
   final List<UserGoalLinkOption> availableUserGoals;
 
   final String? initialUserGoalId;
+  final DateTime? initialDate;
 
   const AddDayGoalSheet({
     super.key,
@@ -55,6 +60,7 @@ class AddDayGoalSheet extends StatefulWidget {
     this.availableBlocks = const [],
     this.availableUserGoals = const [],
     this.initialUserGoalId,
+    this.initialDate,
   });
 
   @override
@@ -66,14 +72,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   final _descCtrl = TextEditingController();
 
   final _supabase = Supabase.instance.client;
-  final _emotions = const ['😊', '😐', '😢', '😎', '😤', '🤔', '😴', '😇'];
+  final _startTimeCtrl = TextEditingController(text: '09:00');
+  final _endTimeCtrl = TextEditingController(text: '10:00');
 
-  String _emotion = '😊';
   int _importance = 2;
-  double _hours = 1.0;
   late String _lifeBlock;
   String? _selectedUserGoalId;
+  DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
 
   bool _loadingUserGoals = false;
   List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
@@ -389,6 +396,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
     }
 
     _selectedUserGoalId = widget.initialUserGoalId;
+    _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserGoalsForCurrentBlock();
@@ -399,17 +407,162 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   void dispose() {
     _titleCtrl.dispose();
     _descCtrl.dispose();
+    _startTimeCtrl.dispose();
+    _endTimeCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickStartTime() async {
-    final picked = await showTimePicker(
+  String _localeCode(BuildContext context) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return {'ru', 'en', 'de', 'fr', 'es', 'tr'}.contains(code) ? code : 'en';
+  }
+
+  String _localized(BuildContext context, Map<String, String> values) {
+    final code = _localeCode(context);
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
+
+  String _sheetTitle(BuildContext context) => _localized(context, const {
+        'ru': 'Добавить задачу',
+        'en': 'Add task',
+        'de': 'Aufgabe hinzufügen',
+        'fr': 'Ajouter une tâche',
+        'es': 'Añadir tarea',
+        'tr': 'Görev ekle',
+      });
+
+  String _titleHint(BuildContext context) => _localized(context, const {
+        'ru': 'Тренировка / Работа',
+        'en': 'Workout / Work',
+        'de': 'Training / Arbeit',
+        'fr': 'Sport / Travail',
+        'es': 'Entreno / Trabajo',
+        'tr': 'Antrenman / İş',
+      });
+
+  String _endTimeLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Время окончания',
+        'en': 'End time',
+        'de': 'Endzeit',
+        'fr': 'Heure de fin',
+        'es': 'Hora de fin',
+        'tr': 'Bitiş saati',
+      });
+
+  String _durationLabel(BuildContext context, double hours) {
+    final value = hours.toStringAsFixed(hours % 1 == 0 ? 0 : 1);
+    return _localized(context, {
+      'ru': 'Будет записано: $value ч',
+      'en': 'Will be saved: ${value}h',
+      'de': 'Wird gespeichert: ${value} Std.',
+      'fr': 'Sera enregistré : ${value} h',
+      'es': 'Se guardará: ${value} h',
+      'tr': 'Kaydedilecek: ${value} sa',
+    });
+  }
+
+  String _timeErrorText(BuildContext context) => _localized(context, const {
+        'ru': 'Введите время в формате 09:30 или 930',
+        'en': 'Enter time as 09:30 or 930',
+        'de': 'Zeit als 09:30 oder 930 eingeben',
+        'fr': 'Saisis l’heure comme 09:30 ou 930',
+        'es': 'Introduce la hora como 09:30 o 930',
+        'tr': 'Saati 09:30 veya 930 olarak gir',
+      });
+
+  String _dateLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Дата',
+        'en': 'Date',
+        'de': 'Datum',
+        'fr': 'Date',
+        'es': 'Fecha',
+        'tr': 'Tarih',
+      });
+
+  String _chooseDateLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Выбрать',
+        'en': 'Choose',
+        'de': 'Wählen',
+        'fr': 'Choisir',
+        'es': 'Elegir',
+        'tr': 'Seç',
+      });
+
+  String _formatDate(DateTime value) {
+    final d = value.day.toString().padLeft(2, '0');
+    final m = value.month.toString().padLeft(2, '0');
+    return '$d.$m.${value.year}';
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateUtils.dateOnly(DateTime.now());
+    final picked = await showDatePicker(
       context: context,
-      initialTime: _startTime,
+      initialDate: _selectedDate,
+      firstDate: DateTime(now.year - 2, 1, 1),
+      lastDate: DateTime(now.year + 5, 12, 31),
     );
+
     if (picked != null) {
-      setState(() => _startTime = picked);
+      setState(() => _selectedDate = DateUtils.dateOnly(picked));
     }
+  }
+
+  String _formatTime(TimeOfDay value) =>
+      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
+  TimeOfDay? _parseTimeInput(String raw) {
+    var v = raw.trim().replaceAll('.', ':').replaceAll(' ', '');
+    if (v.isEmpty) return null;
+
+    int? hour;
+    int minute = 0;
+
+    if (v.contains(':')) {
+      final parts = v.split(':');
+      if (parts.isEmpty || parts.length > 2) return null;
+      hour = int.tryParse(parts[0]);
+      minute = parts.length == 2 && parts[1].isNotEmpty
+          ? int.tryParse(parts[1]) ?? -1
+          : 0;
+    } else {
+      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty || digits.length > 4) return null;
+
+      if (digits.length <= 2) {
+        hour = int.tryParse(digits);
+      } else {
+        final padded = digits.padLeft(4, '0');
+        hour = int.tryParse(padded.substring(0, padded.length - 2));
+        minute = int.tryParse(padded.substring(padded.length - 2)) ?? -1;
+      }
+    }
+
+    if (hour == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  int _minutesOf(TimeOfDay value) => value.hour * 60 + value.minute;
+
+  double get _calculatedHours {
+    var diff = _minutesOf(_endTime) - _minutesOf(_startTime);
+    if (diff <= 0) diff += 24 * 60;
+    return (diff / 60).clamp(0.25, 24.0);
+  }
+
+  void _onStartTimeChanged(String raw) {
+    final parsed = _parseTimeInput(raw);
+    if (parsed == null) return;
+    setState(() => _startTime = parsed);
+  }
+
+  void _onEndTimeChanged(String raw) {
+    final parsed = _parseTimeInput(raw);
+    if (parsed == null) return;
+    setState(() => _endTime = parsed);
   }
 
   void _submit() {
@@ -445,9 +598,11 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         description: _descCtrl.text.trim(),
         lifeBlock: _normalizeBlock(_lifeBlock),
         importance: _importance,
-        emotion: _emotion,
-        hours: _hours,
+        emotion: '',
+        hours: _calculatedHours,
+        selectedDate: _selectedDate,
         startTime: _startTime,
+        endTime: _endTime,
         userGoalId: _selectedUserGoalId,
       ),
     );
@@ -545,8 +700,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          l.addDayGoalTitle,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          _sheetTitle(context),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: scheme.onSurface,
                               ),
@@ -554,14 +709,45 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
+                  _Section(
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today_rounded, color: scheme.primary, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_dateLabel(context)}:',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _formatDate(_selectedDate),
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: scheme.onSurface,
+                                ),
+                          ),
+                        ),
+                        _PillButton(
+                          text: _chooseDateLabel(context),
+                          onTap: _pickDate,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _Section(
                     child: Column(
                       children: [
                         _PrettyField(
                           controller: _titleCtrl,
                           label: l.addDayGoalFieldTitle,
-                          hint: l.addDayGoalTitleHint,
+                          hint: _titleHint(context),
                           icon: Icons.flag_rounded,
                           minLines: 1,
                           maxLines: 2,
@@ -582,22 +768,78 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                   ),
                   const SizedBox(height: 12),
                   _Section(
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.access_time_rounded, color: scheme.primary),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            l.addDayGoalStartTime,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: scheme.onSurface,
-                                ),
-                          ),
+                        Row(
+                          children: [
+                            Icon(Icons.access_time_rounded, color: scheme.primary, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                l.addDayGoalStartTime,
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: scheme.onSurface,
+                                    ),
+                              ),
+                            ),
+                            Text(
+                              _durationLabel(context, _calculatedHours),
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
                         ),
-                        _PillButton(
-                          text: _startTime.format(context),
-                          onTap: _pickStartTime,
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _TimeTextField(
+                                controller: _startTimeCtrl,
+                                label: l.addDayGoalStartTime,
+                                onChanged: _onStartTimeChanged,
+                                onEditingComplete: () {
+                                  final parsed = _parseTimeInput(_startTimeCtrl.text);
+                                  if (parsed == null) {
+                                    _startTimeCtrl.text = _formatTime(_startTime);
+                                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                      SnackBar(content: Text(_timeErrorText(context))),
+                                    );
+                                    return;
+                                  }
+                                  setState(() {
+                                    _startTime = parsed;
+                                    _startTimeCtrl.text = _formatTime(parsed);
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _TimeTextField(
+                                controller: _endTimeCtrl,
+                                label: _endTimeLabel(context),
+                                onChanged: _onEndTimeChanged,
+                                onEditingComplete: () {
+                                  final parsed = _parseTimeInput(_endTimeCtrl.text);
+                                  if (parsed == null) {
+                                    _endTimeCtrl.text = _formatTime(_endTime);
+                                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                                      SnackBar(content: Text(_timeErrorText(context))),
+                                    );
+                                    return;
+                                  }
+                                  setState(() {
+                                    _endTime = parsed;
+                                    _endTimeCtrl.text = _formatTime(parsed);
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -612,7 +854,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           Expanded(
                             child: Text(
                               l.addDayGoalLifeBlock,
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     color: scheme.onSurface,
                                   ),
@@ -664,7 +906,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                             Expanded(
                               child: Text(
                                 l.addDayGoalLinkSectionTitle,
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                       fontWeight: FontWeight.w900,
                                       color: scheme.onSurface,
                                     ),
@@ -683,19 +925,19 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                                 ? scheme.surfaceContainerHighest.withOpacity(0.36)
                                 : Colors.white.withOpacity(0.78),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: scheme.outlineVariant.withOpacity(0.60),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: scheme.outlineVariant.withOpacity(0.55),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(
                                 color: scheme.primary,
                                 width: 1.4,
@@ -791,7 +1033,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                       children: [
                         Text(
                           l.addDayGoalImportance,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: scheme.onSurface,
                               ),
@@ -823,74 +1065,6 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               ),
                             );
                           }),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _Section(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l.addDayGoalEmotion,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: scheme.onSurface,
-                              ),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          children: _emotions.map((e) {
-                            final selected = _emotion == e;
-                            return ChoiceChip(
-                              label: Text(
-                                e,
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              selected: selected,
-                              onSelected: (_) => setState(() => _emotion = e),
-                              selectedColor: scheme.primary.withOpacity(0.18),
-                              backgroundColor:
-                                  scheme.surfaceContainerHighest.withOpacity(0.75),
-                              side: BorderSide(
-                                color: selected
-                                    ? scheme.primary.withOpacity(0.35)
-                                    : scheme.outlineVariant.withOpacity(0.65),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _Section(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                l.addDayGoalHours,
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      color: scheme.onSurface,
-                                    ),
-                              ),
-                            ),
-                            _Pill(text: _hours.toStringAsFixed(1)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Slider(
-                          min: 0.5,
-                          max: 14.0,
-                          divisions: 27,
-                          value: _hours,
-                          onChanged: (v) => setState(() => _hours = v),
                         ),
                       ],
                     ),
@@ -956,7 +1130,7 @@ class _Section extends StatelessWidget {
           ];
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(22),
@@ -999,28 +1173,112 @@ class _PrettyField extends StatelessWidget {
       maxLength: maxLen,
       textInputAction:
           maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
+          ),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, size: 18),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+        hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant.withOpacity(0.70),
+            ),
         filled: true,
         fillColor: isDark
             ? scheme.surfaceContainerHighest.withOpacity(0.36)
             : Colors.white.withOpacity(0.78),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
             color: scheme.outlineVariant.withOpacity(0.60),
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
             color: scheme.outlineVariant.withOpacity(0.55),
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: scheme.primary, width: 1.4),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _TimeTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onEditingComplete;
+
+  const _TimeTextField({
+    required this.controller,
+    required this.label,
+    required this.onChanged,
+    required this.onEditingComplete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      textInputAction: TextInputAction.next,
+      onChanged: onChanged,
+      onEditingComplete: onEditingComplete,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: scheme.onSurface,
+          ),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: '09:00',
+        prefixIcon: Icon(
+          Icons.schedule_rounded,
+          size: 18,
+          color: scheme.primary,
+        ),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        filled: true,
+        fillColor: isDark
+            ? scheme.surfaceContainerHighest.withOpacity(0.36)
+            : Colors.white.withOpacity(0.78),
+        labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+        hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant.withOpacity(0.70),
+            ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: scheme.outlineVariant.withOpacity(0.60),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: scheme.outlineVariant.withOpacity(0.55),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: scheme.primary, width: 1.4),
         ),
       ),

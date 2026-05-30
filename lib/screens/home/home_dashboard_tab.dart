@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -68,8 +70,14 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     final locale = Localizations.localeOf(context).languageCode.toLowerCase();
     if (_aiLocale != locale) {
       _aiLocale = locale;
-      _aiInsightFuture = HomeAiInsightService.instance.fetch(locale: locale);
+      _aiInsightFuture = _shouldFetchWeeklyAiInsight()
+          ? HomeAiInsightService.instance.fetch(locale: locale)
+          : null;
     }
+  }
+
+  bool _shouldFetchWeeklyAiInsight() {
+    return DateTime.now().weekday == DateTime.sunday;
   }
 
   Future<_HabitsSnapshot> _loadHabits() async {
@@ -111,7 +119,9 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     final locale = Localizations.localeOf(context).languageCode.toLowerCase();
     setState(() {
       _habitsFuture = _loadHabits();
-      _aiInsightFuture = HomeAiInsightService.instance.fetch(locale: locale);
+      _aiInsightFuture = _shouldFetchWeeklyAiInsight()
+          ? HomeAiInsightService.instance.fetch(locale: locale)
+          : null;
     });
   }
 
@@ -221,6 +231,110 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
   }
 
+  String _weekendAiTeaser() => _pick(const {
+        'ru': 'AI-наблюдение — в воскресенье. Сейчас это статистика без запуска AI.',
+        'en': 'The AI observation appears on Sunday. For now, this is statistics without running AI.',
+        'de': 'Die AI-Beobachtung erscheint am Sonntag. Aktuell ist das Statistik ohne AI-Lauf.',
+        'fr': 'L’observation IA apparaît dimanche. Pour l’instant, c’est une statistique sans lancer l’IA.',
+        'es': 'La observación de IA aparece el domingo. Por ahora, esto es estadística sin ejecutar IA.',
+        'tr': 'AI gözlemi pazar günü görünür. Şimdilik bu, AI çalıştırmadan istatistik.',
+      });
+
+  String _localizedGoalTitle(Goal goal) {
+    final title = goal.title.trim();
+    if (title.isEmpty) {
+      return _pick(const {
+        'ru': 'одной короткой задачи',
+        'en': 'one short task',
+        'de': 'einer kurzen Aufgabe',
+        'fr': 'une petite tâche',
+        'es': 'una tarea corta',
+        'tr': 'kısa bir görev',
+      });
+    }
+    return title;
+  }
+
+  String _buildStatObservationText({
+    required List<Goal> todayGoals,
+    required int doneGoals,
+    required int totalGoals,
+    required int progressPercent,
+    required double todayHours,
+    required double targetHours,
+    required _HabitsSnapshot habits,
+  }) {
+    final openGoals = todayGoals.where((g) => !g.isCompleted).toList();
+    final randomGoal = openGoals.isEmpty ? null : openGoals[math.Random().nextInt(openGoals.length)];
+    final variants = <String>[];
+    final teaser = _weekendAiTeaser();
+
+    if (totalGoals > 0) {
+      variants.add(_pick({
+        'ru': 'Пока это статистика: выполнено $doneGoals из $totalGoals задач ($progressPercent%). $teaser',
+        'en': 'For now, this is statistics: $doneGoals of $totalGoals tasks completed ($progressPercent%). $teaser',
+        'de': 'Aktuell ist das Statistik: $doneGoals von $totalGoals Aufgaben erledigt ($progressPercent%). $teaser',
+        'fr': 'Pour l’instant, c’est une statistique : $doneGoals sur $totalGoals tâches terminées ($progressPercent%). $teaser',
+        'es': 'Por ahora, esto es estadística: $doneGoals de $totalGoals tareas completadas ($progressPercent%). $teaser',
+        'tr': 'Şimdilik bu istatistik: $totalGoals görevden $doneGoals tamamlandı ($progressPercent%). $teaser',
+      }));
+
+      if (randomGoal != null) {
+        final title = _localizedGoalTitle(randomGoal);
+        variants.add(_pick({
+          'ru': 'Сегодня лучше сфокусироваться на «$title». Закрой одну важную задачу — и день уже будет ощущаться спокойнее. $teaser',
+          'en': 'Today, focus on “$title”. Complete one meaningful task and the day will already feel calmer. $teaser',
+          'de': 'Fokussiere dich heute auf „$title“. Eine wichtige Aufgabe reicht, damit der Tag ruhiger wirkt. $teaser',
+          'fr': 'Aujourd’hui, concentre-toi sur « $title ». Une tâche importante terminée rendra la journée plus légère. $teaser',
+          'es': 'Hoy concéntrate en “$title”. Cerrar una tarea importante hará que el día se sienta más tranquilo. $teaser',
+          'tr': 'Bugün “$title” görevine odaklan. Anlamlı bir görevi bitirmek günü daha sakin hissettirecek. $teaser',
+        }));
+      } else {
+        variants.add(_pick({
+          'ru': 'Все задачи на сегодня закрыты. Можно не перегружать вечер и просто зафиксировать результат. $teaser',
+          'en': 'All tasks for today are done. Keep the evening light and record the result. $teaser',
+          'de': 'Alle Aufgaben für heute sind erledigt. Halte den Abend leicht und sichere das Ergebnis. $teaser',
+          'fr': 'Toutes les tâches du jour sont terminées. Garde une soirée légère et note le résultat. $teaser',
+          'es': 'Todas las tareas de hoy están cerradas. Mantén la tarde ligera y registra el resultado. $teaser',
+          'tr': 'Bugünün tüm görevleri tamamlandı. Akşamı hafif tut ve sonucu kaydet. $teaser',
+        }));
+      }
+    } else {
+      variants.add(_pick({
+        'ru': 'На сегодня задач нет. Добавь одну маленькую задачу или отметь настроение — так недельное AI-наблюдение будет точнее.',
+        'en': 'There are no tasks for today. Add one small task or log your mood so the weekly AI observation becomes more accurate.',
+        'de': 'Für heute gibt es keine Aufgaben. Füge eine kleine Aufgabe hinzu oder markiere deine Stimmung, damit die wöchentliche AI-Beobachtung genauer wird.',
+        'fr': 'Aucune tâche prévue aujourd’hui. Ajoute une petite tâche ou ton humeur pour rendre l’observation IA hebdomadaire plus précise.',
+        'es': 'No hay tareas para hoy. Añade una tarea pequeña o registra tu ánimo para que la observación semanal de IA sea más precisa.',
+        'tr': 'Bugün için görev yok. Haftalık AI gözlemi daha doğru olsun diye küçük bir görev ekle veya ruh halini kaydet.',
+      }));
+    }
+
+    if (habits.total > 0) {
+      variants.add(_pick({
+        'ru': 'По привычкам сегодня ${habits.done}/${habits.total}. Выбери самый лёгкий следующий шаг — регулярность важнее идеального дня. $teaser',
+        'en': 'Habits today: ${habits.done}/${habits.total}. Pick the easiest next step — consistency matters more than a perfect day. $teaser',
+        'de': 'Gewohnheiten heute: ${habits.done}/${habits.total}. Wähle den einfachsten nächsten Schritt — Regelmäßigkeit zählt mehr als Perfektion. $teaser',
+        'fr': 'Habitudes aujourd’hui : ${habits.done}/${habits.total}. Choisis le prochain pas le plus simple — la régularité compte plus que la perfection. $teaser',
+        'es': 'Hábitos de hoy: ${habits.done}/${habits.total}. Elige el siguiente paso más fácil: la constancia importa más que un día perfecto. $teaser',
+        'tr': 'Bugünkü alışkanlıklar: ${habits.done}/${habits.total}. En kolay sonraki adımı seç — düzenlilik mükemmel günden daha önemlidir. $teaser',
+      }));
+    }
+
+    if (todayHours > 0) {
+      variants.add(_pick({
+        'ru': 'Фокус-время сегодня: ${_fmt(todayHours)} из ${_fmt(targetHours)} ч. Хороший момент закрыть одну задачу, пока есть рабочий ритм. $teaser',
+        'en': 'Focus time today: ${_fmt(todayHours)} of ${_fmt(targetHours)} h. Good moment to finish one task while the rhythm is there. $teaser',
+        'de': 'Fokuszeit heute: ${_fmt(todayHours)} von ${_fmt(targetHours)} Std. Ein guter Moment, eine Aufgabe im Rhythmus abzuschließen. $teaser',
+        'fr': 'Temps de focus aujourd’hui : ${_fmt(todayHours)} sur ${_fmt(targetHours)} h. Bon moment pour terminer une tâche pendant que le rythme est là. $teaser',
+        'es': 'Tiempo de foco hoy: ${_fmt(todayHours)} de ${_fmt(targetHours)} h. Buen momento para cerrar una tarea mientras hay ritmo. $teaser',
+        'tr': 'Bugünkü odak süresi: ${_fmt(todayHours)} / ${_fmt(targetHours)} saat. Ritim varken bir görevi bitirmek için iyi an. $teaser',
+      }));
+    }
+
+    return variants[math.Random().nextInt(variants.length)];
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -278,53 +392,60 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             future: _habitsFuture,
             builder: (context, snapshot) {
               final habits = snapshot.data ?? const _HabitsSnapshot(done: 0, total: 0);
-              return _MiniGrid(
-                moodLabel: todayMood?.emoji ?? '😊',
-                moodValue: todayMood == null
-                    ? _pick(const {
-                        'ru': 'Нет отметки',
-                        'en': 'No entry',
-                        'de': 'Kein Eintrag',
-                        'fr': 'Aucune note',
-                        'es': 'Sin registro',
-                        'tr': 'Kayıt yok',
-                      })
-                    : _pick(const {
-                        'ru': 'Хорошее',
-                        'en': 'Good',
-                        'de': 'Gut',
-                        'fr': 'Bonne',
-                        'es': 'Bueno',
-                        'tr': 'İyi',
-                      }),
-                taskPercent: progressPercent,
-                doneTasks: doneGoals,
-                totalTasks: totalGoals,
-                habitDone: habits.done,
-                habitTotal: habits.total,
-                hours: todayHours,
+              final statObservationText = _buildStatObservationText(
+                todayGoals: todayGoals,
+                doneGoals: doneGoals,
+                totalGoals: totalGoals,
+                progressPercent: progressPercent,
+                todayHours: todayHours,
                 targetHours: targetHours,
+                habits: habits,
+              );
+
+              return Column(
+                children: [
+                  _MiniGrid(
+                    moodLabel: todayMood?.emoji ?? '😊',
+                    moodValue: todayMood == null
+                        ? _pick(const {
+                            'ru': 'Нет отметки',
+                            'en': 'No entry',
+                            'de': 'Kein Eintrag',
+                            'fr': 'Aucune note',
+                            'es': 'Sin registro',
+                            'tr': 'Kayıt yok',
+                          })
+                        : _pick(const {
+                            'ru': 'Хорошее',
+                            'en': 'Good',
+                            'de': 'Gut',
+                            'fr': 'Bonne',
+                            'es': 'Bueno',
+                            'tr': 'İyi',
+                          }),
+                    taskPercent: progressPercent,
+                    doneTasks: doneGoals,
+                    totalTasks: totalGoals,
+                    habitDone: habits.done,
+                    habitTotal: habits.total,
+                    hours: todayHours,
+                    targetHours: targetHours,
+                  ),
+                  const SizedBox(height: 12),
+                  _WeekCard(
+                    weekNumber: _weekNumber(DateTime.now()),
+                    range: _weekRangeLabel(),
+                    goals: reports.allGoals,
+                    onDayTap: _openDayGoals,
+                  ),
+                  const SizedBox(height: 12),
+                  _HomeAiInsightCard(
+                    future: _shouldFetchWeeklyAiInsight() ? _aiInsightFuture : null,
+                    fallbackText: statObservationText,
+                  ),
+                ],
               );
             },
-          ),
-          const SizedBox(height: 12),
-          _WeekCard(
-            weekNumber: _weekNumber(DateTime.now()),
-            range: _weekRangeLabel(),
-            goals: reports.allGoals,
-            onDayTap: _openDayGoals,
-          ),
-          const SizedBox(height: 12),
-          _HomeAiInsightCard(
-            future: _aiInsightFuture,
-            fallbackText: _pick(const {
-              'ru': 'AI-наблюдение скоро появится здесь. Пока добавь задачи, настроение или привычки — так инсайты станут точнее.',
-              'en': 'AI observations will appear here soon. Add tasks, mood, or habits to make insights more accurate.',
-              'de': 'AI-Beobachtungen erscheinen bald hier. Füge Aufgaben, Stimmung oder Gewohnheiten hinzu, damit Insights genauer werden.',
-              'fr': 'Les observations IA apparaîtront bientôt ici. Ajoute des tâches, ton humeur ou des habitudes pour les rendre plus précises.',
-              'es': 'Las observaciones de IA aparecerán aquí pronto. Añade tareas, estado de ánimo o hábitos para mejorar los insights.',
-              'tr': 'AI gözlemleri yakında burada görünecek. İçgörüleri iyileştirmek için görev, ruh hali veya alışkanlık ekle.',
-            }),
           ),
         ],
       ),
@@ -395,8 +516,8 @@ class _HomeHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
-                    fontSize: 25,
+                    fontFamily: 'PlayfairDisplay',
+                    fontSize: 21,
                     height: 1.0,
                     fontWeight: FontWeight.w700,
                     color: _dark,
@@ -409,7 +530,7 @@ class _HomeHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 12,
                     height: 1.0,
                     fontWeight: FontWeight.w600,
                     color: _muted,
@@ -454,11 +575,11 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: const TextStyle(
-        fontSize: 12,
+        fontSize: 10.5,
         height: 1,
         fontWeight: FontWeight.w900,
         color: Color(0xFF9090A8),
-        letterSpacing: 2.2,
+        letterSpacing: 1.8,
       ),
     );
   }
@@ -555,7 +676,7 @@ class _FocusCard extends StatelessWidget {
                       'es': '{done} de {total} hecho',
                       'tr': '{done}/{total} tamamlandı',
                     }).replaceAll('{done}', done.toString()).replaceAll('{total}', shownTotal.toString()).toUpperCase(),
-                    style: TextStyle(fontSize: 12, height: 1, fontWeight: FontWeight.w900, color: _focusDot, letterSpacing: 1.4),
+                    style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w900, color: _focusDot, letterSpacing: 1.2),
                   ),
                 ],
               ),
@@ -570,9 +691,9 @@ class _FocusCard extends StatelessWidget {
                   'tr': 'Gün kontrol altında',
                 }),
                 style: const TextStyle(
-                  fontFamily: 'Playfair Display',
-                  fontSize: 28,
-                  height: 1.05,
+                  fontFamily: 'PlayfairDisplay',
+                  fontSize: 23,
+                  height: 1.08,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFFFAF6EE),
                   letterSpacing: -0.6,
@@ -588,7 +709,7 @@ class _FocusCard extends StatelessWidget {
                   'es': 'Tres tareas son suficientes',
                   'tr': 'Üç görev yeterlidir',
                 }),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _mutedOnDark),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _mutedOnDark),
               ),
               const SizedBox(height: 18),
               ...rows.take(3).map((row) => Padding(
@@ -596,7 +717,11 @@ class _FocusCard extends StatelessWidget {
                     child: _FocusTaskRow(
                       title: row.title,
                       done: row.done,
+                      dismissKey: row.goal == null ? null : ValueKey('home-focus-${row.goal!.id}-${row.done}'),
                       onTap: row.goal == null ? null : () => onToggleGoal(row.goal!),
+                      onSwipeComplete: row.goal == null || row.done ? null : () async {
+                        onToggleGoal(row.goal!);
+                      },
                     ),
                   )),
               const SizedBox(height: 8),
@@ -615,7 +740,7 @@ class _FocusCard extends StatelessWidget {
                       'es': '→ Todas las tareas',
                       'tr': '→ Tüm görevler',
                     }),
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900),
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900),
                   ),
                 ),
               ),
@@ -635,20 +760,37 @@ class _FocusRowData {
 }
 
 class _FocusTaskRow extends StatelessWidget {
-  const _FocusTaskRow({required this.title, required this.done, this.onTap});
+  const _FocusTaskRow({
+    required this.title,
+    required this.done,
+    this.dismissKey,
+    this.onTap,
+    this.onSwipeComplete,
+  });
+
   final String title;
   final bool done;
+  final Key? dismissKey;
   final VoidCallback? onTap;
+  final Future<void> Function()? onSwipeComplete;
+
+  String _pick(BuildContext context, Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final child = GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
         height: 46,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.07), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Row(
           children: [
             Container(
@@ -672,7 +814,7 @@ class _FocusTaskRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w800,
                   color: done ? const Color(0xFFFAF6EE).withOpacity(0.35) : const Color(0xFFFAF6EE).withOpacity(0.90),
                   decoration: done ? TextDecoration.lineThrough : null,
@@ -684,6 +826,52 @@ class _FocusTaskRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    if (dismissKey == null || onSwipeComplete == null) {
+      return child;
+    }
+
+    return Dismissible(
+      key: dismissKey!,
+      direction: DismissDirection.startToEnd,
+      confirmDismiss: (_) async {
+        await onSwipeComplete!();
+        return false;
+      },
+      background: Container(
+        height: 46,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.centerLeft,
+        decoration: BoxDecoration(
+          color: const Color(0xFF34C759).withOpacity(0.24),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF34C759).withOpacity(0.30)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFFFAF6EE)),
+            const SizedBox(width: 8),
+            Text(
+              _pick(context, const {
+                'ru': 'Выполнить',
+                'en': 'Complete',
+                'de': 'Erledigen',
+                'fr': 'Terminer',
+                'es': 'Completar',
+                'tr': 'Tamamla',
+              }),
+              style: const TextStyle(
+                color: Color(0xFFFAF6EE),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+      child: child,
     );
   }
 }
@@ -803,17 +991,17 @@ class _MiniCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 27, height: 1)),
+          Text(icon, style: const TextStyle(fontSize: 24, height: 1)),
           const Spacer(),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
           const SizedBox(height: 4),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: valueIsSerif ? 'Playfair Display' : null,
-              fontSize: valueIsSerif ? 24 : 16,
+              fontFamily: valueIsSerif ? 'PlayfairDisplay' : null,
+              fontSize: valueIsSerif ? 20 : 14,
               height: 1,
               fontWeight: FontWeight.w900,
               color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
@@ -821,7 +1009,7 @@ class _MiniCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, height: 1, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
+          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
         ],
       ),
     );
@@ -867,10 +1055,10 @@ class _WeekCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${_pick(context, const {'ru': 'Неделя', 'en': 'Week', 'de': 'Woche', 'fr': 'Semaine', 'es': 'Semana', 'tr': 'Hafta'})} $weekNumber',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF))),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF))),
                 ),
               ),
-              Text(range, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
+              Text(range, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
             ],
           ),
           const SizedBox(height: 13),
@@ -888,7 +1076,7 @@ class _WeekCard extends StatelessWidget {
                   onTap: () => onDayTap(day),
                   child: Column(
                     children: [
-                      Text(labels[index], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
+                      Text(labels[index], style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
                       const SizedBox(height: 7),
                       Container(
                         width: 30,
@@ -914,7 +1102,7 @@ class _WeekCard extends StatelessWidget {
                         child: Text(
                           isDone && !isToday ? '✓' : '${day.day}',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w900,
                             color: isToday
                                 ? Colors.white
@@ -951,15 +1139,17 @@ class _HomeAiInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loadingText = _pick(context, const {
-      'ru': 'AI анализирует твой день…',
-      'en': 'AI is analyzing your day…',
-      'de': 'AI analysiert deinen Tag…',
-      'fr': 'L’IA analyse ta journée…',
-      'es': 'La IA analiza tu día…',
-      'tr': 'AI gününü analiz ediyor…',
+      'ru': 'AI формирует недельное наблюдение…',
+      'en': 'AI is preparing your weekly observation…',
+      'de': 'AI erstellt deine Wochenbeobachtung…',
+      'fr': 'L’IA prépare ton observation hebdomadaire…',
+      'es': 'La IA prepara tu observación semanal…',
+      'tr': 'AI haftalık gözlemini hazırlıyor…',
     });
 
-    if (future == null) return _AiCard(text: fallbackText);
+    if (future == null) {
+      return _AiCard(text: fallbackText, sourceLabel: 'stats', aiUsed: false);
+    }
 
     return FutureBuilder<HomeAiInsightResult>(
       future: future,
@@ -1032,11 +1222,14 @@ class _AiCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _pick(context, const {'ru': 'AI-наблюдение', 'en': 'AI observation', 'de': 'AI-Beobachtung', 'fr': 'Observation IA', 'es': 'Observación IA', 'tr': 'AI gözlemi'}).toUpperCase(),
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.6, color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040))),
+                  _pick(context, aiUsed
+                          ? const {'ru': 'AI-наблюдение недели', 'en': 'Weekly AI observation', 'de': 'Wöchentliche AI-Beobachtung', 'fr': 'Observation IA hebdomadaire', 'es': 'Observación semanal de IA', 'tr': 'Haftalık AI gözlemi'}
+                          : const {'ru': 'Статистика дня', 'en': 'Day statistics', 'de': 'Tagesstatistik', 'fr': 'Statistique du jour', 'es': 'Estadística del día', 'tr': 'Gün istatistiği'})
+                      .toUpperCase(),
+                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: 1.3, color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040))),
                 ),
                 const SizedBox(height: 6),
-                Text(text, style: TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF)))),
+                Text(text, style: TextStyle(fontSize: 13, height: 1.45, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF)))),
               ],
             ),
           ),

@@ -18,6 +18,76 @@ bool get _ladnaDarkMode =>
 
 Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
 
+
+int _ladnaMoodScore(String emoji) {
+  if (emoji.contains('😄') || emoji.contains('😁') || emoji.contains('😍')) return 5;
+  if (emoji.contains('🙂') || emoji.contains('😊') || emoji.contains('😌')) return 4;
+  if (emoji.contains('😐') || emoji.contains('😶')) return 3;
+  if (emoji.contains('🙁') || emoji.contains('😕')) return 2;
+  if (emoji.contains('😞') || emoji.contains('😢') || emoji.contains('😡')) return 1;
+  return 3;
+}
+
+String _ladnaMoodLabel(BuildContext context, int score) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  final values = switch (score) {
+    1 => const {
+        'ru': 'Очень тяжело',
+        'en': 'Very low',
+        'de': 'Sehr niedrig',
+        'fr': 'Très bas',
+        'es': 'Muy bajo',
+        'tr': 'Çok düşük',
+      },
+    2 => const {
+        'ru': 'Сложно',
+        'en': 'Low',
+        'de': 'Niedrig',
+        'fr': 'Bas',
+        'es': 'Bajo',
+        'tr': 'Düşük',
+      },
+    3 => const {
+        'ru': 'Нейтрально',
+        'en': 'Neutral',
+        'de': 'Neutral',
+        'fr': 'Neutre',
+        'es': 'Neutral',
+        'tr': 'Nötr',
+      },
+    4 => const {
+        'ru': 'Хорошо',
+        'en': 'Good',
+        'de': 'Gut',
+        'fr': 'Bien',
+        'es': 'Bien',
+        'tr': 'İyi',
+      },
+    _ => const {
+        'ru': 'Отлично',
+        'en': 'Great',
+        'de': 'Sehr gut',
+        'fr': 'Très bien',
+        'es': 'Muy bien',
+        'tr': 'Harika',
+      },
+  };
+  return values[code] ?? values['en']!;
+}
+
+String _ladnaMoodScaleHint(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode.toLowerCase();
+  const values = {
+    'ru': 'Шкала настроения: 1 — очень тяжело, 3 — нейтрально, 5 — отлично.',
+    'en': 'Mood scale: 1 means very low, 3 neutral, 5 great.',
+    'de': 'Stimmungsskala: 1 sehr niedrig, 3 neutral, 5 sehr gut.',
+    'fr': 'Échelle d’humeur : 1 très bas, 3 neutre, 5 très bien.',
+    'es': 'Escala de ánimo: 1 muy bajo, 3 neutral, 5 muy bien.',
+    'tr': 'Ruh hali ölçeği: 1 çok düşük, 3 nötr, 5 harika.',
+  };
+  return values[code] ?? values['en']!;
+}
+
 class MoodScreen extends StatelessWidget {
   const MoodScreen({super.key});
 
@@ -106,22 +176,7 @@ class _PersonalViewState extends State<_PersonalView> {
     return labels[date.weekday - 1];
   }
 
-  String _scoreForEmoji(String emoji) {
-    switch (emoji) {
-      case '😞':
-        return '1';
-      case '😕':
-        return '2';
-      case '😐':
-        return '3';
-      case '😊':
-        return '4';
-      case '😄':
-        return '5';
-      default:
-        return '4';
-    }
-  }
+  String _scoreForEmoji(String emoji) => _ladnaMoodScore(emoji).toString();
 
   void _goBack() {
     final nav = Navigator.of(context);
@@ -380,7 +435,7 @@ class _MoodTab extends StatelessWidget {
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: ['😞', '😕', '😐', '😊', '😄']
+                children: ['😞', '🙁', '😐', '🙂', '😄']
                     .map(
                       (emoji) => _MoodBubble(
                         emoji: emoji,
@@ -390,11 +445,45 @@ class _MoodTab extends StatelessWidget {
                     )
                     .toList(),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '$score / 5 · ${_ladnaMoodLabel(context, int.tryParse(score) ?? 3)}',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFE9DDFF)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _ladnaMoodScaleHint(context),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        height: 1.2,
+                        fontWeight: FontWeight.w600,
+                        color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               TextField(
                 controller: noteController,
-                minLines: 3,
-                maxLines: 4,
+                minLines: 2,
+                maxLines: 3,
                 maxLength: maxLen,
                 decoration: InputDecoration(
                   hintText: _t(
@@ -507,7 +596,7 @@ class _MoodHistoryRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(
         children: [
-          Text(mood.emoji, style: TextStyle(fontSize: 24)),
+          Text(mood.emoji, style: const TextStyle(fontSize: 22)),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -542,7 +631,7 @@ class _MoodHistoryRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              '5 / 5',
+              '${_ladnaMoodScore(mood.emoji)} / 5',
               style: TextStyle(
                 fontSize: 11,
                 color: _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF)),
@@ -606,11 +695,14 @@ class _LadnaHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontFamily: 'Playfair Display',
-                    fontWeight: FontWeight.w600,
-                    color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
-                  ),
+              style: TextStyle(
+                fontFamily: 'PlayfairDisplay',
+                fontSize: 22,
+                height: 1.05,
+                fontWeight: FontWeight.w700,
+                color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                letterSpacing: -0.3,
+              ),
             ),
           ),
         ],
@@ -766,8 +858,8 @@ class _MoodBubble extends StatelessWidget {
       customBorder: const CircleBorder(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        width: 46,
-        height: 46,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: selected ? _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)) : _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
@@ -777,7 +869,7 @@ class _MoodBubble extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: Text(emoji, style: TextStyle(fontSize: 22)),
+          child: Text(emoji, style: const TextStyle(fontSize: 21)),
         ),
       ),
     );

@@ -68,6 +68,15 @@ function mondayOfWeek(date: Date): Date {
   return addDays(d, diff);
 }
 
+function isSunday(date: Date): boolean {
+  return date.getDay() === 0;
+}
+
+function insightTextFromRow(row: JsonMap): string {
+  const insights = asMap(row.insights);
+  return asString(insights.insight ?? insights.text ?? row.insight);
+}
+
 function asMap(value: unknown): JsonMap {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as JsonMap;
@@ -301,6 +310,8 @@ Deno.serve(async (req) => {
     const tomorrowIso = tomorrow.toISOString();
     const todayDate = toIsoDate(today);
     const yesterdayDate = toIsoDate(yesterday);
+    const currentWeekStartDate = toIsoDate(weekStart);
+    const currentWeekEndDate = toIsoDate(addDays(weekStart, 6));
     const previousWeekStartDate = toIsoDate(previousWeekStart);
     const previousWeekEndDate = toIsoDate(addDays(previousWeekEnd, -1));
 
@@ -439,22 +450,69 @@ Deno.serve(async (req) => {
     const fallback = buildFallbackInsight(locale, source, context);
     let insight = fallback;
     let aiUsed = false;
+    let cached = false;
 
     try {
-      const aiText = await generateWithOpenAI({ apiKey: openAiKey, model, locale, source, context });
-      if (aiText.length >= 10) {
-        insight = aiText.replace(/^"|"$/g, "").trim();
-        aiUsed = true;
+      const { data: existingRows, error: existingError } = await supabase
+        .from("ai_insights_runs")
+        .select("id,insights,created_at")
+        .eq("user_id", userId)
+        .eq("period", "home_weekly")
+        .eq("date_from", currentWeekStartDate)
+        .eq("date_to", currentWeekEndDate)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (!existingError && existingRows && existingRows.length > 0) {
+        const cachedText = insightTextFromRow(existingRows[0] as JsonMap);
+        if (cachedText.length >= 10) {
+          insight = cachedText;
+          aiUsed = true;
+          cached = true;
+        }
+      } else if (existingError) {
+        console.error("home-ai-insight cache lookup skipped:", existingError);
       }
     } catch (error) {
-      console.error("home-ai-insight OpenAI fallback:", error);
+      console.error("home-ai-insight cache lookup failed:", error);
+    }
+
+    if (!cached && isSunday(today)) {
+      try {
+        const aiText = await generateWithOpenAI({ apiKey: openAiKey, model, locale, source, context });
+        if (aiText.length >= 10) {
+          insight = aiText.replace(/^"|"$/g, "").trim();
+          aiUsed = true;
+        }
+      } catch (error) {
+        console.error("home-ai-insight OpenAI fallback:", error);
+      }
+
+      try {
+        const { error: insertError } = await supabase.from("ai_insights_runs").insert({
+          user_id: userId,
+          period: "home_weekly",
+          date_from: currentWeekStartDate,
+          date_to: currentWeekEndDate,
+          version: "home_weekly_v1",
+          model: aiUsed ? model : "fallback",
+          snapshot: context,
+          stats: { source, fallback, ai_used: aiUsed },
+          insights: { insight, source, ai_used: aiUsed, generated_at: new Date().toISOString() },
+        });
+        if (insertError) console.error("home-ai-insight history insert skipped:", insertError);
+      } catch (error) {
+        console.error("home-ai-insight history insert failed:", error);
+      }
     }
 
     return jsonResponse({
       ok: true,
       insight,
-      source,
+      source: cached ? "home_weekly_cached" : source,
       ai_used: aiUsed,
+      cached,
+      weekly_ai_day: isSunday(today),
       generated_at: new Date().toISOString(),
     });
   } catch (error) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../services/home_trackers_repo.dart';
@@ -128,6 +129,34 @@ class _PersonalText {
         tr: 'Hedefe $target kcal kaldı',
       );
 
+
+  String get calorieHistoryTitle => pick(
+        'История внесений',
+        'Entry history',
+        de: 'Eintragshistorie',
+        fr: 'Historique des saisies',
+        es: 'Historial de registros',
+        tr: 'Giriş geçmişi',
+      );
+
+  String get calorieHistoryPlaceholder => pick(
+        'Сегодня пока нет внесений по калориям.',
+        'No calorie entries yet today.',
+        de: 'Heute gibt es noch keine Kalorieneinträge.',
+        fr: 'Aucune saisie de calories aujourd’hui.',
+        es: 'Aún no hay registros de calorías hoy.',
+        tr: 'Bugün henüz kalori girişi yok.',
+      );
+
+  String get calorieNormHint => pick(
+        'Нажми на эту плашку, чтобы изменить норму и посмотреть историю внесений.',
+        'Tap this card to change the target and view entry history.',
+        de: 'Tippe auf diese Karte, um das Ziel zu ändern und die Historie zu sehen.',
+        fr: 'Touchez cette carte pour modifier l’objectif et voir l’historique.',
+        es: 'Toca esta tarjeta para cambiar el objetivo y ver el historial.',
+        tr: 'Hedefi değiştirmek ve geçmişi görmek için bu karta dokun.',
+      );
+
   String todayWithDate(String date) => pick(
         'Сегодня · $date',
         'Today · $date',
@@ -146,13 +175,134 @@ class _PersonalText {
         tr: 'Su',
       );
 
-  String waterLiters(double liters) => pick(
-        '${liters.toStringAsFixed(1)} / 2,0 л',
-        '${liters.toStringAsFixed(1)} / 2.0 L',
-        de: '${liters.toStringAsFixed(1)} / 2,0 L',
-        fr: '${liters.toStringAsFixed(1)} / 2,0 L',
-        es: '${liters.toStringAsFixed(1)} / 2,0 L',
-        tr: '${liters.toStringAsFixed(1)} / 2,0 L',
+  String waterLiters(double liters, double target) {
+    final value = liters.toStringAsFixed(1);
+    final targetValue = target.toStringAsFixed(1);
+    return pick(
+      '$value / $targetValue л',
+      '$value / $targetValue L',
+      de: '$value / $targetValue L',
+      fr: '$value / $targetValue L',
+      es: '$value / $targetValue L',
+      tr: '$value / $targetValue L',
+    );
+  }
+
+  String get waterSettingsTitle => pick(
+        'Вода за сегодня',
+        'Water today',
+        de: 'Wasser heute',
+        fr: 'Eau aujourd’hui',
+        es: 'Agua de hoy',
+        tr: 'Bugünkü su',
+      );
+
+  String get waterTargetTitle => pick(
+        'Норма воды',
+        'Water target',
+        de: 'Wasserziel',
+        fr: 'Objectif d’eau',
+        es: 'Objetivo de agua',
+        tr: 'Su hedefi',
+      );
+
+  String get waterTargetLabel => pick(
+        'Норма, л',
+        'Target, L',
+        de: 'Ziel, L',
+        fr: 'Objectif, L',
+        es: 'Objetivo, L',
+        tr: 'Hedef, L',
+      );
+
+  String get waterEditTarget => pick(
+        'Изменить норму',
+        'Edit target',
+        de: 'Ziel ändern',
+        fr: 'Modifier l’objectif',
+        es: 'Cambiar objetivo',
+        tr: 'Hedefi değiştir',
+      );
+
+  String get waterHistoryTitle => pick(
+        'История',
+        'History',
+        de: 'Historie',
+        fr: 'Historique',
+        es: 'Historial',
+        tr: 'Geçmiş',
+      );
+
+  String get waterHistoryPlaceholder => pick(
+        'Сегодня добавлений воды пока нет.',
+        'No water additions yet today.',
+        de: 'Heute wurde noch kein Wasser hinzugefügt.',
+        fr: 'Aucun ajout d’eau aujourd’hui.',
+        es: 'Todavía no se ha añadido agua hoy.',
+        tr: 'Bugün henüz su eklenmedi.',
+      );
+
+  String get waterAddTitle => pick(
+        'Добавить воду',
+        'Add water',
+        de: 'Wasser hinzufügen',
+        fr: 'Ajouter de l’eau',
+        es: 'Añadir agua',
+        tr: 'Su ekle',
+      );
+
+  String get waterCup250 => pick(
+        'Чашка · 250 мл',
+        'Cup · 250 ml',
+        de: 'Tasse · 250 ml',
+        fr: 'Tasse · 250 ml',
+        es: 'Taza · 250 ml',
+        tr: 'Fincan · 250 ml',
+      );
+
+  String get waterGlass200 => pick(
+        'Стакан · 200 мл',
+        'Glass · 200 ml',
+        de: 'Glas · 200 ml',
+        fr: 'Verre · 200 ml',
+        es: 'Vaso · 200 ml',
+        tr: 'Bardak · 200 ml',
+      );
+
+  String get waterCustomOption => pick(
+        'Свой вариант',
+        'Custom amount',
+        de: 'Eigene Menge',
+        fr: 'Quantité libre',
+        es: 'Cantidad propia',
+        tr: 'Özel miktar',
+      );
+
+  String get waterCustomMlLabel => pick(
+        'Количество, мл',
+        'Amount, ml',
+        de: 'Menge, ml',
+        fr: 'Quantité, ml',
+        es: 'Cantidad, ml',
+        tr: 'Miktar, ml',
+      );
+
+  String waterAddedMl(int ml) => pick(
+        '+$ml мл',
+        '+$ml ml',
+        de: '+$ml ml',
+        fr: '+$ml ml',
+        es: '+$ml ml',
+        tr: '+$ml ml',
+      );
+
+  String waterTotalToday(double liters) => pick(
+        'Сегодня выпито ${liters.toStringAsFixed(1)} л',
+        '${liters.toStringAsFixed(1)} L today',
+        de: 'Heute ${liters.toStringAsFixed(1)} L',
+        fr: '${liters.toStringAsFixed(1)} L aujourd’hui',
+        es: '${liters.toStringAsFixed(1)} L hoy',
+        tr: 'Bugün ${liters.toStringAsFixed(1)} L',
       );
 
   String get hobbyDirections => pick(
@@ -195,6 +345,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
   final _repo = HomeTrackersRepo();
   bool _loading = true;
   HealthDaySummary? _summary;
+  double _waterTargetLiters = 2.0;
 
   String _mealLabel(BuildContext context, String type) {
     final l = AppLocalizations.of(context)!;
@@ -215,7 +366,59 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
   @override
   void initState() {
     super.initState();
+    _loadWaterTarget();
     _load();
+  }
+
+  Future<void> _loadWaterTarget() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _waterTargetLiters = prefs.getDouble('health_water_target_liters') ?? 2.0;
+    });
+  }
+
+  Future<void> _saveWaterTarget(double value) async {
+    final normalized = value.clamp(0.5, 5.0).toDouble();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('health_water_target_liters', normalized);
+    if (!mounted) return;
+    setState(() => _waterTargetLiters = normalized);
+  }
+
+  String _waterHistoryKey([DateTime? date]) {
+    final d = date ?? DateTime.now();
+    final month = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return 'health_water_history_${d.year}$month$day';
+  }
+
+  Future<List<String>> _loadWaterHistoryRows(BuildContext ctx) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_waterHistoryKey()) ?? const <String>[];
+    final t = _PersonalText.of(ctx);
+
+    final rows = <String>[];
+    for (final item in raw.reversed) {
+      final parts = item.split('|');
+      if (parts.length != 2) continue;
+      final timestamp = int.tryParse(parts[0]);
+      final ml = int.tryParse(parts[1]);
+      if (timestamp == null || ml == null || ml <= 0) continue;
+      final time = TimeOfDay.fromDateTime(
+        DateTime.fromMillisecondsSinceEpoch(timestamp),
+      ).format(ctx);
+      rows.add('$time · ${t.waterAddedMl(ml)}');
+    }
+    return rows;
+  }
+
+  Future<void> _appendWaterHistoryMl(int ml) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _waterHistoryKey();
+    final rows = prefs.getStringList(key) ?? <String>[];
+    rows.add('${DateTime.now().millisecondsSinceEpoch}|$ml');
+    await prefs.setStringList(key, rows);
   }
 
   Future<void> _load() async {
@@ -291,6 +494,17 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final l = AppLocalizations.of(ctx)!;
+        final t = _PersonalText.of(ctx);
+        final s = _summary;
+        final historyRows = <String>[
+          if (s != null)
+            for (final meal in s.meals)
+              '${_mealLabel(ctx, meal.mealType)} · ${meal.description.trim().isEmpty ? l.healthKcalValue(meal.calories) : '${meal.description.trim()} · ${l.healthKcalValue(meal.calories)}'}',
+          if (s != null)
+            for (final burn in s.burns)
+              '${t.activitySection} · ${burn.note.trim().isEmpty ? l.healthKcalValue(burn.caloriesBurned) : '${burn.note.trim()} · ${l.healthKcalValue(burn.caloriesBurned)}'}',
+        ];
+
         return Padding(
           padding: EdgeInsets.only(
             left: 16,
@@ -299,26 +513,34 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
           ),
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: _sheetDecoration(ctx),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _sheetHandle(ctx),
+                Center(child: _sheetHandle(ctx)),
                 _SheetTitle(
                   icon: Icons.flag_rounded,
                   title: l.healthCalorieTargetTitle,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextField(
                   controller: ctrl,
                   keyboardType: TextInputType.number,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _ladnaText(ctx),
+                  ),
                   decoration: InputDecoration(
+                    isDense: true,
                     labelText: l.healthDailyCaloriesLabel,
-                    prefixIcon: Icon(Icons.local_fire_department_rounded),
+                    prefixIcon: const Icon(Icons.local_fire_department_rounded, size: 18),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -329,9 +551,59 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                       Navigator.pop(ctx);
                       await _load();
                     },
-                    icon: Icon(Icons.check_rounded),
+                    icon: const Icon(Icons.check_rounded, size: 18),
                     label: Text(l.commonSave),
                   ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  t.calorieHistoryTitle,
+                  style: TextStyle(
+                    color: _ladnaText(ctx),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _ladnaSubtleBg(ctx).withOpacity(_ladnaIsDark(ctx) ? 0.55 : 0.75),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _ladnaSubtleBorder(ctx)),
+                  ),
+                  child: historyRows.isEmpty
+                      ? Text(
+                          t.calorieHistoryPlaceholder,
+                          style: TextStyle(
+                            color: _ladnaSoftText(ctx),
+                            fontSize: 11.5,
+                            height: 1.3,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: historyRows
+                              .take(6)
+                              .map(
+                                (row) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 5),
+                                  child: Text(
+                                    row,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: _ladnaSoftText(ctx),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
                 ),
               ],
             ),
@@ -410,9 +682,6 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                         labelText: l.healthMealDescriptionLabel,
                         prefixIcon: Icon(Icons.notes_rounded),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? l.healthAddDescription
-                          : null,
                     ),
                     const SizedBox(height: 14),
                     SizedBox(
@@ -517,17 +786,18 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
     );
   }
 
-  Future<void> _editWater() async {
-    double current = (_summary?.waterLiters ?? 0).clamp(1.0, 3.0);
-    if ((_summary?.waterLiters ?? 0) == 0) current = 1.0;
+  Future<void> _openWaterOverview() async {
+    final targetCtrl = TextEditingController(
+      text: _waterTargetLiters.toStringAsFixed(1),
+    );
+    final historyRows = await _loadWaterHistoryRows(context);
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final cs = Theme.of(ctx).colorScheme;
-        final l = AppLocalizations.of(ctx)!;
+        final t = _PersonalText.of(ctx);
         return StatefulBuilder(
           builder: (ctx, setLocal) => Padding(
             padding: EdgeInsets.only(
@@ -537,52 +807,218 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
               bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
             ),
             child: Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(16),
               decoration: _sheetDecoration(ctx),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _sheetHandle(ctx),
+                  Center(child: _sheetHandle(ctx)),
                   _SheetTitle(
                     icon: Icons.water_drop_rounded,
-                    title: l.healthWaterTodayTitle,
-                    accent: cs.tertiary,
+                    title: t.waterSettingsTitle,
+                    accent: Theme.of(ctx).colorScheme.tertiary,
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
+                  _WaterSummaryLine(
+                    title: t.waterTotalToday(_summary?.waterLiters ?? 0),
+                    value: t.waterLiters(_summary?.waterLiters ?? 0, _waterTargetLiters),
+                  ),
+                  const SizedBox(height: 14),
                   Text(
-                    l.healthLitersValue(current.toStringAsFixed(1)),
-                    style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: cs.primary,
-                        ),
+                    t.waterTargetTitle,
+                    style: TextStyle(
+                      color: _ladnaText(ctx),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                  Slider(
-                    value: current,
-                    min: 1,
-                    max: 3,
-                    divisions: 8,
-                    label: l.healthLitersValue(current.toStringAsFixed(1)),
-                    onChanged: (v) => setLocal(() => current = v),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: targetCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _ladnaText(ctx),
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      labelText: t.waterTargetLabel,
+                      prefixIcon: const Icon(Icons.flag_rounded, size: 18),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                    ),
+                    onSubmitted: (_) async {
+                      final parsed = double.tryParse(
+                        targetCtrl.text.trim().replaceAll(',', '.'),
+                      );
+                      if (parsed == null || parsed <= 0) return;
+                      await _saveWaterTarget(parsed);
+                      setLocal(() {});
+                    },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: () async {
-                        await _repo.addWater(
-                          entryDate: DateTime.now(),
-                          liters: double.parse(current.toStringAsFixed(1)),
+                        final parsed = double.tryParse(
+                          targetCtrl.text.trim().replaceAll(',', '.'),
                         );
+                        if (parsed == null || parsed <= 0) return;
+                        await _saveWaterTarget(parsed);
                         if (!mounted) return;
                         Navigator.pop(ctx);
-                        await _load();
                       },
-                      icon: Icon(Icons.water_drop_rounded),
-                      label: Text(l.healthSaveWater),
+                      icon: const Icon(Icons.check_rounded, size: 18),
+                      label: Text(AppLocalizations.of(ctx)!.commonSave),
                     ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    t.waterHistoryTitle,
+                    style: TextStyle(
+                      color: _ladnaText(ctx),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _ladnaSubtleBg(ctx).withOpacity(_ladnaIsDark(ctx) ? 0.55 : 0.75),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _ladnaSubtleBorder(ctx)),
+                    ),
+                    child: historyRows.isEmpty
+                        ? Text(
+                            t.waterHistoryPlaceholder,
+                            style: TextStyle(
+                              color: _ladnaSoftText(ctx),
+                              fontSize: 11.5,
+                              height: 1.3,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: historyRows
+                                .map(
+                                  (row) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 5),
+                                    child: Text(
+                                      row,
+                                      style: TextStyle(
+                                        color: _ladnaSoftText(ctx),
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
                   ),
                 ],
               ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _addWaterAmount() async {
+    final customCtrl = TextEditingController();
+
+    Future<void> saveMl(BuildContext ctx, int ml) async {
+      if (ml <= 0) return;
+      final current = _summary?.waterLiters ?? 0;
+      final next = (current + ml / 1000.0).clamp(0.0, 10.0).toDouble();
+      await _appendWaterHistoryMl(ml);
+      await _repo.addWater(
+        entryDate: DateTime.now(),
+        liters: double.parse(next.toStringAsFixed(2)),
+      );
+      if (!mounted) return;
+      Navigator.pop(ctx);
+      await _load();
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final t = _PersonalText.of(ctx);
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: _sheetDecoration(ctx),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _sheetHandle(ctx),
+                _SheetTitle(
+                  icon: Icons.add_rounded,
+                  title: t.waterAddTitle,
+                  accent: Theme.of(ctx).colorScheme.tertiary,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _WaterAmountButton(
+                        label: t.waterCup250,
+                        onTap: () => saveMl(ctx, 250),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _WaterAmountButton(
+                        label: t.waterGlass200,
+                        onTap: () => saveMl(ctx, 200),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: customCtrl,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _ladnaText(ctx),
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    labelText: t.waterCustomMlLabel,
+                    prefixIcon: const Icon(Icons.edit_rounded, size: 18),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () async {
+                      final ml = int.tryParse(customCtrl.text.trim()) ?? 0;
+                      await saveMl(ctx, ml);
+                    },
+                    icon: const Icon(Icons.water_drop_rounded, size: 18),
+                    label: Text(t.waterCustomOption),
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -807,12 +1243,12 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
             burned: s.burned,
             net: s.net,
             target: s.dailyTarget,
+            onTap: _editTarget,
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                flex: 2,
                 child: _ActionButton(
                   label: l.healthAddMealButton,
                   icon: Icons.restaurant_rounded,
@@ -832,7 +1268,9 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
           const SizedBox(height: 12),
           _WaterCard(
             liters: s.waterLiters,
-            onTap: _editWater,
+            targetLiters: _waterTargetLiters,
+            onTap: _openWaterOverview,
+            onAddTap: _addWaterAmount,
           ),
           const SizedBox(height: 14),
           _SectionLabel(text: _PersonalText.of(context).mealsSection),
@@ -923,19 +1361,25 @@ class _HealthHero extends StatelessWidget {
   final int burned;
   final int net;
   final int target;
+  final VoidCallback onTap;
 
   const _HealthHero({
     required this.consumed,
     required this.burned,
     required this.net,
     required this.target,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final progress = target <= 0 ? 0.0 : (consumed / target).clamp(0.0, 1.0).toDouble();
 
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+      clipBehavior: Clip.antiAlias,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -1043,6 +1487,7 @@ class _HealthHero extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -1078,7 +1523,7 @@ class _HeroMetric extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Playfair Display',
+              fontFamily: 'PlayfairDisplay',
               fontSize: 20,
               fontWeight: FontWeight.w600,
               color: valueColor ?? const Color(0xFFFAF6EE),
@@ -1143,7 +1588,7 @@ class _ActionButton extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: _ladnaSoftText(context),
-                  fontSize: 12,
+                  fontSize: 11.2,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -1157,20 +1602,24 @@ class _ActionButton extends StatelessWidget {
 
 class _WaterCard extends StatelessWidget {
   final double liters;
+  final double targetLiters;
   final VoidCallback onTap;
+  final VoidCallback onAddTap;
 
   const _WaterCard({
     required this.liters,
+    required this.targetLiters,
     required this.onTap,
+    required this.onAddTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final progress = (liters / 2.0).clamp(0.0, 1.0).toDouble();
-    final filled = (progress * 8).round().clamp(0, 8);
+    final safeTarget = targetLiters <= 0 ? 2.0 : targetLiters;
+    final progress = (liters / safeTarget).clamp(0.0, 1.0).toDouble();
 
     return _LadnaCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -1183,57 +1632,214 @@ class _WaterCard extends StatelessWidget {
                   style: TextStyle(
                     color: _ladnaText(context),
                     fontWeight: FontWeight.w800,
-                    fontSize: 13,
+                    fontSize: 12.5,
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  _PersonalText.of(context).waterLiters(liters),
-                  style: TextStyle(
-                    color: _ladnaSoftText(context),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
+                InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                    child: Text(
+                      _PersonalText.of(context).waterLiters(liters, safeTarget),
+                      style: TextStyle(
+                        color: _ladnaSoftText(context),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: _PersonalText.of(context).waterEditTarget,
+                  child: InkWell(
+                    onTap: onTap,
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      width: 27,
+                      height: 27,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _ladnaSubtleBg(context),
+                        border: Border.all(
+                          color: _ladnaAccent(context).withOpacity(_ladnaIsDark(context) ? 0.30 : 0.22),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.edit_rounded,
+                        size: 14,
+                        color: _ladnaAccent(context),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: onAddTap,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    width: 27,
+                    height: 27,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _ladnaAccent(context).withOpacity(_ladnaIsDark(context) ? 0.18 : 0.14),
+                      border: Border.all(
+                        color: _ladnaAccent(context).withOpacity(_ladnaIsDark(context) ? 0.38 : 0.28),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.add_rounded,
+                      size: 17,
+                      color: _ladnaAccent(context),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                backgroundColor: _ladnaSubtleBg(context),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Color(0xFF6B54C0),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: List.generate(
-                8,
-                (index) => Container(
-                  width: 28,
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final thumbLeft = (width - 24) * progress;
+                return SizedBox(
                   height: 28,
-                  margin: EdgeInsets.only(right: index == 7 ? 0 : 6),
-                  decoration: BoxDecoration(
-                    color: index < filled
-                        ? _ladnaSubtleBg(context)
-                        : _ladnaSubtleBg(context).withOpacity(_ladnaIsDark(context) ? 0.45 : 0.55),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: index < filled
-                          ? _ladnaAccent(context).withOpacity(0.35)
-                          : _ladnaSubtleBorder(context),
-                    ),
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 7,
+                          backgroundColor: _ladnaSubtleBg(context),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF6B54C0),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: thumbLeft,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: _ladnaCardBg(context),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _ladnaAccent(context).withOpacity(0.45),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _ladnaAccent(context).withOpacity(0.18),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text('💧', style: TextStyle(fontSize: 13)),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Center(child: Text('💧')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WaterAmountButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _WaterAmountButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: _ladnaSubtleBg(context).withOpacity(_ladnaIsDark(context) ? 0.55 : 0.75),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _ladnaSubtleBorder(context)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.water_drop_rounded, size: 17, color: _ladnaAccent(context)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _ladnaText(context),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WaterSummaryLine extends StatelessWidget {
+  final String title;
+  final String value;
+
+  const _WaterSummaryLine({
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _ladnaSubtleBg(context).withOpacity(_ladnaIsDark(context) ? 0.55 : 0.75),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _ladnaSubtleBorder(context)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: _ladnaText(context),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: _ladnaSoftText(context),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1375,21 +1981,21 @@ class _SheetTitle extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 42,
-          height: 42,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             color: tone.withOpacity(0.12),
             border: Border.all(color: tone.withOpacity(0.24)),
           ),
-          child: Icon(icon, color: tone, size: 21),
+          child: Icon(icon, color: tone, size: 19),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontFamily: 'Playfair Display',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontFamily: 'PlayfairDisplay',
                   fontWeight: FontWeight.w600,
                   color: _ladnaText(context),
                 ),

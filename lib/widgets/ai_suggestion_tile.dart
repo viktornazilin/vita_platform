@@ -27,14 +27,14 @@ class AiSuggestionTile extends StatelessWidget {
     final timeStr = item.time.format(context);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.70),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
+            color: Colors.white.withOpacity(0.78),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE4DDF6)),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x1A2B5B7A),
@@ -44,7 +44,7 @@ class AiSuggestionTile extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+            padding: const EdgeInsets.fromLTRB(10, 9, 9, 9),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -61,7 +61,7 @@ class AiSuggestionTile extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
 
                 Expanded(
                   child: Column(
@@ -69,17 +69,19 @@ class AiSuggestionTile extends StatelessWidget {
                     children: [
                       Text(
                         item.title,
-                        style: tt.titleSmall?.copyWith(
+                        style: tt.labelLarge?.copyWith(
+                          fontSize: 13,
+                          height: 1.08,
                           fontWeight: FontWeight.w900,
-                          color: const Color(0xFF2E4B5A),
+                          color: const Color(0xFF17123A),
                         ),
                       ),
 
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 7),
 
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: 6,
+                        runSpacing: 6,
                         children: [
                           InfoChip(icon: Icons.calendar_today, text: dateStr),
                           InfoChip(icon: Icons.access_time, text: timeStr),
@@ -100,12 +102,14 @@ class AiSuggestionTile extends StatelessWidget {
                       ),
 
                       if ((item.description ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         Text(
                           item.description!.trim(),
-                          style: tt.bodyMedium?.copyWith(
-                            height: 1.25,
-                            color: const Color(0xFF2E4B5A).withOpacity(0.70),
+                          style: tt.bodySmall?.copyWith(
+                            fontSize: 11.5,
+                            height: 1.22,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF7E7898),
                           ),
                         ),
                       ],
@@ -113,7 +117,7 @@ class AiSuggestionTile extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
 
                 _EditButton(onTap: onEdit),
               ],
@@ -135,12 +139,12 @@ class _EditButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
-        width: 42,
-        height: 42,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: const Color(0xFFF4FAFF),
-          border: Border.all(color: const Color(0xFFD6E6F5)),
+          border: Border.all(color: const Color(0xFFE4DDF6)),
         ),
         child: const Icon(
           Icons.edit_outlined,

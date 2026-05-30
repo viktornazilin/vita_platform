@@ -344,7 +344,7 @@ class _SetupViewState extends State<_SetupView> {
               helper,
               style: const TextStyle(
                 color: _text,
-                fontSize: 15,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
               ),
@@ -437,17 +437,17 @@ class _SetupViewState extends State<_SetupView> {
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                 sliver: SliverToBoxAdapter(
                   child: _SetupHeader(
                     title: l.budgetSetupTitle,
-                    subtitle: 'Категории, лимиты и копилки для бюджета',
+                    subtitle: _BudgetSetupText.of(context).setupSubtitle,
                     onBack: _goBack,
                   ),
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(24, 26, 24, 140),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
                 sliver: SliverList.list(
                   children: [
                     KeyedSubtree(
@@ -459,7 +459,7 @@ class _SetupViewState extends State<_SetupView> {
                         icon: Icons.trending_up_rounded,
                         categories: m.incomeCategories,
                         tone: _teal,
-                        helper: 'Используются при добавлении доходов.',
+                        helper: _BudgetSetupText.of(context).incomeHelper,
                         onAdd: () => _addCategory(
                           context: context,
                           m: m,
@@ -487,7 +487,7 @@ class _SetupViewState extends State<_SetupView> {
                         icon: Icons.shopping_bag_outlined,
                         categories: m.expenseCategories,
                         tone: _primary,
-                        helper: 'Нажми на категорию, чтобы настроить лимит.',
+                        helper: _BudgetSetupText.of(context).expenseHelper,
                         onAdd: () => _addCategory(
                           context: context,
                           m: m,
@@ -521,11 +521,63 @@ class _SetupViewState extends State<_SetupView> {
         key: _saveKey,
         child: _LadnaSaveBar(
           saving: _saving,
+          label: l.commonSave,
           onSave: () => _save(m),
         ),
       ),
     );
   }
+}
+
+
+class _BudgetSetupText {
+  final Locale locale;
+
+  const _BudgetSetupText(this.locale);
+
+  static _BudgetSetupText of(BuildContext context) => _BudgetSetupText(Localizations.localeOf(context));
+
+  bool get _ru => locale.languageCode == 'ru';
+  bool get _de => locale.languageCode == 'de';
+  bool get _fr => locale.languageCode == 'fr';
+  bool get _es => locale.languageCode == 'es';
+  bool get _tr => locale.languageCode == 'tr';
+
+  String get setupSubtitle => _ru
+      ? 'Категории, лимиты и копилки'
+      : _de
+          ? 'Kategorien, Limits und Sparziele'
+          : _fr
+              ? 'Catégories, limites et cagnottes'
+              : _es
+                  ? 'Categorías, límites y ahorros'
+                  : _tr
+                      ? 'Kategoriler, limitler ve kumbaralar'
+                      : 'Categories, limits and jars';
+
+  String get incomeHelper => _ru
+      ? 'Для зарплаты и других доходов.'
+      : _de
+          ? 'Für Gehalt und andere Einnahmen.'
+          : _fr
+              ? 'Pour le salaire et les autres revenus.'
+              : _es
+                  ? 'Para salario y otros ingresos.'
+                  : _tr
+                      ? 'Maaş ve diğer gelirler için.'
+                      : 'For salary and other income.';
+
+  String get expenseHelper => _ru
+      ? 'Нажми на категорию, чтобы настроить лимит.'
+      : _de
+          ? 'Tippe auf eine Kategorie, um ein Limit festzulegen.'
+          : _fr
+              ? 'Appuie sur une catégorie pour régler une limite.'
+              : _es
+                  ? 'Toca una categoría para configurar un límite.'
+                  : _tr
+                      ? 'Limit ayarlamak için kategoriye dokun.'
+                      : 'Tap a category to set a limit.';
 }
 
 class _SetupHeader extends StatelessWidget {
@@ -541,38 +593,60 @@ class _SetupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: _RoundIconButton(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [_surface, _card]),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryDark.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _RoundIconButton(
             icon: Icons.chevron_left_rounded,
             onTap: onBack,
           ),
-        ),
-        const SizedBox(height: 70),
-        Text(
-          title,
-          style: const TextStyle(
-            color: _primaryDark,
-            fontSize: 39,
-            height: 1.02,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1.2,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _primaryDark,
+                    fontSize: 18,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.25,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 11,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          subtitle,
-          style: const TextStyle(
-            color: _text,
-            fontSize: 17,
-            height: 1.35,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -600,16 +674,16 @@ class _LadnaSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(32, 32, 32, 30),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
       decoration: BoxDecoration(
         color: _surface.withOpacity(0.96),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: _border, width: 1.4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border, width: 1.1),
         boxShadow: [
           BoxShadow(
-            color: _primaryDark.withOpacity(0.05),
-            blurRadius: 28,
-            offset: const Offset(0, 16),
+            color: _primaryDark.withOpacity(0.045),
+            blurRadius: 18,
+            offset: const Offset(0, 9),
           ),
         ],
       ),
@@ -617,55 +691,58 @@ class _LadnaSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 62,
-                height: 62,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: tone.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: tone.withOpacity(0.22)),
+                  color: tone.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: tone.withOpacity(0.20)),
                 ),
-                child: Icon(icon, color: tone, size: 30),
+                child: Icon(icon, color: tone, size: 21),
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: _text,
-                        fontSize: 31,
-                        height: 1.05,
+                        color: _primaryDark,
+                        fontSize: 17,
+                        height: 1.1,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: -0.8,
+                        letterSpacing: -0.25,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: _text,
-                        fontSize: 18,
-                        height: 1.3,
-                        fontWeight: FontWeight.w600,
+                        color: _muted,
+                        fontSize: 11.5,
+                        height: 1.25,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 10),
+              _PrimaryActionButton(
+                label: actionLabel,
+                icon: Icons.add_rounded,
+                onTap: onAction,
+              ),
             ],
           ),
-          const SizedBox(height: 26),
-          _PrimaryActionButton(
-            label: actionLabel,
-            icon: Icons.add_rounded,
-            onTap: onAction,
-          ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 14),
           child,
         ],
       ),
@@ -690,32 +767,33 @@ class _PrimaryActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(13),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: BoxDecoration(
             color: _primary,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(13),
             boxShadow: [
               BoxShadow(
-                color: _primary.withOpacity(0.22),
-                blurRadius: 18,
-                offset: const Offset(0, 9),
+                color: _primary.withOpacity(0.18),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.white, size: 24),
-              const SizedBox(width: 10),
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -0.2,
+                  letterSpacing: -0.1,
                 ),
               ),
             ],
@@ -747,11 +825,11 @@ class _CategoryPill extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(22),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 54, maxWidth: 290),
-          padding: const EdgeInsets.fromLTRB(18, 12, 12, 12),
+          constraints: const BoxConstraints(minHeight: 38, maxWidth: 230),
+          padding: const EdgeInsets.fromLTRB(13, 8, 9, 8),
           decoration: BoxDecoration(
             color: Color.lerp(_card, tone, 0.12),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Color.lerp(_border, tone, 0.32)!),
             boxShadow: [
               BoxShadow(
@@ -770,13 +848,13 @@ class _CategoryPill extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: _primaryDark,
-                    fontSize: 18,
+                    fontSize: 13,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.2,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 7),
               InkWell(
                 borderRadius: BorderRadius.circular(999),
                 onTap: onDelete,
@@ -784,7 +862,7 @@ class _CategoryPill extends StatelessWidget {
                   padding: EdgeInsets.all(3),
                   child: Icon(
                     Icons.close_rounded,
-                    size: 22,
+                    size: 17,
                     color: _text,
                   ),
                 ),
@@ -813,21 +891,21 @@ class _JarTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: _lime.withOpacity(0.20),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(Icons.account_balance_wallet_outlined, color: _primaryDark),
           ),
@@ -840,7 +918,7 @@ class _JarTile extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: _primaryDark,
-                    fontSize: 19,
+                    fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -849,7 +927,7 @@ class _JarTile extends StatelessWidget {
                   summary,
                   style: const TextStyle(
                     color: _text,
-                    fontSize: 14,
+                    fontSize: 11.5,
                     height: 1.25,
                     fontWeight: FontWeight.w700,
                   ),
@@ -860,7 +938,7 @@ class _JarTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
                       value: progress,
-                      minHeight: 9,
+                      minHeight: 6,
                       backgroundColor: _card,
                       color: _lime,
                     ),
@@ -889,7 +967,7 @@ class _EmptySetupBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Color.lerp(_surface, tone, 0.05),
         borderRadius: BorderRadius.circular(22),
@@ -899,8 +977,8 @@ class _EmptySetupBox extends StatelessWidget {
         text,
         style: const TextStyle(
           color: _text,
-          fontSize: 15,
-          height: 1.35,
+          fontSize: 12,
+          height: 1.3,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -922,14 +1000,14 @@ class _RoundIconButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Container(
-          width: 48,
-          height: 48,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: _card.withOpacity(0.82),
             shape: BoxShape.circle,
             border: Border.all(color: _border),
           ),
-          child: Icon(icon, color: _text, size: 30),
+          child: Icon(icon, color: _text, size: 25),
         ),
       ),
     );
@@ -958,7 +1036,7 @@ class _ActionRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             color: Color.lerp(_surface, tone, 0.06),
@@ -973,7 +1051,7 @@ class _ActionRow extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: _primaryDark,
-                    fontSize: 17,
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -989,16 +1067,17 @@ class _ActionRow extends StatelessWidget {
 
 class _LadnaSaveBar extends StatelessWidget {
   final bool saving;
+  final String label;
   final VoidCallback onSave;
 
-  const _LadnaSaveBar({required this.saving, required this.onSave});
+  const _LadnaSaveBar({required this.saving, required this.label, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         decoration: BoxDecoration(
           color: _surface.withOpacity(0.94),
           border: const Border(top: BorderSide(color: _border)),
@@ -1014,13 +1093,13 @@ class _LadnaSaveBar extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: saving ? null : onSave,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
             child: Container(
-              height: 64,
+              height: 50,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: _primary,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: _primary.withOpacity(0.24),
@@ -1038,16 +1117,16 @@ class _LadnaSaveBar extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.save_outlined, color: Colors.white),
-                        SizedBox(width: 12),
+                        const Icon(Icons.save_outlined, color: Colors.white, size: 19),
+                        const SizedBox(width: 8),
                         Text(
-                          'Сохранить',
-                          style: TextStyle(
+                          label,
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 14,
                             fontWeight: FontWeight.w900,
                           ),
                         ),

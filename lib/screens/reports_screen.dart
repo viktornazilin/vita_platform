@@ -348,7 +348,7 @@ class _MoodTab extends StatelessWidget {
         _MetricGrid(
           children: [
             _MetricCard(
-              title: t.periodAverage,
+              title: t.moodAverage,
               value: avg == null ? '—' : avg.toStringAsFixed(1),
               subtitle: t.outOfFive,
               highlight: avg != null && avg >= 4,
@@ -356,9 +356,24 @@ class _MoodTab extends StatelessWidget {
             _MetricCard(
               title: t.bestDay,
               value: best == null ? '—' : _weekdayShort(best.date, t),
-              subtitle: best == null ? t.noDataYet : '${t.mood} ${_moodScore(best.emoji)}/5',
+              subtitle: best == null
+                  ? t.noDataYet
+                  : '${_moodLabel(_moodScore(best.emoji), t)} · ${_moodScore(best.emoji)}/5',
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _ExtraCard(
+          title: t.howMoodScoreWorks,
+          child: Text(
+            t.moodScoreExplanation,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              color: _LadnaColors.mid,
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         _MoodChartCard(moods: moods, t: t),
@@ -431,11 +446,12 @@ class _Header extends StatelessWidget {
               title,
               style: TextStyle(
                 fontFamily: 'PlayfairDisplay',
-                fontFamilyFallback: ['Playfair Display', 'Georgia'],
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontFamilyFallback: const ['PlayfairDisplay', 'Georgia'],
+                fontSize: 22,
+                height: 1.05,
+                fontWeight: FontWeight.w700,
                 color: _LadnaColors.dark,
-                letterSpacing: -0.2,
+                letterSpacing: -0.3,
               ),
             ),
           ),
@@ -584,7 +600,7 @@ class _MetricCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontFamily: 'PlayfairDisplay',
-              fontFamilyFallback: const ['Playfair Display', 'Georgia'],
+              fontFamilyFallback: const ['PlayfairDisplay', 'Georgia'],
               fontSize: 26,
               fontWeight: FontWeight.w600,
               color: highlight ? _LadnaColors.green : _LadnaColors.dark,
@@ -1510,11 +1526,26 @@ String _weekdayShort(DateTime date, _ReportsText t) {
 
 int _moodScore(String emoji) {
   if (emoji.contains('😄') || emoji.contains('😁') || emoji.contains('😍')) return 5;
-  if (emoji.contains('😊') || emoji.contains('🙂') || emoji.contains('😌')) return 4;
+  if (emoji.contains('🙂') || emoji.contains('😊') || emoji.contains('😌')) return 4;
   if (emoji.contains('😐') || emoji.contains('😶')) return 3;
-  if (emoji.contains('😕') || emoji.contains('🙁')) return 2;
+  if (emoji.contains('🙁') || emoji.contains('😕')) return 2;
   if (emoji.contains('😞') || emoji.contains('😢') || emoji.contains('😡')) return 1;
   return 3;
+}
+
+String _moodLabel(int score, _ReportsText t) {
+  switch (score) {
+    case 1:
+      return t.moodVeryLow;
+    case 2:
+      return t.moodLow;
+    case 3:
+      return t.moodNeutral;
+    case 4:
+      return t.moodGood;
+    default:
+      return t.moodGreat;
+  }
 }
 
 Color _moodColor(int score) {
@@ -1626,8 +1657,16 @@ class _ReportsText {
   String get outOf => pick('из', 'of', de: 'von', fr: 'sur', es: 'de', tr: '/');
   String get hoursShort => pick('ч', 'h', de: 'Std.', fr: 'h', es: 'h', tr: 's');
   String get periodAverage => pick('Среднее за период', 'Period average');
+  String get moodAverage => pick('Среднее настроение', 'Average mood', de: 'Durchschnittliche Stimmung', fr: 'Humeur moyenne', es: 'Ánimo medio', tr: 'Ortalama ruh hali');
   String get outOfFiveAverage => pick('из 5 в среднем', 'out of 5 average');
   String get outOfFive => pick('из 5 баллов', 'out of 5');
+  String get howMoodScoreWorks => pick('Как считается настроение', 'How mood is calculated', de: 'So wird die Stimmung berechnet', fr: 'Comment l’humeur est calculée', es: 'Cómo se calcula el ánimo', tr: 'Ruh hali nasıl hesaplanır');
+  String get moodScoreExplanation => pick('Пользователь выбирает одно из 5 настроений. Каждой иконке соответствует балл: 1 — очень тяжело, 2 — сложно, 3 — нейтрально, 4 — хорошо, 5 — отлично. В отчётах показывается среднее значение за выбранный период.', 'The user chooses one of 5 moods. Each icon has a score: 1 very low, 2 low, 3 neutral, 4 good, 5 great. Reports show the average for the selected period.', de: 'Der Nutzer wählt eine von 5 Stimmungen. Jede hat einen Wert: 1 sehr niedrig, 2 niedrig, 3 neutral, 4 gut, 5 sehr gut. Berichte zeigen den Durchschnitt für den gewählten Zeitraum.', fr: 'L’utilisateur choisit une des 5 humeurs. Chaque icône a une note : 1 très bas, 2 bas, 3 neutre, 4 bien, 5 très bien. Les rapports affichent la moyenne de la période.', es: 'El usuario elige uno de 5 ánimos. Cada icono tiene una puntuación: 1 muy bajo, 2 bajo, 3 neutral, 4 bien, 5 muy bien. Los informes muestran la media del periodo elegido.', tr: 'Kullanıcı 5 ruh halinden birini seçer. Her ikonun puanı vardır: 1 çok düşük, 2 düşük, 3 nötr, 4 iyi, 5 harika. Raporlar seçilen dönem ortalamasını gösterir.');
+  String get moodVeryLow => pick('Очень тяжело', 'Very low', de: 'Sehr niedrig', fr: 'Très bas', es: 'Muy bajo', tr: 'Çok düşük');
+  String get moodLow => pick('Сложно', 'Low', de: 'Niedrig', fr: 'Bas', es: 'Bajo', tr: 'Düşük');
+  String get moodNeutral => pick('Нейтрально', 'Neutral', de: 'Neutral', fr: 'Neutre', es: 'Neutral', tr: 'Nötr');
+  String get moodGood => pick('Хорошо', 'Good', de: 'Gut', fr: 'Bien', es: 'Bien', tr: 'İyi');
+  String get moodGreat => pick('Отлично', 'Great', de: 'Sehr gut', fr: 'Très bien', es: 'Muy bien', tr: 'Harika');
   String get periodEfficiency => pick('Эффективность периода', 'Period efficiency');
   String get plan => pick('План', 'Plan', de: 'Plan');
   String get fact => pick('Факт', 'Actual', de: 'Ist');

@@ -199,16 +199,18 @@ class _GoalsViewState extends State<_GoalsView> {
         fixedLifeBlock: null,
         availableBlocks: calendar.lifeBlocks,
         availableUserGoals: links,
+        initialDate: targetDate,
       ),
     );
 
     if (result == null) return;
 
     try {
+      final selectedDate = DateUtils.dateOnly(result.selectedDate ?? targetDate);
       final start = DateTime.utc(
-        targetDate.year,
-        targetDate.month,
-        targetDate.day,
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
         result.startTime.hour,
         result.startTime.minute,
       );
@@ -216,7 +218,7 @@ class _GoalsViewState extends State<_GoalsView> {
       await dbRepo.createGoal(
         title: result.title,
         description: result.description,
-        deadline: DateTime.utc(targetDate.year, targetDate.month, targetDate.day),
+        deadline: DateTime.utc(selectedDate.year, selectedDate.month, selectedDate.day),
         lifeBlock: result.lifeBlock,
         importance: result.importance,
         emotion: result.emotion,
@@ -622,7 +624,19 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: _LadnaText.serifTitle),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    fontSize: 22,
+                    height: 1.05,
+                    fontWeight: FontWeight.w700,
+                    color: _LadnaColors.dark,
+                    letterSpacing: -0.3,
+                  ),
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
                   Text(subtitle!, style: _LadnaText.caption),
@@ -1844,7 +1858,7 @@ class _LadnaDecor {
 
 class _LadnaText {
   static final serifTitle = TextStyle(
-    fontFamily: 'Playfair Display',
+    fontFamily: 'PlayfairDisplay',
     fontSize: 17,
     fontWeight: FontWeight.w700,
     color: _LadnaColors.dark,
@@ -1852,7 +1866,7 @@ class _LadnaText {
   );
 
   static final serifNumber = TextStyle(
-    fontFamily: 'Playfair Display',
+    fontFamily: 'PlayfairDisplay',
     fontSize: 22,
     fontWeight: FontWeight.w700,
     color: _LadnaColors.dark,

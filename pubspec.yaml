@@ -54,7 +54,6 @@ flutter_launcher_icons:
     background_color: "#100C1E"
     theme_color: "#6B54C0"
 
-
 flutter:
   generate: true
   uses-material-design: true
@@ -65,3 +64,12 @@ flutter:
     - assets/images/logo_light.png
     - assets/images/logo_dark.png
 
+  fonts:
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlayfairDisplay-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+          weight: 700

@@ -35,7 +35,8 @@ class EditGoalSheet extends StatefulWidget {
 class _EditGoalSheetState extends State<EditGoalSheet> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _descCtrl;
-  late final TextEditingController _emotionCtrl;
+  late final TextEditingController _startTimeCtrl;
+  late final TextEditingController _endTimeCtrl;
 
   final _supabase = Supabase.instance.client;
 
@@ -43,6 +44,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   late int _importance;
   late double _hours;
   late TimeOfDay _start;
+  late TimeOfDay _end;
   late DateTime _selectedDate;
 
   String? _selectedUserGoalId;
@@ -330,7 +332,6 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
     _titleCtrl = TextEditingController(text: g.title);
     _descCtrl = TextEditingController(text: g.description);
-    _emotionCtrl = TextEditingController(text: g.emotion);
 
     final initialBlock = (widget.fixedLifeBlock?.trim().isNotEmpty ?? false)
         ? widget.fixedLifeBlock!.trim()
@@ -342,6 +343,10 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     _importance = g.importance.clamp(1, 3);
     _hours = g.spentHours.clamp(0.5, 14.0);
     _start = TimeOfDay.fromDateTime(g.startTime);
+    final endDateTime = g.startTime.add(Duration(minutes: (_hours * 60).round()));
+    _end = TimeOfDay.fromDateTime(endDateTime);
+    _startTimeCtrl = TextEditingController(text: _formatTime(_start));
+    _endTimeCtrl = TextEditingController(text: _formatTime(_end));
     _selectedDate = DateUtils.dateOnly(g.startTime);
 
     _selectedUserGoalId = widget.initialUserGoalId;
@@ -355,30 +360,144 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   void dispose() {
     _titleCtrl.dispose();
     _descCtrl.dispose();
-    _emotionCtrl.dispose();
+    _startTimeCtrl.dispose();
+    _endTimeCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _start,
-      builder: (ctx, child) {
-        final t = Theme.of(ctx);
-        return Theme(
-          data: t.copyWith(
-            colorScheme: t.colorScheme.copyWith(
-              primary: t.colorScheme.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
+  String _localeCode(BuildContext context) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return {'ru', 'en', 'de', 'fr', 'es', 'tr'}.contains(code) ? code : 'en';
+  }
 
-    if (picked != null) {
-      setState(() => _start = picked);
+  String _localized(BuildContext context, Map<String, String> values) {
+    final code = _localeCode(context);
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
+
+  String _endTimeLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Время окончания',
+        'en': 'End time',
+        'de': 'Endzeit',
+        'fr': 'Heure de fin',
+        'es': 'Hora de fin',
+        'tr': 'Bitiş saati',
+      });
+
+  String _durationLabel(BuildContext context, double hours) {
+    final value = hours.toStringAsFixed(hours % 1 == 0 ? 0 : 1);
+    return _localized(context, {
+      'ru': 'Будет записано: $value ч',
+      'en': 'Will be saved: ${value}h',
+      'de': 'Wird gespeichert: ${value} Std.',
+      'fr': 'Sera enregistré : ${value} h',
+      'es': 'Se guardará: ${value} h',
+      'tr': 'Kaydedilecek: ${value} sa',
+    });
+  }
+
+  String _timeErrorText(BuildContext context) => _localized(context, const {
+        'ru': 'Введите время в формате 09:30 или 930',
+        'en': 'Enter time as 09:30 or 930',
+        'de': 'Zeit als 09:30 oder 930 eingeben',
+        'fr': 'Saisis l’heure comme 09:30 ou 930',
+        'es': 'Introduce la hora como 09:30 o 930',
+        'tr': 'Saati 09:30 veya 930 olarak gir',
+      });
+
+  String _formatTime(TimeOfDay value) =>
+      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
+  TimeOfDay? _parseTimeInput(String raw) {
+    var v = raw.trim().replaceAll('.', ':').replaceAll(' ', '');
+    if (v.isEmpty) return null;
+
+    int? hour;
+    int minute = 0;
+
+    if (v.contains(':')) {
+      final parts = v.split(':');
+      if (parts.isEmpty || parts.length > 2) return null;
+      hour = int.tryParse(parts[0]);
+      minute = parts.length == 2 && parts[1].isNotEmpty
+          ? int.tryParse(parts[1]) ?? -1
+          : 0;
+    } else {
+      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty || digits.length > 4) return null;
+
+      if (digits.length <= 2) {
+        hour = int.tryParse(digits);
+      } else {
+        final padded = digits.padLeft(4, '0');
+        hour = int.tryParse(padded.substring(0, padded.length - 2));
+        minute = int.tryParse(padded.substring(padded.length - 2)) ?? -1;
+      }
     }
+
+    if (hour == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  int _minutesOf(TimeOfDay value) => value.hour * 60 + value.minute;
+
+  double get _calculatedHours {
+    var diff = _minutesOf(_end) - _minutesOf(_start);
+    if (diff <= 0) diff += 24 * 60;
+    return (diff / 60).clamp(0.25, 24.0);
+  }
+
+  void _onStartTimeChanged(String raw) {
+    final parsed = _parseTimeInput(raw);
+    if (parsed == null) return;
+    setState(() {
+      _start = parsed;
+      _hours = _calculatedHours;
+    });
+  }
+
+  void _onEndTimeChanged(String raw) {
+    final parsed = _parseTimeInput(raw);
+    if (parsed == null) return;
+    setState(() {
+      _end = parsed;
+      _hours = _calculatedHours;
+    });
+  }
+
+  void _normalizeStartTimeField() {
+    final parsed = _parseTimeInput(_startTimeCtrl.text);
+    if (parsed == null) {
+      _startTimeCtrl.text = _formatTime(_start);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(_timeErrorText(context))),
+      );
+      return;
+    }
+    setState(() {
+      _start = parsed;
+      _hours = _calculatedHours;
+      _startTimeCtrl.text = _formatTime(parsed);
+    });
+  }
+
+  void _normalizeEndTimeField() {
+    final parsed = _parseTimeInput(_endTimeCtrl.text);
+    if (parsed == null) {
+      _endTimeCtrl.text = _formatTime(_end);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(_timeErrorText(context))),
+      );
+      return;
+    }
+    setState(() {
+      _end = parsed;
+      _hours = _calculatedHours;
+      _endTimeCtrl.text = _formatTime(parsed);
+    });
   }
 
   Future<void> _pickDate() async {
@@ -423,9 +542,10 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         description: _descCtrl.text.trim(),
         lifeBlock: _normalizeBlock(_lifeBlock),
         importance: _importance,
-        emotion: _emotionCtrl.text.trim(),
-        hours: _hours,
+        emotion: '',
+        hours: _calculatedHours,
         startTime: _start,
+        endTime: _end,
         userGoalId: _selectedUserGoalId,
       ),
     );
@@ -493,7 +613,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                     Expanded(
                       child: Text(
                         t.editGoalTitle,
-                        style: theme.textTheme.headlineMedium?.copyWith(
+                        style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: scheme.onSurface,
                           height: 1.05,
@@ -566,27 +686,27 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                         ),
                       );
 
-                      final timeField = InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: _pickTime,
-                        child: InputDecorator(
-                          decoration: _nestInput(
-                            label: t.editGoalStartTime,
-                            icon: Icons.schedule_rounded,
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              _start.format(context),
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.visible,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: scheme.onSurface,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                      final startTimeField = _EditTimeTextField(
+                        controller: _startTimeCtrl,
+                        label: t.editGoalStartTime,
+                        onChanged: _onStartTimeChanged,
+                        onEditingComplete: _normalizeStartTimeField,
+                      );
+
+                      final endTimeField = _EditTimeTextField(
+                        controller: _endTimeCtrl,
+                        label: _endTimeLabel(context),
+                        onChanged: _onEndTimeChanged,
+                        onEditingComplete: _normalizeEndTimeField,
+                      );
+
+                      final durationInfo = Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _durationLabel(context, _calculatedHours),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       );
@@ -596,16 +716,28 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                           children: [
                             dateField,
                             const SizedBox(height: 12),
-                            timeField,
+                            startTimeField,
+                            const SizedBox(height: 12),
+                            endTimeField,
+                            const SizedBox(height: 10),
+                            durationInfo,
                           ],
                         );
                       }
 
-                      return Row(
+                      return Column(
                         children: [
-                          Expanded(child: dateField),
-                          const SizedBox(width: 12),
-                          Expanded(child: timeField),
+                          Row(
+                            children: [
+                              Expanded(child: dateField),
+                              const SizedBox(width: 12),
+                              Expanded(child: startTimeField),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          endTimeField,
+                          const SizedBox(height: 10),
+                          durationInfo,
                         ],
                       );
                     },
@@ -779,74 +911,10 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                         },
                       );
 
-                      final emotionField = TextField(
-                        controller: _emotionCtrl,
-                        textInputAction: TextInputAction.done,
-                        decoration: _nestInput(
-                          label: t.editGoalFieldEmotionLabel,
-                          hint: t.editGoalFieldEmotionHint,
-                          icon: Icons.emoji_emotions_outlined,
-                        ),
-                      );
-
                       return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (narrow) ...[
-                            importanceField,
-                            const SizedBox(height: 12),
-                            emotionField,
-                          ] else
-                            Row(
-                              children: [
-                                Expanded(child: importanceField),
-                                const SizedBox(width: 12),
-                                Expanded(child: emotionField),
-                              ],
-                            ),
-                          const SizedBox(height: 18),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.timelapse_rounded,
-                                size: 18,
-                                color: scheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  t.editGoalHoursValue(
-                                    _hours.toStringAsFixed(1),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: scheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              NestPill(
-                                leading: const Icon(
-                                  Icons.schedule_rounded,
-                                  size: 16,
-                                ),
-                                text: t.commonHoursShort(
-                                  _hours.toStringAsFixed(1),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Slider(
-                            value: _hours,
-                            min: 0.5,
-                            max: 14,
-                            divisions: 27,
-                            label: _hours.toStringAsFixed(1),
-                            onChanged: (v) {
-                              setState(() => _hours = v);
-                            },
-                          ),
+                          importanceField,
                         ],
                       );
                     },
@@ -875,6 +943,49 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+
+class _EditTimeTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onEditingComplete;
+
+  const _EditTimeTextField({
+    required this.controller,
+    required this.label,
+    required this.onChanged,
+    required this.onEditingComplete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      textInputAction: TextInputAction.next,
+      onChanged: onChanged,
+      onEditingComplete: onEditingComplete,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: scheme.onSurface,
+          ),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: '09:00',
+        prefixIcon: Icon(
+          Icons.schedule_rounded,
+          size: 18,
+          color: scheme.primary,
+        ),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
     );
   }
