@@ -38,6 +38,10 @@ class ReportsScreen extends StatelessWidget {
 
 enum _ReportTab { summary, progress, habits, mood }
 
+bool _shouldFetchReportsAiInsight() {
+  return DateTime.now().weekday == DateTime.sunday;
+}
+
 class _ReportsView extends StatefulWidget {
   const _ReportsView();
 
@@ -361,19 +365,6 @@ class _MoodTab extends StatelessWidget {
                   : '${_moodLabel(_moodScore(best.emoji), t)} · ${_moodScore(best.emoji)}/5',
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        _ExtraCard(
-          title: t.howMoodScoreWorks,
-          child: Text(
-            t.moodScoreExplanation,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-              color: _LadnaColors.mid,
-            ),
-          ),
         ),
         const SizedBox(height: 12),
         _MoodChartCard(moods: moods, t: t),
@@ -778,18 +769,25 @@ class _AiCard extends StatefulWidget {
 }
 
 class _AiCardState extends State<_AiCard> {
-  late Future<HomeAiInsightResult> _future;
+  Future<HomeAiInsightResult>? _future;
 
   @override
   void initState() {
     super.initState();
-    _future = _load();
+    if (_shouldFetchReportsAiInsight()) {
+      _future = _load();
+    }
   }
 
   @override
   void didUpdateWidget(covariant _AiCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.reportTab != widget.reportTab || oldWidget.title != widget.title) {
+    if (!_shouldFetchReportsAiInsight()) {
+      _future = null;
+      return;
+    }
+
+    if (_future == null || oldWidget.reportTab != widget.reportTab || oldWidget.title != widget.title) {
       _future = _load();
     }
   }
@@ -806,8 +804,20 @@ class _AiCardState extends State<_AiCard> {
   Widget build(BuildContext context) {
     final t = _ReportsText.of(context);
 
+    if (!_shouldFetchReportsAiInsight()) {
+      final model = context.watch<ReportsModel>();
+      return _buildInsightContainer(
+        label: t.periodStatistics,
+        title: widget.title,
+        text: _buildLocalReportsStatisticsText(model, t, widget.reportTab),
+        isLoading: false,
+        hasError: false,
+        onRetry: null,
+      );
+    }
+
     return FutureBuilder<HomeAiInsightResult>(
-      future: _future,
+      future: _future ??= _load(),
       builder: (context, snapshot) {
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
         final hasError = snapshot.hasError;
@@ -818,101 +828,216 @@ class _AiCardState extends State<_AiCard> {
                 ? t.aiUnavailable
                 : (insight == null || insight.isEmpty ? t.aiUnavailable : insight);
 
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0x121C1630)),
-                _ladnaAdaptive(const Color(0xFFE5D8BF), const Color(0x1AD4E040)),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _LadnaColors.primary.withOpacity(.20)),
-            boxShadow: _LadnaColors.softShadow,
-          ),
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: _ladnaAdaptive(_LadnaColors.dark, const Color(0x26D4E040)),
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x40D4E040))),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '✦',
-                        style: TextStyle(color: _LadnaColors.primary, fontSize: 14),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.label.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: _LadnaColors.primary,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          widget.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: _LadnaColors.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isLoading)
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else if (hasError)
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      tooltip: t.commonRetry,
-                      icon: Icon(Icons.refresh_rounded, size: 18),
-                      color: _LadnaColors.primary,
-                      onPressed: () => setState(() => _future = _load()),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 9),
-              Text(
-                text,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _LadnaColors.mid,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
+        return _buildInsightContainer(
+          label: widget.label,
+          title: widget.title,
+          text: text,
+          isLoading: isLoading,
+          hasError: hasError,
+          onRetry: hasError ? () => setState(() => _future = _load()) : null,
         );
       },
     );
   }
+
+  Widget _buildInsightContainer({
+    required String label,
+    required String title,
+    required String text,
+    required bool isLoading,
+    required bool hasError,
+    required VoidCallback? onRetry,
+  }) {
+    final t = _ReportsText.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0x121C1630)),
+            _ladnaAdaptive(const Color(0xFFE5D8BF), const Color(0x1AD4E040)),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _LadnaColors.primary.withOpacity(.20)),
+        boxShadow: _LadnaColors.softShadow,
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: _ladnaAdaptive(_LadnaColors.dark, const Color(0x26D4E040)),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x40D4E040))),
+                ),
+                child: Center(
+                  child: Text(
+                    '✦',
+                    style: TextStyle(color: _LadnaColors.primary, fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: _LadnaColors.primary,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _LadnaColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isLoading)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (hasError && onRetry != null)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: t.commonRetry,
+                  icon: Icon(Icons.refresh_rounded, size: 18),
+                  color: _LadnaColors.primary,
+                  onPressed: onRetry,
+                ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: _LadnaColors.mid,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, String reportTab) {
+  final goals = model.goalsInRange.toList();
+  final completed = goals.where((g) => g.isCompleted).length;
+  final total = goals.length;
+  final completionPct = total == 0 ? 0 : ((completed / total) * 100).round();
+  final habitsPct = _habitCompletionPercent(goals);
+  final avgMood = _avgMood(model.moodsInRange.toList());
+  final focusHours = _fmt(model.totalHours);
+  final plannedHours = _fmt(model.plannedHours);
+  final suffix = t.reportsNoAiUntilSunday;
+
+  if (reportTab == 'progress') {
+    if (total == 0) {
+      return t.pick(
+        'За выбранный период задач пока нет. Добавь несколько задач, чтобы отчёт по прогрессу стал точнее. $suffix',
+        'There are no tasks in the selected period yet. Add a few tasks to make the progress report more useful. $suffix',
+        de: 'Für den gewählten Zeitraum gibt es noch keine Aufgaben. Füge ein paar Aufgaben hinzu, damit der Fortschrittsbericht nützlicher wird. $suffix',
+        fr: 'Il n’y a pas encore de tâches pour la période choisie. Ajoute quelques tâches pour rendre le rapport de progression plus utile. $suffix',
+        es: 'Todavía no hay tareas en el periodo seleccionado. Añade algunas tareas para que el informe de progreso sea más útil. $suffix',
+        tr: 'Seçilen dönemde henüz görev yok. İlerleme raporunu daha faydalı hale getirmek için birkaç görev ekle. $suffix',
+      );
+    }
+    return t.pick(
+      'За период выполнено $completed из $total задач ($completionPct%). Фокус-время: $focusHours из $plannedHours ${t.hoursShort}. $suffix',
+      'For this period, $completed of $total tasks are done ($completionPct%). Focus time: $focusHours of $plannedHours ${t.hoursShort}. $suffix',
+      de: 'In diesem Zeitraum sind $completed von $total Aufgaben erledigt ($completionPct%). Fokuszeit: $focusHours von $plannedHours ${t.hoursShort}. $suffix',
+      fr: 'Sur cette période, $completed tâches sur $total sont terminées ($completionPct%). Temps de focus : $focusHours sur $plannedHours ${t.hoursShort}. $suffix',
+      es: 'En este periodo, $completed de $total tareas están completadas ($completionPct%). Tiempo de foco: $focusHours de $plannedHours ${t.hoursShort}. $suffix',
+      tr: 'Bu dönemde $total görevden $completed tanesi tamamlandı ($completionPct%). Odak süresi: $focusHours / $plannedHours ${t.hoursShort}. $suffix',
+    );
+  }
+
+  if (reportTab == 'habits') {
+    if (total == 0) {
+      return t.pick(
+        'По привычкам пока недостаточно данных. Отмечай повторяющиеся действия несколько дней подряд, и здесь появится более полезная статистика. $suffix',
+        'There is not enough habit data yet. Track repeated actions for a few days, and this card will become more useful. $suffix',
+        de: 'Für Gewohnheiten gibt es noch nicht genug Daten. Markiere wiederkehrende Aktionen ein paar Tage lang, dann wird diese Karte nützlicher. $suffix',
+        fr: 'Il n’y a pas encore assez de données sur les habitudes. Suis quelques actions répétées pendant plusieurs jours, et cette carte deviendra plus utile. $suffix',
+        es: 'Aún no hay suficientes datos de hábitos. Registra acciones repetidas durante algunos días y esta tarjeta será más útil. $suffix',
+        tr: 'Alışkanlıklar için henüz yeterli veri yok. Birkaç gün tekrar eden eylemleri takip et, bu kart daha faydalı olur. $suffix',
+      );
+    }
+    return t.pick(
+      'Среднее выполнение привычек за период — $habitsPct%. Регулярность важнее идеального дня: выбери самый лёгкий следующий шаг. $suffix',
+      'Average habit completion for this period is $habitsPct%. Consistency matters more than a perfect day: choose the easiest next step. $suffix',
+      de: 'Die durchschnittliche Gewohnheitserfüllung in diesem Zeitraum liegt bei $habitsPct%. Regelmäßigkeit ist wichtiger als ein perfekter Tag: Wähle den einfachsten nächsten Schritt. $suffix',
+      fr: 'La réalisation moyenne des habitudes sur cette période est de $habitsPct%. La régularité compte plus qu’une journée parfaite : choisis la prochaine étape la plus simple. $suffix',
+      es: 'El cumplimiento medio de hábitos en este periodo es del $habitsPct%. La constancia importa más que un día perfecto: elige el siguiente paso más fácil. $suffix',
+      tr: 'Bu dönemde ortalama alışkanlık tamamlama oranı %$habitsPct. Kusursuz bir günden çok düzenlilik önemlidir: en kolay sonraki adımı seç. $suffix',
+    );
+  }
+
+  if (reportTab == 'mood') {
+    if (avgMood == null) {
+      return t.pick(
+        'За выбранный период настроение ещё не отмечалось. Добавь одну отметку сегодня, чтобы динамика стала видимой. $suffix',
+        'No mood has been logged for the selected period yet. Add one check-in today to make the trend visible. $suffix',
+        de: 'Für den gewählten Zeitraum wurde noch keine Stimmung erfasst. Füge heute einen Check-in hinzu, damit der Trend sichtbar wird. $suffix',
+        fr: 'Aucune humeur n’a encore été enregistrée pour la période choisie. Ajoute une entrée aujourd’hui pour rendre la tendance visible. $suffix',
+        es: 'Aún no se ha registrado el ánimo en el periodo seleccionado. Añade una entrada hoy para que la tendencia sea visible. $suffix',
+        tr: 'Seçilen dönem için henüz ruh hali kaydı yok. Eğilimi görünür yapmak için bugün bir kayıt ekle. $suffix',
+      );
+    }
+    return t.pick(
+      'Среднее настроение за период — ${avgMood.toStringAsFixed(1)} из 5. Сравни его с днями, где были выполнены задачи и привычки. $suffix',
+      'Average mood for this period is ${avgMood.toStringAsFixed(1)} out of 5. Compare it with days when tasks and habits were completed. $suffix',
+      de: 'Die durchschnittliche Stimmung in diesem Zeitraum liegt bei ${avgMood.toStringAsFixed(1)} von 5. Vergleiche sie mit Tagen, an denen Aufgaben und Gewohnheiten erledigt wurden. $suffix',
+      fr: 'L’humeur moyenne sur cette période est de ${avgMood.toStringAsFixed(1)} sur 5. Compare-la avec les jours où les tâches et habitudes ont été terminées. $suffix',
+      es: 'El ánimo medio en este periodo es ${avgMood.toStringAsFixed(1)} de 5. Compáralo con los días en los que se completaron tareas y hábitos. $suffix',
+      tr: 'Bu dönemde ortalama ruh hali 5 üzerinden ${avgMood.toStringAsFixed(1)}. Bunu görevlerin ve alışkanlıkların tamamlandığı günlerle karşılaştır. $suffix',
+    );
+  }
+
+  if (total == 0 && avgMood == null) {
+    return t.pick(
+      'За выбранный период пока мало данных. Добавь задачу, отметь привычку или настроение — отчёт станет полезнее. $suffix',
+      'There is little data for the selected period yet. Add a task, habit, or mood check-in to make the report more useful. $suffix',
+      de: 'Für den gewählten Zeitraum gibt es noch wenig Daten. Füge eine Aufgabe, Gewohnheit oder Stimmung hinzu, damit der Bericht nützlicher wird. $suffix',
+      fr: 'Il y a encore peu de données pour la période choisie. Ajoute une tâche, une habitude ou une humeur pour rendre le rapport plus utile. $suffix',
+      es: 'Aún hay pocos datos para el periodo seleccionado. Añade una tarea, un hábito o un registro de ánimo para que el informe sea más útil. $suffix',
+      tr: 'Seçilen dönem için henüz az veri var. Raporu daha faydalı hale getirmek için görev, alışkanlık veya ruh hali kaydı ekle. $suffix',
+    );
+  }
+
+  return t.pick(
+    'За период выполнено $completed из $total задач ($completionPct%), фокус-время — $focusHours ${t.hoursShort}, привычки — $habitsPct%. $suffix',
+    'For this period, $completed of $total tasks are done ($completionPct%), focus time is $focusHours ${t.hoursShort}, habits are at $habitsPct%. $suffix',
+    de: 'In diesem Zeitraum sind $completed von $total Aufgaben erledigt ($completionPct%), Fokuszeit: $focusHours ${t.hoursShort}, Gewohnheiten: $habitsPct%. $suffix',
+    fr: 'Sur cette période, $completed tâches sur $total sont terminées ($completionPct%), temps de focus : $focusHours ${t.hoursShort}, habitudes : $habitsPct%. $suffix',
+    es: 'En este periodo, $completed de $total tareas están completadas ($completionPct%), tiempo de foco: $focusHours ${t.hoursShort}, hábitos: $habitsPct%. $suffix',
+    tr: 'Bu dönemde $total görevden $completed tanesi tamamlandı ($completionPct%), odak süresi: $focusHours ${t.hoursShort}, alışkanlıklar: %$habitsPct. $suffix',
+  );
 }
 
 class _MoodChartCard extends StatelessWidget {
@@ -1673,6 +1798,8 @@ class _ReportsText {
   String get timeBySphere => pick('Время по сферам', 'Time by spheres');
   String get topProductiveDays => pick('Топ-3 продуктивных дня', 'Top 3 productive days');
   String get aiObservation => pick('AI-наблюдение', 'AI observation');
+  String get periodStatistics => pick('Статистика периода', 'Period statistics', de: 'Periodenstatistik', fr: 'Statistiques de période', es: 'Estadísticas del periodo', tr: 'Dönem istatistikleri');
+  String get reportsNoAiUntilSunday => pick('AI-наблюдение в отчётах запускается только в воскресенье; сейчас это статистика без запуска AI.', 'AI observation in reports runs only on Sunday; this is statistics without starting AI.', de: 'Die AI-Beobachtung in Berichten läuft nur am Sonntag; aktuell ist das Statistik ohne AI-Start.', fr: 'L’observation IA dans les rapports ne se lance que le dimanche ; actuellement, ce sont des statistiques sans lancement IA.', es: 'La observación de IA en los informes se ejecuta solo el domingo; ahora son estadísticas sin iniciar IA.', tr: 'Raporlardaki AI gözlemi yalnızca pazar günü çalışır; şu anda AI başlatılmadan istatistik gösteriliyor.');
   String get aiLoading => pick('Готовлю персональное наблюдение…', 'Preparing your personal observation…', de: 'Persönliche Beobachtung wird vorbereitet…', fr: 'Préparation de l’observation personnalisée…', es: 'Preparando una observación personalizada…', tr: 'Kişisel gözlem hazırlanıyor…');
   String get aiUnavailable => pick('AI-наблюдение пока недоступно. Проверь подключение к функции или попробуй обновить позже.', 'AI observation is currently unavailable. Check the function connection or try again later.', de: 'AI-Beobachtung ist derzeit nicht verfügbar. Prüfe die Funktionsverbindung oder versuche es später erneut.', fr: 'L’observation IA est momentanément indisponible. Vérifie la fonction ou réessaie plus tard.', es: 'La observación de IA no está disponible ahora. Revisa la función o inténtalo más tarde.', tr: 'AI gözlemi şu anda kullanılamıyor. Fonksiyon bağlantısını kontrol et veya daha sonra tekrar dene.');
   String get commonRetry => pick('Повторить', 'Retry', de: 'Erneut versuchen', fr: 'Réessayer', es: 'Reintentar', tr: 'Tekrar dene');

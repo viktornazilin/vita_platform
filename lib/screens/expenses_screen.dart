@@ -531,7 +531,7 @@ class _ExpensesViewState extends State<_ExpensesView> {
                     ),
                     Positioned(
                       right: 18,
-                      bottom: bottom - 90,
+                      bottom: bottom - 80,
                       child: _Fab(
                         label: t.add,
                         onTap: () => _showAddMenu(context),
