@@ -79,7 +79,12 @@ mixin UserGoalsRepoMixin {
       }
 
       return row;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('❌ USER_GOAL DECRYPT FAILED');
+      debugPrint('row id: ${row['id']}');
+      debugPrint('plain title: ${row['title']}');
+      debugPrint('error: $e');
+      debugPrint('stack: $st');
       return row;
     }
   }
@@ -114,7 +119,47 @@ mixin UserGoalsRepoMixin {
 
     for (final rawRow in rows as List<dynamic>) {
       final row = Map<String, dynamic>.from(rawRow as Map);
-      decryptedRows.add(await _decryptUserGoalRow(row));
+      final originalTitle = (row['title'] ?? '').toString().trim();
+      final originalDescription = (row['description'] ?? '').toString().trim();
+
+      final decryptedRow = await _decryptUserGoalRow(row);
+      decryptedRows.add(decryptedRow);
+
+      // If we successfully decrypted an older row that only had the technical
+      // placeholder in the plain column, repair the plain fields in Supabase.
+      // This makes the goal readable in future even if local secure storage is
+      // cleared again.
+      final decryptedTitle = (decryptedRow['title'] ?? '').toString().trim();
+      final decryptedDescription =
+          (decryptedRow['description'] ?? '').toString().trim();
+      final rowId = (decryptedRow['id'] ?? '').toString();
+
+      final shouldRepairTitle =
+          rowId.isNotEmpty &&
+          decryptedTitle.isNotEmpty &&
+          decryptedTitle != '[encrypted]' &&
+          (originalTitle.isEmpty || originalTitle == '[encrypted]');
+
+      final shouldRepairDescription =
+          rowId.isNotEmpty &&
+          decryptedDescription.isNotEmpty &&
+          originalDescription.isEmpty;
+
+      if (shouldRepairTitle || shouldRepairDescription) {
+        final repair = <String, dynamic>{};
+        if (shouldRepairTitle) repair['title'] = decryptedTitle;
+        if (shouldRepairDescription) repair['description'] = decryptedDescription;
+
+        try {
+          await client
+              .from('user_goals')
+              .update(repair)
+              .eq('id', rowId)
+              .eq('user_id', userId);
+        } catch (e) {
+          debugPrint('⚠️ Failed to repair plain user_goal fields for $rowId: $e');
+        }
+      }
     }
 
     return decryptedRows.map(UserGoal.fromMap).toList();
@@ -150,10 +195,10 @@ mixin UserGoalsRepoMixin {
           'life_block': lifeBlock,
           'horizon': horizon.dbValue,
 
-          // Technical fallback for DB constraints.
-          // Real user text is stored in encrypted_payload.
-          'title': '[encrypted]',
-          'description': null,
+          // Keep a plain fallback so user goals stay readable even if the
+          // local encryption key is lost. encrypted_payload is still written.
+          'title': normalizedTitle,
+          'description': _normalizeNullableText(description),
 
           'encrypted_payload': encryptedPayload,
           'encryption_version': 1,
@@ -202,10 +247,10 @@ mixin UserGoalsRepoMixin {
           'life_block': lifeBlock,
           'horizon': horizon.dbValue,
 
-          // Technical fallback for DB constraints.
-          // Real user text is stored in encrypted_payload.
-          'title': '[encrypted]',
-          'description': null,
+          // Keep a plain fallback so user goals stay readable even if the
+          // local encryption key is lost. encrypted_payload is still written.
+          'title': normalizedTitle,
+          'description': _normalizeNullableText(description),
 
           'encrypted_payload': encryptedPayload,
           'encryption_version': 1,

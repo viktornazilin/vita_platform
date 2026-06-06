@@ -1,7 +1,9 @@
 // lib/widgets/edit_goal_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
+import 'package:nest_app/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:nest_app/core/security/secure_crypto_service.dart';
 
 import '../models/goal.dart';
 import 'add_day_goal_sheet.dart';
@@ -39,8 +41,9 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   late final TextEditingController _endTimeCtrl;
 
   final _supabase = Supabase.instance.client;
+  final SecureCryptoService _crypto = SecureCryptoService();
 
-  late String _lifeBlock;
+  String _lifeBlock = 'general';
   late int _importance;
   late double _hours;
   late TimeOfDay _start;
@@ -53,7 +56,22 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
 
   String _normalizeBlock(String value) {
-    final v = value.trim().toLowerCase();
+    var v = value.trim().toLowerCase();
+
+    // Support enum/stringified values such as LifeBlock.career or GoalLifeBlock.family.
+    if (v.contains('.')) {
+      final last = v.split('.').last.trim();
+      if (last.isNotEmpty && last != v) {
+        v = last;
+      }
+    }
+
+    v = v
+        .replaceAll('_', '-')
+        .replaceAll('–', '-')
+        .replaceAll('—', '-')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
 
     switch (v) {
       case '':
@@ -75,8 +93,14 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         return 'health';
 
       case 'career':
+      case 'business':
+      case 'professional':
+      case 'profession':
+      case 'work-career':
       case 'карьера':
       case 'работа':
+      case 'профессия':
+      case 'бизнес':
       case 'job':
       case 'work':
         return 'career';
@@ -89,13 +113,19 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         return 'finances';
 
       case 'family':
+      case 'родные':
+      case 'близкие':
       case 'семья':
         return 'family';
 
       case 'relationships':
       case 'relationship':
       case 'relations':
+      case 'relation':
+      case 'love':
+      case 'personal-life':
       case 'отношения':
+      case 'личная жизнь':
         return 'relationships';
 
       case 'hobbies':
@@ -140,24 +170,34 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
   }
 
   List<String> get _lifeBlockOptions {
-    final seen = <String>{};
+    final seen = <String>{'general'};
     final out = <String>['general'];
 
-    for (final raw in widget.availableBlocks) {
+    void addBlock(String raw) {
       final b = raw.trim();
-      if (b.isEmpty) continue;
+      if (b.isEmpty) return;
 
       final normalized = _normalizeBlock(b);
+      if (normalized.isEmpty || normalized == 'all') return;
+
       if (seen.add(normalized)) {
-        if (normalized == 'general') continue;
         out.add(normalized);
       }
     }
 
-    final current = _normalizeBlock(_lifeBlock);
-    if (!out.contains(current)) {
-      out.add(current);
+    // Primary source: blocks that the user actually selected/tracks.
+    for (final raw in widget.availableBlocks) {
+      addBlock(raw);
     }
+
+    // Fallback: keep linked goal blocks visible even when the parent screen
+    // passed an incomplete list.
+    for (final goal in widget.availableUserGoals) {
+      addBlock(goal.lifeBlock);
+    }
+
+    // Safety: never let the currently selected value disappear from the dropdown.
+    addBlock(_lifeBlock);
 
     return out;
   }
@@ -263,18 +303,114 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     return '${two(d.day)}.${two(d.month)}.${d.year}';
   }
 
-  Future<void> _loadUserGoalsForCurrentBlock() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
-      if (!mounted) return;
-      setState(() {
-        _userGoalsForSelectedBlock = const [];
-        _selectedUserGoalId = null;
-        _loadingUserGoals = false;
-      });
-      return;
+  Future<UserGoalLinkOption?> _mapUserGoalLinkOption(
+    Map<String, dynamic> row,
+  ) async {
+    var title = (row['title'] ?? '').toString().trim();
+
+    final encryptedPayload = row['encrypted_payload'];
+    if (encryptedPayload is Map) {
+      try {
+        final decrypted = await _crypto.decryptJson(
+          Map<String, dynamic>.from(encryptedPayload),
+        );
+        final decryptedTitle = decrypted['title'];
+        if (decryptedTitle is String && decryptedTitle.trim().isNotEmpty) {
+          title = decryptedTitle.trim();
+        }
+      } catch (_) {
+        // Keep DB fallback below.
+      }
     }
 
+    // Do not show technical placeholders in the UI.
+    if (title == '[encrypted]') {
+      title = '';
+    }
+
+    final id = (row['id'] ?? '').toString();
+    if (id.isEmpty || title.isEmpty) return null;
+
+    return UserGoalLinkOption(
+      id: id,
+      title: title,
+      lifeBlock: (row['life_block'] ?? '').toString(),
+      horizon: (row['horizon'] ?? '').toString(),
+    );
+  }
+
+  Future<List<UserGoalLinkOption>> _loadUserGoalsViaRepo(String normalizedBlock) async {
+    final rawGoals = await dbRepo.getUserGoals(
+      lifeBlock: null,
+      includeCompleted: false,
+    );
+
+    final items = <UserGoalLinkOption>[];
+
+    for (final dynamic g in rawGoals) {
+      final id = (g.id ?? '').toString();
+      final title = (g.title ?? '').toString().trim();
+      final lifeBlock = (g.lifeBlock ?? '').toString();
+      final isCompleted = g.isCompleted == true;
+
+      if (id.isEmpty || title.isEmpty || title == '[encrypted]' || isCompleted) {
+        continue;
+      }
+
+      if (_normalizeBlock(lifeBlock) != normalizedBlock) {
+        continue;
+      }
+
+      String horizon = '';
+      try {
+        horizon = (g.horizon.dbValue ?? '').toString();
+      } catch (_) {
+        horizon = g.horizon.toString().split('.').last;
+      }
+
+      items.add(
+        UserGoalLinkOption(
+          id: id,
+          title: title,
+          lifeBlock: lifeBlock,
+          horizon: horizon,
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  Future<List<UserGoalLinkOption>> _loadUserGoalsViaSupabaseFallback(
+    String normalizedBlock,
+  ) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return const [];
+
+    final raw = await _supabase
+        .from('user_goals')
+        .select('id, title, life_block, horizon, encrypted_payload, is_completed')
+        .eq('user_id', userId)
+        .order('sort_order', ascending: true)
+        .order('created_at', ascending: false);
+
+    final items = <UserGoalLinkOption>[];
+
+    for (final rawRow in raw as List<dynamic>) {
+      final row = Map<String, dynamic>.from(rawRow as Map);
+      if (row['is_completed'] == true) continue;
+      if (_normalizeBlock((row['life_block'] ?? '').toString()) != normalizedBlock) {
+        continue;
+      }
+
+      final option = await _mapUserGoalLinkOption(row);
+      if (option != null) items.add(option);
+    }
+
+    return items;
+  }
+
+  Future<void> _loadUserGoalsForCurrentBlock() async {
     final normalizedBlock = _normalizeBlock(_lifeBlock);
 
     setState(() {
@@ -282,41 +418,63 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     });
 
     try {
-      final raw = await _supabase
-          .from('user_goals')
-          .select('id, title, life_block, horizon')
-          .eq('user_id', userId)
-          .eq('life_block', normalizedBlock)
-          .order('title');
+      final byId = <String, UserGoalLinkOption>{};
 
-      final items = (raw as List)
-          .map(
-            (e) => UserGoalLinkOption(
-              id: (e['id'] ?? '').toString(),
-              title: (e['title'] ?? '').toString(),
-              lifeBlock: (e['life_block'] ?? '').toString(),
-              horizon: (e['horizon'] ?? '').toString(),
-            ),
-          )
-          .where((e) => e.id.isNotEmpty && e.title.trim().isNotEmpty)
-          .toList()
-        ..sort(
-          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-        );
+      // 1) Use parent-provided goals first, if the parent has them.
+      for (final option in widget.availableUserGoals) {
+        final title = option.title.trim();
+        if (_normalizeBlock(option.lifeBlock) == normalizedBlock &&
+            option.id.isNotEmpty &&
+            title.isNotEmpty &&
+            title != '[encrypted]') {
+          byId[option.id] = option;
+        }
+      }
+
+      // 2) Main path: load through dbRepo. This is important because dbRepo already
+      // knows how to decrypt user_goals correctly.
+      try {
+        final repoItems = await _loadUserGoalsViaRepo(normalizedBlock);
+        for (final item in repoItems) {
+          byId[item.id] = item;
+        }
+      } catch (e) {
+        debugPrint('Add/Edit goal sheet: repo user_goals load failed: $e');
+      }
+
+      // 3) Fallback: direct Supabase load + local decrypt. This keeps the sheet
+      // usable even if the repo provider is not available in this route.
+      if (byId.isEmpty) {
+        try {
+          final fallbackItems = await _loadUserGoalsViaSupabaseFallback(normalizedBlock);
+          for (final item in fallbackItems) {
+            byId[item.id] = item;
+          }
+        } catch (e) {
+          debugPrint('Add/Edit goal sheet: Supabase user_goals fallback failed: $e');
+        }
+      }
+
+      final items = byId.values.toList()
+        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+      final selectedId = _selectedUserGoalId;
+      final selectedStillVisible =
+          selectedId == null || items.any((g) => g.id == selectedId);
 
       if (!mounted) return;
-
-      final stillValid = _selectedUserGoalId != null &&
-          items.any((g) => g.id == _selectedUserGoalId);
 
       setState(() {
         _userGoalsForSelectedBlock = items;
-        if (!stillValid) {
+        if (!selectedStillVisible) {
+          _selectedUserGoalId = null;
         }
         _loadingUserGoals = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Add/Edit goal sheet: user_goals load failed: $e');
       if (!mounted) return;
+
       setState(() {
         _userGoalsForSelectedBlock = const [];
         _selectedUserGoalId = null;
