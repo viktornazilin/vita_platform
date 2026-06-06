@@ -13,7 +13,7 @@ import '../widgets/add_day_goal_sheet.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
 import '../widgets/day_google_calendar_sync_sheet.dart';
-import '../widgets/recurring_goal_sheet.dart';
+import '../widgets/recurring_goal_sheet.dart' as recurring;
 
 /// запуск: flutter run -d chrome --dart-define=VISION_API_KEY=xxxxx
 const String _kVisionApiKey = String.fromEnvironment(
@@ -25,12 +25,14 @@ class DayGoalsScreen extends StatelessWidget {
   final DateTime date;
   final String? lifeBlock;
   final List<String> availableBlocks;
+  final List<UserGoalLinkOption> availableUserGoals;
 
   const DayGoalsScreen({
     super.key,
     required this.date,
     required this.lifeBlock,
     this.availableBlocks = const [],
+    this.availableUserGoals = const [],
   });
 
   @override
@@ -41,13 +43,17 @@ class DayGoalsScreen extends StatelessWidget {
         lifeBlock: lifeBlock,
         availableBlocks: availableBlocks,
       )..load(),
-      child: const _DayGoalsView(),
+      child: _DayGoalsView(availableUserGoals: availableUserGoals),
     );
   }
 }
 
 class _DayGoalsView extends StatefulWidget {
-  const _DayGoalsView();
+  final List<UserGoalLinkOption> availableUserGoals;
+
+  const _DayGoalsView({
+    required this.availableUserGoals,
+  });
 
   @override
   State<_DayGoalsView> createState() => _DayGoalsViewState();
@@ -55,12 +61,10 @@ class _DayGoalsView extends StatefulWidget {
 
 class _DayGoalsViewState extends State<_DayGoalsView> {
   final _scroll = ScrollController();
-  final GlobalKey _fabKey = GlobalKey();
-  final GlobalKey _summaryKey = GlobalKey();
-  final GlobalKey _filterKey = GlobalKey();
 
   bool _busy = false;
   bool _hideCompleted = false;
+  String _selectedBlock = 'all';
   final Set<_DaySection> _expandedSections = {..._DaySection.values};
 
   @override
@@ -92,10 +96,12 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _NestSheet(
+      builder: (_) => _LadnaSheet(
         child: AddDayGoalSheet(
           fixedLifeBlock: vm.lifeBlock,
           availableBlocks: vm.availableBlocks,
+          availableUserGoals: widget.availableUserGoals,
+          initialDate: vm.date,
         ),
       ),
     );
@@ -133,18 +139,16 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
     });
   }
 
-
-
   Future<void> _openRecurring() async {
     final vm = context.read<DayGoalsModel>();
 
-    final plan = await showModalBottomSheet<RecurringGoalPlan>(
+    final plan = await showModalBottomSheet<recurring.RecurringGoalPlan>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _NestSheet(
-        child: const RecurringGoalSheet(),
+      builder: (_) => _LadnaSheet(
+        child: const recurring.RecurringGoalSheet(),
       ),
     );
 
@@ -198,7 +202,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   }
 
   List<DateTime> _buildRecurringDates(
-    RecurringGoalPlan plan,
+    recurring.RecurringGoalPlan plan,
     DateTime startDate,
   ) {
     final start = DateUtils.dateOnly(startDate);
@@ -207,7 +211,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
     final result = <DateTime>[];
 
-    if (plan.type == RecurrenceType.everyNDays) {
+    if (plan.type == recurring.RecurrenceType.everyNDays) {
       final step = plan.everyNDays <= 0 ? 1 : plan.everyNDays;
       var current = start;
       while (!current.isAfter(until)) {
@@ -235,11 +239,12 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _NestSheet(
+      builder: (_) => _LadnaSheet(
         child: EditGoalSheet(
           goal: g,
           fixedLifeBlock: vm.lifeBlock,
           availableBlocks: vm.availableBlocks,
+          availableUserGoals: widget.availableUserGoals,
           initialUserGoalId: g.userGoalId,
         ),
       ),
@@ -330,8 +335,9 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          _NestSheet(child: DayGoogleCalendarSyncSheet(date: vm.date)),
+      builder: (_) => _LadnaSheet(
+        child: DayGoogleCalendarSyncSheet(date: vm.date),
+      ),
     );
 
     await _withBusy(() async {
@@ -349,96 +355,120 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
     final vm = context.watch<DayGoalsModel>();
-    final title = vm.lifeBlock ?? l.dayGoalsAllLifeBlocks;
+
+    final fixedBlock = vm.lifeBlock == null ? null : _normalizeBlock(vm.lifeBlock!);
+    final activeBlock = fixedBlock ?? _selectedBlock;
 
     final allGoals = [...vm.goals]
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
-    final visibleGoals =
-        _hideCompleted ? allGoals.where((g) => !g.isCompleted).toList() : allGoals;
+    final blockFiltered = activeBlock == 'all'
+        ? allGoals
+        : allGoals
+            .where((g) => _normalizeBlock(g.lifeBlock) == activeBlock)
+            .toList();
 
-    final grouped = _groupGoalsByTimeOfDay(visibleGoals);
+    final visibleGoals = _hideCompleted
+        ? blockFiltered.where((g) => !g.isCompleted).toList()
+        : blockFiltered;
 
-    final totalGoals = allGoals.length;
-    final completedGoals = allGoals.where((g) => g.isCompleted).length;
+    final totalGoals = blockFiltered.length;
+    final completedGoals = blockFiltered.where((g) => g.isCompleted).length;
     final remainingGoals = totalGoals - completedGoals;
-    final remainingHours = allGoals
+    final remainingHours = blockFiltered
         .where((g) => !g.isCompleted)
         .fold<double>(0, (sum, g) => sum + g.hours);
 
-    final progress = totalGoals == 0 ? 0.0 : completedGoals / totalGoals;
+    final grouped = _groupGoalsByTimeOfDay(visibleGoals);
 
     return Stack(
       children: [
         Scaffold(
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            title: Text('${vm.formattedDate}  •  $title'),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-          ),
-          floatingActionButton: _MainFab(
-            key: _fabKey,
-            onAdd: () {
-              if (_busy) return;
-              _openAdd();
-            },
-            onRecurring: () {
-              if (_busy) return;
-              _openRecurring();
-            },
-            onScan: () {
-              if (_busy) return;
-              _onScanPressed();
-            },
-            onCalendar: () {
-              if (_busy) return;
-              _openGoogleCalendarSync();
-            },
-          ),
-          body: Stack(
-            children: [
-              const _NestBackground(),
-              SafeArea(
-                child: vm.loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : visibleGoals.isEmpty
-                        ? _NestEmptyState(
-                            message: totalGoals > 0 && _hideCompleted
-                                ? 'Все видимые цели скрыты. Отключи фильтр «Скрыть выполненные».'
-                                : l.dayGoalsEmpty,
-                          )
-                        : ListView(
-                            controller: _scroll,
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 116),
-                            children: [
-                              _DaySummaryCard(
-                                key: _summaryKey,
+          backgroundColor: Colors.transparent,
+          body: _LadnaBackground(
+            child: SafeArea(
+              bottom: false,
+              child: vm.loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : CustomScrollView(
+                      controller: _scroll,
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            18,
+                            12,
+                            18,
+                            126 + MediaQuery.paddingOf(context).bottom,
+                          ),
+                          sliver: SliverList(
+                            delegate: SliverChildListDelegate([
+                              _TopBar(
+                                date: vm.date,
+                                onBack: () => Navigator.maybePop(context),
+                              ),
+                              const SizedBox(height: 16),
+                              _HeroSummaryCard(
                                 totalGoals: totalGoals,
                                 completedGoals: completedGoals,
                                 remainingGoals: remainingGoals,
                                 remainingHours: remainingHours,
-                                progress: progress,
                               ),
-                              const SizedBox(height: 12),
-                              _HideCompletedToggle(
-                                key: _filterKey,
-                                value: _hideCompleted,
-                                onChanged: (v) {
-                                  setState(() => _hideCompleted = v);
+                              const SizedBox(height: 14),
+                              _BlockChips(
+                                blocks: _chipBlocks(vm.availableBlocks, allGoals),
+                                selected: activeBlock,
+                                fixedBlock: fixedBlock,
+                                onSelected: (block) {
+                                  if (fixedBlock != null) return;
+                                  setState(() => _selectedBlock = block);
                                 },
                               ),
-                              const SizedBox(height: 18),
-                              ..._buildSections(grouped),
-                            ],
+                              const SizedBox(height: 12),
+                              _HideCompletedToolbar(
+                                value: _hideCompleted,
+                                onChanged: (value) {
+                                  setState(() => _hideCompleted = value);
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              if (visibleGoals.isEmpty)
+                                _EmptyDayCard(
+                                  message: totalGoals > 0 && _hideCompleted
+                                      ? _dgPick(context, ru: 'Все видимые задачи скрыты. Отключи фильтр «Скрыть выполненные».', en: 'All visible tasks are hidden. Turn off “Hide completed”.', de: 'Alle sichtbaren Aufgaben sind ausgeblendet. Deaktiviere „Erledigte ausblenden”.', fr: 'Toutes les tâches visibles sont masquées. Désactive “Masquer les terminées”.', es: 'Todas las tareas visibles están ocultas. Desactiva “Ocultar completadas”.', tr: 'Görünen görevler gizli. “Tamamlananları gizle” seçeneğini kapat.')
+                                      : _dgPick(context, ru: 'На этот день пока нет задач. Добавь первую задачу через кнопку ниже.', en: 'No tasks for this day yet. Add the first task with the button below.', de: 'Für diesen Tag gibt es noch keine Aufgaben. Füge unten die erste Aufgabe hinzu.', fr: 'Aucune tâche pour cette journée. Ajoute la première avec le bouton ci-dessous.', es: 'Todavía no hay tareas para este día. Añade la primera con el botón de abajo.', tr: 'Bugün için henüz görev yok. Aşağıdaki düğmeyle ilk görevi ekle.'),
+                                )
+                              else
+                                ..._buildSections(grouped),
+                            ]),
                           ),
-              ),
-            ],
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          floatingActionButton: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + 14),
+            child: _MainFab(
+              onAdd: () {
+                if (_busy) return;
+                _openAdd();
+              },
+              onRecurring: () {
+                if (_busy) return;
+                _openRecurring();
+              },
+              onScan: () {
+                if (_busy) return;
+                _onScanPressed();
+              },
+              onCalendar: () {
+                if (_busy) return;
+                _openGoogleCalendarSync();
+              },
+            ),
           ),
         ),
         if (_busy)
@@ -466,36 +496,37 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       final items = grouped[section] ?? const <Goal>[];
       if (items.isEmpty) continue;
 
-      final expanded = _expandedSections.contains(section);
       final openItems = items.where((g) => !g.isCompleted).toList();
       final doneItems = items.where((g) => g.isCompleted).toList();
+      final expanded = _expandedSections.contains(section);
 
       sections.add(
-        _KanbanDaySection(
-          section: section,
-          goals: items,
-          openGoals: openItems,
-          doneGoals: doneItems,
-          expanded: expanded,
-          onToggleExpanded: () {
-            setState(() {
-              if (expanded) {
-                _expandedSections.remove(section);
-              } else {
-                _expandedSections.add(section);
-              }
-            });
-          },
-          onToggleGoal: _toggleComplete,
-          onDelete: _confirmAndDelete,
-          onEdit: _openEdit,
-          onMoveToDoneState: (goal, done) {
-            if (goal.isCompleted == done) return;
-            _toggleComplete(goal);
-          },
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _DaySectionCard(
+            section: section,
+            openGoals: openItems,
+            doneGoals: doneItems,
+            expanded: expanded,
+            onToggleExpanded: () {
+              setState(() {
+                if (expanded) {
+                  _expandedSections.remove(section);
+                } else {
+                  _expandedSections.add(section);
+                }
+              });
+            },
+            onToggleGoal: _toggleComplete,
+            onEdit: _openEdit,
+            onDelete: _confirmAndDelete,
+            onMoveToDoneState: (goal, done) {
+              if (goal.isCompleted == done) return;
+              _toggleComplete(goal);
+            },
+          ),
         ),
       );
-      sections.add(const SizedBox(height: 14));
     }
 
     return sections;
@@ -525,110 +556,514 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
 enum _DaySection { morning, day, evening }
 
+class _LadnaColors {
+  static bool get _dark =>
+      WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
 
-Color _dgCardColor(BuildContext context, {double lightOpacity = 0.72}) {
-  final scheme = Theme.of(context).colorScheme;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+  static Color get bg1 => _dark ? const Color(0xFF151126) : const Color(0xFFEDF7FF);
+  static Color get bg2 => _dark ? const Color(0xFF0F0B1E) : const Color(0xFFF6F0FF);
+  static Color get bg3 => _dark ? const Color(0xFF171329) : const Color(0xFFEEF8FF);
+  static Color get surface => _dark ? const Color(0xD91D1732) : const Color(0xC7FFFFFF);
+  static Color get surfaceStrong => _dark ? const Color(0xF0211A38) : const Color(0xEBFFFFFF);
+  static Color get stroke => _dark ? const Color(0x446B54C0) : const Color(0xFFDAD2F1);
+  static Color get strokeSoft => _dark ? const Color(0x336B54C0) : const Color(0xFFECE5FB);
+  static Color get text => _dark ? const Color(0xFFF4F0FF) : const Color(0xFF1F1648);
+  static Color get muted => _dark ? const Color(0xB8D7CEF5) : const Color(0xFF7F7A9E);
+  static Color get purple => const Color(0xFF7356D8);
+  static Color get purpleSoft => _dark ? const Color(0xFF2A2144) : const Color(0xFFEDE7FF);
+  static Color get mint => _dark ? const Color(0xFF17392F) : const Color(0xFFDFF7EF);
+  static Color get mintText => _dark ? const Color(0xFF83E4C1) : const Color(0xFF1B7B62);
+  static Color get peach => _dark ? const Color(0xFF3B2E1C) : const Color(0xFFFFF4E6);
+  static Color get gold => const Color(0xFFF5B400);
+  static Color get danger => _dark ? const Color(0xFF3E2029) : const Color(0xFFF8DFE2);
+  static Color get dangerText => _dark ? const Color(0xFFFF94A7) : const Color(0xFFD55467);
+  static Color get lane => _dark ? const Color(0xC51A1430) : const Color(0xD1F5F3FF);
+  static Color get cardWhite => _dark ? const Color(0xE31D1732) : Colors.white.withOpacity(0.92);
+  static Color get softWhite => _dark ? const Color(0xB8201835) : Colors.white.withOpacity(0.62);
+}
 
-  if (isDark) {
-    return Color.lerp(
-      scheme.surfaceContainerLow,
-      scheme.primary,
-      0.035,
-    )!.withOpacity(0.94);
+String _dgPick(
+  BuildContext context, {
+  required String ru,
+  required String en,
+  String? de,
+  String? fr,
+  String? es,
+  String? tr,
+}) {
+  final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+  switch (lang) {
+    case 'de':
+      return de ?? en;
+    case 'fr':
+      return fr ?? en;
+    case 'es':
+      return es ?? en;
+    case 'tr':
+      return tr ?? en;
+    case 'ru':
+      return ru;
+    default:
+      return en;
   }
-
-  return Colors.white.withOpacity(lightOpacity);
 }
 
-Color _dgInnerCardColor(BuildContext context, {double lightOpacity = 0.72}) {
-  final scheme = Theme.of(context).colorScheme;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+List<BoxShadow> get _ladnaShadow => [
+      BoxShadow(
+        color: _LadnaColors.purple.withOpacity(0.10),
+        blurRadius: 24,
+        offset: const Offset(0, 8),
+      ),
+    ];
 
-  if (isDark) {
-    return Color.lerp(
-      scheme.surfaceContainer,
-      scheme.primary,
-      0.04,
-    )!.withOpacity(0.96);
+class _LadnaBackground extends StatelessWidget {
+  final Widget child;
+
+  const _LadnaBackground({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _LadnaColors.bg2,
+            _LadnaColors.bg1,
+            _LadnaColors.bg3,
+          ],
+          stops: [0.0, 0.58, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -130,
+            left: -120,
+            child: _SoftBlob(
+              size: 330,
+              color: _LadnaColors.cardWhite.withOpacity(0.70),
+            ),
+          ),
+          Positioned(
+            top: -110,
+            right: -130,
+            child: _SoftBlob(
+              size: 310,
+              color: _LadnaColors.purpleSoft.withOpacity(0.78),
+            ),
+          ),
+          Positioned.fill(child: child),
+        ],
+      ),
+    );
   }
-
-  return const Color(0xFFF4FAFF).withOpacity(lightOpacity);
 }
 
-Color _dgBorder(BuildContext context, [Color? accent]) {
-  final scheme = Theme.of(context).colorScheme;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+class _SoftBlob extends StatelessWidget {
+  final double size;
+  final Color color;
 
-  return Color.lerp(
-    scheme.outlineVariant,
-    accent ?? scheme.primary,
-    isDark ? 0.16 : 0.06,
-  )!;
+  const _SoftBlob({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 56, sigmaY: 56),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+        ),
+      ),
+    );
+  }
 }
 
-Color _dgText(BuildContext context) {
-  return Theme.of(context).colorScheme.onSurface;
+class _LadnaCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final Color? color;
+  final Border? border;
+
+  const _LadnaCard({
+    required this.child,
+    this.padding = EdgeInsets.zero,
+    this.radius = 34,
+    this.color,
+    this.border,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: color ?? _LadnaColors.surface,
+            borderRadius: BorderRadius.circular(radius),
+            border: border ?? Border.all(color: _LadnaColors.stroke, width: 1.5),
+            boxShadow: _ladnaShadow,
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 }
 
-Color _dgMuted(BuildContext context) {
-  return Theme.of(context).colorScheme.onSurfaceVariant;
+class _TopBar extends StatelessWidget {
+  final DateTime date;
+  final VoidCallback onBack;
+
+  const _TopBar({
+    required this.date,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _IconGlassButton(
+          icon: Icons.chevron_left_rounded,
+          onTap: onBack,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                _formatHeaderDate(context, date),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _LadnaColors.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _dgPick(context, ru: 'Задачи на день', en: 'Daily tasks', de: 'Tagesaufgaben', fr: 'Tâches du jour', es: 'Tareas del día', tr: 'Günlük görevler'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _LadnaColors.text,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'PlayfairDisplay',
+                  letterSpacing: -0.8,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 52),
+      ],
+    );
+  }
 }
 
-Color _dgPrimary(BuildContext context) {
-  return Theme.of(context).colorScheme.primary;
+class _IconGlassButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _IconGlassButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: _LadnaColors.softWhite,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _LadnaColors.stroke),
+            boxShadow: _ladnaShadow,
+          ),
+          child: Icon(icon, color: _LadnaColors.text, size: 28),
+        ),
+      ),
+    );
+  }
 }
 
-Color _dgSuccess(BuildContext context) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? const Color(0xFF46E08D) : const Color(0xFF22C55E);
+class _HeroSummaryCard extends StatelessWidget {
+  final int totalGoals;
+  final int completedGoals;
+  final int remainingGoals;
+  final double remainingHours;
+
+  const _HeroSummaryCard({
+    required this.totalGoals,
+    required this.completedGoals,
+    required this.remainingGoals,
+    required this.remainingHours,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LadnaCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _dgPick(context, ru: 'Сводка дня', en: 'Day summary', de: 'Tagesübersicht', fr: 'Résumé du jour', es: 'Resumen del día', tr: 'Gün özeti'),
+            style: TextStyle(
+              color: _LadnaColors.muted,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _dgPick(context, ru: 'Спокойный фокус на главном без перегруза.', en: 'Calm focus on what matters without overload.', de: 'Ruhiger Fokus auf das Wichtige ohne Überlastung.', fr: 'Un focus calme sur l’essentiel, sans surcharge.', es: 'Enfoque tranquilo en lo importante sin sobrecarga.', tr: 'Aşırı yük olmadan önemli olana sakin odaklanma.'),
+            style: TextStyle(
+              color: _LadnaColors.text,
+              fontSize: 20,
+              height: 1.12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1.1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _StatTile(
+                  value: '$totalGoals',
+                  label: _dgPick(context, ru: 'Всего', en: 'Total', de: 'Gesamt', fr: 'Total', es: 'Total', tr: 'Toplam'),
+                  color: _LadnaColors.purpleSoft,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatTile(
+                  value: '$completedGoals',
+                  label: _dgPick(context, ru: 'Готово', en: 'Done', de: 'Erledigt', fr: 'Terminé', es: 'Hecho', tr: 'Bitti'),
+                  color: _LadnaColors.mint,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatTile(
+                  value: '$remainingGoals',
+                  label: _dgPick(context, ru: 'Осталось', en: 'Left', de: 'Offen', fr: 'Restant', es: 'Pendiente', tr: 'Kalan'),
+                  color: _LadnaColors.peach,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: _LadnaColors.cardWhite.withOpacity(0.88),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _LadnaColors.strokeSoft),
+            ),
+            child: Row(
+              children: [
+                Text('⏱', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 10),
+                Text(
+                  _dgPick(context, ru: 'Осталось часов: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', en: 'Hours left: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', de: 'Stunden offen: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', fr: 'Heures restantes : ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', es: 'Horas restantes: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', tr: 'Kalan saat: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}'),
+                  style: TextStyle(
+                    color: _LadnaColors.text,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-Color _dgWarning(BuildContext context) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  return isDark ? const Color(0xFFFFD166) : const Color(0xFFF59E0B);
+class _StatTile extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color color;
+
+  const _StatTile({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _LadnaColors.strokeSoft),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: _LadnaColors.text,
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: _LadnaColors.muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-Color _dgDanger(BuildContext context) {
-  return Theme.of(context).colorScheme.error;
+class _BlockChips extends StatelessWidget {
+  final List<String> blocks;
+  final String selected;
+  final String? fixedBlock;
+  final ValueChanged<String> onSelected;
+
+  const _BlockChips({
+    required this.blocks,
+    required this.selected,
+    required this.fixedBlock,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: blocks.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final block = blocks[index];
+          final active = selected == block;
+          return GestureDetector(
+            onTap: () => onSelected(block),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: active ? _LadnaColors.purple : Colors.white.withOpacity(0.72),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: active ? Colors.transparent : _LadnaColors.stroke,
+                ),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: _LadnaColors.purple.withOpacity(0.18),
+                          blurRadius: 28,
+                          offset: const Offset(0, 12),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Text(
+                block == 'all' ? _dgPick(context, ru: 'Все сферы', en: 'All areas', de: 'Alle Bereiche', fr: 'Tous les domaines', es: 'Todas las áreas', tr: 'Tüm alanlar') : _localizedLifeBlock(context, block),
+                style: TextStyle(
+                  color: active ? Colors.white : _LadnaColors.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
-List<BoxShadow> _dgShadow(BuildContext context, {bool top = false}) {
-  final scheme = Theme.of(context).colorScheme;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+class _HideCompletedToolbar extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
-  return [
-    BoxShadow(
-      color: isDark ? Colors.black.withOpacity(0.24) : scheme.primary.withOpacity(0.07),
-      blurRadius: isDark ? 18 : 24,
-      offset: Offset(0, top ? -6 : 12),
-    ),
-  ];
+  const _HideCompletedToolbar({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _LadnaCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      radius: 26,
+      child: Row(
+        children: [
+          Icon(Icons.visibility_off_rounded, color: _LadnaColors.muted, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _dgPick(context, ru: 'Скрыть выполненные', en: 'Hide completed', de: 'Erledigte ausblenden', fr: 'Masquer les terminées', es: 'Ocultar completadas', tr: 'Tamamlananları gizle'),
+              style: TextStyle(
+                color: _LadnaColors.text,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            activeColor: _LadnaColors.purple,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-
-class _KanbanDaySection extends StatelessWidget {
+class _DaySectionCard extends StatelessWidget {
   final _DaySection section;
-  final List<Goal> goals;
   final List<Goal> openGoals;
   final List<Goal> doneGoals;
   final bool expanded;
   final VoidCallback onToggleExpanded;
   final Future<void> Function(Goal goal) onToggleGoal;
-  final Future<void> Function(Goal goal) onDelete;
   final Future<void> Function(Goal goal) onEdit;
+  final Future<void> Function(Goal goal) onDelete;
   final void Function(Goal goal, bool done) onMoveToDoneState;
 
-  const _KanbanDaySection({
+  const _DaySectionCard({
     required this.section,
-    required this.goals,
     required this.openGoals,
     required this.doneGoals,
     required this.expanded,
     required this.onToggleExpanded,
     required this.onToggleGoal,
-    required this.onDelete,
     required this.onEdit,
+    required this.onDelete,
     required this.onMoveToDoneState,
   });
 
@@ -636,466 +1071,430 @@ class _KanbanDaySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final meta = _sectionMeta(context, section);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _dgCardColor(context, lightOpacity: 0.58),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: _dgBorder(context)),
-            boxShadow: _dgShadow(context),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(26),
-                  onTap: onToggleExpanded,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                    child: Row(
-                      children: [
-                        AnimatedRotation(
-                          turns: expanded ? 0.25 : 0,
-                          duration: const Duration(milliseconds: 180),
-                          child: Icon(
-                            Icons.chevron_right_rounded,
-                            color: meta.accent,
-                            size: 26,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: meta.accent.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: meta.accent.withOpacity(0.18)),
-                          ),
-                          child: Icon(meta.icon, color: meta.accent, size: 18),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '${meta.title} (${goals.length})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: _dgText(context),
-                                ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanOpenShort, value: openGoals.length, accent: _dgWarning(context)),
-                                const SizedBox(width: 6),
-                                _MiniCounter(label: AppLocalizations.of(context)!.dayGoalsKanbanDoneShort, value: doneGoals.length, accent: _dgSuccess(context)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+    return _LadnaCard(
+      padding: const EdgeInsets.fromLTRB(12, 13, 12, 12),
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: onToggleExpanded,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    AnimatedRotation(
+                      turns: expanded ? 0.25 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        color: _LadnaColors.muted,
+                        size: 24,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: meta.iconBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: meta.iconBorder),
+                      ),
+                      child: Center(
+                        child: Text(meta.emoji, style: TextStyle(fontSize: 18)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        meta.title,
+                        style: TextStyle(
+                          color: _LadnaColors.text,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'PlayfairDisplay',
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                    ),
+                    _Cap(text: _dgPick(context, ru: 'Ост. ${openGoals.length}', en: 'Left ${openGoals.length}', de: 'Offen ${openGoals.length}', fr: 'Rest. ${openGoals.length}', es: 'Pend. ${openGoals.length}', tr: 'Kalan ${openGoals.length}'), color: const Color(0xFFF7F1E5), textColor: const Color(0xFF8D6A1B)),
+                    const SizedBox(width: 8),
+                    _Cap(text: _dgPick(context, ru: 'Гот. ${doneGoals.length}', en: 'Done ${doneGoals.length}', de: 'Fertig ${doneGoals.length}', fr: 'Fait ${doneGoals.length}', es: 'Hecho ${doneGoals.length}', tr: 'Bitti ${doneGoals.length}'), color: _LadnaColors.mint, textColor: _LadnaColors.mintText),
+                  ],
                 ),
               ),
-              AnimatedCrossFade(
-                firstChild: const SizedBox.shrink(),
-                secondChild: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
-                  child: _KanbanBoard(
-                    openGoals: openGoals,
-                    doneGoals: doneGoals,
-                    accent: meta.accent,
-                    onToggleGoal: onToggleGoal,
-                    onDelete: onDelete,
-                    onEdit: onEdit,
-                    onMoveToDoneState: onMoveToDoneState,
-                  ),
-                ),
-                crossFadeState: expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 220),
-                sizeCurve: Curves.easeOutCubic,
-              ),
-            ],
+            ),
           ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final openLane = _TaskLane(
+                    title: _dgPick(context, ru: '⚡ В работе', en: '⚡ In progress', de: '⚡ In Arbeit', fr: '⚡ En cours', es: '⚡ En progreso', tr: '⚡ Devam ediyor'),
+                    count: openGoals.length,
+                    goals: openGoals,
+                    doneLane: false,
+                    emptyText: _dgPick(context, ru: 'Здесь появятся активные задачи этого блока', en: 'Active tasks for this block will appear here', de: 'Aktive Aufgaben dieses Blocks erscheinen hier', fr: 'Les tâches actives de ce bloc apparaîtront ici', es: 'Aquí aparecerán las tareas activas de este bloque', tr: 'Bu bloğun aktif görevleri burada görünecek'),
+                    onToggleGoal: onToggleGoal,
+                    onEdit: onEdit,
+                    onDelete: onDelete,
+                    onMoveToDoneState: onMoveToDoneState,
+                  );
+
+                  final doneLane = _TaskLane(
+                    title: _dgPick(context, ru: '✅ Готово', en: '✅ Done', de: '✅ Erledigt', fr: '✅ Terminé', es: '✅ Hecho', tr: '✅ Bitti'),
+                    count: doneGoals.length,
+                    goals: doneGoals,
+                    doneLane: true,
+                    emptyText: _dgPick(context, ru: 'Здесь будут завершённые задачи после фокуса-блока', en: 'Completed tasks will appear here after a focus block', de: 'Erledigte Aufgaben erscheinen hier nach dem Fokusblock', fr: 'Les tâches terminées apparaîtront ici après le bloc de focus', es: 'Las tareas completadas aparecerán aquí después del bloque de enfoque', tr: 'Odak bloğundan sonra tamamlanan görevler burada görünecek'),
+                    onToggleGoal: onToggleGoal,
+                    onEdit: onEdit,
+                    onDelete: onDelete,
+                    onMoveToDoneState: onMoveToDoneState,
+                  );
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: openLane),
+                      const SizedBox(width: 10),
+                      Expanded(child: doneLane),
+                    ],
+                  );
+                },
+              ),
+            ),
+            crossFadeState: expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeOutCubic,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Cap extends StatelessWidget {
+  final String text;
+  final Color color;
+  final Color textColor;
+
+  const _Cap({required this.text, required this.color, required this.textColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
 }
 
-class _KanbanBoard extends StatelessWidget {
-  final List<Goal> openGoals;
-  final List<Goal> doneGoals;
-  final Color accent;
-  final Future<void> Function(Goal goal) onToggleGoal;
-  final Future<void> Function(Goal goal) onDelete;
-  final Future<void> Function(Goal goal) onEdit;
-  final void Function(Goal goal, bool done) onMoveToDoneState;
-
-  const _KanbanBoard({
-    required this.openGoals,
-    required this.doneGoals,
-    required this.accent,
-    required this.onToggleGoal,
-    required this.onDelete,
-    required this.onEdit,
-    required this.onMoveToDoneState,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final openColumn = _KanbanColumn(
-          title: l.dayGoalsKanbanOpenTitle,
-          subtitle: '${openGoals.length}',
-          icon: Icons.bolt_rounded,
-          accent: accent,
-          goals: openGoals,
-          doneColumn: false,
-          emptyText: l.dayGoalsKanbanOpenEmpty,
-          onToggleGoal: onToggleGoal,
-          onDelete: onDelete,
-          onEdit: onEdit,
-          onMoveToDoneState: onMoveToDoneState,
-        );
-
-        final doneColumn = _KanbanColumn(
-          title: l.dayGoalsKanbanDoneTitle,
-          subtitle: '${doneGoals.length}',
-          icon: Icons.check_circle_rounded,
-          accent: _dgSuccess(context),
-          goals: doneGoals,
-          doneColumn: true,
-          emptyText: l.dayGoalsKanbanDoneEmpty,
-          onToggleGoal: onToggleGoal,
-          onDelete: onDelete,
-          onEdit: onEdit,
-          onMoveToDoneState: onMoveToDoneState,
-        );
-
-        if (constraints.maxWidth < 340) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              openColumn,
-              const SizedBox(height: 10),
-              doneColumn,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: openColumn),
-            const SizedBox(width: 8),
-            Expanded(child: doneColumn),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _KanbanColumn extends StatelessWidget {
+class _TaskLane extends StatelessWidget {
   final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accent;
+  final int count;
   final List<Goal> goals;
-  final bool doneColumn;
+  final bool doneLane;
   final String emptyText;
   final Future<void> Function(Goal goal) onToggleGoal;
-  final Future<void> Function(Goal goal) onDelete;
   final Future<void> Function(Goal goal) onEdit;
+  final Future<void> Function(Goal goal) onDelete;
   final void Function(Goal goal, bool done) onMoveToDoneState;
 
-  const _KanbanColumn({
+  const _TaskLane({
     required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accent,
+    required this.count,
     required this.goals,
-    required this.doneColumn,
+    required this.doneLane,
     required this.emptyText,
     required this.onToggleGoal,
-    required this.onDelete,
     required this.onEdit,
+    required this.onDelete,
     required this.onMoveToDoneState,
   });
 
   @override
   Widget build(BuildContext context) {
     return DragTarget<Goal>(
-      onWillAccept: (goal) => goal != null && goal.isCompleted != doneColumn,
-      onAccept: (goal) => onMoveToDoneState(goal, doneColumn),
+      onWillAccept: (goal) => goal != null && goal.isCompleted != doneLane,
+      onAccept: (goal) => onMoveToDoneState(goal, doneLane),
       builder: (context, candidate, rejected) {
-        final isActiveDrop = candidate.isNotEmpty;
+        final activeDrop = candidate.isNotEmpty;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(minHeight: 132),
-          decoration: BoxDecoration(
-            color: isActiveDrop ? accent.withOpacity(0.12) : _dgInnerCardColor(context, lightOpacity: 0.72).withOpacity(0.72),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: isActiveDrop ? accent.withOpacity(0.42) : _dgBorder(context),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.all(10),
+      constraints: const BoxConstraints(minHeight: 150),
+      decoration: BoxDecoration(
+        color: activeDrop ? _LadnaColors.purpleSoft.withOpacity(0.95) : _LadnaColors.lane,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: activeDrop ? _LadnaColors.purple.withOpacity(0.45) : _LadnaColors.strokeSoft),
+      ),
+      child: Column(
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Icon(icon, size: 17, color: accent),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: _dgText(context),
-                          ),
-                    ),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: _LadnaColors.text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: accent.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: _dgText(context),
-                          ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 8),
-              if (goals.isEmpty)
-                _KanbanEmptyHint(text: emptyText)
-              else
-                ...goals.map(
-                  (goal) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Draggable<Goal>(
-                      data: goal,
-                      affinity: Axis.horizontal,
-                      dragAnchorStrategy: pointerDragAnchorStrategy,
-                      feedback: Material(
-                        color: Colors.transparent,
-                        child: Transform.scale(
-                          scale: 1.03,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 190),
-                            child: _KanbanGoalCard(
-                              goal: goal,
-                              compact: true,
-                              dragging: true,
-                              onToggle: () {},
-                              onEdit: () {},
-                              onDelete: () {},
-                            ),
-                          ),
-                        ),
-                      ),
-                      childWhenDragging: Opacity(
-                        opacity: 0.28,
-                        child: _KanbanGoalCard(
-                          goal: goal,
-                          onToggle: () => onToggleGoal(goal),
-                          onEdit: () => onEdit(goal),
-                          onDelete: () => onDelete(goal),
-                        ),
-                      ),
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.move,
-                        child: _KanbanGoalCard(
-                          goal: goal,
-                          onToggle: () => onToggleGoal(goal),
-                          onEdit: () => onEdit(goal),
-                          onDelete: () => onDelete(goal),
-                        ),
-                      ),
+              Container(
+                constraints: const BoxConstraints(minWidth: 28),
+                height: 28,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: doneLane ? _LadnaColors.mint : const Color(0xFFF6EFDF),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Center(
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      color: doneLane ? _LadnaColors.mintText : const Color(0xFF6F5A18),
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
+              ),
             ],
           ),
+          const SizedBox(height: 12),
+          if (goals.isEmpty)
+            _LaneEmpty(text: emptyText)
+          else
+            ...goals.map(
+              (goal) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Draggable<Goal>(
+                  data: goal,
+                  affinity: Axis.horizontal,
+                  dragAnchorStrategy: pointerDragAnchorStrategy,
+                  feedback: Material(
+                    color: Colors.transparent,
+                    child: SizedBox(
+                      width: 168,
+                      child: _TaskCard(
+                        goal: goal,
+                        done: doneLane,
+                        dragging: true,
+                        onToggle: () {},
+                        onEdit: () {},
+                        onDelete: () {},
+                      ),
+                    ),
+                  ),
+                  childWhenDragging: Opacity(
+                    opacity: 0.35,
+                    child: _TaskCard(
+                      goal: goal,
+                      done: doneLane,
+                      onToggle: () => onToggleGoal(goal),
+                      onEdit: () => onEdit(goal),
+                      onDelete: () => onDelete(goal),
+                    ),
+                  ),
+                  child: _TaskCard(
+                    goal: goal,
+                    done: doneLane,
+                    onToggle: () => onToggleGoal(goal),
+                    onEdit: () => onEdit(goal),
+                    onDelete: () => onDelete(goal),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
         );
       },
     );
   }
 }
 
-class _KanbanGoalCard extends StatelessWidget {
+class _LaneEmpty extends StatelessWidget {
+  final String text;
+
+  const _LaneEmpty({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 34),
+      decoration: BoxDecoration(
+        color: _LadnaColors.cardWhite.withOpacity(0.56),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFFDDD5EF),
+          width: 1.5,
+          style: BorderStyle.solid,
+        ),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Color(0xFFAFA9C3),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskCard extends StatelessWidget {
   final Goal goal;
-  final bool compact;
-  final bool dragging;
+  final bool done;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool dragging;
 
-  const _KanbanGoalCard({
+  const _TaskCard({
     required this.goal,
+    required this.done,
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
-    this.compact = false,
     this.dragging = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final time = _formatGoalTime(goal.startTime);
-    final isDone = goal.isCompleted;
-
     return Container(
-      padding: EdgeInsets.fromLTRB(10, compact ? 9 : 10, 8, compact ? 9 : 10),
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
       decoration: BoxDecoration(
-        color: _dgCardColor(context, lightOpacity: isDone ? 0.58 : 0.82),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: dragging
-              ? _dgPrimary(context).withOpacity(0.58)
-              : isDone
-                  ? Color.lerp(_dgBorder(context), _dgSuccess(context), 0.24)!
-                  : _dgBorder(context),
-        ),
+        color: done ? null : _LadnaColors.cardWhite,
+        gradient: done
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [_LadnaColors.mint.withOpacity(0.70), _LadnaColors.cardWhite],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _LadnaColors.stroke),
         boxShadow: [
           BoxShadow(
-            color: dragging ? _dgPrimary(context).withOpacity(0.18) : (Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.18) : _dgPrimary(context).withOpacity(0.06)),
-            blurRadius: dragging ? 24 : 14,
+            color: const Color(0xFF6F5DB7).withOpacity(0.08),
+            blurRadius: dragging ? 28 : 18,
             offset: Offset(0, dragging ? 14 : 8),
           ),
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 4,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: isDone ? _dgSuccess(context) : _dgMuted(context),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   goal.title,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        height: 1.12,
-                        decoration: isDone ? TextDecoration.lineThrough : null,
-                        color: _dgText(context).withOpacity(isDone ? 0.58 : 1),
-                      ),
+                  style: TextStyle(
+                    color: _LadnaColors.text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                    letterSpacing: -0.3,
+                    decoration: done ? TextDecoration.lineThrough : null,
+                  ),
                 ),
               ),
-              const SizedBox(width: 4),
-              InkWell(
-                borderRadius: BorderRadius.circular(999),
+              const SizedBox(width: 10),
+              GestureDetector(
                 onTap: onToggle,
-                child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: Icon(
-                    isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                    size: 19,
-                    color: isDone ? _dgSuccess(context) : _dgMuted(context),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: done ? const Color(0xFF34C78A) : Colors.transparent,
+                    border: Border.all(
+                      color: done ? const Color(0xFF34C78A) : const Color(0xFFB8B0CF),
+                      width: 2,
+                    ),
+                    boxShadow: done
+                        ? const [
+                            BoxShadow(
+                              color: Colors.white,
+                              spreadRadius: -6,
+                            ),
+                          ]
+                        : null,
                   ),
+                  child: done
+                      ? Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                      : null,
                 ),
               ),
             ],
           ),
-          if (!compact) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                _GoalChip(icon: Icons.schedule_rounded, label: time),
-                _GoalChip(icon: Icons.timer_rounded, label: AppLocalizations.of(context)!.dayGoalsHoursShort(goal.hours.toStringAsFixed(1))),
-                if (goal.lifeBlock.trim().isNotEmpty)
-                  _GoalChip(icon: Icons.grid_view_rounded, label: _localizedLifeBlock(context, goal.lifeBlock)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _CardAction(icon: Icons.edit_rounded, onTap: onEdit),
-                const SizedBox(width: 4),
-                _CardAction(icon: Icons.delete_outline_rounded, onTap: onDelete, danger: true),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _GoalChip({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 118),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: _dgInnerCardColor(context, lightOpacity: 0.82).withOpacity(0.82),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _dgBorder(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: _dgMuted(context)),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _MetaPill(text: '🕥 ${_formatGoalTime(goal.startTime)}'),
+              _MetaPill(text: '⏱ ${_formatHours(context, goal.hours)}'),
+              if (goal.description.trim().isNotEmpty)
+                _MetaPill(text: '✦ ${goal.description.trim()}'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _SpherePill(lifeBlock: goal.lifeBlock, done: done),
+              if (done)
+                Text(
+                  _dgPick(context, ru: 'Выполнено', en: 'Completed', de: 'Erledigt', fr: 'Terminé', es: 'Completado', tr: 'Tamamlandı'),
+                  style: TextStyle(
+                    color: Color(0xFF34A475),
+                    fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: _dgMuted(context),
                   ),
-            ),
+                )
+              else
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _SmallActionButton(icon: Icons.edit_rounded, onTap: onEdit),
+                    const SizedBox(width: 6),
+                    _SmallActionButton(
+                      icon: Icons.delete_outline_rounded,
+                      onTap: onDelete,
+                      danger: true,
+                    ),
+                  ],
+                ),
+            ],
           ),
         ],
       ),
@@ -1103,12 +1502,69 @@ class _GoalChip extends StatelessWidget {
   }
 }
 
-class _CardAction extends StatelessWidget {
+class _MetaPill extends StatelessWidget {
+  final String text;
+
+  const _MetaPill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F6FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _LadnaColors.strokeSoft),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: _LadnaColors.muted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _SpherePill extends StatelessWidget {
+  final String lifeBlock;
+  final bool done;
+
+  const _SpherePill({required this.lifeBlock, required this.done});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: done ? const Color(0xFFE5FAF3) : _LadnaColors.purpleSoft,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 88),
+        child: Text(
+          _localizedLifeBlock(context, lifeBlock),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+          color: done ? const Color(0xFF16745A) : _LadnaColors.purple,
+          fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmallActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool danger;
 
-  const _CardAction({
+  const _SmallActionButton({
     required this.icon,
     required this.onTap,
     this.danger = false,
@@ -1116,81 +1572,281 @@ class _CardAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        width: 31,
-        height: 31,
-        decoration: BoxDecoration(
-          color: danger ? Color.lerp(_dgCardColor(context), _dgDanger(context), 0.12)! : _dgInnerCardColor(context, lightOpacity: 0.82),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: danger ? Color.lerp(_dgBorder(context), _dgDanger(context), 0.42)! : _dgBorder(context),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: danger ? _LadnaColors.danger.withOpacity(0.50) : _LadnaColors.cardWhite,
+            border: Border.all(
+              color: danger ? const Color(0xFFF2C5CB) : _LadnaColors.stroke,
+            ),
           ),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: danger ? _dgDanger(context) : _dgMuted(context),
+          child: Icon(
+            icon,
+            color: danger ? _LadnaColors.dangerText : _LadnaColors.muted,
+            size: 17,
+          ),
         ),
       ),
     );
   }
 }
 
-class _KanbanEmptyHint extends StatelessWidget {
-  final String text;
+class _EmptyDayCard extends StatelessWidget {
+  final String message;
 
-  const _KanbanEmptyHint({required this.text});
+  const _EmptyDayCard({required this.message});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
-      decoration: BoxDecoration(
-        color: _dgCardColor(context, lightOpacity: 0.52),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _dgBorder(context)),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: _dgMuted(context),
+    return _LadnaCard(
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        children: [
+          Text('✨', style: TextStyle(fontSize: 30)),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _LadnaColors.text,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              height: 1.35,
             ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _MiniCounter extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color accent;
+class _LadnaSheet extends StatelessWidget {
+  final Widget child;
 
-  const _MiniCounter({
-    required this.label,
-    required this.value,
-    required this.accent,
+  const _LadnaSheet({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _LadnaColors.surfaceStrong,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+enum _FabAction { add, recurring, scan, calendar }
+
+class _MainFab extends StatelessWidget {
+  final VoidCallback onAdd;
+  final VoidCallback onRecurring;
+  final VoidCallback onScan;
+  final VoidCallback onCalendar;
+
+  const _MainFab({
+    required this.onAdd,
+    required this.onRecurring,
+    required this.onScan,
+    required this.onCalendar,
   });
 
   @override
   Widget build(BuildContext context) {
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: FloatingActionButton(
+        heroTag: null,
+        onPressed: () => _openMenu(context),
+        elevation: 16,
+        backgroundColor: _LadnaColors.purple,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Icon(Icons.add_rounded, size: 46, color: Colors.white),
+      ),
+    );
+  }
+
+  Future<void> _openMenu(BuildContext context) async {
+    final action = await showModalBottomSheet<_FabAction>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _FabMenuSheet(),
+    );
+
+    if (action == null) return;
+
+    if (action == _FabAction.add) {
+      onAdd();
+    } else if (action == _FabAction.recurring) {
+      onRecurring();
+    } else if (action == _FabAction.scan) {
+      onScan();
+    } else {
+      onCalendar();
+    }
+  }
+}
+
+class _FabMenuSheet extends StatelessWidget {
+  const _FabMenuSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final bottom = MediaQuery.of(context).padding.bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14, 0, 14, bottom + 14),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _LadnaColors.surfaceStrong,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: _LadnaColors.stroke),
+            boxShadow: _ladnaShadow,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _FabSheetHandle(),
+                const SizedBox(height: 10),
+                _FabMenuButton(
+                  icon: Icons.edit_rounded,
+                  title: l.dayGoalsFabAddTitle,
+                  subtitle: l.dayGoalsFabAddSubtitle,
+                  onTap: () => Navigator.pop(context, _FabAction.add),
+                ),
+                _FabMenuButton(
+                  icon: Icons.repeat_rounded,
+                  title: _dgRecurringMenuTitle(l.localeName),
+                  subtitle: _dgRecurringMenuSubtitle(l.localeName),
+                  onTap: () => Navigator.pop(context, _FabAction.recurring),
+                ),
+                _FabMenuButton(
+                  icon: Icons.document_scanner_rounded,
+                  title: l.dayGoalsFabScanTitle,
+                  subtitle: l.dayGoalsFabScanSubtitle,
+                  onTap: () => Navigator.pop(context, _FabAction.scan),
+                ),
+                _FabMenuButton(
+                  icon: Icons.calendar_month_rounded,
+                  title: l.dayGoalsFabCalendarTitle,
+                  subtitle: l.dayGoalsFabCalendarSubtitle,
+                  onTap: () => Navigator.pop(context, _FabAction.calendar),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FabSheetHandle extends StatelessWidget {
+  const _FabSheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      width: 42,
+      height: 4,
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.10),
+        color: _LadnaColors.text.withOpacity(0.15),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        '$label $value',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: _dgText(context),
-            ),
+    );
+  }
+}
+
+class _FabMenuButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _FabMenuButton({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _LadnaColors.purple.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: _LadnaColors.purple, size: 18),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _LadnaColors.text,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        height: 1.12,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _LadnaColors.muted,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: _LadnaColors.muted, size: 24),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1198,37 +1854,157 @@ class _MiniCounter extends StatelessWidget {
 
 class _SectionMeta {
   final String title;
-  final IconData icon;
-  final Color accent;
+  final String emoji;
+  final Color iconBg;
+  final Color iconBorder;
 
   const _SectionMeta({
     required this.title,
-    required this.icon,
-    required this.accent,
+    required this.emoji,
+    required this.iconBg,
+    required this.iconBorder,
   });
 }
 
 _SectionMeta _sectionMeta(BuildContext context, _DaySection section) {
-  final l = AppLocalizations.of(context)!;
   switch (section) {
     case _DaySection.morning:
       return _SectionMeta(
-        title: l.dayGoalsSectionMorning,
-        icon: Icons.wb_sunny_rounded,
-        accent: _dgWarning(context),
+        title: _dgPick(context, ru: 'Утро', en: 'Morning', de: 'Morgen', fr: 'Matin', es: 'Mañana', tr: 'Sabah'),
+        emoji: '☀️',
+        iconBg: _LadnaColors.peach,
+        iconBorder: _LadnaColors.gold.withOpacity(0.30),
       );
     case _DaySection.day:
       return _SectionMeta(
-        title: l.dayGoalsSectionDay,
-        icon: Icons.light_mode_rounded,
-        accent: _dgPrimary(context),
+        title: _dgPick(context, ru: 'День', en: 'Day', de: 'Tag', fr: 'Journée', es: 'Día', tr: 'Gün'),
+        emoji: '🌤️',
+        iconBg: _LadnaColors.purpleSoft,
+        iconBorder: _LadnaColors.stroke,
       );
     case _DaySection.evening:
       return _SectionMeta(
-        title: l.dayGoalsSectionEvening,
-        icon: Icons.nights_stay_rounded,
-        accent: Color(0xFF7C83FD),
+        title: _dgPick(context, ru: 'Вечер', en: 'Evening', de: 'Abend', fr: 'Soir', es: 'Noche', tr: 'Akşam'),
+        emoji: '🌙',
+        iconBg: _LadnaColors.bg1.withOpacity(0.75),
+        iconBorder: _LadnaColors.strokeSoft,
       );
+  }
+}
+
+List<String> _chipBlocks(List<String> availableBlocks, List<Goal> goals) {
+  final seen = <String>{'all'};
+  final out = <String>['all'];
+
+  for (final raw in availableBlocks) {
+    final block = _normalizeBlock(raw);
+    if (block.isEmpty || block == 'general') continue;
+    if (seen.add(block)) out.add(block);
+  }
+
+  for (final g in goals) {
+    final block = _normalizeBlock(g.lifeBlock);
+    if (block.isEmpty || block == 'general') continue;
+    if (seen.add(block)) out.add(block);
+  }
+
+  if (out.length == 1) {
+    out.addAll(['career', 'health', 'finance', 'personal']);
+  }
+
+  return out;
+}
+
+String _normalizeBlock(String value) {
+  final v = value.trim().toLowerCase();
+  switch (v) {
+    case '':
+      return 'general';
+    case 'general':
+    case 'общий':
+    case 'общее':
+    case 'общие':
+      return 'general';
+    case 'health':
+    case 'здоровье':
+      return 'health';
+    case 'career':
+    case 'work':
+    case 'job':
+    case 'карьера':
+    case 'работа':
+      return 'career';
+    case 'family':
+    case 'семья':
+      return 'family';
+    case 'finance':
+    case 'finances':
+    case 'финансы':
+      return 'finance';
+    case 'education':
+    case 'study':
+    case 'обучение':
+    case 'образование':
+      return 'education';
+    case 'hobby':
+    case 'hobbies':
+    case 'хобби':
+      return 'hobbies';
+    case 'relationships':
+    case 'relations':
+    case 'relationship':
+    case 'отношения':
+      return 'relationships';
+    case 'personal':
+    case 'self':
+    case 'саморазвитие':
+    case 'личное':
+      return 'personal';
+    case 'spirituality':
+    case 'духовность':
+      return 'spirituality';
+    case 'travel':
+    case 'путешествия':
+      return 'travel';
+    case 'home':
+    case 'дом':
+      return 'home';
+    default:
+      return v;
+  }
+}
+
+String _localizedLifeBlock(BuildContext context, String rawKey) {
+  final l = AppLocalizations.of(context)!;
+  final key = _normalizeBlock(rawKey);
+
+  switch (key) {
+    case 'health':
+      return l.lifeBlockHealth;
+    case 'career':
+      return l.lifeBlockCareer;
+    case 'family':
+      return l.lifeBlockFamily;
+    case 'relationships':
+      return l.lifeBlockRelations;
+    case 'education':
+      return l.lifeBlockEducation;
+    case 'finance':
+      return l.lifeBlockFinance;
+    case 'hobbies':
+      return l.lifeBlockHobbies;
+    case 'spirituality':
+      return l.lifeBlockSpirituality;
+    case 'general':
+      return l.lifeBlockGeneral;
+    case 'personal':
+      return _dgPick(context, ru: 'Личное', en: 'Personal', de: 'Persönlich', fr: 'Personnel', es: 'Personal', tr: 'Kişisel');
+    case 'travel':
+      return _dgPick(context, ru: 'Путешествия', en: 'Travel', de: 'Reisen', fr: 'Voyages', es: 'Viajes', tr: 'Seyahat');
+    case 'home':
+      return _dgPick(context, ru: 'Дом', en: 'Home', de: 'Zuhause', fr: 'Maison', es: 'Hogar', tr: 'Ev');
+    default:
+      return rawKey.isEmpty ? l.lifeBlockGeneral : rawKey;
   }
 }
 
@@ -1238,375 +2014,46 @@ String _formatGoalTime(DateTime dateTime) {
   return '$h:$m';
 }
 
-
-String _localizedLifeBlock(BuildContext context, String rawKey) {
-  final l = AppLocalizations.of(context)!;
-  final key = rawKey.trim().toLowerCase();
-
-  switch (key) {
-    case 'health':
-    case 'здоровье':
-      return l.lifeBlockHealth;
-    case 'career':
-    case 'work':
-    case 'карьера':
-      return l.lifeBlockCareer;
-    case 'family':
-    case 'семья':
-      return l.lifeBlockFamily;
-    case 'relations':
-    case 'relationship':
-    case 'relationships':
-    case 'отношения':
-      return l.lifeBlockRelations;
-    case 'education':
-    case 'study':
-    case 'обучение':
-    case 'образование':
-      return l.lifeBlockEducation;
-    case 'finance':
-    case 'finances':
-    case 'финансы':
-      return l.lifeBlockFinance;
-    case 'hobby':
-    case 'hobbies':
-    case 'хобби':
-      return l.lifeBlockHobbies;
-    case 'spirituality':
-    case 'spirit':
-    case 'духовность':
-      return l.lifeBlockSpirituality;
-    case 'general':
-      return l.lifeBlockGeneral;
-    default:
-      return rawKey;
+String _formatHours(BuildContext context, double hours) {
+  final minutes = (hours * 60).round();
+  if (minutes < 60) {
+    return _dgPick(context, ru: '$minutes мин', en: '$minutes min', de: '$minutes Min.', fr: '$minutes min', es: '$minutes min', tr: '$minutes dk');
   }
+  final value = hours.toStringAsFixed(hours % 1 == 0 ? 0 : 1);
+  return _dgPick(context, ru: '$value ч', en: '${value}h', de: '$value Std.', fr: '$value h', es: '$value h', tr: '$value sa');
 }
 
-class _DaySummaryCard extends StatelessWidget {
-  final int totalGoals;
-  final int completedGoals;
-  final int remainingGoals;
-  final double remainingHours;
-  final double progress;
-
-  const _DaySummaryCard({
-    super.key,
-    required this.totalGoals,
-    required this.completedGoals,
-    required this.remainingGoals,
-    required this.remainingHours,
-    required this.progress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-          decoration: BoxDecoration(
-            color: _dgCardColor(context, lightOpacity: 0.72),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: _dgBorder(context)),
-            boxShadow: _dgShadow(context),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppLocalizations.of(context)!.dayGoalsSummaryTitle,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: _dgText(context),
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                AppLocalizations.of(context)!.dayGoalsSummarySubtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: _dgMuted(context),
-                    ),
-              ),
-              const SizedBox(height: 14),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  value: progress.clamp(0.0, 1.0),
-                  minHeight: 10,
-                  backgroundColor: _dgInnerCardColor(context, lightOpacity: 0.70),
-                  valueColor:
-                      AlwaysStoppedAnimation(_dgPrimary(context)),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _SummaryStat(
-                      label: AppLocalizations.of(context)!.dayGoalsSummaryTotal,
-                      value: '$totalGoals',
-                      accent: _dgPrimary(context),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _SummaryStat(
-                      label: AppLocalizations.of(context)!.dayGoalsSummaryDone,
-                      value: '$completedGoals',
-                      accent: _dgSuccess(context),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _SummaryStat(
-                      label: AppLocalizations.of(context)!.dayGoalsSummaryRemaining,
-                      value: '$remainingGoals',
-                      accent: _dgWarning(context),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _HoursPill(hours: remainingHours),
-            ],
-          ),
-        ),
-      ),
-    );
+String _formatHeaderDate(BuildContext context, DateTime date) {
+  final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+  if (lang == 'ru') {
+    const weekdays = [
+      'Понедельник',
+      'Вторник',
+      'Среда',
+      'Четверг',
+      'Пятница',
+      'Суббота',
+      'Воскресенье',
+    ];
+    const months = [
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
+      'мая',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
+    ];
+    return '${weekdays[date.weekday - 1]}, ${date.day} ${months[date.month - 1]}';
   }
+
+  return MaterialLocalizations.of(context).formatFullDate(date);
 }
-
-class _SummaryStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color accent;
-
-  const _SummaryStat({
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: accent.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent.withOpacity(0.14)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: _dgText(context),
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: _dgMuted(context),
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HoursPill extends StatelessWidget {
-  final double hours;
-
-  const _HoursPill({required this.hours});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-      decoration: BoxDecoration(
-        color: _dgInnerCardColor(context, lightOpacity: 0.72),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _dgBorder(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.schedule_rounded,
-            size: 18,
-            color: _dgPrimary(context),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            AppLocalizations.of(context)!.dayGoalsRemainingHours(hours.toStringAsFixed(1)),
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: _dgText(context),
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HideCompletedToggle extends StatelessWidget {
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _HideCompletedToggle({
-    super.key,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _dgCardColor(context, lightOpacity: 0.62),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _dgBorder(context)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.visibility_off_rounded,
-            color: Color(0xFF5D7B8F),
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              AppLocalizations.of(context)!.dayGoalsHideCompleted,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: _dgText(context),
-                  ),
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: _dgPrimary(context),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NestBackground extends StatelessWidget {
-  const _NestBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final colors = isDark
-        ? [
-            scheme.surfaceContainerLowest,
-            scheme.surface,
-            scheme.surfaceContainerLow,
-            scheme.surfaceContainerLowest,
-          ]
-        : const [
-            Color(0xFFF7FCFF),
-            Color(0xFFEAF6FF),
-            Color(0xFFD7EEFF),
-            Color(0xFFF2FAFF),
-          ];
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: colors,
-        ),
-      ),
-      child: const Stack(
-        children: [
-          Positioned(top: -140, left: -120, child: _SoftBlob(size: 360)),
-          Positioned(bottom: -180, right: -140, child: _SoftBlob(size: 420)),
-          Positioned(top: 120, right: -90, child: _SoftBlob(size: 240)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SoftBlob extends StatelessWidget {
-  final double size;
-  const _SoftBlob({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              scheme.primary.withOpacity(isDark ? 0.16 : 0.28),
-              scheme.primary.withOpacity(0.0),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-class _NestEmptyState extends StatelessWidget {
-  final String message;
-
-  const _NestEmptyState({
-    String? message,
-  }) : message = message ?? '';
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 420),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: _dgCardColor(context, lightOpacity: 0.70),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _dgBorder(context)),
-          boxShadow: _dgShadow(context),
-        ),
-        child: Text(
-          message.trim().isEmpty ? AppLocalizations.of(context)!.dayGoalsEmpty : message,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: _dgText(context),
-              ),
-        ),
-      ),
-    );
-  }
-}
-
 
 String _dgRecurringMenuTitle(String localeName) {
   final lang = localeName.toLowerCase().split('_').first.split('-').first;
@@ -1677,234 +2124,5 @@ String _dgRecurringCreatedMessage(String localeName, int count) {
       return 'Oluşturulan görevler: $count';
     default:
       return 'Создано задач: $count';
-  }
-}
-
-class _NestSheet extends StatelessWidget {
-  final Widget child;
-  const _NestSheet({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _dgCardColor(context, lightOpacity: 0.75),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: _dgBorder(context)),
-            boxShadow: _dgShadow(context, top: true),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-enum _FabAction { add, recurring, scan, calendar }
-
-class _MainFab extends StatelessWidget {
-  final VoidCallback onAdd;
-  final VoidCallback onRecurring;
-  final VoidCallback onScan;
-  final VoidCallback onCalendar;
-
-  const _MainFab({
-    super.key,
-    required this.onAdd,
-    required this.onRecurring,
-    required this.onScan,
-    required this.onCalendar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 62,
-      height: 62,
-      child: FloatingActionButton(
-        heroTag: null,
-        onPressed: () => _openMenu(context),
-        elevation: 10,
-        backgroundColor: _dgPrimary(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        child: Icon(Icons.add, size: 30, color: Colors.white),
-      ),
-    );
-  }
-
-  Future<void> _openMenu(BuildContext context) async {
-    final action = await showModalBottomSheet<_FabAction>(
-      context: context,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _FabMenuSheet(),
-    );
-
-    if (action == null) return;
-
-    if (action == _FabAction.add) {
-      onAdd();
-    } else if (action == _FabAction.recurring) {
-      onRecurring();
-    } else if (action == _FabAction.scan) {
-      onScan();
-    } else {
-      onCalendar();
-    }
-  }
-}
-
-class _FabMenuSheet extends StatelessWidget {
-  const _FabMenuSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final bottom = MediaQuery.of(context).padding.bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(14, 0, 14, bottom + 14),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _dgCardColor(context, lightOpacity: 0.92),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: _dgBorder(context)),
-            boxShadow: _dgShadow(context, top: true),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const _FabSheetHandle(),
-                const SizedBox(height: 10),
-                _FabMenuButton(
-                  icon: Icons.edit_rounded,
-                  title: l.dayGoalsFabAddTitle,
-                  subtitle: l.dayGoalsFabAddSubtitle,
-                  onTap: () => Navigator.pop(context, _FabAction.add),
-                ),
-                _FabMenuButton(
-                  icon: Icons.repeat_rounded,
-                  title: _dgRecurringMenuTitle(l.localeName),
-                  subtitle: _dgRecurringMenuSubtitle(l.localeName),
-                  onTap: () => Navigator.pop(context, _FabAction.recurring),
-                ),
-                _FabMenuButton(
-                  icon: Icons.document_scanner_rounded,
-                  title: l.dayGoalsFabScanTitle,
-                  subtitle: l.dayGoalsFabScanSubtitle,
-                  onTap: () => Navigator.pop(context, _FabAction.scan),
-                ),
-                _FabMenuButton(
-                  icon: Icons.calendar_month_rounded,
-                  title: l.dayGoalsFabCalendarTitle,
-                  subtitle: l.dayGoalsFabCalendarSubtitle,
-                  onTap: () => Navigator.pop(context, _FabAction.calendar),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FabSheetHandle extends StatelessWidget {
-  const _FabSheetHandle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 42,
-      height: 4,
-      decoration: BoxDecoration(
-        color: _dgText(context).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
-  }
-}
-
-class _FabMenuButton extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _FabMenuButton({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _dgPrimary(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _dgText(context),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        height: 1.12,
-                      ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: _dgMuted(context),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 11,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: _dgMuted(context), size: 24),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

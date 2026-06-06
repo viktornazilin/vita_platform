@@ -158,6 +158,26 @@ class _GoalsViewState extends State<_GoalsView> {
     }
   }
 
+  List<UserGoalLinkOption> _currentUserGoalLinks() {
+    final userGoals = context.read<UserGoalsModel>();
+
+    return userGoals.items
+        .where((g) => !g.isCompleted)
+        .where((g) {
+          final title = g.title.trim();
+          return title.isNotEmpty && title != '[encrypted]';
+        })
+        .map(
+          (g) => UserGoalLinkOption(
+            id: g.id,
+            title: g.title.trim(),
+            lifeBlock: g.lifeBlock,
+            horizon: g.horizon.dbValue,
+          ),
+        )
+        .toList();
+  }
+
   Future<void> _openDay(DateTime date) async {
     final calendar = context.read<GoalsCalendarModel>();
     await Navigator.of(context).push(
@@ -166,6 +186,7 @@ class _GoalsViewState extends State<_GoalsView> {
           date: date,
           lifeBlock: null,
           availableBlocks: calendar.lifeBlocks,
+          availableUserGoals: _currentUserGoalLinks(),
         ),
       ),
     );
@@ -175,19 +196,7 @@ class _GoalsViewState extends State<_GoalsView> {
   Future<void> _openAddTask([DateTime? date]) async {
     final targetDate = DateUtils.dateOnly(date ?? _anchor);
     final calendar = context.read<GoalsCalendarModel>();
-    final userGoals = context.read<UserGoalsModel>();
-
-    final links = userGoals.items
-        .where((g) => !g.isCompleted)
-        .map(
-          (g) => UserGoalLinkOption(
-            id: g.id,
-            title: g.title,
-            lifeBlock: g.lifeBlock,
-            horizon: g.horizon.dbValue,
-          ),
-        )
-        .toList();
+    final links = _currentUserGoalLinks();
 
     final result = await showModalBottomSheet<AddGoalResult>(
       context: context,

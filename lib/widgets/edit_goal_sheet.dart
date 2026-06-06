@@ -1,4 +1,5 @@
 // lib/widgets/edit_goal_sheet.dart
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 import 'package:nest_app/main.dart';
@@ -1107,7 +1108,8 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 }
 
 
-class _EditTimeTextField extends StatelessWidget {
+
+class _EditTimeTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final ValueChanged<String> onChanged;
@@ -1121,29 +1123,277 @@ class _EditTimeTextField extends StatelessWidget {
   });
 
   @override
+  State<_EditTimeTextField> createState() => __EditTimeTextFieldState();
+}
+
+class __EditTimeTextFieldState extends State<_EditTimeTextField> {
+  bool _expanded = false;
+  late FixedExtentScrollController _hourController;
+  late FixedExtentScrollController _minuteController;
+
+  @override
+  void initState() {
+    super.initState();
+    final value = _currentValue();
+    _hourController = FixedExtentScrollController(initialItem: value.hour);
+    _minuteController = FixedExtentScrollController(initialItem: value.minute);
+  }
+
+  @override
+  void dispose() {
+    _hourController.dispose();
+    _minuteController.dispose();
+    super.dispose();
+  }
+
+  TimeOfDay _currentValue() {
+    final raw = widget.controller.text.trim().replaceAll('.', ':');
+    final parts = raw.split(':');
+
+    if (parts.length == 2) {
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour != null &&
+          minute != null &&
+          hour >= 0 &&
+          hour <= 23 &&
+          minute >= 0 &&
+          minute <= 59) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length == 3 || digits.length == 4) {
+      final padded = digits.padLeft(4, '0');
+      final hour = int.tryParse(padded.substring(0, 2));
+      final minute = int.tryParse(padded.substring(2, 4));
+      if (hour != null &&
+          minute != null &&
+          hour >= 0 &&
+          hour <= 23 &&
+          minute >= 0 &&
+          minute <= 59) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+
+    return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  String _format(int hour, int minute) {
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+  void _setTime({int? hour, int? minute}) {
+    final current = _currentValue();
+    final nextHour = hour ?? current.hour;
+    final nextMinute = minute ?? current.minute;
+    final formatted = _format(nextHour, nextMinute);
+
+    widget.controller.text = formatted;
+    widget.onChanged(formatted);
+    widget.onEditingComplete();
+    setState(() {});
+  }
+
+  void _syncWheelToCurrentValue() {
+    final value = _currentValue();
+    if (_hourController.hasClients) {
+      _hourController.jumpToItem(value.hour);
+    }
+    if (_minuteController.hasClients) {
+      _minuteController.jumpToItem(value.minute);
+    }
+  }
+
+  Widget _wheelColumn({
+    required BuildContext context,
+    required String title,
+    required FixedExtentScrollController controller,
+    required int itemCount,
+    required ValueChanged<int> onSelectedItemChanged,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w900,
+          color: scheme.onSurface,
+        );
+
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: scheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 116,
+            child: CupertinoPicker(
+              scrollController: controller,
+              itemExtent: 34,
+              magnification: 1.08,
+              squeeze: 1.08,
+              useMagnifier: true,
+              selectionOverlay: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: scheme.primary.withOpacity(0.18),
+                  ),
+                ),
+              ),
+              onSelectedItemChanged: onSelectedItemChanged,
+              children: List.generate(
+                itemCount,
+                (i) => Center(
+                  child: Text(
+                    i.toString().padLeft(2, '0'),
+                    style: textStyle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final value = _currentValue();
+    final display = _format(value.hour, value.minute);
 
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      textInputAction: TextInputAction.next,
-      onChanged: onChanged,
-      onEditingComplete: onEditingComplete,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: scheme.onSurface,
+    final field = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          setState(() => _expanded = !_expanded);
+          WidgetsBinding.instance.addPostFrameCallback((_) => _syncWheelToCurrentValue());
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: widget.label,
+            hintText: '09:00',
+            prefixIcon: Icon(
+              Icons.schedule_rounded,
+              size: 18,
+              color: scheme.primary,
+            ),
+            suffixIcon: AnimatedRotation(
+              turns: _expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: Icon(
+                Icons.expand_more_rounded,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            filled: true,
+            fillColor: isDark
+                ? scheme.surfaceContainerHighest.withOpacity(0.36)
+                : Colors.white.withOpacity(0.78),
+            labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+            hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant.withOpacity(0.70),
+                ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: scheme.outlineVariant.withOpacity(0.60),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: scheme.outlineVariant.withOpacity(0.55),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: scheme.primary, width: 1.4),
+            ),
           ),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: '09:00',
-        prefixIcon: Icon(
-          Icons.schedule_rounded,
-          size: 18,
-          color: scheme.primary,
+          child: Text(
+            display,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: scheme.onSurface,
+                ),
+          ),
         ),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      ),
+    );
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          field,
+          if (_expanded) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? scheme.surfaceContainerHighest.withOpacity(0.26)
+                    : Colors.white.withOpacity(0.58),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: scheme.outlineVariant.withOpacity(0.45),
+                ),
+              ),
+              child: Row(
+                children: [
+                  _wheelColumn(
+                    context: context,
+                    title: 'Часы',
+                    controller: _hourController,
+                    itemCount: 24,
+                    onSelectedItemChanged: (i) => _setTime(hour: i),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 22),
+                    child: Text(
+                      ':',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: scheme.onSurface,
+                          ),
+                    ),
+                  ),
+                  _wheelColumn(
+                    context: context,
+                    title: 'Минуты',
+                    controller: _minuteController,
+                    itemCount: 60,
+                    onSelectedItemChanged: (i) => _setTime(minute: i),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

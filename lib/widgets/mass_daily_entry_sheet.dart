@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
@@ -1891,6 +1892,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
 
   bool _loadingUserGoals = false;
   List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
+  bool _timeWheelExpanded = false;
 
   String _normalizeBlock(String value) {
     final v = value.trim().toLowerCase();
@@ -2092,25 +2094,34 @@ class _GoalRowViewState extends State<_GoalRowView> {
     }
   }
 
-  Future<void> _pickTime() async {
-    final t = await showTimePicker(
-      context: context,
-      initialTime: widget.row._time ?? const TimeOfDay(hour: 9, minute: 0),
-      builder: (ctx, child) {
-        final t = Theme.of(ctx);
-        return Theme(
-          data: t.copyWith(
-            colorScheme: t.colorScheme.copyWith(
-              primary: t.colorScheme.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (t != null) {
-      setState(() => widget.row._time = t);
-    }
+  void _toggleTimeWheel() {
+    setState(() {
+      _timeWheelExpanded = !_timeWheelExpanded;
+      widget.row._time ??= const TimeOfDay(hour: 9, minute: 0);
+    });
+  }
+
+  void _setHour(int hour) {
+    final current = widget.row._time ?? const TimeOfDay(hour: 9, minute: 0);
+    setState(() {
+      widget.row._time = TimeOfDay(hour: hour, minute: current.minute);
+    });
+  }
+
+  void _setMinute(int minute) {
+    final current = widget.row._time ?? const TimeOfDay(hour: 9, minute: 0);
+    setState(() {
+      widget.row._time = TimeOfDay(hour: current.hour, minute: minute);
+    });
+  }
+
+  String _formatTimeLabel(BuildContext context) {
+    final time = widget.row._time;
+    if (time == null) return AppLocalizations.of(context)!.massDailyTime;
+
+    final h = time.hour.toString().padLeft(2, '0');
+    final m = time.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   Future<void> _pickEmotion() async {
@@ -2234,7 +2245,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l = AppLocalizations.of(context)!;
-    final timeLabel = widget.row._time == null ? l.massDailyTime : widget.row._time!.format(context);
+    final timeLabel = _formatTimeLabel(context);
 
     final goals = _userGoalsForSelectedBlock;
     final dropdownGoalValue =
@@ -2309,7 +2320,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
           final timeButton = SizedBox(
             height: 46,
             child: OutlinedButton.icon(
-              onPressed: _pickTime,
+              onPressed: _toggleTimeWheel,
               style: _compactButtonStyle(context),
               icon: const Icon(Icons.access_time_rounded, size: 17),
               label: Text(
@@ -2449,6 +2460,22 @@ class _GoalRowViewState extends State<_GoalRowView> {
                   SizedBox(width: 112, child: hoursField),
                 ],
               ),
+              AnimatedCrossFade(
+                firstChild: const SizedBox.shrink(),
+                secondChild: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _InlineTimeWheel(
+                    value: widget.row._time ?? const TimeOfDay(hour: 9, minute: 0),
+                    onHourChanged: _setHour,
+                    onMinuteChanged: _setMinute,
+                  ),
+                ),
+                crossFadeState: _timeWheelExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 180),
+                sizeCurve: Curves.easeOutCubic,
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -2507,6 +2534,186 @@ class _GoalRowViewState extends State<_GoalRowView> {
     );
   }
 }
+
+class _InlineTimeWheel extends StatelessWidget {
+  final TimeOfDay value;
+  final ValueChanged<int> onHourChanged;
+  final ValueChanged<int> onMinuteChanged;
+
+  const _InlineTimeWheel({
+    required this.value,
+    required this.onHourChanged,
+    required this.onMinuteChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      height: 154,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TimeWheelColumn(
+              label: _timeWheelLabel(context, ru: 'Часы', en: 'Hours'),
+              selectedIndex: value.hour,
+              itemCount: 24,
+              onSelectedItemChanged: onHourChanged,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              ':',
+              style: tt.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _TimeWheelColumn(
+              label: _timeWheelLabel(context, ru: 'Минуты', en: 'Minutes'),
+              selectedIndex: value.minute,
+              itemCount: 60,
+              onSelectedItemChanged: onMinuteChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimeWheelColumn extends StatefulWidget {
+  final String label;
+  final int selectedIndex;
+  final int itemCount;
+  final ValueChanged<int> onSelectedItemChanged;
+
+  const _TimeWheelColumn({
+    required this.label,
+    required this.selectedIndex,
+    required this.itemCount,
+    required this.onSelectedItemChanged,
+  });
+
+  @override
+  State<_TimeWheelColumn> createState() => _TimeWheelColumnState();
+}
+
+class _TimeWheelColumnState extends State<_TimeWheelColumn> {
+  late FixedExtentScrollController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = FixedExtentScrollController(
+      initialItem: widget.selectedIndex.clamp(0, widget.itemCount - 1),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _TimeWheelColumn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.selectedIndex.clamp(0, widget.itemCount - 1);
+    if (oldWidget.selectedIndex != widget.selectedIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_controller.hasClients) return;
+        _controller.jumpToItem(next);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Column(
+      children: [
+        Text(
+          widget.label,
+          style: tt.labelSmall?.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Expanded(
+          child: CupertinoPicker(
+            scrollController: _controller,
+            itemExtent: 34,
+            squeeze: 1.08,
+            magnification: 1.08,
+            useMagnifier: true,
+            selectionOverlay: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: cs.primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.primary.withOpacity(0.20)),
+              ),
+            ),
+            onSelectedItemChanged: widget.onSelectedItemChanged,
+            children: List.generate(
+              widget.itemCount,
+              (index) => Center(
+                child: Text(
+                  index.toString().padLeft(2, '0'),
+                  style: tt.titleMedium?.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _timeWheelLabel(
+  BuildContext context, {
+  required String ru,
+  required String en,
+}) {
+  final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+  switch (lang) {
+    case 'de':
+      return ru == 'Часы' ? 'Stunden' : 'Minuten';
+    case 'fr':
+      return ru == 'Часы' ? 'Heures' : 'Minutes';
+    case 'es':
+      return ru == 'Часы' ? 'Horas' : 'Minutos';
+    case 'tr':
+      return ru == 'Часы' ? 'Saat' : 'Dakika';
+    case 'en':
+      return en;
+    case 'ru':
+    default:
+      return ru;
+  }
+}
+
 class MassDailyEntryResult {
   final DateTime date;
   final _MoodEntry? mood;
