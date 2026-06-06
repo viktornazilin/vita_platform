@@ -8,25 +8,31 @@ class GoalCell extends StatelessWidget {
   final Goal goal;
   const GoalCell({super.key, required this.goal});
 
-  static const _ink = Color(0xFF2E4B5A);
-  static const _border = Color(0xFFD6E6F5);
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
     final t = AppLocalizations.of(context)!;
 
     final lb = lifeBlockUI(goal.lifeBlock);
 
+    final ink = dark ? const Color(0xFFF4F0FF) : const Color(0xFF2E4B5A);
+    final metaInk = dark ? const Color(0xFFD7CEF5) : const Color(0xFF2E4B5A).withOpacity(0.72);
+    final descriptionBg = dark ? const Color(0xFF2A2144) : Colors.white.withOpacity(0.62);
+    final descriptionBorder = dark
+        ? const Color(0xFF7D67D8).withOpacity(0.42)
+        : const Color(0xFFD6E6F5);
+
     final titleStyle = theme.textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w900,
-      color: _ink,
+      color: ink,
       letterSpacing: 0.1,
     );
 
     final metaStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: _ink.withOpacity(0.72),
+      color: metaInk,
       height: 1.25,
+      fontWeight: FontWeight.w600,
     );
 
     return Column(
@@ -76,14 +82,14 @@ class GoalCell extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.62),
+              color: descriptionBg,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _border),
-              boxShadow: const [
+              border: Border.all(color: descriptionBorder),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x0C2B5B7A),
+                  color: dark ? Colors.black.withOpacity(0.18) : const Color(0x0C2B5B7A),
                   blurRadius: 14,
-                  offset: Offset(0, 10),
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -105,31 +111,29 @@ class _EmotionBadge extends StatelessWidget {
   final Color accent;
   const _EmotionBadge({required this.emoji, required this.accent});
 
-  static const _ink = Color(0xFF2E4B5A);
-
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(left: 10),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.72),
+        color: dark ? const Color(0xFF33274F) : Colors.white.withOpacity(0.72),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent.withOpacity(0.35), width: 1.1),
-        boxShadow: const [
+        border: Border.all(
+          color: dark ? const Color(0xFF7D67D8).withOpacity(0.48) : accent.withOpacity(0.35),
+          width: 1.1,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x122B5B7A),
+            color: dark ? Colors.black.withOpacity(0.18) : const Color(0x122B5B7A),
             blurRadius: 18,
-            offset: Offset(0, 12),
-          ),
-          BoxShadow(
-            color: Color(0x08FFFFFF),
-            blurRadius: 12,
-            offset: Offset(0, -6),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: Text(emoji, style: const TextStyle(fontSize: 18, color: _ink)),
+      child: Text(emoji, style: const TextStyle(fontSize: 18)),
     );
   }
 }

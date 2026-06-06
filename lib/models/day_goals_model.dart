@@ -28,6 +28,12 @@ class DayGoalsModel extends ChangeNotifier {
   DateTime _dayStartUtc() => DateTime.utc(date.year, date.month, date.day);
   DateTime _dayEndUtc() => _dayStartUtc().add(const Duration(days: 1));
 
+  DateTime _dateOnlyUtc(DateTime value) =>
+      DateTime.utc(value.year, value.month, value.day);
+
+  DateTime _combineDateAndTimeUtc(DateTime value, TimeOfDay time) =>
+      DateTime.utc(value.year, value.month, value.day, time.hour, time.minute);
+
   Future<void> load() async {
     final myRev = ++_rev;
 
@@ -71,13 +77,7 @@ class DayGoalsModel extends ChangeNotifier {
     required TimeOfDay startTime,
     String? userGoalId,
   }) async {
-    final startDateTimeUtc = DateTime.utc(
-      date.year,
-      date.month,
-      date.day,
-      startTime.hour,
-      startTime.minute,
-    );
+    final startDateTimeUtc = _combineDateAndTimeUtc(date, startTime);
 
     await dbRepo.createGoal(
       title: title.trim(),
@@ -103,21 +103,25 @@ class DayGoalsModel extends ChangeNotifier {
     required String emotion,
     required double hours,
     required TimeOfDay startTime,
+    DateTime? targetDate,
     String? userGoalId,
   }) async {
-    final startDateTimeUtc = DateTime.utc(
-      date.year,
-      date.month,
-      date.day,
-      startTime.hour,
-      startTime.minute,
-    );
+    // ВАЖНО:
+    // Раньше дата всегда бралась из DayGoalsModel.date, то есть из текущего
+    // открытого дня. Поэтому при выборе новой даты в UI цель всё равно
+    // сохранялась в старом дне.
+    //
+    // Теперь, если edit sheet/dialog передаёт targetDate, deadline и startTime
+    // собираются именно на основе выбранной пользователем даты.
+    final effectiveDate = targetDate ?? date;
+    final deadlineUtc = _dateOnlyUtc(effectiveDate);
+    final startDateTimeUtc = _combineDateAndTimeUtc(effectiveDate, startTime);
 
     await dbRepo.updateGoalFields(
       goalId: id,
       title: title.trim(),
       description: description.trim(),
-      deadline: _dayStartUtc(),
+      deadline: deadlineUtc,
       lifeBlock: lifeBlockValue,
       importance: importance,
       emotion: emotion,

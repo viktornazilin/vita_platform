@@ -18,21 +18,31 @@ class GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = goal.isCompleted;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final accent = _blockColor(goal.lifeBlock);
     final time = TimeOfDay.fromDateTime(goal.startTime.toLocal()).format(context);
+
+    final cardColor = dark ? const Color(0xFF241C3B) : const Color(0xFFFAFAFE);
+    final borderColor = dark
+        ? const Color(0xFF7D67D8).withOpacity(0.42)
+        : const Color(0x1A6B54C0);
+    final titleColor = dark
+        ? (done ? const Color(0xFFAEA6C9) : const Color(0xFFF4F0FF))
+        : (done ? const Color(0xFF9090A8) : const Color(0xFF160E38));
+    final descriptionColor = dark ? const Color(0xFFD7CEF5) : const Color(0xFF555268);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFE),
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x1A6B54C0)),
-        boxShadow: const [
+        border: Border.all(color: borderColor),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x121C1812),
+            color: dark ? Colors.black.withOpacity(0.22) : const Color(0x121C1812),
             blurRadius: 12,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -51,7 +61,7 @@ class GoalCard extends StatelessWidget {
                 border: Border.all(
                   color: done
                       ? const Color(0xFF6B54C0)
-                      : const Color(0xFF6B54C0).withOpacity(.30),
+                      : const Color(0xFF8F7CF2).withOpacity(dark ? .75 : .30),
                   width: 1.5,
                 ),
               ),
@@ -73,7 +83,7 @@ class GoalCard extends StatelessWidget {
                     fontSize: 13,
                     height: 1.35,
                     fontWeight: FontWeight.w800,
-                    color: done ? const Color(0xFF9090A8) : const Color(0xFF160E38),
+                    color: titleColor,
                     decoration: done ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -83,11 +93,11 @@ class GoalCard extends StatelessWidget {
                     goal.description.trim(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       height: 1.35,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF555268),
+                      fontWeight: FontWeight.w600,
+                      color: descriptionColor,
                     ),
                   ),
                 ],
@@ -96,8 +106,8 @@ class GoalCard extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    _Chip(icon: Icons.schedule_rounded, label: time, color: const Color(0xFF6B54C0)),
-                    _Chip(icon: Icons.timer_rounded, label: '${goal.spentHours.toStringAsFixed(1)} h', color: const Color(0xFF16B8A8)),
+                    _Chip(icon: Icons.schedule_rounded, label: time, color: const Color(0xFF8F7CF2)),
+                    _Chip(icon: Icons.timer_rounded, label: '${goal.spentHours.toStringAsFixed(1)} h', color: const Color(0xFF35C58D)),
                     _Chip(icon: Icons.circle_rounded, label: _prettyBlock(goal.lifeBlock), color: accent),
                     if (goal.emotion.trim().isNotEmpty)
                       _Chip(label: goal.emotion.trim(), color: const Color(0xFFEAE6F5)),
@@ -109,7 +119,11 @@ class GoalCard extends StatelessWidget {
           IconButton(
             onPressed: onDelete,
             visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFF9090A8)),
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              size: 20,
+              color: dark ? const Color(0xFFD7CEF5) : const Color(0xFF9090A8),
+            ),
           ),
         ],
       ),
@@ -130,28 +144,38 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final isNeutral = color.value == const Color(0xFFEAE6F5).value;
+
+    final bg = dark
+        ? (isNeutral ? const Color(0xFF33274F) : color.withOpacity(.22))
+        : color.withOpacity(isNeutral ? 1 : .12);
+    final border = dark
+        ? (isNeutral ? const Color(0xFF7D67D8).withOpacity(.38) : color.withOpacity(.38))
+        : color.withOpacity(isNeutral ? 1 : .18);
+    final fg = dark ? const Color(0xFFF4F0FF) : const Color(0xFF555268);
+    final iconColor = dark ? const Color(0xFFF4F0FF) : (isNeutral ? const Color(0xFF555268) : color);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(isNeutral ? 1 : .12),
+        color: bg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(isNeutral ? 1 : .18)),
+        border: Border.all(color: border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 13, color: isNeutral ? const Color(0xFF555268) : color),
+            Icon(icon, size: 13, color: iconColor),
             const SizedBox(width: 4),
           ],
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF555268),
+              fontWeight: FontWeight.w800,
+              color: fg,
             ),
           ),
         ],
@@ -169,6 +193,7 @@ String _prettyBlock(String key) {
     case 'family':
       return 'Семья';
     case 'finance':
+    case 'finances':
       return 'Финансы';
     case 'education':
       return 'Образование';
@@ -187,17 +212,18 @@ Color _blockColor(String key) {
     case 'career':
       return const Color(0xFFD4E040);
     case 'finance':
-      return const Color(0xFF16B8A8);
+    case 'finances':
+      return const Color(0xFF35C58D);
     case 'education':
-      return const Color(0xFF6B54C0);
+      return const Color(0xFF8F7CF2);
     case 'family':
-      return const Color(0xFF555268);
+      return const Color(0xFFB6F3E1);
     case 'health':
-      return const Color(0xFFEB9898);
+      return const Color(0xFFFFA7B7);
     case 'hobbies':
     case 'hobby':
-      return const Color(0xFF825ABE);
+      return const Color(0xFFBFA7FF);
     default:
-      return const Color(0xFF6B54C0);
+      return const Color(0xFF8F7CF2);
   }
 }

@@ -13,6 +13,33 @@ import 'nest/nest_card.dart';
 import 'nest/nest_pill.dart';
 import 'nest/nest_section_title.dart';
 
+class EditGoalResult {
+  final String title;
+  final String description;
+  final String lifeBlock;
+  final int importance;
+  final String emotion;
+  final double hours;
+  final TimeOfDay startTime;
+  final TimeOfDay? endTime;
+  final DateTime selectedDate;
+  final String? userGoalId;
+
+  const EditGoalResult({
+    required this.title,
+    required this.description,
+    required this.lifeBlock,
+    required this.importance,
+    required this.emotion,
+    required this.hours,
+    required this.startTime,
+    this.endTime,
+    required this.selectedDate,
+    this.userGoalId,
+  });
+}
+
+
 class EditGoalSheet extends StatefulWidget {
   final Goal goal;
   final String? fixedLifeBlock;
@@ -696,7 +723,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
     Navigator.pop(
       context,
-      AddGoalResult(
+      EditGoalResult(
         title: title,
         description: _descCtrl.text.trim(),
         lifeBlock: _normalizeBlock(_lifeBlock),
@@ -705,6 +732,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         hours: _calculatedHours,
         startTime: _start,
         endTime: _end,
+        selectedDate: DateUtils.dateOnly(_selectedDate),
         userGoalId: _selectedUserGoalId,
       ),
     );

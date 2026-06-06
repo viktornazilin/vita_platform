@@ -34,7 +34,7 @@ class ExpensesScreen extends StatelessWidget {
 }
 
 enum _BudgetTab { overview, jars, lists }
-enum _BudgetPeriod { week, month, year }
+enum _BudgetPeriod { day, week, month, year }
 
 class _ExpensesView extends StatefulWidget {
   const _ExpensesView();
@@ -62,6 +62,8 @@ class _ExpensesViewState extends State<_ExpensesView> {
   DateTimeRange _rangeForPeriod(DateTime selectedDay) {
     final day = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
     switch (_period) {
+      case _BudgetPeriod.day:
+        return DateTimeRange(start: day, end: day.add(const Duration(days: 1)));
       case _BudgetPeriod.week:
         final start = day.subtract(Duration(days: day.weekday - 1));
         return DateTimeRange(start: start, end: start.add(const Duration(days: 7)));
@@ -156,6 +158,9 @@ class _ExpensesViewState extends State<_ExpensesView> {
 
     DateTime target;
     switch (_period) {
+      case _BudgetPeriod.day:
+        target = d.add(Duration(days: delta));
+        break;
       case _BudgetPeriod.week:
         target = d.add(Duration(days: 7 * delta));
         break;
@@ -435,7 +440,16 @@ class _ExpensesViewState extends State<_ExpensesView> {
 
     final income = _periodDataKey.isEmpty ? m.incomeMonth : _periodIncome;
     final expense = _periodDataKey.isEmpty ? m.expenseMonth : _periodExpense;
-    final free = (income - expense).clamp(0, double.infinity).toDouble();
+
+    // In the day view, the transaction list and income/expense cards show
+    // values for the selected day, but the available balance should remain
+    // the monthly available amount. Otherwise days without income would always
+    // show 0 as "free" even when the month still has available budget.
+    final monthlyFree = (m.incomeMonth - m.expenseMonth)
+        .clamp(0, double.infinity)
+        .toDouble();
+    final periodFree = (income - expense).clamp(0, double.infinity).toDouble();
+    final free = _period == _BudgetPeriod.day ? monthlyFree : periodFree;
     final dayExpense = _dayExpenseSum(m);
     final periodTransactions = _periodDataKey.isEmpty ? m.dayTx : _periodTransactions;
     final periodBreakdown = _periodDataKey.isEmpty ? m.expenseBreakdownMonth : _periodBreakdown;
@@ -792,6 +806,11 @@ class _PeriodRow extends StatelessWidget {
         _SegmentedPill(
           children: [
             _SegmentItem(
+              label: t.dayShort,
+              active: period == _BudgetPeriod.day,
+              onTap: () => onPeriodChanged(_BudgetPeriod.day),
+            ),
+            _SegmentItem(
               label: t.weekShort,
               active: period == _BudgetPeriod.week,
               onTap: () => onPeriodChanged(_BudgetPeriod.week),
@@ -915,24 +934,33 @@ class _SegmentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final activeBg = _ladnaAdaptive(
+      _LadnaColors.primary,
+      const Color(0xFF7657E6),
+    );
+    final inactiveText = _ladnaAdaptive(
+      const Color(0xFF7F7A9E),
+      const Color(0xFFC9C1EA),
+    );
+
     return Material(
-      color: active ? Colors.white : Colors.transparent,
+      color: active ? activeBg : Colors.transparent,
       borderRadius: BorderRadius.circular(9),
       child: InkWell(
         borderRadius: BorderRadius.circular(9),
         onTap: onTap,
         child: Container(
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          constraints: const BoxConstraints(minWidth: 54),
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          constraints: const BoxConstraints(minWidth: 43),
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: active ? _LadnaColors.dark : _LadnaColors.muted,
+              fontWeight: FontWeight.w800,
+              color: active ? Colors.white : inactiveText,
             ),
           ),
         ),
@@ -964,15 +992,19 @@ class _BalanceHero extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_LadnaColors.dark, Color(0xFF1E1248)],
+          colors: [
+            Color(0xFF5F46C8),
+            Color(0xFF3A2588),
+            Color(0xFF1E1248),
+          ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _LadnaColors.dark.withOpacity(0.28),
+            color: const Color(0xFF5F46C8).withOpacity(0.32),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1065,8 +1097,14 @@ class _CompactBalance extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_LadnaColors.dark, Color(0xFF1E1248)],
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF5F46C8),
+            Color(0xFF3A2588),
+            Color(0xFF1E1248),
+          ],
         ),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -1946,18 +1984,21 @@ class _BudgetText {
   bool get _tr => locale.languageCode == 'tr';
 
   String get budget => _ru ? 'Бюджет' : _de ? 'Budget' : _fr ? 'Budget' : _es ? 'Presupuesto' : _tr ? 'Bütçe' : 'Budget';
+  String get dayShort => _ru ? 'День' : _de ? 'Tag' : _fr ? 'Jour' : _es ? 'Día' : _tr ? 'Gün' : 'Day';
   String get weekShort => _ru ? 'Нед' : _de ? 'Wo' : _fr ? 'Sem' : _es ? 'Sem' : _tr ? 'Haf' : 'Week';
   String get monthShort => _ru ? 'Мес' : _de ? 'Mon' : _fr ? 'Mois' : _es ? 'Mes' : _tr ? 'Ay' : 'Month';
   String get yearShort => _ru ? 'Год' : _de ? 'Jahr' : _fr ? 'An' : _es ? 'Año' : _tr ? 'Yıl' : 'Year';
   String get overview => _ru ? 'Обзор' : _de ? 'Übersicht' : _fr ? 'Aperçu' : _es ? 'Resumen' : _tr ? 'Özet' : 'Overview';
   String get jars => _ru ? 'Копилки' : _de ? 'Sparen' : _fr ? 'Cagnottes' : _es ? 'Ahorros' : _tr ? 'Kumbaralar' : 'Jars';
   String get lists => _ru ? 'Списки' : _de ? 'Listen' : _fr ? 'Listes' : _es ? 'Listas' : _tr ? 'Listeler' : 'Lists';
+  String get freeThisDay => _ru ? 'Свободно за день' : _de ? 'Frei heute' : _fr ? 'Disponible ce jour' : _es ? 'Disponible este día' : _tr ? 'Bugün serbest' : 'Free this day';
   String get freeThisWeek => _ru ? 'Свободно за неделю' : _de ? 'Frei diese Woche' : _fr ? 'Disponible cette semaine' : _es ? 'Disponible esta semana' : _tr ? 'Bu hafta serbest' : 'Free this week';
   String get freeThisMonth => _ru ? 'Свободно в этом месяце' : _de ? 'Frei in diesem Monat' : _fr ? 'Disponible ce mois-ci' : _es ? 'Disponible este mes' : _tr ? 'Bu ay serbest' : 'Free this month';
   String get freeThisYear => _ru ? 'Свободно за год' : _de ? 'Frei dieses Jahr' : _fr ? 'Disponible cette année' : _es ? 'Disponible este año' : _tr ? 'Bu yıl serbest' : 'Free this year';
   String get free => _ru ? 'Свободно' : _de ? 'Frei' : _fr ? 'Disponible' : _es ? 'Libre' : _tr ? 'Serbest' : 'Free';
   String get income => _ru ? 'Доходы' : _de ? 'Einnahmen' : _fr ? 'Revenus' : _es ? 'Ingresos' : _tr ? 'Gelir' : 'Income';
   String get expense => _ru ? 'Расходы' : _de ? 'Ausgaben' : _fr ? 'Dépenses' : _es ? 'Gastos' : _tr ? 'Gider' : 'Expenses';
+  String get dayCategories => _ru ? 'Категории дня' : _de ? 'Kategorien des Tages' : _fr ? 'Catégories du jour' : _es ? 'Categorías del día' : _tr ? 'Gün kategorileri' : 'Day categories';
   String get weekCategories => _ru ? 'Категории недели' : _de ? 'Kategorien der Woche' : _fr ? 'Catégories de la semaine' : _es ? 'Categorías de la semana' : _tr ? 'Hafta kategorileri' : 'Week categories';
   String get monthCategories => _ru ? 'Категории месяца' : _de ? 'Kategorien des Monats' : _fr ? 'Catégories du mois' : _es ? 'Categorías del mes' : _tr ? 'Ay kategorileri' : 'Month categories';
   String get yearCategories => _ru ? 'Категории года' : _de ? 'Kategorien des Jahres' : _fr ? 'Catégories de l’année' : _es ? 'Categorías del año' : _tr ? 'Yıl kategorileri' : 'Year categories';
@@ -1991,6 +2032,8 @@ class _BudgetText {
 
 String _freeLabelForPeriod(_BudgetText t, _BudgetPeriod period) {
   switch (period) {
+    case _BudgetPeriod.day:
+      return t.freeThisDay;
     case _BudgetPeriod.week:
       return t.freeThisWeek;
     case _BudgetPeriod.month:
@@ -2002,6 +2045,8 @@ String _freeLabelForPeriod(_BudgetText t, _BudgetPeriod period) {
 
 String _categoriesLabelForPeriod(_BudgetText t, _BudgetPeriod period) {
   switch (period) {
+    case _BudgetPeriod.day:
+      return t.dayCategories;
     case _BudgetPeriod.week:
       return t.weekCategories;
     case _BudgetPeriod.month:
@@ -2014,6 +2059,8 @@ String _categoriesLabelForPeriod(_BudgetText t, _BudgetPeriod period) {
 String _periodLabel(BuildContext context, _BudgetPeriod period, DateTime date) {
   final ml = MaterialLocalizations.of(context);
   switch (period) {
+    case _BudgetPeriod.day:
+      return ml.formatFullDate(date);
     case _BudgetPeriod.week:
       final start = date.subtract(Duration(days: date.weekday - 1));
       final end = start.add(const Duration(days: 6));

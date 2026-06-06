@@ -234,7 +234,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   Future<void> _openEdit(Goal g) async {
     final vm = context.read<DayGoalsModel>();
 
-    final res = await showModalBottomSheet<AddGoalResult>(
+    final res = await showModalBottomSheet<EditGoalResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -263,6 +263,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           emotion: res.emotion,
           hours: res.hours,
           startTime: res.startTime,
+          targetDate: res.selectedDate,
           userGoalId: res.userGoalId,
         );
 
@@ -974,10 +975,18 @@ class _BlockChips extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: active ? _LadnaColors.purple : Colors.white.withOpacity(0.72),
+                color: active
+                    ? _LadnaColors.purple
+                    : (_LadnaColors._dark
+                        ? const Color(0xFF2A2144)
+                        : Colors.white.withOpacity(0.82)),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: active ? Colors.transparent : _LadnaColors.stroke,
+                  color: active
+                      ? Colors.transparent
+                      : (_LadnaColors._dark
+                          ? const Color(0xFF6B54C0).withOpacity(0.55)
+                          : _LadnaColors.stroke),
                 ),
                 boxShadow: active
                     ? [
@@ -992,9 +1001,13 @@ class _BlockChips extends StatelessWidget {
               child: Text(
                 block == 'all' ? _dgPick(context, ru: 'Все сферы', en: 'All areas', de: 'Alle Bereiche', fr: 'Tous les domaines', es: 'Todas las áreas', tr: 'Tüm alanlar') : _localizedLifeBlock(context, block),
                 style: TextStyle(
-                  color: active ? Colors.white : _LadnaColors.muted,
+                  color: active
+                      ? Colors.white
+                      : (_LadnaColors._dark
+                          ? const Color(0xFFF4F0FF)
+                          : _LadnaColors.text),
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -1252,7 +1265,9 @@ class _TaskLane extends StatelessWidget {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: _LadnaColors.text,
+                    color: doneLane
+                        ? (_LadnaColors._dark ? const Color(0xFFE9FFF7) : _LadnaColors.text)
+                        : _LadnaColors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1385,16 +1400,24 @@ class _TaskCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
       decoration: BoxDecoration(
-        color: done ? null : _LadnaColors.cardWhite,
+        color: done
+            ? (_LadnaColors._dark ? const Color(0xFF17392F) : null)
+            : (_LadnaColors._dark ? const Color(0xFF241C3B) : _LadnaColors.cardWhite),
         gradient: done
             ? LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [_LadnaColors.mint.withOpacity(0.70), _LadnaColors.cardWhite],
+                colors: _LadnaColors._dark
+                    ? [const Color(0xFF153D33), const Color(0xFF211A38)]
+                    : [_LadnaColors.mint.withOpacity(0.70), _LadnaColors.cardWhite],
               )
             : null,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _LadnaColors.stroke),
+        border: Border.all(
+          color: _LadnaColors._dark
+              ? const Color(0xFF6B54C0).withOpacity(0.50)
+              : _LadnaColors.stroke,
+        ),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF6F5DB7).withOpacity(0.08),
@@ -1415,7 +1438,9 @@ class _TaskCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _LadnaColors.text,
+                    color: done
+                        ? (_LadnaColors._dark ? const Color(0xFFE9FFF7) : _LadnaColors.text)
+                        : _LadnaColors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     height: 1.15,
@@ -1476,7 +1501,7 @@ class _TaskCard extends StatelessWidget {
                 Text(
                   _dgPick(context, ru: 'Выполнено', en: 'Completed', de: 'Erledigt', fr: 'Terminé', es: 'Completado', tr: 'Tamamlandı'),
                   style: TextStyle(
-                    color: Color(0xFF34A475),
+                    color: _LadnaColors._dark ? const Color(0xFFA7F5D9) : const Color(0xFF34A475),
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1512,16 +1537,24 @@ class _MetaPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F6FF),
+        color: _LadnaColors._dark
+            ? const Color(0xFF33274F)
+            : const Color(0xFFF8F6FF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _LadnaColors.strokeSoft),
+        border: Border.all(
+          color: _LadnaColors._dark
+              ? const Color(0xFF7D67D8).withOpacity(0.45)
+              : _LadnaColors.strokeSoft,
+        ),
       ),
       child: Text(
         text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: _LadnaColors.muted,
+          color: _LadnaColors._dark ? const Color(0xFFF4F0FF) : _LadnaColors.text,
           fontSize: 11,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -1539,8 +1572,15 @@ class _SpherePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: done ? const Color(0xFFE5FAF3) : _LadnaColors.purpleSoft,
+        color: done
+            ? (_LadnaColors._dark ? const Color(0xFF174D3D) : const Color(0xFFE5FAF3))
+            : (_LadnaColors._dark ? const Color(0xFF33274F) : _LadnaColors.purpleSoft),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: done
+              ? const Color(0xFF35C58D).withOpacity(0.45)
+              : const Color(0xFF7D67D8).withOpacity(0.45),
+        ),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 88),
@@ -1549,7 +1589,9 @@ class _SpherePill extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-          color: done ? const Color(0xFF16745A) : _LadnaColors.purple,
+          color: done
+              ? (_LadnaColors._dark ? const Color(0xFFA7F5D9) : const Color(0xFF16745A))
+              : (_LadnaColors._dark ? const Color(0xFFF4F0FF) : _LadnaColors.purple),
           fontSize: 11,
             fontWeight: FontWeight.w800,
           ),
