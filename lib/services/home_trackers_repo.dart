@@ -772,6 +772,19 @@ class HomeTrackersRepo {
     required DateTime entryDate,
     required double liters,
   }) async {
+    final delta = _normalizeWaterLiters(liters);
+    if (delta <= 0) return;
+
+    final current = await _waterTotalForDay(entryDate);
+    final nextTotal = _normalizeWaterLiters(current + delta);
+    await setWaterTotalForDay(entryDate: entryDate, liters: nextTotal);
+  }
+
+  Future<void> setWaterTotalForDay({
+    required DateTime entryDate,
+    required double liters,
+  }) async {
+    final normalizedLiters = _normalizeWaterLiters(liters);
     final start = _dayStart(entryDate);
     final end = start.add(const Duration(days: 1));
 
@@ -782,11 +795,35 @@ class HomeTrackersRepo {
         .gte('entry_date', start.toIso8601String())
         .lt('entry_date', end.toIso8601String());
 
+    if (normalizedLiters <= 0) return;
+
     await _client.from('water_entries').insert({
       'user_id': _uid,
       'entry_date': entryDate.toIso8601String(),
-      'liters': liters < 0 ? 0 : liters,
+      'liters': normalizedLiters,
     });
+  }
+
+  Future<double> _waterTotalForDay(DateTime entryDate) async {
+    final start = _dayStart(entryDate);
+    final end = start.add(const Duration(days: 1));
+
+    final rows = await _client
+        .from('water_entries')
+        .select('liters')
+        .eq('user_id', _uid)
+        .gte('entry_date', start.toIso8601String())
+        .lt('entry_date', end.toIso8601String());
+
+    return (rows as List).fold<double>(0, (sum, raw) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      return sum + ((row['liters'] as num?)?.toDouble() ?? 0.0);
+    });
+  }
+
+  double _normalizeWaterLiters(double liters) {
+    if (liters.isNaN || liters.isInfinite) return 0.0;
+    return double.parse(liters.clamp(0.0, 10.0).toStringAsFixed(2));
   }
 
   Future<void> deleteMeal(String id) async {

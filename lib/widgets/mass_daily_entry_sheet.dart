@@ -92,21 +92,21 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
 
   List<String> _goalLifeBlocks() {
     final seen = <String>{};
-    final blocks = <String>['general'];
+    final blocks = <String>[];
 
     for (final raw in widget.availableBlocks) {
       final value = raw.trim();
       if (value.isEmpty) continue;
 
       final key = value.toLowerCase();
-      if (key == 'general') continue;
-
       if (seen.add(key)) {
         blocks.add(key);
       }
     }
 
-    return blocks;
+    // Use the user's selected LifeBlocks. Fallback only when the parent did
+    // not pass any selected blocks, so the dropdown stays usable.
+    return blocks.isEmpty ? <String>['general'] : blocks;
   }
 
   Future<void> _loadExpenseCategories() async {
@@ -1837,23 +1837,37 @@ class _IncomeRowViewState extends State<_IncomeRowView> {
 
 class _GoalRow {
   final _titleCtrl = TextEditingController();
-  final _hoursCtrl = TextEditingController(text: '1.0');
+  final _startTimeCtrl = TextEditingController(text: '09:00');
+  final _endTimeCtrl = TextEditingController(text: '10:00');
+
+  // Kept for compatibility with the old inline wheel helpers. The quick-entry
+  // UI now uses two direct time fields: start time and end time.
   TimeOfDay? _time;
+  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
 
   String? _userGoalId;
   String _lifeBlock = 'general';
   String? _emotion;
   int _importance = 1;
 
+  int _minutesOf(TimeOfDay value) => value.hour * 60 + value.minute;
+
+  double get _calculatedHours {
+    var diff = _minutesOf(_endTime) - _minutesOf(_startTime);
+    if (diff <= 0) diff += 24 * 60;
+    return (diff / 60).clamp(0.25, 24.0).toDouble();
+  }
+
   _GoalEntry? toEntry() {
     final title = _titleCtrl.text.trim();
-    final hours = double.tryParse(_hoursCtrl.text.replaceAll(',', '.')) ?? 0;
     if (title.isEmpty) return null;
 
     return _GoalEntry(
       title: title,
-      hours: hours <= 0 ? 1 : hours,
-      startTime: _time,
+      hours: _calculatedHours,
+      startTime: _startTime,
+      endTime: _endTime,
       lifeBlock: _lifeBlock,
       emotion: _emotion,
       importance: _importance,
@@ -1863,7 +1877,8 @@ class _GoalRow {
 
   void dispose() {
     _titleCtrl.dispose();
-    _hoursCtrl.dispose();
+    _startTimeCtrl.dispose();
+    _endTimeCtrl.dispose();
   }
 }
 
@@ -1932,12 +1947,16 @@ class _GoalRowViewState extends State<_GoalRowView> {
       case 'financial':
         return 'finance';
 
+      case 'family':
+      case 'семья':
+      case 'родные':
+      case 'близкие':
+        return 'family';
+
       case 'relationships':
       case 'relationship':
       case 'relations':
       case 'отношения':
-      case 'семья':
-      case 'family':
         return 'relationships';
 
       case 'self':
@@ -1977,7 +1996,12 @@ class _GoalRowViewState extends State<_GoalRowView> {
   @override
   void initState() {
     super.initState();
+    final options = widget.lifeBlocks.map(_normalizeBlock).toList();
     widget.row._lifeBlock = _normalizeBlock(widget.row._lifeBlock);
+    if (options.isNotEmpty && !options.contains(widget.row._lifeBlock)) {
+      widget.row._lifeBlock = options.first;
+    }
+    widget.row._time = widget.row._startTime;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserGoalsForCurrentBlock();
     });
@@ -2160,6 +2184,30 @@ class _GoalRowViewState extends State<_GoalRowView> {
     setState(() => widget.row._emotion = chosen.isEmpty ? null : chosen);
   }
 
+  String _householdLabel(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+    return switch (lang) {
+      'en' => 'Household',
+      'de' => 'Haushalt',
+      'fr' => 'Foyer',
+      'es' => 'Hogar',
+      'tr' => 'Ev ve yaşam',
+      _ => 'Дом и быт',
+    };
+  }
+
+  String _relationshipsLabel(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+    return switch (lang) {
+      'en' => 'Relationships',
+      'de' => 'Beziehungen',
+      'fr' => 'Relations',
+      'es' => 'Relaciones',
+      'tr' => 'İlişkiler',
+      _ => 'Отношения',
+    };
+  }
+
   String _labelForBlock(String b) {
     final key = b.trim().toLowerCase();
     if (key == 'general') return AppLocalizations.of(context)!.massDailyLifeBlockGeneral;
@@ -2170,10 +2218,12 @@ class _GoalRowViewState extends State<_GoalRowView> {
       case 'career':
         return AppLocalizations.of(context)!.massDailyLifeBlockCareer;
       case 'family':
+        return _householdLabel(context);
       case 'relationships':
       case 'relations':
-        return AppLocalizations.of(context)!.massDailyLifeBlockFamily;
+        return _relationshipsLabel(context);
       case 'finance':
+      case 'finances':
         return AppLocalizations.of(context)!.massDailyLifeBlockFinance;
       case 'education':
         return AppLocalizations.of(context)!.massDailyLifeBlockEducation;
@@ -2195,6 +2245,120 @@ class _GoalRowViewState extends State<_GoalRowView> {
       'tr' => 'Antrenman / İş',
       _ => 'Тренировка / Работа',
     };
+  }
+
+
+  String _quickLocalized(BuildContext context, Map<String, String> values) {
+    final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[lang] ?? values['en'] ?? values.values.first;
+  }
+
+  String _startTimeLabel(BuildContext context) => _quickLocalized(context, const {
+        'ru': 'Время начала',
+        'en': 'Start time',
+        'de': 'Startzeit',
+        'fr': 'Heure de début',
+        'es': 'Hora de inicio',
+        'tr': 'Başlangıç saati',
+      });
+
+  String _endTimeLabel(BuildContext context) => _quickLocalized(context, const {
+        'ru': 'Время окончания',
+        'en': 'End time',
+        'de': 'Endzeit',
+        'fr': 'Heure de fin',
+        'es': 'Hora de fin',
+        'tr': 'Bitiş saati',
+      });
+
+  String _timeErrorText(BuildContext context) => _quickLocalized(context, const {
+        'ru': 'Введите время в формате 09:30 или 930',
+        'en': 'Enter time as 09:30 or 930',
+        'de': 'Zeit als 09:30 oder 930 eingeben',
+        'fr': 'Saisis l’heure comme 09:30 ou 930',
+        'es': 'Introduce la hora como 09:30 o 930',
+        'tr': 'Saati 09:30 veya 930 olarak gir',
+      });
+
+  String _durationLabel(BuildContext context) {
+    final hours = widget.row._calculatedHours;
+    final value = hours.toStringAsFixed(hours % 1 == 0 ? 0 : 1);
+    return _quickLocalized(context, {
+      'ru': '$value ч',
+      'en': '${value}h',
+      'de': '${value} Std.',
+      'fr': '${value} h',
+      'es': '${value} h',
+      'tr': '${value} sa',
+    });
+  }
+
+  String _formatTime(TimeOfDay value) =>
+      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
+  TimeOfDay? _parseTimeInput(String raw) {
+    var v = raw.trim().replaceAll('.', ':').replaceAll(' ', '');
+    if (v.isEmpty) return null;
+
+    int? hour;
+    int minute = 0;
+
+    if (v.contains(':')) {
+      final parts = v.split(':');
+      if (parts.isEmpty || parts.length > 2) return null;
+      hour = int.tryParse(parts[0]);
+      minute = parts.length == 2 && parts[1].isNotEmpty
+          ? int.tryParse(parts[1]) ?? -1
+          : 0;
+    } else {
+      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty || digits.length > 4) return null;
+
+      if (digits.length <= 2) {
+        hour = int.tryParse(digits);
+      } else {
+        final padded = digits.padLeft(4, '0');
+        hour = int.tryParse(padded.substring(0, padded.length - 2));
+        minute = int.tryParse(padded.substring(padded.length - 2)) ?? -1;
+      }
+    }
+
+    if (hour == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  void _commitStartTime(BuildContext context) {
+    final parsed = _parseTimeInput(widget.row._startTimeCtrl.text);
+    if (parsed == null) {
+      widget.row._startTimeCtrl.text = _formatTime(widget.row._startTime);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(_timeErrorText(context))),
+      );
+      return;
+    }
+    setState(() {
+      widget.row._startTime = parsed;
+      widget.row._time = parsed;
+      widget.row._startTimeCtrl.text = _formatTime(parsed);
+    });
+  }
+
+  void _commitEndTime(BuildContext context) {
+    final parsed = _parseTimeInput(widget.row._endTimeCtrl.text);
+    if (parsed == null) {
+      widget.row._endTimeCtrl.text = _formatTime(widget.row._endTime);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(_timeErrorText(context))),
+      );
+      return;
+    }
+    setState(() {
+      widget.row._endTime = parsed;
+      widget.row._endTimeCtrl.text = _formatTime(parsed);
+    });
   }
 
   InputDecoration _compactInputDecoration(
@@ -2245,7 +2409,12 @@ class _GoalRowViewState extends State<_GoalRowView> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final l = AppLocalizations.of(context)!;
-    final timeLabel = _formatTimeLabel(context);
+
+    final normalizedLifeBlocks = widget.lifeBlocks.map(_normalizeBlock).toList();
+    if (normalizedLifeBlocks.isNotEmpty &&
+        !normalizedLifeBlocks.contains(widget.row._lifeBlock)) {
+      widget.row._lifeBlock = normalizedLifeBlocks.first;
+    }
 
     final goals = _userGoalsForSelectedBlock;
     final dropdownGoalValue =
@@ -2317,36 +2486,63 @@ class _GoalRowViewState extends State<_GoalRowView> {
             },
           );
 
-          final timeButton = SizedBox(
-            height: 46,
-            child: OutlinedButton.icon(
-              onPressed: _toggleTimeWheel,
-              style: _compactButtonStyle(context),
-              icon: const Icon(Icons.access_time_rounded, size: 17),
-              label: Text(
-                timeLabel,
-                overflow: TextOverflow.ellipsis,
-              ),
+          final startTimeField = _QuickTimeTextField(
+            controller: widget.row._startTimeCtrl,
+            label: _startTimeLabel(context),
+            style: tt.bodyMedium?.copyWith(
+              fontSize: 13.5,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurface,
             ),
+            decoration: _compactInputDecoration(
+              context,
+              labelText: _startTimeLabel(context),
+              suffixIcon: const Icon(Icons.access_time_rounded, size: 17),
+            ),
+            onChanged: (v) {
+              final parsed = _parseTimeInput(v);
+              if (parsed == null) return;
+              setState(() {
+                widget.row._startTime = parsed;
+                widget.row._time = parsed;
+              });
+            },
+            onEditingComplete: () => _commitStartTime(context),
           );
 
-          final hoursField = SizedBox(
-            height: 46,
-            child: TextField(
-              controller: widget.row._hoursCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              textAlignVertical: TextAlignVertical.center,
-              style: tt.bodyMedium?.copyWith(
-                fontSize: 13.5,
-                height: 1.1,
-                fontWeight: FontWeight.w700,
-                color: cs.onSurface,
-              ),
-              decoration: _compactInputDecoration(
-                context,
-                labelText: l.massDailyHours,
+          final endTimeField = _QuickTimeTextField(
+            controller: widget.row._endTimeCtrl,
+            label: _endTimeLabel(context),
+            style: tt.bodyMedium?.copyWith(
+              fontSize: 13.5,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurface,
+            ),
+            decoration: _compactInputDecoration(
+              context,
+              labelText: _endTimeLabel(context),
+              suffixIcon: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Center(
+                  widthFactor: 1,
+                  child: Text(
+                    _durationLabel(context),
+                    style: tt.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
               ),
             ),
+            onChanged: (v) {
+              final parsed = _parseTimeInput(v);
+              if (parsed == null) return;
+              setState(() => widget.row._endTime = parsed);
+            },
+            onEditingComplete: () => _commitEndTime(context),
           );
 
           final categoryField = SizedBox(
@@ -2360,7 +2556,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 fontWeight: FontWeight.w700,
                 color: cs.onSurface,
               ),
-              items: widget.lifeBlocks
+              items: normalizedLifeBlocks
                   .map(
                     (b) => DropdownMenuItem(
                       value: b,
@@ -2455,26 +2651,10 @@ class _GoalRowViewState extends State<_GoalRowView> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: timeButton),
+                  Expanded(child: startTimeField),
                   const SizedBox(width: 8),
-                  SizedBox(width: 112, child: hoursField),
+                  Expanded(child: endTimeField),
                 ],
-              ),
-              AnimatedCrossFade(
-                firstChild: const SizedBox.shrink(),
-                secondChild: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: _InlineTimeWheel(
-                    value: widget.row._time ?? const TimeOfDay(hour: 9, minute: 0),
-                    onHourChanged: _setHour,
-                    onMinuteChanged: _setMinute,
-                  ),
-                ),
-                crossFadeState: _timeWheelExpanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 180),
-                sizeCurve: Curves.easeOutCubic,
               ),
               const SizedBox(height: 8),
               Row(
@@ -2530,6 +2710,42 @@ class _GoalRowViewState extends State<_GoalRowView> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _QuickTimeTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final TextStyle? style;
+  final InputDecoration decoration;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onEditingComplete;
+
+  const _QuickTimeTextField({
+    required this.controller,
+    required this.label,
+    required this.style,
+    required this.decoration,
+    required this.onChanged,
+    required this.onEditingComplete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.datetime,
+        textInputAction: TextInputAction.next,
+        textAlignVertical: TextAlignVertical.center,
+        style: style,
+        decoration: decoration,
+        onChanged: onChanged,
+        onEditingComplete: onEditingComplete,
+        onTapOutside: (_) => onEditingComplete(),
       ),
     );
   }
@@ -2810,6 +3026,7 @@ class _GoalEntry {
   final String title;
   final double hours;
   final TimeOfDay? startTime;
+  final TimeOfDay? endTime;
   final String lifeBlock;
   final String? emotion;
   final int importance;
@@ -2819,6 +3036,7 @@ class _GoalEntry {
     required this.title,
     required this.hours,
     required this.startTime,
+    required this.endTime,
     required this.lifeBlock,
     required this.emotion,
     required this.importance,

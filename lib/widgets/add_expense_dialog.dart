@@ -1,4 +1,6 @@
 // lib/widgets/add_expense_dialog.dart
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../domain/category.dart' as dm;
@@ -122,112 +124,188 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
     final isEdit = widget.initialAmount != null;
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 520,
-          maxHeight: media.size.height * 0.82,
+          maxHeight: media.size.height * 0.84,
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F3FA),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE0DCF0)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x26000000),
-                blurRadius: 22,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                14,
-                16,
-                16 + media.viewInsets.bottom,
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DialogHeader(
-                      icon: Icons.trending_down_rounded,
-                      title: isEdit ? l.addExpenseEditTitle : l.addExpenseNewTitle,
-                      onClose: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(height: 14),
-                    _LadnaTextField(
-                      controller: _amountController,
-                      label: l.addExpenseAmountLabel,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      validator: _validateAmount,
-                    ),
-                    const SizedBox(height: 8),
-                    _CategoryPicker(
-                      label: l.addExpenseCategoryLabel,
-                      value: _selectedCategoryId,
-                      categories: widget.categories,
-                      validatorText: l.addExpenseCategoryRequired,
-                      onChanged: (v) => setState(() => _selectedCategoryId = v),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: _creatingCategory ? null : _createCategory,
-                        icon: _creatingCategory
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.add_rounded),
-                        label: Text(l.addExpenseCreateCategoryTooltip),
+        child: _LadnaDialogShell(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              16,
+              18,
+              18 + media.viewInsets.bottom,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _DialogHeader(
+                    icon: Icons.trending_down_rounded,
+                    title: isEdit ? l.addExpenseEditTitle : l.addExpenseNewTitle,
+                    onClose: () => Navigator.pop(context),
+                  ),
+                  const SizedBox(height: 18),
+                  _LadnaTextField(
+                    controller: _amountController,
+                    label: l.addExpenseAmountLabel,
+                    icon: Icons.euro_rounded,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: _validateAmount,
+                  ),
+                  const SizedBox(height: 10),
+                  _CategoryPicker(
+                    label: l.addExpenseCategoryLabel,
+                    value: _selectedCategoryId,
+                    categories: widget.categories,
+                    validatorText: l.addExpenseCategoryRequired,
+                    onChanged: (v) => setState(() => _selectedCategoryId = v),
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _creatingCategory ? null : _createCategory,
+                      style: TextButton.styleFrom(
+                        foregroundColor: _LadnaColors.lime,
+                        textStyle: const TextStyle(fontWeight: FontWeight.w900),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    _LadnaTextField(
-                      controller: _noteController,
-                      label: l.addExpenseNoteLabel,
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(l.commonCancel),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: _submit,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF6B54C0),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                      icon: _creatingCategory
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _LadnaColors.lime,
                               ),
-                            ),
-                            child: Text(isEdit ? l.commonSave : l.commonAdd),
-                          ),
-                        ),
-                      ],
+                            )
+                          : const Icon(Icons.add_rounded),
+                      label: Text(l.addExpenseCreateCategoryTooltip),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 8),
+                  _LadnaTextField(
+                    controller: _noteController,
+                    label: l.addExpenseNoteLabel,
+                    icon: Icons.notes_rounded,
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: _secondaryButtonStyle(),
+                          child: Text(l.commonCancel),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _submit,
+                          style: _primaryButtonStyle(),
+                          child: Text(isEdit ? l.commonSave : l.commonAdd),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _LadnaColors {
+  static bool get _dark =>
+      WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+
+  static Color get surface => _dark ? const Color(0xF21D1732) : const Color(0xF8F4F0FF);
+  static Color get field => _dark ? const Color(0xFF211A38) : const Color(0xFFEDE7FF);
+  static Color get fieldStrong => _dark ? const Color(0xFF271F42) : const Color(0xFFF7F3FF);
+  static Color get border => _dark ? const Color(0x666B54C0) : const Color(0xFFDAD2F1);
+  static Color get borderSoft => _dark ? const Color(0x446B54C0) : const Color(0xFFE7DFFC);
+  static Color get text => _dark ? const Color(0xFFF4F0FF) : const Color(0xFF160E38);
+  static Color get muted => _dark ? const Color(0xB8D7CEF5) : const Color(0xFF7F7A9E);
+  static const Color primary = Color(0xFF6B54C0);
+  static const Color lime = Color(0xFFD4E040);
+  static const Color green = Color(0xFF16B8A8);
+  static const Color danger = Color(0xFFFF8A98);
+
+  static List<BoxShadow> get shadow => [
+        BoxShadow(
+          color: Colors.black.withOpacity(_dark ? 0.34 : 0.16),
+          blurRadius: 28,
+          offset: const Offset(0, 14),
+        ),
+      ];
+}
+
+class _LadnaDialogShell extends StatelessWidget {
+  final Widget child;
+  const _LadnaDialogShell({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _LadnaColors.surface,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: _LadnaColors.border, width: 1.4),
+            boxShadow: _LadnaColors.shadow,
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -90,
+                right: -100,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        _LadnaColors.primary.withOpacity(0.24),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: -80,
+                bottom: -90,
+                child: Container(
+                  width: 190,
+                  height: 190,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        _LadnaColors.lime.withOpacity(0.08),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              child,
+            ],
           ),
         ),
       ),
@@ -247,33 +325,64 @@ class _DialogHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 42,
-          height: 42,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
-            color: const Color(0xFFEAE6F5),
-            borderRadius: BorderRadius.circular(14),
+            color: _LadnaColors.primary.withOpacity(0.24),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(color: _LadnaColors.border),
           ),
-          child: Icon(icon, color: const Color(0xFF6B54C0)),
+          child: Icon(icon, color: _LadnaColors.lime, size: 22),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: 'Geologica',
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF160E38),
+            style: TextStyle(
+              fontFamily: 'PlayfairDisplay',
+              fontFamilyFallback: const ['PlayfairDisplay', 'Georgia'],
+              fontSize: 24,
+              height: 1.02,
+              fontWeight: FontWeight.w800,
+              color: _LadnaColors.text,
+              letterSpacing: -0.4,
             ),
           ),
         ),
-        IconButton(
-          onPressed: onClose,
-          icon: const Icon(Icons.close_rounded, color: Color(0xFF555268)),
+        _RoundIconButton(
+          icon: Icons.close_rounded,
+          onTap: onClose,
         ),
       ],
+    );
+  }
+}
+
+class _RoundIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _RoundIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _LadnaColors.field,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _LadnaColors.borderSoft),
+          ),
+          child: Icon(icon, color: _LadnaColors.muted, size: 21),
+        ),
+      ),
     );
   }
 }
@@ -284,6 +393,7 @@ class _LadnaTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final int maxLines;
+  final IconData? icon;
 
   const _LadnaTextField({
     required this.controller,
@@ -291,6 +401,7 @@ class _LadnaTextField extends StatelessWidget {
     this.keyboardType,
     this.validator,
     this.maxLines = 1,
+    this.icon,
   });
 
   @override
@@ -300,40 +411,55 @@ class _LadnaTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       maxLines: maxLines,
-      style: const TextStyle(
+      cursorColor: _LadnaColors.lime,
+      style: TextStyle(
         fontFamily: 'Geologica',
-        fontSize: 13,
-        height: 1.1,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF17123A),
+        fontSize: 16,
+        height: 1.15,
+        fontWeight: FontWeight.w800,
+        color: _LadnaColors.text,
       ),
-      decoration: InputDecoration(
-        labelText: label,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        labelStyle: const TextStyle(
-          fontFamily: 'Geologica',
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF8B84A3),
-        ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.72),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF6B54C0), width: 1.4),
-        ),
-      ),
+      decoration: _ladnaInput(label: label, icon: icon),
     );
   }
+}
+
+InputDecoration _ladnaInput({required String label, IconData? icon}) {
+  return InputDecoration(
+    labelText: label,
+    isDense: true,
+    prefixIcon: icon == null ? null : Icon(icon, color: _LadnaColors.muted),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    labelStyle: TextStyle(
+      fontFamily: 'Geologica',
+      fontSize: 13,
+      fontWeight: FontWeight.w800,
+      color: _LadnaColors.muted,
+    ),
+    errorStyle: const TextStyle(fontWeight: FontWeight.w700),
+    filled: true,
+    fillColor: _LadnaColors.field,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide(color: _LadnaColors.borderSoft, width: 1.2),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide(color: _LadnaColors.borderSoft, width: 1.2),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: _LadnaColors.primary, width: 1.6),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide(color: _LadnaColors.danger.withOpacity(0.75), width: 1.3),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide(color: _LadnaColors.danger.withOpacity(0.9), width: 1.5),
+    ),
+  );
 }
 
 class _CategoryPicker extends StatelessWidget {
@@ -356,6 +482,8 @@ class _CategoryPicker extends StatelessWidget {
     return DropdownButtonFormField<String>(
       value: value,
       isExpanded: true,
+      dropdownColor: _LadnaColors.fieldStrong,
+      iconEnabledColor: _LadnaColors.muted,
       items: categories
           .map(
             (c) => DropdownMenuItem(
@@ -372,34 +500,14 @@ class _CategoryPicker extends StatelessWidget {
           .toList(),
       onChanged: onChanged,
       validator: (v) => v == null ? validatorText : null,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Geologica',
-        fontSize: 13,
-        height: 1.1,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF17123A),
+        fontSize: 16,
+        height: 1.15,
+        fontWeight: FontWeight.w800,
+        color: _LadnaColors.text,
       ),
-      decoration: InputDecoration(
-        labelText: label,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        labelStyle: const TextStyle(
-          fontFamily: 'Geologica',
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF8B84A3),
-        ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.72),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE0DCF0)),
-        ),
-      ),
+      decoration: _ladnaInput(label: label, icon: Icons.grid_view_rounded),
     );
   }
 }
@@ -421,20 +529,85 @@ class _LadnaCategoryDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      title: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        decoration: InputDecoration(labelText: label, isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
-        textInputAction: TextInputAction.done,
-        onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: _LadnaDialogShell(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: _LadnaColors.text,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  cursorColor: _LadnaColors.lime,
+                  style: TextStyle(
+                    color: _LadnaColors.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  decoration: _ladnaInput(label: label, icon: Icons.add_rounded),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: _secondaryButtonStyle(),
+                        child: Text(cancel),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context, controller.text.trim()),
+                        style: _primaryButtonStyle(),
+                        child: Text(create),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(cancel)),
-        FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: Text(create)),
-      ],
     );
   }
 }
+
+ButtonStyle _primaryButtonStyle() {
+  return FilledButton.styleFrom(
+    backgroundColor: _LadnaColors.primary,
+    foregroundColor: Colors.white,
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+  );
+}
+
+ButtonStyle _secondaryButtonStyle() {
+  return OutlinedButton.styleFrom(
+    foregroundColor: _LadnaColors.text,
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+    side: BorderSide(color: _LadnaColors.border),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+  );
+}
+

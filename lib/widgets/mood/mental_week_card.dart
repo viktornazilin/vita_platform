@@ -324,6 +324,9 @@ class _MentalSummaryRow extends StatelessWidget {
               ru: 'Да-ответы',
               en: 'Yes answers',
               de: 'Ja-Antworten',
+              fr: 'Réponses oui',
+              es: 'Respuestas sí',
+              tr: 'Evet yanıtları',
             ),
             value: yesPercent == null ? '—' : '${(yesPercent * 100).round()}%',
             accent: cs.primary,
@@ -338,6 +341,9 @@ class _MentalSummaryRow extends StatelessWidget {
               ru: 'Среднее',
               en: 'Average',
               de: 'Durchschnitt',
+              fr: 'Moyenne',
+              es: 'Promedio',
+              tr: 'Ortalama',
             ),
             value: avgScale == null ? '—' : avgScale!.toStringAsFixed(1),
             accent: const Color(0xFF16B8A8),
@@ -352,6 +358,9 @@ class _MentalSummaryRow extends StatelessWidget {
               ru: 'Последнее',
               en: 'Latest',
               de: 'Aktuell',
+              fr: 'Dernier',
+              es: 'Último',
+              tr: 'Son',
             ),
             value: latestScale == null ? '—' : latestScale!.toStringAsFixed(1),
             accent: const Color(0xFFD4E040),
@@ -852,13 +861,22 @@ String _t(
   required String ru,
   required String en,
   String? de,
+  String? fr,
+  String? es,
+  String? tr,
 }) {
   final code = Localizations.localeOf(context).languageCode.toLowerCase();
   switch (code) {
-    case 'de':
-      return de ?? en;
     case 'ru':
       return ru;
+    case 'de':
+      return de ?? en;
+    case 'fr':
+      return fr ?? en;
+    case 'es':
+      return es ?? en;
+    case 'tr':
+      return tr ?? en;
     default:
       return en;
   }

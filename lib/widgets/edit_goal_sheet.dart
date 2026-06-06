@@ -271,12 +271,12 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         return t.lifeBlockFinance;
       case 'family':
         return local(
-          ru: 'Семья',
-          en: 'Family',
-          de: 'Familie',
-          fr: 'Famille',
-          es: 'Familia',
-          tr: 'Aile',
+          ru: 'Дом и быт',
+          en: 'Household',
+          de: 'Haushalt',
+          fr: 'Foyer',
+          es: 'Hogar',
+          tr: 'Ev ve yaşam',
         );
       case 'relationships':
         return t.lifeBlockRelations;
@@ -975,6 +975,8 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                     children: [
                       DropdownButtonFormField<String?>(
                         value: dropdownGoalValue,
+                        isExpanded: true,
+                        alignment: AlignmentDirectional.centerStart,
                         decoration: _nestInput(
                           label: t.userGoalLinkFieldLabel,
                           icon: Icons.link_rounded,
@@ -982,18 +984,51 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                         items: [
                           DropdownMenuItem<String?>(
                             value: null,
-                            child: Text(t.userGoalLinkNone),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                t.userGoalLinkNone,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
                           ),
                           ..._userGoalsForSelectedBlock.map(
                             (g) => DropdownMenuItem<String?>(
                               value: g.id,
-                              child: Text(
-                                '${g.title} · ${_horizonLabel(context, g.horizon)}',
-                                overflow: TextOverflow.ellipsis,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: Text(
+                                  '${g.title} · ${_horizonLabel(context, g.horizon)}',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
                             ),
                           ),
                         ],
+                        selectedItemBuilder: (context) {
+                          return [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                t.userGoalLinkNone,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            ..._userGoalsForSelectedBlock.map(
+                              (g) => Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '${g.title} · ${_horizonLabel(context, g.horizon)}',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ),
+                          ];
+                        },
                         onChanged: _loadingUserGoals
                             ? null
                             : (v) {

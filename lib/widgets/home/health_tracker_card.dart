@@ -335,7 +335,9 @@ class _PersonalText {
 
 
 class HealthTrackerCard extends StatefulWidget {
-  const HealthTrackerCard({super.key});
+  final DateTime? selectedDay;
+
+  const HealthTrackerCard({super.key, this.selectedDay});
 
   @override
   State<HealthTrackerCard> createState() => _HealthTrackerCardState();
@@ -346,6 +348,15 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
   bool _loading = true;
   HealthDaySummary? _summary;
   double _waterTargetLiters = 2.0;
+  double? _waterDraftLiters;
+
+  DateTime get _selectedDay {
+    final d = widget.selectedDay ?? DateTime.now();
+    return DateTime(d.year, d.month, d.day);
+  }
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   String _mealLabel(BuildContext context, String type) {
     final l = AppLocalizations.of(context)!;
@@ -370,6 +381,16 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant HealthTrackerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldDay = oldWidget.selectedDay ?? DateTime.now();
+    if (!_sameDay(oldDay, _selectedDay)) {
+      _waterDraftLiters = null;
+      _load();
+    }
+  }
+
   Future<void> _loadWaterTarget() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -387,7 +408,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
   }
 
   String _waterHistoryKey([DateTime? date]) {
-    final d = date ?? DateTime.now();
+    final d = date ?? _selectedDay;
     final month = d.month.toString().padLeft(2, '0');
     final day = d.day.toString().padLeft(2, '0');
     return 'health_water_history_${d.year}$month$day';
@@ -395,7 +416,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
 
   Future<List<String>> _loadWaterHistoryRows(BuildContext ctx) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getStringList(_waterHistoryKey()) ?? const <String>[];
+    final raw = prefs.getStringList(_waterHistoryKey(_selectedDay)) ?? const <String>[];
     final t = _PersonalText.of(ctx);
 
     final rows = <String>[];
@@ -415,7 +436,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
 
   Future<void> _appendWaterHistoryMl(int ml) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = _waterHistoryKey();
+    final key = _waterHistoryKey(_selectedDay);
     final rows = prefs.getStringList(key) ?? <String>[];
     rows.add('${DateTime.now().millisecondsSinceEpoch}|$ml');
     await prefs.setStringList(key, rows);
@@ -424,9 +445,12 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final summary = await _repo.loadHealthDaySummary(DateTime.now());
+      final summary = await _repo.loadHealthDaySummary(_selectedDay);
       if (!mounted) return;
-      setState(() => _summary = summary);
+      setState(() {
+        _summary = summary;
+        _waterDraftLiters = null;
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -690,7 +714,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                         onPressed: () async {
                           if (!(formKey.currentState?.validate() ?? false)) return;
                           await _repo.addMeal(
-                            entryDate: DateTime.now(),
+                            entryDate: _selectedDay,
                             mealType: mealType,
                             calories: int.parse(caloriesCtrl.text.trim()),
                             description: descCtrl.text.trim(),
@@ -766,7 +790,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                       final value = int.tryParse(caloriesCtrl.text.trim()) ?? 0;
                       if (value <= 0) return;
                       await _repo.addBurn(
-                        entryDate: DateTime.now(),
+                        entryDate: _selectedDay,
                         caloriesBurned: value,
                         note: noteCtrl.text.trim(),
                       );
@@ -786,12 +810,36 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
     );
   }
 
+  void _onWaterSliderChanged(double value) {
+    final normalized = double.parse(value.clamp(0.0, 10.0).toStringAsFixed(1));
+    setState(() => _waterDraftLiters = normalized);
+  }
+
+  Future<void> _onWaterSliderChangeEnd(double value) async {
+    final normalized = double.parse(value.clamp(0.0, 10.0).toStringAsFixed(1));
+
+    try {
+      await _repo.setWaterTotalForDay(
+        entryDate: _selectedDay,
+        liters: normalized,
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Не удалось изменить воду: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      setState(() => _waterDraftLiters = null);
+    }
+  }
+
   Future<void> _openWaterOverview() async {
     final targetCtrl = TextEditingController(
       text: _waterTargetLiters.toStringAsFixed(1),
     );
-    final historyRows = await _loadWaterHistoryRows(context);
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -874,53 +922,6 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                       label: Text(AppLocalizations.of(ctx)!.commonSave),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  Text(
-                    t.waterHistoryTitle,
-                    style: TextStyle(
-                      color: _ladnaText(ctx),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _ladnaSubtleBg(ctx).withOpacity(_ladnaIsDark(ctx) ? 0.55 : 0.75),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _ladnaSubtleBorder(ctx)),
-                    ),
-                    child: historyRows.isEmpty
-                        ? Text(
-                            t.waterHistoryPlaceholder,
-                            style: TextStyle(
-                              color: _ladnaSoftText(ctx),
-                              fontSize: 11.5,
-                              height: 1.3,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: historyRows
-                                .map(
-                                  (row) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 5),
-                                    child: Text(
-                                      row,
-                                      style: TextStyle(
-                                        color: _ladnaSoftText(ctx),
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                  ),
                 ],
               ),
             ),
@@ -935,16 +936,33 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
 
     Future<void> saveMl(BuildContext ctx, int ml) async {
       if (ml <= 0) return;
-      final current = _summary?.waterLiters ?? 0;
-      final next = (current + ml / 1000.0).clamp(0.0, 10.0).toDouble();
-      await _appendWaterHistoryMl(ml);
-      await _repo.addWater(
-        entryDate: DateTime.now(),
-        liters: double.parse(next.toStringAsFixed(2)),
-      );
-      if (!mounted) return;
-      Navigator.pop(ctx);
-      await _load();
+
+      // Important: water_entries.liters stores one addition, not the total
+      // amount for the day. Saving the accumulated total can violate the
+      // Supabase CHECK constraint when the day already has water entries.
+      final litersDelta = double.parse((ml / 1000.0).toStringAsFixed(2));
+      if (litersDelta <= 0) return;
+
+      try {
+        await _repo.addWater(
+          entryDate: _selectedDay,
+          liters: litersDelta,
+        );
+
+        await _appendWaterHistoryMl(ml);
+
+        if (!mounted) return;
+        Navigator.pop(ctx);
+        await _load();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Не удалось сохранить воду: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
 
     await showModalBottomSheet<void>(
@@ -1239,6 +1257,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
           )
         else if (s != null) ...[
           _HealthHero(
+            selectedDay: _selectedDay,
             consumed: s.consumed,
             burned: s.burned,
             net: s.net,
@@ -1267,10 +1286,12 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
           ),
           const SizedBox(height: 12),
           _WaterCard(
-            liters: s.waterLiters,
+            liters: _waterDraftLiters ?? s.waterLiters,
             targetLiters: _waterTargetLiters,
             onTap: _openWaterOverview,
             onAddTap: _addWaterAmount,
+            onSliderChanged: _onWaterSliderChanged,
+            onSliderChangeEnd: _onWaterSliderChangeEnd,
           ),
           const SizedBox(height: 14),
           _SectionLabel(text: _PersonalText.of(context).mealsSection),
@@ -1357,6 +1378,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
 }
 
 class _HealthHero extends StatelessWidget {
+  final DateTime selectedDay;
   final int consumed;
   final int burned;
   final int net;
@@ -1364,6 +1386,7 @@ class _HealthHero extends StatelessWidget {
   final VoidCallback onTap;
 
   const _HealthHero({
+    required this.selectedDay,
     required this.consumed,
     required this.burned,
     required this.net,
@@ -1398,18 +1421,6 @@ class _HealthHero extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned(
-            top: -54,
-            right: -48,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _ladnaAccent(context).withOpacity(0.16),
-              ),
-            ),
-          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1492,8 +1503,13 @@ class _HealthHero extends StatelessWidget {
   }
 
   String _todayLabel(BuildContext context) {
-    final date = MaterialLocalizations.of(context).formatMediumDate(DateTime.now());
-    return _PersonalText.of(context).todayWithDate(date);
+    final now = DateTime.now();
+    final date = MaterialLocalizations.of(context).formatMediumDate(selectedDay);
+    final isToday = selectedDay.year == now.year &&
+        selectedDay.month == now.month &&
+        selectedDay.day == now.day;
+    if (isToday) return _PersonalText.of(context).todayWithDate(date);
+    return date;
   }
 }
 
@@ -1605,12 +1621,16 @@ class _WaterCard extends StatelessWidget {
   final double targetLiters;
   final VoidCallback onTap;
   final VoidCallback onAddTap;
+  final ValueChanged<double> onSliderChanged;
+  final ValueChanged<double> onSliderChangeEnd;
 
   const _WaterCard({
     required this.liters,
     required this.targetLiters,
     required this.onTap,
     required this.onAddTap,
+    required this.onSliderChanged,
+    required this.onSliderChangeEnd,
   });
 
   @override
@@ -1699,54 +1719,28 @@ class _WaterCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final thumbLeft = (width - 24) * progress;
-                return SizedBox(
-                  height: 28,
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 7,
-                          backgroundColor: _ladnaSubtleBg(context),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF6B54C0),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: thumbLeft,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: _ladnaCardBg(context),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _ladnaAccent(context).withOpacity(0.45),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _ladnaAccent(context).withOpacity(0.18),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Text('💧', style: TextStyle(fontSize: 13)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 7,
+                activeTrackColor: const Color(0xFF6B54C0),
+                inactiveTrackColor: _ladnaSubtleBg(context),
+                thumbColor: _ladnaCardBg(context),
+                overlayColor: _ladnaAccent(context).withOpacity(0.16),
+                valueIndicatorColor: _ladnaAccent(context),
+                valueIndicatorTextStyle: TextStyle(
+                  color: _ladnaIsDark(context) ? const Color(0xFF160E38) : Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: Slider(
+                value: liters.clamp(0.0, safeTarget).toDouble(),
+                min: 0,
+                max: safeTarget,
+                divisions: (safeTarget * 10).round().clamp(1, 100),
+                label: '${liters.toStringAsFixed(1)} л',
+                onChanged: onSliderChanged,
+                onChangeEnd: onSliderChangeEnd,
+              ),
             ),
           ],
         ),

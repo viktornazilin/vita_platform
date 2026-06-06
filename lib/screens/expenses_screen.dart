@@ -13,7 +13,6 @@ import '../widgets/add_income_dialog.dart';
 import '../widgets/add_jar_dialog.dart';
 import '../widgets/nest/nest_background.dart';
 import 'shopping_tracker_card.dart';
-import 'budget_setup_screen.dart';
 
 
 bool get _ladnaDarkMode =>
@@ -175,15 +174,6 @@ class _ExpensesViewState extends State<_ExpensesView> {
     final now = DateTime.now();
     if (target.isAfter(now)) target = now;
     await m.setDay(target);
-    _invalidatePeriodData();
-  }
-
-  Future<void> _openBudgetSetup(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const BudgetSetupScreen()),
-    );
-    if (!context.mounted) return;
-    await context.read<BudgetModel>().load();
     _invalidatePeriodData();
   }
 
@@ -441,15 +431,12 @@ class _ExpensesViewState extends State<_ExpensesView> {
     final income = _periodDataKey.isEmpty ? m.incomeMonth : _periodIncome;
     final expense = _periodDataKey.isEmpty ? m.expenseMonth : _periodExpense;
 
-    // In the day view, the transaction list and income/expense cards show
-    // values for the selected day, but the available balance should remain
-    // the monthly available amount. Otherwise days without income would always
-    // show 0 as "free" even when the month still has available budget.
-    final monthlyFree = (m.incomeMonth - m.expenseMonth)
-        .clamp(0, double.infinity)
-        .toDouble();
-    final periodFree = (income - expense).clamp(0, double.infinity).toDouble();
-    final free = _period == _BudgetPeriod.day ? monthlyFree : periodFree;
+    // Only the large "free" number uses the monthly available amount in day mode.
+    // The income/expense mini-metrics, transaction list and breakdown stay bound to
+    // the selected period/day.
+    final freeSourceIncome = _period == _BudgetPeriod.day ? m.incomeMonth : income;
+    final freeSourceExpense = _period == _BudgetPeriod.day ? m.expenseMonth : expense;
+    final free = (freeSourceIncome - freeSourceExpense).clamp(0, double.infinity).toDouble();
     final dayExpense = _dayExpenseSum(m);
     final periodTransactions = _periodDataKey.isEmpty ? m.dayTx : _periodTransactions;
     final periodBreakdown = _periodDataKey.isEmpty ? m.expenseBreakdownMonth : _periodBreakdown;
@@ -486,7 +473,6 @@ class _ExpensesViewState extends State<_ExpensesView> {
                             title: t.budget,
                             canPop: Navigator.of(context).canPop(),
                             onBack: () => Navigator.of(context).maybePop(),
-                            onSettings: () => _openBudgetSetup(context),
                           ),
                           const SizedBox(height: 14),
                           _PeriodRow(
@@ -729,13 +715,10 @@ class _LadnaHeader extends StatelessWidget {
   final String title;
   final bool canPop;
   final VoidCallback onBack;
-  final VoidCallback onSettings;
-
   const _LadnaHeader({
     required this.title,
     required this.canPop,
     required this.onBack,
-    required this.onSettings,
   });
 
   @override
@@ -771,10 +754,6 @@ class _LadnaHeader extends StatelessWidget {
                 letterSpacing: -0.3,
               ),
             ),
-          ),
-          _CircleButton(
-            icon: Icons.tune_rounded,
-            onTap: onSettings,
           ),
         ],
       ),
@@ -934,17 +913,8 @@ class _SegmentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeBg = _ladnaAdaptive(
-      _LadnaColors.primary,
-      const Color(0xFF7657E6),
-    );
-    final inactiveText = _ladnaAdaptive(
-      const Color(0xFF7F7A9E),
-      const Color(0xFFC9C1EA),
-    );
-
     return Material(
-      color: active ? activeBg : Colors.transparent,
+      color: active ? _LadnaColors.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(9),
       child: InkWell(
         borderRadius: BorderRadius.circular(9),
@@ -959,8 +929,8 @@ class _SegmentItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: active ? Colors.white : inactiveText,
+              fontWeight: FontWeight.w700,
+              color: active ? Colors.white : _LadnaColors.muted,
             ),
           ),
         ),
@@ -992,14 +962,10 @@ class _BalanceHero extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF5F46C8),
-            Color(0xFF3A2588),
-            Color(0xFF1E1248),
-          ],
+          colors: const [Color(0xFF6B54C0), Color(0xFF3A2588), Color(0xFF1E1248)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1097,14 +1063,8 @@ class _CompactBalance extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF5F46C8),
-            Color(0xFF3A2588),
-            Color(0xFF1E1248),
-          ],
+        gradient: LinearGradient(
+          colors: const [Color(0xFF6B54C0), Color(0xFF3A2588), Color(0xFF1E1248)],
         ),
         borderRadius: BorderRadius.circular(16),
       ),

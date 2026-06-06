@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import '../models/goal.dart';
 import '../models/mood.dart';
 import '../main.dart'; // dbRepo
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum ReportPeriod { day, week, month }
 
@@ -20,10 +21,12 @@ class ReportsModel extends ChangeNotifier {
   List<Goal> _allGoals = [];
   List<Mood> _allMoods = [];
   double _targetHours = 14;
+  Map<String, double> _desiredLifeBalance = const {};
 
   List<Goal> get allGoals => _allGoals;
   List<Mood> get allMoods => _allMoods;
   double get targetHours => _targetHours;
+  Map<String, double> get desiredLifeBalance => _desiredLifeBalance;
 
   Future<void> loadAll() async {
     _loading = true;
@@ -33,9 +36,85 @@ class ReportsModel extends ChangeNotifier {
       _allGoals = await dbRepo.fetchGoals();
       _allMoods = await dbRepo.fetchMoods(limit: 120);
       _targetHours = await dbRepo.getTargetHours();
+      _desiredLifeBalance = await _loadDesiredLifeBalance();
     } finally {
       _loading = false;
       notifyListeners();
+    }
+  }
+
+
+  Future<Map<String, double>> _loadDesiredLifeBalance() async {
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+      if (userId == null || userId.trim().isEmpty) return const {};
+
+      final row = await client
+          .from('users')
+          .select('priorities, weights')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (row == null) return const {};
+      final priorities = (row['priorities'] as List?)
+              ?.map((e) => e.toString().trim())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          const <String>[];
+      final weights = (row['weights'] as List?) ?? const [];
+      if (priorities.isEmpty || weights.isEmpty) return const {};
+
+      final out = <String, double>{};
+      for (var i = 0; i < priorities.length && i < weights.length; i++) {
+        final raw = weights[i];
+        final value = raw is num ? raw.toDouble() : double.tryParse(raw.toString()) ?? 0.0;
+        if (value <= 0) continue;
+        out[_normalizeLifeBlockKey(priorities[i])] = value <= 1.0 ? value * 100 : value;
+      }
+      return Map.unmodifiable(out);
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  String _normalizeLifeBlockKey(String key) {
+    final k = key.trim().toLowerCase();
+    switch (k) {
+      case 'health':
+      case 'здоровье':
+        return 'health';
+      case 'career':
+      case 'work':
+      case 'карьера':
+        return 'career';
+      case 'family':
+      case 'семья':
+        return 'family';
+      case 'relations':
+      case 'relationship':
+      case 'relationships':
+      case 'отношения':
+        return 'relations';
+      case 'education':
+      case 'study':
+      case 'образование':
+      case 'обучение':
+        return 'education';
+      case 'finance':
+      case 'finances':
+      case 'финансы':
+        return 'finance';
+      case 'hobby':
+      case 'hobbies':
+      case 'хобби':
+        return 'hobby';
+      case 'spirituality':
+      case 'spirit':
+      case 'духовность':
+        return 'spirituality';
+      default:
+        return k;
     }
   }
 

@@ -112,8 +112,18 @@ class _PersonalViewState extends State<_PersonalView> {
   String _selectedEmoji = '😊';
   final _noteController = TextEditingController();
   bool _saving = false;
+  DateTime _selectedDay = DateUtils.dateOnly(DateTime.now());
 
   static const _maxLen = 200;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(_syncMoodFormForSelectedDay);
+    });
+  }
 
   @override
   void dispose() {
@@ -158,9 +168,50 @@ class _PersonalViewState extends State<_PersonalView> {
     return d.subtract(Duration(days: d.weekday - 1));
   }
 
-  List<DateTime> _currentWeekDays() {
-    final start = _startOfWeek(DateTime.now());
+  List<DateTime> _weekDaysFor(DateTime selectedDay) {
+    final start = _startOfWeek(selectedDay);
     return List.generate(7, (index) => _dateOnly(start.add(Duration(days: index))));
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  void _syncMoodFormForSelectedDay() {
+    try {
+      final moods = context.read<MoodModel>().moods;
+      Mood? existing;
+
+      for (final mood in moods) {
+        if (_isSameDay(mood.date, _selectedDay)) {
+          existing = mood;
+          break;
+        }
+      }
+
+      if (existing == null) {
+        _selectedEmoji = '😊';
+        _noteController.clear();
+      } else {
+        _selectedEmoji = existing.emoji;
+        _noteController.text = existing.note;
+      }
+    } catch (_) {
+      // Keep current input if the model is not available yet.
+    }
+  }
+
+  Future<void> _shiftSelectedDay(int deltaDays) async {
+    final today = _dateOnly(DateTime.now());
+    final target = _dateOnly(_selectedDay.add(Duration(days: deltaDays)));
+    final next = target.isAfter(today) ? today : target;
+
+    if (_isSameDay(next, _selectedDay)) return;
+
+    setState(() {
+      _selectedDay = next;
+      _syncMoodFormForSelectedDay();
+    });
   }
 
   String _weekdayLabel(BuildContext context, DateTime date) {
@@ -196,6 +247,8 @@ class _PersonalViewState extends State<_PersonalView> {
 
   Future<void> _refresh() async {
     await context.read<MoodModel>().load();
+    if (!mounted) return;
+    setState(_syncMoodFormForSelectedDay);
   }
 
   Future<void> _saveMood() async {
@@ -205,7 +258,7 @@ class _PersonalViewState extends State<_PersonalView> {
     setState(() => _saving = true);
     try {
       await context.read<MoodModel>().repo.upsertMood(
-            date: _dateOnly(DateTime.now()),
+            date: _selectedDay,
             emoji: _selectedEmoji,
             note: _noteController.text.trim(),
           );
@@ -294,13 +347,23 @@ class _PersonalViewState extends State<_PersonalView> {
                 ),
               ),
               const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _DayNav(
+                  selectedDay: _selectedDay,
+                  label: _dateLabel(context, _selectedDay),
+                  onPrev: () => _shiftSelectedDay(-1),
+                  onNext: () => _shiftSelectedDay(1),
+                ),
+              ),
+              const SizedBox(height: 12),
               Expanded(
                 child: IndexedStack(
                   index: _tab,
                   children: [
                     _TabScroller(
                       onRefresh: _refresh,
-                      child: const HealthTrackerCard(),
+                      child: HealthTrackerCard(selectedDay: _selectedDay),
                     ),
                     _TabScroller(
                       onRefresh: _refresh,
@@ -310,8 +373,8 @@ class _PersonalViewState extends State<_PersonalView> {
                         maxLen: _maxLen,
                         saving: _saving,
                         score: _scoreForEmoji(_selectedEmoji),
-                        dateLabel: _dateLabel(context, DateTime.now()),
-                        weekDays: _currentWeekDays(),
+                        dateLabel: _dateLabel(context, _selectedDay),
+                        weekDays: _weekDaysFor(_selectedDay),
                         weekdayLabel: (day) => _weekdayLabel(context, day),
                         onEmojiChanged: (emoji) =>
                             setState(() => _selectedEmoji = emoji),
@@ -320,7 +383,7 @@ class _PersonalViewState extends State<_PersonalView> {
                     ),
                     _TabScroller(
                       onRefresh: _refresh,
-                      child: const HobbyTrackerCard(),
+                      child: HobbyTrackerCard(selectedDay: _selectedDay),
                     ),
                   ],
                 ),
@@ -578,6 +641,148 @@ class _MoodTab extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+
+class _DayNav extends StatelessWidget {
+  final DateTime selectedDay;
+  final String label;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+
+  const _DayNav({
+    required this.selectedDay,
+    required this.label,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  bool _isToday(DateTime d) {
+    final now = DateTime.now();
+    return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+
+  String _t(
+    BuildContext context, {
+    required String ru,
+    required String en,
+    String? de,
+    String? fr,
+    String? es,
+    String? tr,
+  }) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    switch (code) {
+      case 'de':
+        return de ?? en;
+      case 'fr':
+        return fr ?? en;
+      case 'es':
+        return es ?? en;
+      case 'tr':
+        return tr ?? en;
+      case 'ru':
+        return ru;
+      default:
+        return en;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = _isToday(selectedDay);
+
+    return _LadnaCard(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      child: Row(
+        children: [
+          _DayNavButton(
+            icon: Icons.chevron_left_rounded,
+            onTap: onPrev,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  _t(
+                    context,
+                    ru: isToday ? 'Сегодня' : 'Выбранный день',
+                    en: isToday ? 'Today' : 'Selected day',
+                    de: isToday ? 'Heute' : 'Ausgewählter Tag',
+                    fr: isToday ? 'Aujourd’hui' : 'Jour sélectionné',
+                    es: isToday ? 'Hoy' : 'Día seleccionado',
+                    tr: isToday ? 'Bugün' : 'Seçili gün',
+                  ).toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _DayNavButton(
+            icon: Icons.chevron_right_rounded,
+            onTap: isToday ? null : onNext,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayNavButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _DayNavButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
+    return Material(
+      color: enabled
+          ? _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF241B3A))
+          : _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)).withOpacity(0.45),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(
+            icon,
+            size: 22,
+            color: enabled
+                ? _ladnaAdaptive(const Color(0xFF555268), const Color(0xFFE9DDFF))
+                : _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
+          ),
+        ),
+      ),
     );
   }
 }

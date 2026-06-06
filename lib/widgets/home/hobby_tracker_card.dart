@@ -185,7 +185,9 @@ class _PersonalText {
 
 
 class HobbyTrackerCard extends StatefulWidget {
-  const HobbyTrackerCard({super.key});
+  final DateTime? selectedDay;
+
+  const HobbyTrackerCard({super.key, this.selectedDay});
 
   @override
   State<HobbyTrackerCard> createState() => _HobbyTrackerCardState();
@@ -196,16 +198,33 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
   bool _loading = true;
   List<HobbySummary> _items = const [];
 
+  DateTime get _selectedDay {
+    final d = widget.selectedDay ?? DateTime.now();
+    return DateTime(d.year, d.month, d.day);
+  }
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant HobbyTrackerCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldDay = oldWidget.selectedDay ?? DateTime.now();
+    if (!_sameDay(oldDay, _selectedDay)) {
+      _load();
+    }
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final items = await _repo.listHobbySummariesForWeek(DateTime.now());
+      final items = await _repo.listHobbySummariesForWeek(_selectedDay);
       if (!mounted) return;
       setState(() => _items = items);
     } finally {
@@ -407,7 +426,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                       if (minutes <= 0) return;
                       await _repo.addHobbyEntry(
                         hobbyId: hobby.hobbyId,
-                        entryDate: DateTime.now(),
+                        entryDate: _selectedDay,
                         minutesSpent: minutes,
                         note: noteCtrl.text.trim(),
                       );

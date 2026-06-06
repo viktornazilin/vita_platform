@@ -247,7 +247,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dayGoalsDeleteConfirmTitle => 'Hedef silinsin mi?';
 
   @override
-  String get dayGoalsFabAddTitle => 'Hedef ekle';
+  String get dayGoalsFabAddTitle => 'Görev ekle';
 
   @override
   String get dayGoalsFabAddSubtitle => 'Manuel oluştur';
@@ -1025,8 +1025,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get mentalWeekNoAnswers =>
-      'Bu hafta için yanıt bulunamadı (mevcut user_id için).';
+  String get mentalWeekNoAnswers => 'Bu hafta için yanıt bulunamadı.';
 
   @override
   String get mentalWeekYesNoHeader => 'Evet/Hayır (hafta)';

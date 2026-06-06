@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
 
@@ -148,7 +149,9 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _LadnaSheet(
-        child: const recurring.RecurringGoalSheet(),
+        child: recurring.RecurringGoalSheet(
+          availableBlocks: vm.availableBlocks,
+        ),
       ),
     );
 
@@ -163,31 +166,50 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
     await _withBusy(() async {
       try {
-        await dbRepo.createGoalsBulk(
-          dates.map((day) {
-            final deadline = DateTime.utc(day.year, day.month, day.day);
-            final startTime = DateTime.utc(
-              day.year,
-              day.month,
-              day.day,
-              plan.time.hour,
-              plan.time.minute,
-            );
+        final items = dates.map((day) {
+          final deadline = DateTime.utc(day.year, day.month, day.day);
+          final startTime = DateTime.utc(
+            day.year,
+            day.month,
+            day.day,
+            plan.time.hour,
+            plan.time.minute,
+          );
 
-            return <String, dynamic>{
-              'title': plan.title,
-              'description': '',
-              'deadline': deadline,
-              'is_completed': false,
-              'life_block': plan.lifeBlock,
-              'importance': plan.importance,
-              'emotion': plan.emotion,
-              'spent_hours': plan.plannedHours,
-              'start_time': startTime,
-              'user_goal_id': plan.userGoalId,
-            };
-          }).toList(),
-        );
+          return <String, dynamic>{
+            'title': plan.title,
+            'description': '',
+            'deadline': deadline,
+            'is_completed': false,
+            'life_block': plan.lifeBlock,
+            'importance': plan.importance,
+            'emotion': plan.emotion,
+            'spent_hours': plan.plannedHours,
+            'start_time': startTime,
+            'user_goal_id': plan.userGoalId,
+            'is_recurring': true,
+            'recurring_group_id': plan.recurringGroupId,
+            'recurrence_type': plan.type == recurring.RecurrenceType.weekly
+                ? 'weekly'
+                : 'every_n_days',
+            'recurrence_every_n_days': plan.everyNDays,
+            'recurrence_weekdays': plan.weekdays.toList()..sort(),
+            'recurrence_until': DateTime.utc(
+              plan.until.year,
+              plan.until.month,
+              plan.until.day,
+            ).toIso8601String().split('T').first,
+          };
+        }).toList();
+
+        if (plan.isEditingExisting) {
+          await dbRepo.replaceRecurringTaskPlan(
+            recurringGroupId: plan.recurringGroupId,
+            items: items,
+          );
+        } else {
+          await dbRepo.createRecurringTaskPlan(items);
+        }
 
         await vm.load();
 
@@ -975,18 +997,10 @@ class _BlockChips extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: active
-                    ? _LadnaColors.purple
-                    : (_LadnaColors._dark
-                        ? const Color(0xFF2A2144)
-                        : Colors.white.withOpacity(0.82)),
+                color: active ? _LadnaColors.purple : (_LadnaColors._dark ? const Color(0xFF2A2144) : Colors.white.withOpacity(0.72)),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: active
-                      ? Colors.transparent
-                      : (_LadnaColors._dark
-                          ? const Color(0xFF6B54C0).withOpacity(0.55)
-                          : _LadnaColors.stroke),
+                  color: active ? Colors.transparent : _LadnaColors.stroke,
                 ),
                 boxShadow: active
                     ? [
@@ -1001,11 +1015,7 @@ class _BlockChips extends StatelessWidget {
               child: Text(
                 block == 'all' ? _dgPick(context, ru: 'Все сферы', en: 'All areas', de: 'Alle Bereiche', fr: 'Tous les domaines', es: 'Todas las áreas', tr: 'Tüm alanlar') : _localizedLifeBlock(context, block),
                 style: TextStyle(
-                  color: active
-                      ? Colors.white
-                      : (_LadnaColors._dark
-                          ? const Color(0xFFF4F0FF)
-                          : _LadnaColors.text),
+                  color: active ? Colors.white : (_LadnaColors._dark ? const Color(0xFFF4F0FF) : _LadnaColors.muted),
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1132,7 +1142,7 @@ class _DaySectionCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _Cap(text: _dgPick(context, ru: 'Ост. ${openGoals.length}', en: 'Left ${openGoals.length}', de: 'Offen ${openGoals.length}', fr: 'Rest. ${openGoals.length}', es: 'Pend. ${openGoals.length}', tr: 'Kalan ${openGoals.length}'), color: const Color(0xFFF7F1E5), textColor: const Color(0xFF8D6A1B)),
+                    _Cap(text: _dgPick(context, ru: 'Ост. ${openGoals.length}', en: 'Left ${openGoals.length}', de: 'Offen ${openGoals.length}', fr: 'Rest. ${openGoals.length}', es: 'Pend. ${openGoals.length}', tr: 'Kalan ${openGoals.length}'), color: _LadnaColors._dark ? const Color(0xFF3B2E1C) : const Color(0xFFF7F1E5), textColor: _LadnaColors._dark ? const Color(0xFFFFD87A) : const Color(0xFF8D6A1B)),
                     const SizedBox(width: 8),
                     _Cap(text: _dgPick(context, ru: 'Гот. ${doneGoals.length}', en: 'Done ${doneGoals.length}', de: 'Fertig ${doneGoals.length}', fr: 'Fait ${doneGoals.length}', es: 'Hecho ${doneGoals.length}', tr: 'Bitti ${doneGoals.length}'), color: _LadnaColors.mint, textColor: _LadnaColors.mintText),
                   ],
@@ -1265,9 +1275,7 @@ class _TaskLane extends StatelessWidget {
                 child: Text(
                   title,
                   style: TextStyle(
-                    color: doneLane
-                        ? (_LadnaColors._dark ? const Color(0xFFE9FFF7) : _LadnaColors.text)
-                        : _LadnaColors.text,
+                    color: _LadnaColors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1278,14 +1286,14 @@ class _TaskLane extends StatelessWidget {
                 height: 28,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
-                  color: doneLane ? _LadnaColors.mint : const Color(0xFFF6EFDF),
+                  color: doneLane ? _LadnaColors.mint : (_LadnaColors._dark ? const Color(0xFF3B2E1C) : const Color(0xFFF6EFDF)),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Center(
                   child: Text(
                     '$count',
                     style: TextStyle(
-                      color: doneLane ? _LadnaColors.mintText : const Color(0xFF6F5A18),
+                      color: doneLane ? _LadnaColors.mintText : (_LadnaColors._dark ? const Color(0xFFFFD87A) : const Color(0xFF6F5A18)),
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1360,7 +1368,7 @@ class _LaneEmpty extends StatelessWidget {
         color: _LadnaColors.cardWhite.withOpacity(0.56),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFDDD5EF),
+          color: _LadnaColors._dark ? const Color(0xFF6B54C0).withOpacity(0.72) : const Color(0xFFDDD5EF),
           width: 1.5,
           style: BorderStyle.solid,
         ),
@@ -1369,7 +1377,7 @@ class _LaneEmpty extends StatelessWidget {
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Color(0xFFAFA9C3),
+          color: _LadnaColors._dark ? const Color(0xFFC9C1EA) : const Color(0xFFAFA9C3),
           fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
@@ -1400,24 +1408,16 @@ class _TaskCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
       decoration: BoxDecoration(
-        color: done
-            ? (_LadnaColors._dark ? const Color(0xFF17392F) : null)
-            : (_LadnaColors._dark ? const Color(0xFF241C3B) : _LadnaColors.cardWhite),
+        color: done ? null : (_LadnaColors._dark ? const Color(0xFF241C3B) : _LadnaColors.cardWhite),
         gradient: done
             ? LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: _LadnaColors._dark
-                    ? [const Color(0xFF153D33), const Color(0xFF211A38)]
-                    : [_LadnaColors.mint.withOpacity(0.70), _LadnaColors.cardWhite],
+                colors: _LadnaColors._dark ? [const Color(0xFF153D33), const Color(0xFF211A38)] : [_LadnaColors.mint.withOpacity(0.70), _LadnaColors.cardWhite],
               )
             : null,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: _LadnaColors._dark
-              ? const Color(0xFF6B54C0).withOpacity(0.50)
-              : _LadnaColors.stroke,
-        ),
+        border: Border.all(color: _LadnaColors.stroke),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF6F5DB7).withOpacity(0.08),
@@ -1438,9 +1438,7 @@ class _TaskCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: done
-                        ? (_LadnaColors._dark ? const Color(0xFFE9FFF7) : _LadnaColors.text)
-                        : _LadnaColors.text,
+                    color: _LadnaColors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     height: 1.15,
@@ -1501,7 +1499,7 @@ class _TaskCard extends StatelessWidget {
                 Text(
                   _dgPick(context, ru: 'Выполнено', en: 'Completed', de: 'Erledigt', fr: 'Terminé', es: 'Completado', tr: 'Tamamlandı'),
                   style: TextStyle(
-                    color: _LadnaColors._dark ? const Color(0xFFA7F5D9) : const Color(0xFF34A475),
+                    color: Color(0xFF34A475),
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1537,24 +1535,16 @@ class _MetaPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        color: _LadnaColors._dark
-            ? const Color(0xFF33274F)
-            : const Color(0xFFF8F6FF),
+        color: _LadnaColors._dark ? const Color(0xFF2A2144) : const Color(0xFFF8F6FF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _LadnaColors._dark
-              ? const Color(0xFF7D67D8).withOpacity(0.45)
-              : _LadnaColors.strokeSoft,
-        ),
+        border: Border.all(color: _LadnaColors.strokeSoft),
       ),
       child: Text(
         text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: _LadnaColors._dark ? const Color(0xFFF4F0FF) : _LadnaColors.text,
+          color: _LadnaColors.muted,
           fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -1572,15 +1562,8 @@ class _SpherePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: done
-            ? (_LadnaColors._dark ? const Color(0xFF174D3D) : const Color(0xFFE5FAF3))
-            : (_LadnaColors._dark ? const Color(0xFF33274F) : _LadnaColors.purpleSoft),
+        color: done ? (_LadnaColors._dark ? const Color(0xFF17392F) : const Color(0xFFE5FAF3)) : _LadnaColors.purpleSoft,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: done
-              ? const Color(0xFF35C58D).withOpacity(0.45)
-              : const Color(0xFF7D67D8).withOpacity(0.45),
-        ),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 88),
@@ -1589,9 +1572,7 @@ class _SpherePill extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-          color: done
-              ? (_LadnaColors._dark ? const Color(0xFFA7F5D9) : const Color(0xFF16745A))
-              : (_LadnaColors._dark ? const Color(0xFFF4F0FF) : _LadnaColors.purple),
+          color: done ? (_LadnaColors._dark ? const Color(0xFFA7F5D9) : const Color(0xFF16745A)) : (_LadnaColors._dark ? const Color(0xFFC9C1EA) : _LadnaColors.purple),
           fontSize: 11,
             fontWeight: FontWeight.w800,
           ),
@@ -1624,9 +1605,9 @@ class _SmallActionButton extends StatelessWidget {
           height: 30,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: danger ? _LadnaColors.danger.withOpacity(0.50) : _LadnaColors.cardWhite,
+            color: danger ? _LadnaColors.danger.withOpacity(0.50) : (_LadnaColors._dark ? const Color(0xFF2A2144) : _LadnaColors.cardWhite),
             border: Border.all(
-              color: danger ? const Color(0xFFF2C5CB) : _LadnaColors.stroke,
+              color: danger ? (_LadnaColors._dark ? const Color(0xFFFF94A7).withOpacity(0.50) : const Color(0xFFF2C5CB)) : _LadnaColors.stroke,
             ),
           ),
           child: Icon(

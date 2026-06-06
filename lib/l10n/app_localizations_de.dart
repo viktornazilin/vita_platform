@@ -248,7 +248,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dayGoalsDeleteConfirmTitle => 'Ziel löschen?';
 
   @override
-  String get dayGoalsFabAddTitle => 'Ziel hinzufügen';
+  String get dayGoalsFabAddTitle => 'Aufgabe hinzufügen';
 
   @override
   String get dayGoalsFabAddSubtitle => 'Manuell erstellen';
@@ -868,7 +868,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onbPriorityMoney => 'Geld';
 
   @override
-  String get onbPriorityFamily => 'Familie';
+  String get onbPriorityFamily => 'Haushalt';
 
   @override
   String get onbPriorityGrowth => 'Wachstum';
@@ -1034,7 +1034,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get mentalWeekNoAnswers =>
-      'Für diese Woche wurden keine Antworten gefunden (für die aktuelle user_id).';
+      'Für diese Woche wurden keine Antworten gefunden.';
 
   @override
   String get mentalWeekYesNoHeader => 'Ja/Nein (Woche)';
@@ -1301,7 +1301,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lifeBlockCareer => 'Karriere';
 
   @override
-  String get lifeBlockFamily => 'Familie';
+  String get lifeBlockFamily => 'Haushalt';
 
   @override
   String get lifeBlockFinance => 'Finanzen';
@@ -2752,7 +2752,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get massDailyLifeBlockCareer => 'Karriere';
 
   @override
-  String get massDailyLifeBlockFamily => 'Familie';
+  String get massDailyLifeBlockFamily => 'Haushalt';
 
   @override
   String get massDailyLifeBlockFinance => 'Finanzen';

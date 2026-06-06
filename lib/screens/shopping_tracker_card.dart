@@ -118,7 +118,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                                   ? (isWishlist ? t.addWishlist : t.addShopping)
                                   : t.edit,
                               style: const TextStyle(
-                                fontFamily: 'Playfair Display',
+                                fontFamily: 'PlayfairDisplay',
                                 color: _LadnaColors.dark,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
@@ -184,6 +184,13 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                               icon: const Icon(Icons.event_rounded),
                               label: Text(
                                 dueDate == null ? t.dueDate : _formatDate(dueDate!),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _LadnaColors.accent,
+                                side: const BorderSide(color: _LadnaColors.border),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                               ),
                             ),
                           ),
@@ -304,7 +311,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
           trailing: IconButton(
             tooltip: t.copy,
             onPressed: basket.isEmpty ? null : _copyBasket,
-            icon: const Icon(Icons.content_copy_rounded, size: 18),
+            icon: const Icon(Icons.content_copy_rounded, size: 18, color: _LadnaColors.muted),
           ),
           loading: _loading,
           emptyText: t.noShopping,
@@ -386,6 +393,13 @@ class _ListCard extends StatelessWidget {
                 if (trailing != null) trailing!,
                 TextButton(
                   onPressed: onAdd,
+                  style: TextButton.styleFrom(
+                    foregroundColor: _LadnaColors.accent,
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
                   child: Text(actionLabel),
                 ),
               ],
@@ -456,6 +470,8 @@ class _ShoppingRow extends StatelessWidget {
           Checkbox(
             value: bought,
             activeColor: _LadnaColors.primary,
+            checkColor: Colors.white,
+            side: const BorderSide(color: _LadnaColors.border, width: 1.6),
             shape: const CircleBorder(),
             onChanged: (v) => onToggle(v ?? false),
           ),
@@ -525,13 +541,13 @@ class _SurfaceCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: _LadnaColors.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _LadnaColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.30),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -549,7 +565,7 @@ class _SheetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: _LadnaColors.surface,
+        color: _LadnaColors.surfaceLight,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: _LadnaColors.border),
         boxShadow: [
@@ -574,7 +590,7 @@ class _SheetHandle extends StatelessWidget {
       width: 42,
       height: 4,
       decoration: BoxDecoration(
-        color: _LadnaColors.dark.withOpacity(0.15),
+        color: _LadnaColors.muted.withOpacity(0.22),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -613,7 +629,7 @@ InputDecoration _inputDecoration(String label) {
   return InputDecoration(
     labelText: label,
     filled: true,
-    fillColor: _LadnaColors.surfaceLight,
+    fillColor: _LadnaColors.card,
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
       borderSide: const BorderSide(color: _LadnaColors.border),
@@ -636,12 +652,17 @@ String _formatDate(DateTime date) {
 }
 
 class _LadnaColors {
-  static const Color surface = Color(0xFFF5F3FA);
-  static const Color surfaceLight = Color(0xFFFAFAFE);
-  static const Color border = Color(0xFFE0DCF0);
+  // Ladna dark-purple palette. Keep these values const because the widget uses
+  // them inside const TextStyle / BorderSide declarations.
+  static const Color surface = Color(0xFF151126);
+  static const Color surfaceLight = Color(0xFF1C1630);
+  static const Color card = Color(0xFF211A38);
+  static const Color border = Color(0x556B54C0);
+  static const Color borderSoft = Color(0x336B54C0);
   static const Color primary = Color(0xFF6B54C0);
-  static const Color dark = Color(0xFF160E38);
-  static const Color muted = Color(0xFF9090A8);
+  static const Color accent = Color(0xFFD4E040);
+  static const Color dark = Color(0xFFF4F0FF);
+  static const Color muted = Color(0xB8D7CEF5);
 }
 
 class _ShoppingText {

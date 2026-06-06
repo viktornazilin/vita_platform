@@ -110,6 +110,18 @@ mixin GoalsRepoMixin on BaseRepo {
             'spent_hours': _asDouble(item['spent_hours'] ?? 1.0),
             'start_time': _asIsoString(item['start_time']),
             'user_goal_id': item['user_goal_id'],
+            if (item.containsKey('is_recurring'))
+              'is_recurring': item['is_recurring'] == true,
+            if (item.containsKey('recurring_group_id'))
+              'recurring_group_id': item['recurring_group_id'],
+            if (item.containsKey('recurrence_type'))
+              'recurrence_type': item['recurrence_type'],
+            if (item.containsKey('recurrence_every_n_days'))
+              'recurrence_every_n_days': item['recurrence_every_n_days'],
+            if (item.containsKey('recurrence_weekdays'))
+              'recurrence_weekdays': item['recurrence_weekdays'],
+            if (item.containsKey('recurrence_until'))
+              'recurrence_until': item['recurrence_until'],
           };
         },
       ),
@@ -328,6 +340,105 @@ mixin GoalsRepoMixin on BaseRepo {
         await addXP(20);
       }
     }
+  }
+
+
+  // =========================
+  // Recurring tasks
+  // =========================
+
+  Future<List<Map<String, dynamic>>> listRecurringTaskPlans() async {
+    final res = await client
+        .from('goals')
+        .select(
+          'id, title, description, emotion, encrypted_payload, deadline, life_block, importance, spent_hours, start_time, user_goal_id, is_recurring, recurring_group_id, recurrence_type, recurrence_every_n_days, recurrence_weekdays, recurrence_until',
+        )
+        .eq('user_id', uid)
+        .eq('is_recurring', true)
+        .order('deadline', ascending: true);
+
+    final rows = (res as List).cast<Map<String, dynamic>>();
+    final decryptedRows = await Future.wait(rows.map(_decryptGoalRow));
+
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final row in decryptedRows) {
+      final groupId = (row['recurring_group_id'] ?? '').toString().trim();
+      if (groupId.isEmpty) continue;
+      grouped.putIfAbsent(groupId, () => <Map<String, dynamic>>[]).add(row);
+    }
+
+    final result = <Map<String, dynamic>>[];
+    for (final entry in grouped.entries) {
+      final items = entry.value
+        ..sort((a, b) => _dateFromAny(a['deadline']).compareTo(_dateFromAny(b['deadline'])));
+      final first = items.first;
+      final last = items.last;
+
+      result.add(<String, dynamic>{
+        'recurring_group_id': entry.key,
+        'title': (first['title'] ?? '').toString(),
+        'description': (first['description'] ?? '').toString(),
+        'life_block': (first['life_block'] ?? 'general').toString(),
+        'importance': int.tryParse((first['importance'] ?? 2).toString()) ?? 2,
+        'emotion': (first['emotion'] ?? '').toString(),
+        'spent_hours': _asDouble(first['spent_hours'] ?? 1.0),
+        'start_time': first['start_time'],
+        'user_goal_id': first['user_goal_id'],
+        'recurrence_type': (first['recurrence_type'] ?? 'every_n_days').toString(),
+        'recurrence_every_n_days': int.tryParse((first['recurrence_every_n_days'] ?? 2).toString()) ?? 2,
+        'recurrence_weekdays': first['recurrence_weekdays'],
+        'recurrence_until': first['recurrence_until'] ?? last['deadline'],
+        'instances': items.length,
+      });
+    }
+
+    result.sort(
+      (a, b) => (a['title'] ?? '')
+          .toString()
+          .toLowerCase()
+          .compareTo((b['title'] ?? '').toString().toLowerCase()),
+    );
+
+    return result;
+  }
+
+  Future<List<Goal>> createRecurringTaskPlan(
+    List<Map<String, dynamic>> items,
+  ) {
+    return createGoalsBulk(
+      items
+          .map(
+            (item) => <String, dynamic>{
+              ...item,
+              'is_recurring': true,
+            },
+          )
+          .toList(),
+    );
+  }
+
+  Future<List<Goal>> replaceRecurringTaskPlan({
+    required String recurringGroupId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    await deleteRecurringTaskPlan(recurringGroupId);
+    return createRecurringTaskPlan(items);
+  }
+
+  Future<void> deleteRecurringTaskPlan(String recurringGroupId) async {
+    if (recurringGroupId.trim().isEmpty) return;
+
+    await client
+        .from('goals')
+        .delete()
+        .eq('user_id', uid)
+        .eq('recurring_group_id', recurringGroupId);
+  }
+
+  DateTime _dateFromAny(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   // =========================

@@ -1,6 +1,8 @@
 // lib/widgets/recurring_goal_sheet.dart
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
+import 'package:nest_app/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'nest/nest_card.dart';
@@ -36,6 +38,8 @@ class RecurringGoalPlan {
   final int everyNDays;
   final Set<int> weekdays; // DateTime.monday..DateTime.sunday
   final String? userGoalId;
+  final String recurringGroupId;
+  final bool isEditingExisting;
 
   const RecurringGoalPlan({
     required this.title,
@@ -49,19 +53,138 @@ class RecurringGoalPlan {
     required this.everyNDays,
     required this.weekdays,
     this.userGoalId,
+    required this.recurringGroupId,
+    this.isEditingExisting = false,
   });
 }
 
 class RecurringGoalSheet extends StatefulWidget {
-  const RecurringGoalSheet({super.key});
+  final List<String> availableBlocks;
+
+  const RecurringGoalSheet({
+    super.key,
+    this.availableBlocks = const [],
+  });
 
   @override
   State<RecurringGoalSheet> createState() => _RecurringGoalSheetState();
 }
 
+
+
+String _rtPick(
+  BuildContext context, {
+  required String ru,
+  required String en,
+  String? de,
+  String? fr,
+  String? es,
+  String? tr,
+}) {
+  final lang = Localizations.localeOf(context).languageCode.toLowerCase();
+  switch (lang) {
+    case 'de': return de ?? en;
+    case 'fr': return fr ?? en;
+    case 'es': return es ?? en;
+    case 'tr': return tr ?? en;
+    case 'ru': return ru;
+    default: return en;
+  }
+}
+
+class _RegularTaskTile extends StatelessWidget {
+  final _ExistingRecurringTask task;
+  final String lifeBlockLabel;
+  final VoidCallback onTap;
+  final bool isActive;
+
+  const _RegularTaskTile({
+    required this.task,
+    required this.lifeBlockLabel,
+    required this.onTap,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final typeText = task.type == RecurrenceType.weekly
+        ? _rtPick(context, ru: 'по дням недели', en: 'by weekdays', de: 'nach Wochentagen', fr: 'par jours de semaine', es: 'por días de semana', tr: 'hafta günlerine göre')
+        : _rtPick(context, ru: 'каждые ${task.everyNDays} дн.', en: 'every ${task.everyNDays} days', de: 'alle ${task.everyNDays} Tage', fr: 'tous les ${task.everyNDays} jours', es: 'cada ${task.everyNDays} días', tr: 'her ${task.everyNDays} günde bir');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isActive ? scheme.primaryContainer.withOpacity(0.45) : scheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isActive ? scheme.primary.withOpacity(0.55) : scheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.repeat_rounded, color: isActive ? scheme.primary : scheme.onSurfaceVariant, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(task.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800, color: scheme.onSurface)),
+                    const SizedBox(height: 3),
+                    Text('$lifeBlockLabel · $typeText · ${task.instances}×', maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.edit_rounded, color: scheme.onSurfaceVariant, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExistingRecurringTask {
+  final String groupId;
+  final String title;
+  final String lifeBlock;
+  final int importance;
+  final String emotion;
+  final double plannedHours;
+  final DateTime until;
+  final TimeOfDay time;
+  final RecurrenceType type;
+  final int everyNDays;
+  final Set<int> weekdays;
+  final String? userGoalId;
+  final int instances;
+
+  const _ExistingRecurringTask({
+    required this.groupId,
+    required this.title,
+    required this.lifeBlock,
+    required this.importance,
+    required this.emotion,
+    required this.plannedHours,
+    required this.until,
+    required this.time,
+    required this.type,
+    required this.everyNDays,
+    required this.weekdays,
+    this.userGoalId,
+    required this.instances,
+  });
+}
+
 class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   final _titleCtrl = TextEditingController();
   final _emotionCtrl = TextEditingController();
+  final _timeCtrl = TextEditingController(text: '09:00');
   final _supabase = Supabase.instance.client;
 
   RecurrenceType _type = RecurrenceType.everyNDays;
@@ -81,6 +204,10 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   int _importance = 2;
   double _hours = 1.0;
   String? _selectedUserGoalId;
+  String? _editingRecurringGroupId;
+
+  bool _regularLoading = false;
+  List<_ExistingRecurringTask> _regularTasks = const [];
 
   bool _loadingUserGoals = false;
   List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
@@ -89,6 +216,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRegularTasks();
       _loadUserGoalsForCurrentBlock();
     });
   }
@@ -97,6 +225,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   void dispose() {
     _titleCtrl.dispose();
     _emotionCtrl.dispose();
+    _timeCtrl.dispose();
     super.dispose();
   }
 
@@ -135,18 +264,29 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
         return 'career';
 
       case 'finance':
+      case 'finances':
       case 'финансы':
       case 'money':
       case 'financial':
-        return 'finance';
+        return 'finances';
+
+      case 'family':
+      case 'семья':
+      case 'родные':
+      case 'близкие':
+        return 'family';
 
       case 'relationships':
       case 'relationship':
       case 'relations':
       case 'отношения':
-      case 'семья':
-      case 'family':
+      case 'личная жизнь':
         return 'relationships';
+
+      case 'hobbies':
+      case 'hobby':
+      case 'хобби':
+        return 'hobbies';
 
       case 'self':
       case 'selfdevelopment':
@@ -183,27 +323,30 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   }
 
   String _lifeBlockLabel(BuildContext context, String value) {
-    final t = AppLocalizations.of(context)!;
-
     switch (_normalizeBlock(value)) {
       case 'general':
-        return t.recurringGoalLifeBlockGeneral;
+        return _rtPick(context, ru: 'Общее', en: 'General', de: 'Allgemein', fr: 'Général', es: 'General', tr: 'Genel');
       case 'health':
-        return t.recurringGoalLifeBlockHealth;
+        return _rtPick(context, ru: 'Здоровье', en: 'Health', de: 'Gesundheit', fr: 'Santé', es: 'Salud', tr: 'Sağlık');
       case 'career':
-        return t.recurringGoalLifeBlockCareer;
+        return _rtPick(context, ru: 'Карьера', en: 'Career', de: 'Karriere', fr: 'Carrière', es: 'Carrera', tr: 'Kariyer');
       case 'finance':
-        return t.recurringGoalLifeBlockFinance;
+      case 'finances':
+        return _rtPick(context, ru: 'Финансы', en: 'Finance', de: 'Finanzen', fr: 'Finances', es: 'Finanzas', tr: 'Finans');
+      case 'family':
+        return _rtPick(context, ru: 'Дом и быт', en: 'Household', de: 'Haushalt', fr: 'Foyer', es: 'Hogar', tr: 'Ev ve yaşam');
       case 'relationships':
-        return t.recurringGoalLifeBlockRelationships;
+        return _rtPick(context, ru: 'Отношения', en: 'Relationships', de: 'Beziehungen', fr: 'Relations', es: 'Relaciones', tr: 'İlişkiler');
+      case 'hobbies':
+        return _rtPick(context, ru: 'Хобби', en: 'Hobbies', de: 'Hobbys', fr: 'Loisirs', es: 'Aficiones', tr: 'Hobiler');
       case 'self':
-        return t.recurringGoalLifeBlockSelf;
+        return _rtPick(context, ru: 'Саморазвитие', en: 'Self-development', de: 'Selbstentwicklung', fr: 'Développement personnel', es: 'Desarrollo personal', tr: 'Kişisel gelişim');
       case 'education':
-        return t.recurringGoalLifeBlockEducation;
+        return _rtPick(context, ru: 'Образование', en: 'Education', de: 'Bildung', fr: 'Éducation', es: 'Educación', tr: 'Eğitim');
       case 'travel':
-        return t.recurringGoalLifeBlockTravel;
+        return _rtPick(context, ru: 'Путешествия', en: 'Travel', de: 'Reisen', fr: 'Voyages', es: 'Viajes', tr: 'Seyahat');
       case 'home':
-        return t.recurringGoalLifeBlockHome;
+        return _rtPick(context, ru: 'Дом', en: 'Home', de: 'Zuhause', fr: 'Maison', es: 'Hogar', tr: 'Ev');
       default:
         return value;
     }
@@ -222,6 +365,142 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
       default:
         return value;
     }
+  }
+
+
+  String _newRecurringGroupId() {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    return 'rec_$now';
+  }
+
+  List<String> get _lifeBlockOptions {
+    final seen = <String>{};
+    final out = <String>[];
+
+    for (final raw in widget.availableBlocks) {
+      final normalized = _normalizeBlock(raw);
+      if (normalized.isEmpty || normalized == 'all') continue;
+      if (seen.add(normalized)) out.add(normalized);
+    }
+
+    if (out.isEmpty) {
+      out.addAll(const ['health', 'career', 'family', 'education', 'hobbies', 'relationships']);
+    }
+
+    if (!out.contains(_lifeBlock)) out.insert(0, _lifeBlock);
+    return out;
+  }
+
+  TimeOfDay _timeFromDynamic(dynamic value) {
+    if (value is DateTime) return TimeOfDay(hour: value.hour, minute: value.minute);
+    final raw = (value ?? '').toString();
+    final match = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(raw);
+    if (match == null) return _time;
+    final h = int.tryParse(match.group(1) ?? '') ?? 9;
+    final m = int.tryParse(match.group(2) ?? '') ?? 0;
+    return TimeOfDay(hour: h.clamp(0, 23), minute: m.clamp(0, 59));
+  }
+
+  DateTime _dateFromDynamic(dynamic value, DateTime fallback) {
+    if (value is DateTime) return _dateOnly(value);
+    final parsed = DateTime.tryParse((value ?? '').toString());
+    return parsed == null ? _dateOnly(fallback) : _dateOnly(parsed);
+  }
+
+  Set<int> _weekdaysFromDynamic(dynamic value) {
+    if (value is List) {
+      final set = value.map((e) => int.tryParse(e.toString()) ?? 0).where((e) => e >= 1 && e <= 7).toSet();
+      return set.isEmpty ? {_dateOnly(DateTime.now()).weekday} : set;
+    }
+    return {_dateOnly(DateTime.now()).weekday};
+  }
+
+  Future<void> _loadRegularTasks() async {
+    setState(() => _regularLoading = true);
+
+    try {
+      final raw = await dbRepo.listRecurringTaskPlans();
+
+      final tasks = raw.map((row) {
+        final recurrenceType = (row['recurrence_type'] ?? '').toString();
+        final groupId = (row['recurring_group_id'] ?? '').toString().trim();
+        final title = (row['title'] ?? '').toString().trim();
+
+        if (groupId.isEmpty || title.isEmpty) return null;
+
+        return _ExistingRecurringTask(
+          groupId: groupId,
+          title: title,
+          lifeBlock: _normalizeBlock((row['life_block'] ?? 'general').toString()),
+          importance: int.tryParse((row['importance'] ?? 2).toString()) ?? 2,
+          emotion: (row['emotion'] ?? '').toString(),
+          plannedHours: double.tryParse((row['spent_hours'] ?? 1).toString()) ?? 1.0,
+          until: _dateFromDynamic(row['recurrence_until'], DateTime.now().add(const Duration(days: 14))),
+          time: _timeFromDynamic(row['start_time']),
+          type: recurrenceType == 'weekly' ? RecurrenceType.weekly : RecurrenceType.everyNDays,
+          everyNDays: int.tryParse((row['recurrence_every_n_days'] ?? 2).toString()) ?? 2,
+          weekdays: _weekdaysFromDynamic(row['recurrence_weekdays']),
+          userGoalId: (row['user_goal_id'] ?? '').toString().trim().isEmpty
+              ? null
+              : (row['user_goal_id'] ?? '').toString(),
+          instances: int.tryParse((row['instances'] ?? 0).toString()) ?? 0,
+        );
+      }).whereType<_ExistingRecurringTask>().toList()
+        ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+
+      if (!mounted) return;
+      setState(() {
+        _regularTasks = tasks;
+        _regularLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Recurring task templates load failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _regularTasks = const [];
+        _regularLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadExisting(_ExistingRecurringTask task) async {
+    setState(() {
+      _editingRecurringGroupId = task.groupId;
+      _titleCtrl.text = task.title;
+      _emotionCtrl.text = task.emotion;
+      _lifeBlock = task.lifeBlock;
+      _importance = task.importance.clamp(1, 3);
+      _hours = task.plannedHours.clamp(0.25, 24.0);
+      _until = task.until;
+      _time = task.time;
+      _timeCtrl.text = _formatTime(task.time);
+      _type = task.type;
+      _everyNDays = task.everyNDays.clamp(1, 14);
+      _weekdays = {...task.weekdays};
+      _selectedUserGoalId = task.userGoalId;
+      _userGoalsForSelectedBlock = const [];
+    });
+    await _loadUserGoalsForCurrentBlock();
+  }
+
+  void _clearEditing() {
+    setState(() {
+      _editingRecurringGroupId = null;
+      _titleCtrl.clear();
+      _emotionCtrl.clear();
+      _type = RecurrenceType.everyNDays;
+      _everyNDays = 2;
+      _weekdays = {DateTime.monday, DateTime.wednesday, DateTime.friday};
+      _time = const TimeOfDay(hour: 9, minute: 0);
+      _timeCtrl.text = '09:00';
+      _until = _dateOnly(DateTime.now().add(const Duration(days: 14)));
+      _lifeBlock = _lifeBlockOptions.first;
+      _importance = 2;
+      _hours = 1.0;
+      _selectedUserGoalId = null;
+      _userGoalsForSelectedBlock = const [];
+    });
+    _loadUserGoalsForCurrentBlock();
   }
 
   Future<void> _loadUserGoalsForCurrentBlock() async {
@@ -297,21 +576,79 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
     }
   }
 
-  Future<void> _pickTime() async {
-    final t = await showTimePicker(
-      context: context,
-      initialTime: _time,
-    );
-    if (t != null) {
-      setState(() => _time = t);
+  String _formatTime(TimeOfDay value) =>
+      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
+  TimeOfDay? _parseTimeInput(String raw) {
+    var v = raw.trim().replaceAll('.', ':').replaceAll(' ', '');
+    if (v.isEmpty) return null;
+
+    int? hour;
+    int minute = 0;
+
+    if (v.contains(':')) {
+      final parts = v.split(':');
+      if (parts.isEmpty || parts.length > 2) return null;
+      hour = int.tryParse(parts[0]);
+      minute = parts.length == 2 && parts[1].isNotEmpty
+          ? int.tryParse(parts[1]) ?? -1
+          : 0;
+    } else {
+      final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty || digits.length > 4) return null;
+
+      if (digits.length <= 2) {
+        hour = int.tryParse(digits);
+      } else {
+        final padded = digits.padLeft(4, '0');
+        hour = int.tryParse(padded.substring(0, padded.length - 2));
+        minute = int.tryParse(padded.substring(padded.length - 2)) ?? -1;
+      }
     }
+
+    if (hour == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return null;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
   }
+
+  void _onTimeChanged(String raw) {
+    final parsed = _parseTimeInput(raw);
+    if (parsed == null) return;
+    setState(() => _time = parsed);
+  }
+
+  void _commitTimeInput() {
+    final parsed = _parseTimeInput(_timeCtrl.text);
+    if (parsed == null) {
+      _timeCtrl.text = _formatTime(_time);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(_timeErrorText(context))),
+      );
+      return;
+    }
+
+    setState(() {
+      _time = parsed;
+      _timeCtrl.text = _formatTime(parsed);
+    });
+  }
+
+  String _timeErrorText(BuildContext context) => _rtPick(
+        context,
+        ru: 'Введите время в формате 09:30 или 930',
+        en: 'Enter time as 09:30 or 930',
+        de: 'Zeit als 09:30 oder 930 eingeben',
+        fr: 'Saisis l’heure comme 09:30 ou 930',
+        es: 'Introduce la hora como 09:30 o 930',
+        tr: 'Saati 09:30 veya 930 olarak gir',
+      );
 
   String _fmtDate(DateTime d) =>
       MaterialLocalizations.of(context).formatMediumDate(d);
 
-  String _fmtTime(TimeOfDay t) =>
-      MaterialLocalizations.of(context).formatTimeOfDay(t);
+  String _fmtTime(TimeOfDay t) => _formatTime(t);
 
   String _weekdayLabel(BuildContext context, int weekday) {
     final t = AppLocalizations.of(context)!;
@@ -423,6 +760,8 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
         everyNDays: _everyNDays,
         weekdays: _weekdays,
         userGoalId: _selectedUserGoalId,
+        recurringGroupId: _editingRecurringGroupId ?? _newRecurringGroupId(),
+        isEditingExisting: _editingRecurringGroupId != null,
       ),
     );
   }
@@ -495,7 +834,7 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        t.recurringGoalTitle,
+                        _rtPick(context, ru: 'Регулярная задача', en: 'Recurring task', de: 'Regelmäßige Aufgabe', fr: 'Tâche régulière', es: 'Tarea recurrente', tr: 'Tekrarlanan görev'),
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: scheme.onSurface,
@@ -507,14 +846,53 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  t.recurringGoalSubtitle,
+                  _rtPick(context, ru: 'Настрой регулярную задачу. Это не цель, а повторяющаяся задача в дневной раскладке.', en: 'Set up a recurring task. This is not a goal, but a repeated task in the daily layout.', de: 'Richte eine regelmäßige Aufgabe ein. Das ist kein Ziel, sondern eine wiederkehrende Aufgabe in der Tagesplanung.', fr: 'Configure une tâche régulière. Ce n’est pas un objectif, mais une tâche répétée dans la journée.', es: 'Configura una tarea recurrente. No es un objetivo, sino una tarea repetida en la planificación diaria.', tr: 'Tekrarlanan bir görev ayarla. Bu bir hedef değil, günlük plandaki tekrar eden bir görevdir.'),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                NestSectionTitle(t.recurringGoalDetailsSection),
+                NestSectionTitle(_rtPick(context, ru: 'Мои регулярные задачи', en: 'My recurring tasks', de: 'Meine regelmäßigen Aufgaben', fr: 'Mes tâches régulières', es: 'Mis tareas recurrentes', tr: 'Tekrarlanan görevlerim')),
+                NestCard(
+                  padding: const EdgeInsets.all(16),
+                  child: _regularLoading
+                      ? const Center(child: Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator()))
+                      : _regularTasks.isEmpty
+                          ? Text(
+                              _rtPick(context, ru: 'Пока нет регулярных задач. Создай первую ниже.', en: 'No recurring tasks yet. Create the first one below.', de: 'Noch keine regelmäßigen Aufgaben. Erstelle unten die erste.', fr: 'Aucune tâche régulière pour le moment. Crée la première ci-dessous.', es: 'Aún no hay tareas recurrentes. Crea la primera abajo.', tr: 'Henüz tekrarlanan görev yok. İlkini aşağıda oluştur.'),
+                              style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                            )
+                          : Column(
+                              children: [
+                                for (final task in _regularTasks) ...[
+                                  _RegularTaskTile(
+                                    task: task,
+                                    lifeBlockLabel: _lifeBlockLabel(context, task.lifeBlock),
+                                    onTap: () => _loadExisting(task),
+                                    isActive: task.groupId == _editingRecurringGroupId,
+                                  ),
+                                  if (task != _regularTasks.last) const SizedBox(height: 8),
+                                ],
+                                if (_editingRecurringGroupId != null) ...[
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: TextButton.icon(
+                                      onPressed: _clearEditing,
+                                      icon: const Icon(Icons.add_rounded),
+                                      label: Text(_rtPick(context, ru: 'Создать новую регулярную задачу', en: 'Create a new recurring task', de: 'Neue regelmäßige Aufgabe erstellen', fr: 'Créer une nouvelle tâche régulière', es: 'Crear una nueva tarea recurrente', tr: 'Yeni tekrarlanan görev oluştur')),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                ),
+                const SizedBox(height: 12),
+
+                NestSectionTitle(_editingRecurringGroupId == null
+                    ? _rtPick(context, ru: 'Добавить регулярную задачу', en: 'Add recurring task', de: 'Regelmäßige Aufgabe hinzufügen', fr: 'Ajouter une tâche régulière', es: 'Añadir tarea recurrente', tr: 'Tekrarlanan görev ekle')
+                    : _rtPick(context, ru: 'Редактировать регулярную задачу', en: 'Edit recurring task', de: 'Regelmäßige Aufgabe bearbeiten', fr: 'Modifier la tâche régulière', es: 'Editar tarea recurrente', tr: 'Tekrarlanan görevi düzenle')),
                 NestCard(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -524,8 +902,8 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                         controller: _titleCtrl,
                         textInputAction: TextInputAction.next,
                         decoration: _input(
-                          label: t.recurringGoalTitleLabel,
-                          hint: t.recurringGoalTitleHint,
+                          label: _rtPick(context, ru: 'Название задачи', en: 'Task title', de: 'Aufgabentitel', fr: 'Titre de la tâche', es: 'Título de la tarea', tr: 'Görev başlığı'),
+                          hint: _rtPick(context, ru: 'Например: приготовление еды', en: 'For example: meal prep', de: 'Zum Beispiel: Essen vorbereiten', fr: 'Par exemple : préparer le repas', es: 'Por ejemplo: preparar comida', tr: 'Örneğin: yemek hazırlama'),
                           icon: Icons.flag_outlined,
                         ),
                       ),
@@ -634,10 +1012,19 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                       Row(
                         children: [
                           Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _pickTime,
-                              icon: const Icon(Icons.schedule_rounded),
-                              label: Text(t.recurringGoalTimeButton(_fmtTime(_time))),
+                            child: _TimeTextField(
+                              controller: _timeCtrl,
+                              label: _rtPick(
+                                context,
+                                ru: 'Время',
+                                en: 'Time',
+                                de: 'Zeit',
+                                fr: 'Heure',
+                                es: 'Hora',
+                                tr: 'Saat',
+                              ),
+                              onChanged: _onTimeChanged,
+                              onEditingComplete: _commitTimeInput,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -661,86 +1048,77 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: _lifeBlock,
-                              decoration: _input(
-                                label: t.recurringGoalLifeBlockLabel,
-                                icon: Icons.grid_view_rounded,
-                              ),
-                              items: [
-                                DropdownMenuItem(
-                                  value: 'health',
-                                  child: Text(t.recurringGoalLifeBlockHealth),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'career',
-                                  child: Text(t.recurringGoalLifeBlockCareer),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'finance',
-                                  child: Text(t.recurringGoalLifeBlockFinance),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'relationships',
-                                  child: Text(t.recurringGoalLifeBlockRelationships),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'self',
-                                  child: Text(t.recurringGoalLifeBlockSelf),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'education',
-                                  child: Text(t.recurringGoalLifeBlockEducation),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'travel',
-                                  child: Text(t.recurringGoalLifeBlockTravel),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'home',
-                                  child: Text(t.recurringGoalLifeBlockHome),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'general',
-                                  child: Text(t.recurringGoalLifeBlockGeneral),
-                                ),
-                              ],
-                              onChanged: (v) async {
-                                final next = _normalizeBlock(v ?? 'general');
-                                if (next == _lifeBlock) return;
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final narrow = constraints.maxWidth < 430;
 
-                                setState(() {
-                                  _lifeBlock = next;
-                                  _selectedUserGoalId = null;
-                                  _userGoalsForSelectedBlock = const [];
-                                });
+                          final lifeBlockField = DropdownButtonFormField<String>(
+                            value: _lifeBlock,
+                            isExpanded: true,
+                            decoration: _input(
+                              label: t.recurringGoalLifeBlockLabel,
+                              icon: Icons.grid_view_rounded,
+                            ),
+                            items: _lifeBlockOptions
+                                .map(
+                                  (block) => DropdownMenuItem(
+                                    value: block,
+                                    child: Text(
+                                      _lifeBlockLabel(context, block),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) async {
+                              final next = _normalizeBlock(v ?? 'general');
+                              if (next == _lifeBlock) return;
 
-                                await _loadUserGoalsForCurrentBlock();
-                              },
+                              setState(() {
+                                _lifeBlock = next;
+                                _selectedUserGoalId = null;
+                                _userGoalsForSelectedBlock = const [];
+                              });
+
+                              await _loadUserGoalsForCurrentBlock();
+                            },
+                          );
+
+                          final importanceField = DropdownButtonFormField<int>(
+                            value: _importance,
+                            isExpanded: true,
+                            decoration: _input(
+                              label: t.recurringGoalImportanceLabel,
+                              icon: Icons.local_fire_department_rounded,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: _importance,
-                              decoration: _input(
-                                label: t.recurringGoalImportanceLabel,
-                                icon: Icons.local_fire_department_rounded,
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 1, child: Text('1')),
-                                DropdownMenuItem(value: 2, child: Text('2')),
-                                DropdownMenuItem(value: 3, child: Text('3')),
+                            items: const [
+                              DropdownMenuItem(value: 1, child: Text('1')),
+                              DropdownMenuItem(value: 2, child: Text('2')),
+                              DropdownMenuItem(value: 3, child: Text('3')),
+                            ],
+                            onChanged: (v) {
+                              setState(() => _importance = v ?? 2);
+                            },
+                          );
+
+                          if (narrow) {
+                            return Column(
+                              children: [
+                                lifeBlockField,
+                                const SizedBox(height: 12),
+                                importanceField,
                               ],
-                              onChanged: (v) {
-                                setState(() => _importance = v ?? 2);
-                              },
-                            ),
-                          ),
-                        ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(child: lifeBlockField),
+                              const SizedBox(width: 12),
+                              Expanded(child: importanceField),
+                            ],
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 12),
@@ -892,7 +1270,11 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                     Expanded(
                       child: FilledButton(
                         onPressed: _submit,
-                        child: Text(t.recurringGoalCreate),
+                        child: Text(
+                          _editingRecurringGroupId == null
+                              ? _rtPick(context, ru: 'Создать задачу', en: 'Create task', de: 'Aufgabe erstellen', fr: 'Créer la tâche', es: 'Crear tarea', tr: 'Görev oluştur')
+                              : _rtPick(context, ru: 'Сохранить изменения', en: 'Save changes', de: 'Änderungen speichern', fr: 'Enregistrer', es: 'Guardar cambios', tr: 'Değişiklikleri kaydet'),
+                        ),
                       ),
                     ),
                   ],
@@ -903,6 +1285,320 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _TimeTextField extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onEditingComplete;
+
+  const _TimeTextField({
+    required this.controller,
+    required this.label,
+    required this.onChanged,
+    required this.onEditingComplete,
+  });
+
+  @override
+  State<_TimeTextField> createState() => __TimeTextFieldState();
+}
+
+class __TimeTextFieldState extends State<_TimeTextField> {
+  bool _expanded = false;
+  late FixedExtentScrollController _hourController;
+  late FixedExtentScrollController _minuteController;
+
+  @override
+  void initState() {
+    super.initState();
+    final value = _currentValue();
+    _hourController = FixedExtentScrollController(initialItem: value.hour);
+    _minuteController = FixedExtentScrollController(initialItem: value.minute);
+  }
+
+  @override
+  void dispose() {
+    _hourController.dispose();
+    _minuteController.dispose();
+    super.dispose();
+  }
+
+  TimeOfDay _currentValue() {
+    final raw = widget.controller.text.trim().replaceAll('.', ':');
+    final parts = raw.split(':');
+
+    if (parts.length == 2) {
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour != null &&
+          minute != null &&
+          hour >= 0 &&
+          hour <= 23 &&
+          minute >= 0 &&
+          minute <= 59) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length == 3 || digits.length == 4) {
+      final padded = digits.padLeft(4, '0');
+      final hour = int.tryParse(padded.substring(0, 2));
+      final minute = int.tryParse(padded.substring(2, 4));
+      if (hour != null &&
+          minute != null &&
+          hour >= 0 &&
+          hour <= 23 &&
+          minute >= 0 &&
+          minute <= 59) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+
+    return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  String _format(int hour, int minute) {
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+  String _wheelLabel(BuildContext context, {required bool hours}) {
+    if (hours) {
+      return _rtPick(
+        context,
+        ru: 'Часы',
+        en: 'Hours',
+        de: 'Stunden',
+        fr: 'Heures',
+        es: 'Horas',
+        tr: 'Saat',
+      );
+    }
+
+    return _rtPick(
+      context,
+      ru: 'Минуты',
+      en: 'Minutes',
+      de: 'Minuten',
+      fr: 'Minutes',
+      es: 'Minutos',
+      tr: 'Dakika',
+    );
+  }
+
+  void _setTime({int? hour, int? minute}) {
+    final current = _currentValue();
+    final nextHour = hour ?? current.hour;
+    final nextMinute = minute ?? current.minute;
+    final formatted = _format(nextHour, nextMinute);
+
+    widget.controller.text = formatted;
+    widget.onChanged(formatted);
+    widget.onEditingComplete();
+    setState(() {});
+  }
+
+  void _syncWheelToCurrentValue() {
+    final value = _currentValue();
+    if (_hourController.hasClients) {
+      _hourController.jumpToItem(value.hour);
+    }
+    if (_minuteController.hasClients) {
+      _minuteController.jumpToItem(value.minute);
+    }
+  }
+
+  Widget _wheelColumn({
+    required BuildContext context,
+    required String title,
+    required FixedExtentScrollController controller,
+    required int itemCount,
+    required ValueChanged<int> onSelectedItemChanged,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w900,
+          color: scheme.onSurface,
+        );
+
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: scheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 116,
+            child: CupertinoPicker(
+              scrollController: controller,
+              itemExtent: 34,
+              magnification: 1.08,
+              squeeze: 1.08,
+              useMagnifier: true,
+              selectionOverlay: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: scheme.primary.withOpacity(0.18),
+                  ),
+                ),
+              ),
+              onSelectedItemChanged: onSelectedItemChanged,
+              children: List.generate(
+                itemCount,
+                (i) => Center(
+                  child: Text(
+                    i.toString().padLeft(2, '0'),
+                    style: textStyle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final value = _currentValue();
+    final display = _format(value.hour, value.minute);
+
+    final field = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          setState(() => _expanded = !_expanded);
+          WidgetsBinding.instance.addPostFrameCallback((_) => _syncWheelToCurrentValue());
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: widget.label,
+            hintText: '09:00',
+            prefixIcon: Icon(
+              Icons.schedule_rounded,
+              size: 18,
+              color: scheme.primary,
+            ),
+            suffixIcon: AnimatedRotation(
+              turns: _expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: Icon(
+                Icons.expand_more_rounded,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            filled: true,
+            fillColor: isDark
+                ? scheme.surfaceContainerHighest.withOpacity(0.36)
+                : Colors.white.withOpacity(0.78),
+            labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+            hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant.withOpacity(0.70),
+                ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: scheme.outlineVariant.withOpacity(0.60),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: scheme.outlineVariant.withOpacity(0.55),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: scheme.primary, width: 1.4),
+            ),
+          ),
+          child: Text(
+            display,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: scheme.onSurface,
+                ),
+          ),
+        ),
+      ),
+    );
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          field,
+          if (_expanded) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? scheme.surfaceContainerHighest.withOpacity(0.26)
+                    : Colors.white.withOpacity(0.58),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: scheme.outlineVariant.withOpacity(0.45),
+                ),
+              ),
+              child: Row(
+                children: [
+                  _wheelColumn(
+                    context: context,
+                    title: _wheelLabel(context, hours: true),
+                    controller: _hourController,
+                    itemCount: 24,
+                    onSelectedItemChanged: (i) => _setTime(hour: i),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 22),
+                    child: Text(
+                      ':',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: scheme.onSurface,
+                          ),
+                    ),
+                  ),
+                  _wheelColumn(
+                    context: context,
+                    title: _wheelLabel(context, hours: false),
+                    controller: _minuteController,
+                    itemCount: 60,
+                    onSelectedItemChanged: (i) => _setTime(minute: i),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

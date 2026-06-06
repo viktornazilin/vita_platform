@@ -1336,9 +1336,37 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
     super.initState();
     _title = TextEditingController(text: widget.initial?.title ?? '');
     _description = TextEditingController(text: widget.initial?.description ?? '');
-    _block = widget.initial?.lifeBlock ??
-        (widget.availableBlocks.isNotEmpty ? widget.availableBlocks.first : 'career');
+
+    final blocks = _availableLifeBlocks;
+    final initialBlock = widget.initial?.lifeBlock;
+    if (initialBlock != null && initialBlock.trim().isNotEmpty) {
+      _block = _normalizeLifeBlock(initialBlock);
+    } else {
+      _block = blocks.isNotEmpty ? blocks.first : 'general';
+    }
+
     _horizon = widget.initial?.horizon ?? GoalHorizon.mid;
+  }
+
+  List<String> get _availableLifeBlocks {
+    final seen = <String>{};
+    final out = <String>[];
+
+    for (final raw in widget.availableBlocks) {
+      final normalized = _normalizeLifeBlock(raw);
+      if (normalized.isEmpty || normalized == 'all') continue;
+      if (seen.add(normalized)) out.add(normalized);
+    }
+
+    final initialBlock = widget.initial?.lifeBlock;
+    if (initialBlock != null && initialBlock.trim().isNotEmpty) {
+      final normalized = _normalizeLifeBlock(initialBlock);
+      if (normalized.isNotEmpty && normalized != 'all' && seen.add(normalized)) {
+        out.insert(0, normalized);
+      }
+    }
+
+    return out.isEmpty ? <String>['general'] : out;
   }
 
   @override
@@ -1371,7 +1399,7 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final text = _GoalsText.of(context);
-    final blocks = widget.availableBlocks.isEmpty ? const ['career', 'finance', 'education', 'family'] : widget.availableBlocks;
+    final blocks = _availableLifeBlocks;
 
     return _Sheet(
       child: Column(
@@ -1391,11 +1419,12 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
             spacing: 8,
             runSpacing: 8,
             children: blocks.map((b) {
-              final selected = b == _block;
+              final normalized = _normalizeLifeBlock(b);
+              final selected = normalized == _block;
               return _Chip(
-                label: _lifeBlockLabel(context, b),
+                label: _lifeBlockLabel(context, normalized),
                 selected: selected,
-                onTap: () => setState(() => _block = b),
+                onTap: () => setState(() => _block = normalized),
               );
             }).toList(),
           ),
@@ -1768,9 +1797,116 @@ String _weekdayShort(BuildContext context, DateTime date) {
   return (map[l] ?? en)[date.weekday - 1];
 }
 
+String _normalizeLifeBlock(String value) {
+  var v = value.trim().toLowerCase();
+
+  if (v.contains('.')) {
+    final last = v.split('.').last.trim();
+    if (last.isNotEmpty) v = last;
+  }
+
+  v = v
+      .replaceAll('_', '-')
+      .replaceAll('–', '-')
+      .replaceAll('—', '-')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  switch (v) {
+    case '':
+      return 'general';
+
+    case 'general':
+    case 'общий':
+    case 'общее':
+    case 'общие':
+    case 'без категории':
+      return 'general';
+
+    case 'health':
+    case 'здоровье':
+    case 'healthcare':
+    case 'wellbeing':
+    case 'well-being':
+    case 'sport':
+    case 'спорт':
+      return 'health';
+
+    case 'career':
+    case 'карьера':
+    case 'работа':
+    case 'job':
+    case 'work':
+    case 'business':
+    case 'бизнес':
+      return 'career';
+
+    case 'finance':
+    case 'finances':
+    case 'финансы':
+    case 'money':
+    case 'financial':
+      return 'finances';
+
+    case 'family':
+    case 'семья':
+    case 'родные':
+    case 'близкие':
+    case 'household':
+    case 'house':
+    case 'дом и быт':
+      return 'family';
+
+    case 'relationships':
+    case 'relationship':
+    case 'relations':
+    case 'отношения':
+    case 'личная жизнь':
+      return 'relationships';
+
+    case 'hobbies':
+    case 'hobby':
+    case 'хобби':
+      return 'hobbies';
+
+    case 'spirituality':
+    case 'духовность':
+      return 'spirituality';
+
+    case 'self':
+    case 'selfdevelopment':
+    case 'self-development':
+    case 'personal':
+    case 'personal growth':
+    case 'личное':
+    case 'саморазвитие':
+      return 'self';
+
+    case 'education':
+    case 'learning':
+    case 'study':
+    case 'учеба':
+    case 'учёба':
+    case 'образование':
+      return 'education';
+
+    case 'travel':
+    case 'путешествия':
+    case 'traveling':
+      return 'travel';
+
+    case 'home':
+    case 'дом':
+      return 'home';
+
+    default:
+      return v;
+  }
+}
+
 String _lifeBlockLabel(BuildContext context, String key) {
   final text = _GoalsText.of(context);
-  switch (key.trim().toLowerCase()) {
+  switch (_normalizeLifeBlock(key)) {
     case 'health':
       return text.health;
     case 'career':
@@ -1778,12 +1914,22 @@ String _lifeBlockLabel(BuildContext context, String key) {
     case 'family':
       return text.family;
     case 'finance':
+    case 'finances':
       return text.finance;
     case 'education':
       return text.education;
     case 'hobbies':
-    case 'hobby':
       return text.hobbies;
+    case 'relationships':
+      return text.relationships;
+    case 'spirituality':
+      return text.spirituality;
+    case 'self':
+      return text.selfDevelopment;
+    case 'travel':
+      return text.travel;
+    case 'home':
+      return text.homeBlock;
     case 'general':
       return text.general;
     default:
@@ -1803,7 +1949,7 @@ String _horizonLabel(_GoalsText text, GoalHorizon horizon) {
 }
 
 Color _blockColor(String key) {
-  switch (key.trim().toLowerCase()) {
+  switch (_normalizeLifeBlock(key)) {
     case 'career':
       return _LadnaColors.coral;
     case 'finance':
@@ -1950,7 +2096,7 @@ class _GoalsText {
   String get upToSixMonths => pick({'ru':'До 6 мес','en':'Up to 6 mo','de':'Bis 6 Mon.','fr':'Jusq. 6 mois','es':'Hasta 6 meses','tr':'6 aya kadar'});
   String get yearPlus => pick({'ru':'На год+','en':'Year+','de':'1 Jahr+','fr':'1 an+','es':'Año+','tr':'1 yıl+'});
   String get bySpheres => pick({'ru':'По сферам','en':'By spheres','de':'Nach Bereichen','fr':'Par domaines','es':'Por áreas','tr':'Alanlara göre'});
-  String get hide => pick({'ru':'Скрыть','en':'Hide','de':'Ausblenden','fr':'Masquer','es':'Ocultar','tr':'Gizle'});
+  String get hide => pick({'ru':'','en':'','de':'','fr':'','es':'','tr':''});
   String get progress => pick({'ru':'Прогресс','en':'Progress','de':'Fortschritt','fr':'Progrès','es':'Progreso','tr':'İlerleme'});
   String get add => pick({'ru':'Добавить','en':'Add','de':'Hinzufügen','fr':'Ajouter','es':'Añadir','tr':'Ekle'});
   String get home => pick({'ru':'Главная','en':'Home','de':'Start','fr':'Accueil','es':'Inicio','tr':'Ana'});
@@ -1959,10 +2105,15 @@ class _GoalsText {
   String get reports => pick({'ru':'Отчёты','en':'Reports','de':'Berichte','fr':'Rapports','es':'Informes','tr':'Raporlar'});
   String get health => pick({'ru':'Здоровье','en':'Health','de':'Gesundheit','fr':'Santé','es':'Salud','tr':'Sağlık'});
   String get career => pick({'ru':'Карьера','en':'Career','de':'Karriere','fr':'Carrière','es':'Carrera','tr':'Kariyer'});
-  String get family => pick({'ru':'Семья','en':'Family','de':'Familie','fr':'Famille','es':'Familia','tr':'Aile'});
+  String get family => pick({'ru':'Дом и быт','en':'Household','de':'Haushalt','fr':'Foyer','es':'Hogar','tr':'Ev ve yaşam'});
   String get finance => pick({'ru':'Финансы','en':'Finance','de':'Finanzen','fr':'Finance','es':'Finanzas','tr':'Finans'});
   String get education => pick({'ru':'Образование','en':'Education','de':'Bildung','fr':'Éducation','es':'Educación','tr':'Eğitim'});
   String get hobbies => pick({'ru':'Хобби','en':'Hobbies','de':'Hobbys','fr':'Loisirs','es':'Aficiones','tr':'Hobiler'});
+  String get relationships => pick({'ru':'Отношения','en':'Relationships','de':'Beziehungen','fr':'Relations','es':'Relaciones','tr':'İlişkiler'});
+  String get spirituality => pick({'ru':'Духовность','en':'Spirituality','de':'Spiritualität','fr':'Spiritualité','es':'Espiritualidad','tr':'Maneviyat'});
+  String get selfDevelopment => pick({'ru':'Саморазвитие','en':'Self-development','de':'Selbstentwicklung','fr':'Développement personnel','es':'Desarrollo personal','tr':'Kişisel gelişim'});
+  String get travel => pick({'ru':'Путешествия','en':'Travel','de':'Reisen','fr':'Voyages','es':'Viajes','tr':'Seyahat'});
+  String get homeBlock => pick({'ru':'Дом','en':'Home','de':'Zuhause','fr':'Maison','es':'Hogar','tr':'Ev'});
   String get general => pick({'ru':'Общее','en':'General','de':'Allgemein','fr':'Général','es':'General','tr':'Genel'});
   String get noGoalsYet => pick({'ru':'Целей пока нет','en':'No goals yet','de':'Noch keine Ziele','fr':'Aucun objectif','es':'Sin metas todavía','tr':'Henüz hedef yok'});
   String get noGoalsYetSub => pick({'ru':'Добавь первую цель через кнопку ниже.','en':'Add your first goal with the button below.','de':'Füge unten dein erstes Ziel hinzu.','fr':'Ajoute ton premier objectif avec le bouton ci-dessous.','es':'Añade tu primera meta con el botón inferior.','tr':'Aşağıdaki düğmeyle ilk hedefini ekle.'});

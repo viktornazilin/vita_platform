@@ -1,5 +1,6 @@
 // lib/screens/profile/profile_view.dart
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -149,6 +150,8 @@ class _ProfilePage extends StatelessWidget {
             onAction: () => _editLifeBlocks(context, model),
             children: blocks.map((b) => ProfileUi.blockLabel(context, b)).toList(),
           ),
+          const SizedBox(height: 12),
+          _LifeBalanceCard(blocks: blocks),
           const SizedBox(height: 16),
           _SectionLabel(t.habits),
           const _HabitsPreviewCard(),
@@ -549,8 +552,711 @@ class _NotificationSettingsCardState extends State<_NotificationSettingsCard> {
   }
 }
 
+
+class _LifeBalanceCard extends StatefulWidget {
+  const _LifeBalanceCard({required this.blocks});
+
+  final List<String> blocks;
+
+  @override
+  State<_LifeBalanceCard> createState() => _LifeBalanceCardState();
+}
+
+class _LifeBalanceCardState extends State<_LifeBalanceCard> {
+  bool _loading = true;
+  bool _saving = false;
+  Map<String, double> _values = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LifeBalanceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.blocks.join('|') != widget.blocks.join('|')) {
+      _load();
+    }
+  }
+
+  String _normalize(String key) {
+    final k = key.trim().toLowerCase();
+    switch (k) {
+      case 'health':
+      case 'здоровье':
+        return 'health';
+      case 'career':
+      case 'work':
+      case 'карьера':
+        return 'career';
+      case 'family':
+      case 'семья':
+        return 'family';
+      case 'relations':
+      case 'relationship':
+      case 'relationships':
+      case 'отношения':
+        return 'relations';
+      case 'education':
+      case 'study':
+      case 'образование':
+      case 'обучение':
+        return 'education';
+      case 'finance':
+      case 'finances':
+      case 'финансы':
+        return 'finance';
+      case 'hobby':
+      case 'hobbies':
+      case 'хобби':
+        return 'hobby';
+      case 'spirituality':
+      case 'spirit':
+      case 'духовность':
+        return 'spirituality';
+      default:
+        return k;
+    }
+  }
+
+  double get _total => _values.values.fold<double>(0, (sum, v) => sum + v);
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+      final normalizedBlocks = widget.blocks.map(_normalize).toList();
+      final next = <String, double>{for (final b in normalizedBlocks) b: 0};
+
+      if (userId != null && userId.trim().isNotEmpty) {
+        final row = await client
+            .from('users')
+            .select('priorities, weights')
+            .eq('id', userId)
+            .maybeSingle();
+
+        final priorities = (row?['priorities'] as List?) ?? const [];
+        final weights = (row?['weights'] as List?) ?? const [];
+        for (var i = 0; i < priorities.length && i < weights.length; i++) {
+          final key = _normalize(priorities[i].toString());
+          if (!next.containsKey(key)) continue;
+          final raw = weights[i];
+          final value = raw is num ? raw.toDouble() : double.tryParse(raw.toString()) ?? 0.0;
+          next[key] = (value <= 1.0 ? value * 100 : value).clamp(0.0, 100.0).toDouble();
+        }
+      }
+
+      if (next.values.every((v) => v <= 0) && next.isNotEmpty) {
+        final equal = (100 / next.length).floorToDouble();
+        var rest = 100.0;
+        final keys = next.keys.toList();
+        for (var i = 0; i < keys.length; i++) {
+          final value = i == keys.length - 1 ? rest : equal;
+          next[keys[i]] = value;
+          rest -= value;
+        }
+      }
+
+      if (!mounted) return;
+      setState(() => _values = next);
+    } catch (e) {
+      if (mounted) _snack(context, 'Не удалось загрузить баланс сфер: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _setBlockValue(String block, double value) {
+    final current = _values[block] ?? 0;
+    final otherTotal = _total - current;
+    final maxAllowed = (100 - otherTotal).clamp(0.0, 100.0).toDouble();
+    final safe = value.clamp(0.0, maxAllowed).roundToDouble();
+    setState(() => _values = {..._values, block: safe});
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null || userId.trim().isEmpty) {
+      _snack(context, 'Пользователь не авторизован.');
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await client.from('users').update({
+        'priorities': _values.keys.toList(),
+        'weights': _values.values.map((v) => v.round()).toList(),
+      }).eq('id', userId);
+      if (!mounted) return;
+      _snack(context, 'Баланс сфер сохранён.');
+    } catch (e) {
+      if (mounted) _snack(context, 'Не удалось сохранить баланс сфер: $e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+
+  Future<void> _editBlockPercent(String block) async {
+    final label = ProfileUi.blockLabel(context, block);
+    final current = (_values[block] ?? 0).round();
+    final otherTotal = _total - (_values[block] ?? 0);
+    final maxAllowed = (100 - otherTotal).clamp(0.0, 100.0).round();
+    final ctrl = TextEditingController(text: '$current');
+
+    final result = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final t = _LadnaText.of(ctx);
+        return NestSheet(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              16 + MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).padding.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: _lifeBlockAccent(block),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: _LadnaTextStyle.serifTitle.copyWith(fontSize: 21),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  t.lifeWheelPercentLimit(maxAllowed),
+                  style: _ladnaBodyMuted(ctx),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  style: TextStyle(
+                    color: _ladnaText(ctx),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: t.percent,
+                    suffixText: '%',
+                    prefixIcon: const Icon(Icons.donut_large_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 46,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      final parsed = int.tryParse(ctrl.text.trim());
+                      if (parsed == null) return;
+                      Navigator.pop(ctx, parsed.clamp(0, maxAllowed));
+                    },
+                    icon: const Icon(Icons.check_rounded),
+                    label: Text(t.save),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (result == null) return;
+    _setBlockValue(block, result.toDouble());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+    final entries = _values.entries.toList();
+
+    return _BaseCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(t.desiredBalance, style: _ladnaCardTitle(context))),
+              Text(
+                '${_total.round()}%',
+                style: TextStyle(
+                  color: _total == 100 ? _LadnaColors.lime : _ladnaMuted(context),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(t.desiredBalanceHint, style: _ladnaSmallMuted(context)),
+          const SizedBox(height: 12),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            )
+          else if (entries.isEmpty)
+            Text(t.noData, style: _ladnaBodyMuted(context))
+          else ...[
+            const SizedBox(height: 4),
+            _LifeBalanceWheel(
+              values: _values,
+              onTapBlock: _editBlockPercent,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              t.lifeWheelTapHint,
+              style: _ladnaSmallMuted(context),
+            ),
+            const SizedBox(height: 10),
+            for (final e in entries) ...[
+              _LifeBalanceRow(
+                block: e.key,
+                value: e.value,
+                label: ProfileUi.blockLabel(context, e.key),
+                onTap: () => _editBlockPercent(e.key),
+              ),
+              if (e.key != entries.last.key) const SizedBox(height: 8),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 42,
+              child: FilledButton.icon(
+                onPressed: _saving ? null : _save,
+                icon: _saving
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
+                    : const Icon(Icons.check_rounded, size: 18),
+                label: Text(_saving ? t.saving : t.save),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+
+class _LifeBalanceWheel extends StatelessWidget {
+  const _LifeBalanceWheel({
+    required this.values,
+    required this.onTapBlock,
+  });
+
+  final Map<String, double> values;
+  final ValueChanged<String> onTapBlock;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+    final total = values.values.fold<double>(0, (sum, v) => sum + v);
+    final entries = values.entries.toList();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = math.min(constraints.maxWidth, 260.0);
+        return Center(
+          child: GestureDetector(
+            onTapDown: (details) {
+              final block = _hitTestWheel(
+                details.localPosition,
+                Size(size, size),
+                entries,
+                total,
+              );
+              if (block != null) onTapBlock(block);
+            },
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    size: Size(size, size),
+                    painter: _LifeBalanceWheelPainter(
+                      values: values,
+                      background: _ladnaIsDark(context)
+                          ? const Color(0xFF2A2142)
+                          : const Color(0xFFEAE6F5),
+                    ),
+                  ),
+                  Container(
+                    width: size * 0.48,
+                    height: size * 0.48,
+                    decoration: BoxDecoration(
+                      color: _ladnaCardSurface(context),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: _ladnaBorder(context)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(_ladnaIsDark(context) ? 0.24 : 0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${total.round()}%',
+                          style: TextStyle(
+                            fontFamily: 'PlayfairDisplay',
+                            fontSize: 32,
+                            height: 1,
+                            fontWeight: FontWeight.w700,
+                            color: total.round() == 100 ? _LadnaColors.lime : _ladnaText(context),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          t.outOfHundredPercent,
+                          style: TextStyle(
+                            color: _ladnaMuted(context),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String? _hitTestWheel(
+    Offset local,
+    Size size,
+    List<MapEntry<String, double>> entries,
+    double total,
+  ) {
+    if (entries.isEmpty || total <= 0) return null;
+    final center = Offset(size.width / 2, size.height / 2);
+    final vector = local - center;
+    final distance = vector.distance;
+    final outerRadius = size.width / 2;
+    final innerRadius = outerRadius * 0.30;
+    if (distance < innerRadius || distance > outerRadius) return null;
+
+    var angle = math.atan2(vector.dy, vector.dx) + math.pi / 2;
+    if (angle < 0) angle += math.pi * 2;
+
+    var start = 0.0;
+    for (final e in entries) {
+      final sweep = (e.value <= 0 ? 0 : e.value / total) * math.pi * 2;
+      if (angle >= start && angle <= start + sweep) return e.key;
+      start += sweep;
+    }
+    return entries.last.key;
+  }
+}
+
+class _LifeBalanceWheelPainter extends CustomPainter {
+  const _LifeBalanceWheelPainter({
+    required this.values,
+    required this.background,
+  });
+
+  final Map<String, double> values;
+  final Color background;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    final strokeWidth = radius * 0.30;
+    final total = values.values.fold<double>(0, (sum, v) => sum + v);
+    final rect = Rect.fromCircle(center: center, radius: radius - strokeWidth / 2);
+
+    final bgPaint = Paint()
+      ..color = background
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius - strokeWidth / 2, bgPaint);
+
+    if (values.isEmpty || total <= 0) return;
+
+    var start = -math.pi / 2;
+    for (final e in values.entries) {
+      final value = e.value.clamp(0.0, 100.0).toDouble();
+      if (value <= 0) continue;
+      final sweep = (value / total) * math.pi * 2;
+      final paint = Paint()
+        ..color = _lifeBlockAccent(e.key)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+      canvas.drawArc(rect, start, math.max(0.01, sweep - 0.035), false, paint);
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LifeBalanceWheelPainter oldDelegate) {
+    return oldDelegate.values.toString() != values.toString() ||
+        oldDelegate.background != background;
+  }
+}
+
+class _LifeBalanceRow extends StatelessWidget {
+  const _LifeBalanceRow({
+    required this.block,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String block;
+  final String label;
+  final double value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: _ladnaSoftSurface(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _ladnaBorder(context)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: _lifeBlockAccent(block),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _lifeBlockAccent(block).withOpacity(0.28),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(label, style: _ladnaRowTitle(context))),
+            Text(
+              '${value.round()}%',
+              style: TextStyle(
+                color: _ladnaText(context),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.edit_rounded, size: 17, color: _ladnaMuted(context)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Color _lifeBlockAccent(String key) {
+  // Palette is intentionally limited to colors used in the Ladna mockups:
+  // #6B54C0, #D4E040, #16B8A8, #555268, #9090A8, #EAE6F5, #160E38.
+  const palette = <Color>[
+    _LadnaColors.primary,
+    _LadnaColors.lime,
+    _LadnaColors.teal,
+    _LadnaColors.muted,
+    _LadnaColors.text,
+    _LadnaColors.card,
+  ];
+
+  switch (key) {
+    case 'career':
+      return _LadnaColors.lime;
+    case 'health':
+      return _LadnaColors.teal;
+    case 'hobby':
+    case 'hobbies':
+      return _LadnaColors.primary;
+    case 'family':
+      return _LadnaColors.muted;
+    case 'education':
+      return _LadnaColors.primary;
+    case 'relations':
+    case 'relationships':
+      return _LadnaColors.teal;
+    case 'finance':
+    case 'finances':
+      return _LadnaColors.lime;
+    case 'spirituality':
+      return _LadnaColors.text;
+    default:
+      final index = key.codeUnits.fold<int>(0, (sum, code) => sum + code) % palette.length;
+      return palette[index];
+  }
+}
+
 class _HabitsPreviewCard extends StatelessWidget {
   const _HabitsPreviewCard();
+
+  Future<(String title, bool isNegative)?> _openHabitEditor(BuildContext context, {dynamic existing}) async {
+    final t = _LadnaText.of(context);
+    final titleCtrl = TextEditingController(text: existing == null ? '' : (existing.title ?? '').toString());
+    var isNegative = existing == null ? false : ((existing.isNegative as bool?) ?? false);
+
+    final result = await showModalBottomSheet<(String, bool)>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => NestSheet(
+        child: StatefulBuilder(
+          builder: (ctx, setLocal) => Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 14,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  existing == null ? t.newHabit : t.editHabit,
+                  style: _LadnaTextStyle.serifTitle.copyWith(fontSize: 20, color: _ladnaText(ctx)),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: titleCtrl,
+                  maxLength: 60,
+                  decoration: InputDecoration(labelText: t.habitName, counterText: ''),
+                ),
+                const SizedBox(height: 10),
+                _BaseCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      Icon(isNegative ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded, size: 18, color: _LadnaColors.primary),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(t.negativeHabit, style: _ladnaRowTitle(ctx))),
+                      Switch(value: isNegative, onChanged: (v) => setLocal(() => isNegative = v)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx), child: Text(t.cancel))),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          final value = titleCtrl.text.trim();
+                          if (value.isEmpty) return;
+                          Navigator.pop(ctx, (value, isNegative));
+                        },
+                        child: Text(t.save),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    titleCtrl.dispose();
+    return result;
+  }
+
+  Future<bool> _confirmDelete(BuildContext context, dynamic habit) async {
+    final t = _LadnaText.of(context);
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => NestSheet(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(t.deleteHabit, style: _LadnaTextStyle.serifTitle.copyWith(fontSize: 20, color: _ladnaText(ctx))),
+              const SizedBox(height: 10),
+              Text(t.deleteHabitQuestion((habit.title ?? '').toString()), style: _ladnaBodyMuted(ctx)),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t.cancel))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error, foregroundColor: Colors.white),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(t.delete),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    return ok == true;
+  }
+
+  Future<void> _saveHabit(BuildContext context, {dynamic existing}) async {
+    final result = await _openHabitEditor(context, existing: existing);
+    if (result == null) return;
+
+    final habits = context.read<HabitsModel>();
+    String? err;
+    if (existing == null) {
+      err = await habits.create(title: result.$1, isNegative: result.$2);
+    } else {
+      err = await habits.update((existing.id ?? '').toString(), title: result.$1, isNegative: result.$2);
+    }
+    if (err != null && context.mounted) _snack(context, err);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -564,16 +1270,8 @@ class _HabitsPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  t.myHabits,
-                  style: _ladnaCardTitle(context),
-                ),
-              ),
-              _SmallSquareButton(
-                icon: Icons.add_rounded,
-                onTap: () => _snack(context, t.addHabitHint),
-              ),
+              Expanded(child: Text(t.myHabits, style: _ladnaCardTitle(context))),
+              _SmallSquareButton(icon: Icons.add_rounded, onTap: () => _saveHabit(context)),
             ],
           ),
           const SizedBox(height: 10),
@@ -583,18 +1281,23 @@ class _HabitsPreviewCard extends StatelessWidget {
               child: Center(child: CircularProgressIndicator.adaptive()),
             )
           else if (habits.items.isEmpty)
-            Text(
-              t.noHabitsYet,
-              style: _ladnaBodyMuted(context),
-            )
+            Text(t.noHabitsYet, style: _ladnaBodyMuted(context))
           else
-            ...habits.items.take(4).toList().asMap().entries.map((entry) {
+            ...habits.items.asMap().entries.map((entry) {
               final idx = entry.key;
               final h = entry.value;
-              return _HabitPreviewRow(
-                title: '${h.title}',
+              return _HabitManageRow(
+                title: (h.title).toString(),
                 streak: t.daysCount(_safeStreak(h)),
                 color: _habitColor(idx),
+                isNegative: (h.isNegative as bool?) ?? false,
+                onEdit: () => _saveHabit(context, existing: h),
+                onDelete: () async {
+                  final ok = await _confirmDelete(context, h);
+                  if (!ok || !context.mounted) return;
+                  final err = await context.read<HabitsModel>().delete((h.id).toString());
+                  if (err != null && context.mounted) _snack(context, err);
+                },
               );
             }),
         ],
@@ -616,6 +1319,52 @@ class _HabitsPreviewCard extends StatelessWidget {
         1 => _LadnaColors.primary,
         _ => _LadnaColors.lime,
       };
+}
+
+class _HabitManageRow extends StatelessWidget {
+  const _HabitManageRow({
+    required this.title,
+    required this.streak,
+    required this.color,
+    required this.isNegative,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final String title;
+  final String streak;
+  final Color color;
+  final bool isNegative;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: _ladnaDivider(context)))),
+      child: Row(
+        children: [
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: _ladnaText(context), fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(isNegative ? '${t.negativeHabit} · $streak' : streak, style: _ladnaSmallMuted(context)),
+              ],
+            ),
+          ),
+          IconButton(visualDensity: VisualDensity.compact, onPressed: onEdit, icon: Icon(Icons.edit_outlined, size: 18, color: _ladnaMuted(context))),
+          IconButton(visualDensity: VisualDensity.compact, onPressed: onDelete, icon: Icon(Icons.delete_outline_rounded, size: 18, color: Theme.of(context).colorScheme.error)),
+        ],
+      ),
+    );
+  }
 }
 
 class _LadnaScreen extends StatelessWidget {
@@ -1005,6 +1754,8 @@ class _HabitPreviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
@@ -1589,5 +2340,55 @@ class _LadnaText {
   String get deleteAccountSubtitle => pick({'ru': 'Все данные будут удалены безвозвратно', 'en': 'All data will be permanently deleted'});
   String get deleteAccountConfirm => pick({'ru': 'Это действие нельзя отменить. Все данные аккаунта будут удалены безвозвратно.', 'en': 'This cannot be undone. All account data will be permanently deleted.'});
   String get cancel => pick({'ru': 'Отмена', 'en': 'Cancel', 'de': 'Abbrechen', 'fr': 'Annuler', 'es': 'Cancelar', 'tr': 'İptal'});
-  String get noData => pick({'ru': 'Нет данных', 'en': 'No data'});
+  String get desiredBalance => pick({'ru': 'Колесо жизни', 'en': 'Life wheel', 'de': 'Lebensrad', 'fr': 'Roue de vie', 'es': 'Rueda de vida', 'tr': 'Yaşam çarkı'});
+  String get desiredBalanceHint => pick({
+        'ru': 'Настрой колесо жизни по выбранным сферам. Общая сумма не может быть больше 100%.',
+        'en': 'Set up your life wheel for the selected areas. Total cannot exceed 100%.',
+        'de': 'Richte dein Lebensrad für die ausgewählten Bereiche ein. Die Summe darf 100 % nicht überschreiten.',
+        'fr': 'Configure ta roue de vie selon les domaines choisis. Le total ne peut pas dépasser 100 %.',
+        'es': 'Configura tu rueda de vida por áreas seleccionadas. El total no puede superar el 100 %.',
+        'tr': 'Seçili alanlara göre yaşam çarkını ayarla. Toplam %100’ü geçemez.',
+      });
+  String get lifeWheelTapHint => pick({
+        'ru': 'Нажми на сектор или сферу ниже, чтобы задать точный процент.',
+        'en': 'Tap a segment or an area below to set an exact percentage.',
+        'de': 'Tippe auf ein Segment oder einen Bereich unten, um den genauen Prozentwert festzulegen.',
+        'fr': 'Touche un segment ou un domaine ci-dessous pour définir un pourcentage exact.',
+        'es': 'Toca un segmento o un área abajo para definir un porcentaje exacto.',
+        'tr': 'Kesin yüzdeyi belirlemek için bir segmente veya aşağıdaki alana dokun.',
+      });
+  String get outOfHundredPercent => pick({
+        'ru': 'из 100%',
+        'en': 'of 100%',
+        'de': 'von 100 %',
+        'fr': 'sur 100 %',
+        'es': 'de 100 %',
+        'tr': '%100 üzerinden',
+      });
+  String get percent => pick({
+        'ru': 'Процент',
+        'en': 'Percentage',
+        'de': 'Prozent',
+        'fr': 'Pourcentage',
+        'es': 'Porcentaje',
+        'tr': 'Yüzde',
+      });
+  String lifeWheelPercentLimit(int maxAllowed) => pick({
+        'ru': 'Можно указать от 0 до $maxAllowed%. Общая сумма баланса не может превышать 100%.',
+        'en': 'You can enter 0 to $maxAllowed%. The total balance cannot exceed 100%.',
+        'de': 'Du kannst 0 bis $maxAllowed % eingeben. Die Gesamtsumme darf 100 % nicht überschreiten.',
+        'fr': 'Tu peux saisir de 0 à $maxAllowed %. Le total ne peut pas dépasser 100 %.',
+        'es': 'Puedes indicar de 0 a $maxAllowed %. El total no puede superar el 100 %.',
+        'tr': '0 ile $maxAllowed% arasında değer girebilirsin. Toplam denge %100’ü geçemez.',
+      });
+  String get save => pick({'ru': 'Сохранить', 'en': 'Save', 'de': 'Speichern', 'fr': 'Enregistrer', 'es': 'Guardar', 'tr': 'Kaydet'});
+  String get saving => pick({'ru': 'Сохранение…', 'en': 'Saving…', 'de': 'Speichern…', 'fr': 'Enregistrement…', 'es': 'Guardando…', 'tr': 'Kaydediliyor…'});
+  String get newHabit => pick({'ru': 'Новая привычка', 'en': 'New habit', 'de': 'Neue Gewohnheit', 'fr': 'Nouvelle habitude', 'es': 'Nuevo hábito', 'tr': 'Yeni alışkanlık'});
+  String get editHabit => pick({'ru': 'Редактировать привычку', 'en': 'Edit habit', 'de': 'Gewohnheit bearbeiten', 'fr': 'Modifier l’habitude', 'es': 'Editar hábito', 'tr': 'Alışkanlığı düzenle'});
+  String get habitName => pick({'ru': 'Название привычки', 'en': 'Habit name', 'de': 'Name der Gewohnheit', 'fr': 'Nom de l’habitude', 'es': 'Nombre del hábito', 'tr': 'Alışkanlık adı'});
+  String get negativeHabit => pick({'ru': 'Анти-привычка', 'en': 'Negative habit', 'de': 'Negative Gewohnheit', 'fr': 'Habitude négative', 'es': 'Hábito negativo', 'tr': 'Negatif alışkanlık'});
+  String get deleteHabit => pick({'ru': 'Удалить привычку?', 'en': 'Delete habit?', 'de': 'Gewohnheit löschen?', 'fr': 'Supprimer l’habitude ?', 'es': '¿Eliminar hábito?', 'tr': 'Alışkanlık silinsin mi?'});
+  String deleteHabitQuestion(String title) => pick({'ru': 'Привычка "$title" будет удалена.', 'en': 'Habit "$title" will be deleted.', 'de': 'Die Gewohnheit "$title" wird gelöscht.', 'fr': 'L’habitude "$title" sera supprimée.', 'es': 'El hábito "$title" se eliminará.', 'tr': '"$title" alışkanlığı silinecek.'});
+  String get delete => pick({'ru': 'Удалить', 'en': 'Delete', 'de': 'Löschen', 'fr': 'Supprimer', 'es': 'Eliminar', 'tr': 'Sil'});
+  String get noData => pick({'ru': 'Нет данных', 'en': 'No data', 'de': 'Keine Daten', 'fr': 'Aucune donnée', 'es': 'Sin datos', 'tr': 'Veri yok'});
 }

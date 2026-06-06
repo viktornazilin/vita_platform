@@ -541,7 +541,7 @@ abstract class AppLocalizations {
   /// No description provided for @dayGoalsFabAddTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add goal'**
+  /// **'Add a task'**
   String get dayGoalsFabAddTitle;
 
   /// No description provided for @dayGoalsFabAddSubtitle.
@@ -1639,7 +1639,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbPriorityFamily.
   ///
   /// In en, this message translates to:
-  /// **'Family'**
+  /// **'Household'**
   String get onbPriorityFamily;
 
   /// No description provided for @onbPriorityGrowth.
@@ -1939,7 +1939,7 @@ abstract class AppLocalizations {
   /// No description provided for @mentalWeekNoAnswers.
   ///
   /// In en, this message translates to:
-  /// **'No answers found for this week (for the current user_id).'**
+  /// **'No answers found for this week.'**
   String get mentalWeekNoAnswers;
 
   /// No description provided for @mentalWeekYesNoHeader.
@@ -2419,7 +2419,7 @@ abstract class AppLocalizations {
   /// No description provided for @lifeBlockFamily.
   ///
   /// In en, this message translates to:
-  /// **'Family'**
+  /// **'Household'**
   String get lifeBlockFamily;
 
   /// No description provided for @lifeBlockFinance.
@@ -5023,7 +5023,7 @@ abstract class AppLocalizations {
   /// No description provided for @massDailyLifeBlockFamily.
   ///
   /// In en, this message translates to:
-  /// **'Family'**
+  /// **'Household'**
   String get massDailyLifeBlockFamily;
 
   /// No description provided for @massDailyLifeBlockFinance.

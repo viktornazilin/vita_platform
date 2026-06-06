@@ -248,7 +248,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get dayGoalsDeleteConfirmTitle => 'Удалить цель?';
 
   @override
-  String get dayGoalsFabAddTitle => 'Добавить цель';
+  String get dayGoalsFabAddTitle => 'Добавить задачу';
 
   @override
   String get dayGoalsFabAddSubtitle => 'Создать вручную';
@@ -862,7 +862,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get onbPriorityMoney => 'Деньги';
 
   @override
-  String get onbPriorityFamily => 'Семья';
+  String get onbPriorityFamily => 'Дом и быт';
 
   @override
   String get onbPriorityGrowth => 'Развитие';
@@ -1021,8 +1021,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get mentalWeekNoAnswers =>
-      'За эту неделю нет найденных ответов (для текущего user_id).';
+  String get mentalWeekNoAnswers => 'За эту неделю нет найденных ответов';
 
   @override
   String get mentalWeekYesNoHeader => 'Да/Нет (неделя)';
@@ -1287,7 +1286,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lifeBlockCareer => 'Карьера';
 
   @override
-  String get lifeBlockFamily => 'Семья';
+  String get lifeBlockFamily => 'Дом и быт';
 
   @override
   String get lifeBlockFinance => 'Финансы';
@@ -2725,7 +2724,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get massDailyLifeBlockCareer => 'Карьера';
 
   @override
-  String get massDailyLifeBlockFamily => 'Семья';
+  String get massDailyLifeBlockFamily => 'Дом и быт';
 
   @override
   String get massDailyLifeBlockFinance => 'Финансы';

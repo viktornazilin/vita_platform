@@ -206,8 +206,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
   }
 
   List<String> get _lifeBlockOptions {
-    final seen = <String>{'general'};
-    final out = <String>['general'];
+    final seen = <String>{};
+    final out = <String>[];
 
     void addBlock(String raw) {
       final b = raw.trim();
@@ -221,23 +221,20 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
       }
     }
 
-    // Primary source: blocks that the user actually selected/tracks.
+    // Primary source only: LifeBlocks selected by the user in the profile.
     for (final raw in widget.availableBlocks) {
       addBlock(raw);
     }
 
-    // Fallback: if a linked big goal exists in a tracked block, keep that block
-    // available even when the parent screen passed an incomplete block list.
-    for (final goal in widget.availableUserGoals) {
-      addBlock(goal.lifeBlock);
+    // Fixed block is allowed because the parent screen explicitly restricts the
+    // sheet to this LifeBlock. Otherwise do not expand the dropdown from goals.
+    final fixed = widget.fixedLifeBlock?.trim();
+    if (fixed != null && fixed.isNotEmpty) {
+      addBlock(fixed);
     }
 
-    // Safety: never let the currently selected value disappear from the dropdown.
-    if (mounted) {
-      addBlock(_lifeBlock);
-    }
-
-    return out;
+    // Technical fallback only when the parent passed no selected blocks at all.
+    return out.isEmpty ? <String>['general'] : out;
   }
 
   String _lifeBlockLabel(BuildContext context, String value) {
@@ -251,7 +248,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         'career': 'Карьера',
         'finance': 'Финансы',
         'finances': 'Финансы',
-        'family': 'Семья',
+        'family': 'Дом и быт',
         'education': 'Образование',
         'hobbies': 'Хобби',
         'spirituality': 'Духовность',
@@ -266,7 +263,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         'career': 'Career',
         'finance': 'Finance',
         'finances': 'Finance',
-        'family': 'Family',
+        'family': 'Household',
         'education': 'Education',
         'hobbies': 'Hobbies',
         'spirituality': 'Spirituality',
@@ -281,7 +278,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         'career': 'Karriere',
         'finance': 'Finanzen',
         'finances': 'Finanzen',
-        'family': 'Familie',
+        'family': 'Haushalt',
         'education': 'Bildung',
         'hobbies': 'Hobbys',
         'spirituality': 'Spiritualität',
@@ -296,7 +293,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         'career': 'Carrière',
         'finance': 'Finances',
         'finances': 'Finances',
-        'family': 'Famille',
+        'family': 'Foyer',
         'education': 'Éducation',
         'hobbies': 'Loisirs',
         'spirituality': 'Spiritualité',
@@ -311,7 +308,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         'career': 'Carrera',
         'finance': 'Finanzas',
         'finances': 'Finanzas',
-        'family': 'Familia',
+        'family': 'Hogar',
         'education': 'Educación',
         'hobbies': 'Aficiones',
         'spirituality': 'Espiritualidad',
@@ -326,7 +323,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         'career': 'Kariyer',
         'finance': 'Finans',
         'finances': 'Finans',
-        'family': 'Aile',
+        'family': 'Ev ve yaşam',
         'education': 'Eğitim',
         'hobbies': 'Hobiler',
         'spirituality': 'Maneviyat',
@@ -557,7 +554,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
     if (fixed != null && fixed.isNotEmpty) {
       _lifeBlock = _normalizeBlock(fixed);
     } else {
-      _lifeBlock = options.contains('general') ? 'general' : options.first;
+      _lifeBlock = options.first;
     }
 
     _selectedUserGoalId = widget.initialUserGoalId;
@@ -1083,6 +1080,7 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                         DropdownButtonFormField<String?>(
                           value: dropdownGoalValue,
                           isExpanded: true,
+                          alignment: AlignmentDirectional.centerStart,
                           decoration: InputDecoration(
                             labelText: l.addDayGoalUserGoalLabel,
                             filled: true,
@@ -1112,18 +1110,25 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                           items: [
                             DropdownMenuItem<String?>(
                               value: null,
-                              child: Text(
-                                l.addDayGoalNoLinkedGoal,
-                                overflow: TextOverflow.ellipsis,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: Text(
+                                  l.addDayGoalNoLinkedGoal,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
                             ),
                             ..._userGoalsForSelectedBlock.map(
                               (g) => DropdownMenuItem<String?>(
                                 value: g.id,
-                                child: Text(
-                                  '${g.title} · ${_horizonLabel(context, g.horizon)}',
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    '${g.title} · ${_horizonLabel(context, g.horizon)}',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
                                 ),
                               ),
                             ),

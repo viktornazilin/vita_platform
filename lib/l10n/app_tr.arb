@@ -110,7 +110,7 @@
     }
   },
   "dayGoalsDeleteConfirmTitle": "Hedef silinsin mi?",
-  "dayGoalsFabAddTitle": "Hedef ekle",
+  "dayGoalsFabAddTitle": "Görev ekle",
   "dayGoalsFabAddSubtitle": "Manuel oluştur",
   "dayGoalsFabScanTitle": "Tara",
   "dayGoalsFabScanSubtitle": "Günlük fotoğrafı",
@@ -443,7 +443,7 @@
       "error": {}
     }
   },
-  "mentalWeekNoAnswers": "Bu hafta için yanıt bulunamadı (mevcut user_id için).",
+  "mentalWeekNoAnswers": "Bu hafta için yanıt bulunamadı.",
   "mentalWeekYesNoHeader": "Evet/Hayır (hafta)",
   "mentalWeekScalesHeader": "Ölçekler (trend)",
   "mentalWeekFooterHint": "Ekranı sade tutmak için yalnızca birkaç soru gösteriyoruz.",
