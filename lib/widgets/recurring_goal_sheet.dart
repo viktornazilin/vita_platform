@@ -3,11 +3,27 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 import 'package:nest_app/main.dart';
+import 'package:nest_app/models/ladna_space.dart';
+import 'package:nest_app/models/space_member.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'nest/nest_card.dart';
 import 'nest/nest_pill.dart';
 import 'nest/nest_section_title.dart';
+
+
+bool _ladnaSpaceIsActive(LadnaSpace space) {
+  final validUntil = space.validUntil;
+  if (validUntil == null) return true;
+
+  final today = DateUtils.dateOnly(DateTime.now());
+  final until = DateUtils.dateOnly(validUntil);
+  return !until.isBefore(today);
+}
+
+List<LadnaSpace> _ladnaActiveSpaces(Iterable<LadnaSpace> spaces) {
+  return spaces.where(_ladnaSpaceIsActive).toList(growable: false);
+}
 
 enum RecurrenceType { everyNDays, weekly }
 
@@ -38,6 +54,8 @@ class RecurringGoalPlan {
   final int everyNDays;
   final Set<int> weekdays; // DateTime.monday..DateTime.sunday
   final String? userGoalId;
+  final String? spaceId;
+  final String? assignedTo;
   final String recurringGroupId;
   final bool isEditingExisting;
 
@@ -53,6 +71,8 @@ class RecurringGoalPlan {
     required this.everyNDays,
     required this.weekdays,
     this.userGoalId,
+    this.spaceId,
+    this.assignedTo,
     required this.recurringGroupId,
     this.isEditingExisting = false,
   });
@@ -60,10 +80,14 @@ class RecurringGoalPlan {
 
 class RecurringGoalSheet extends StatefulWidget {
   final List<String> availableBlocks;
+  final List<LadnaSpace> availableSpaces;
+  final String? initialSpaceId;
 
   const RecurringGoalSheet({
     super.key,
     this.availableBlocks = const [],
+    this.availableSpaces = const [],
+    this.initialSpaceId,
   });
 
   @override
@@ -182,6 +206,7 @@ class _ExistingRecurringTask {
 }
 
 class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
+  List<LadnaSpace> get _availableSpaces => _ladnaActiveSpaces(widget.availableSpaces);
   final _titleCtrl = TextEditingController();
   final _emotionCtrl = TextEditingController();
   final _timeCtrl = TextEditingController(text: '09:00');
@@ -204,6 +229,10 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   int _importance = 2;
   double _hours = 1.0;
   String? _selectedUserGoalId;
+  String? _selectedSpaceId;
+  String? _selectedAssignedTo;
+  bool _loadingSpaceMembers = false;
+  List<SpaceMember> _spaceMembers = const [];
   String? _editingRecurringGroupId;
 
   bool _regularLoading = false;
@@ -212,12 +241,63 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
   bool _loadingUserGoals = false;
   List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
 
+
+  String _taskLocationTitle(BuildContext context) => _rtPick(context, ru: 'Где создать задачу', en: 'Where to create the task', de: 'Wo die Aufgabe erstellt wird', fr: 'Où créer la tâche', es: 'Dónde crear la tarea', tr: 'Görev nerede oluşturulsun');
+  String _personalTaskLabel(BuildContext context) => _rtPick(context, ru: 'Только мне', en: 'Only me', de: 'Nur für mich', fr: 'Seulement moi', es: 'Solo para mí', tr: 'Sadece ben');
+  String _assigneeLabel(BuildContext context) => _rtPick(context, ru: 'Исполнитель', en: 'Assignee', de: 'Verantwortlich', fr: 'Responsable', es: 'Responsable', tr: 'Atanan kişi');
+  String _notAssignedLabel(BuildContext context) => _rtPick(context, ru: 'Не назначать', en: 'Not assigned', de: 'Nicht zuweisen', fr: 'Non assigné', es: 'Sin asignar', tr: 'Atanmadı');
+
+  String _spaceMemberLabel(SpaceMember member) {
+    final name = member.name?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final email = member.email?.trim();
+    if (email != null && email.isNotEmpty) return email;
+    final id = member.userId.trim();
+    return id.length <= 8 ? id : '${id.substring(0, 8)}…';
+  }
+
+  Future<void> _loadSpaceMembersForSelectedSpace() async {
+    final spaceId = _selectedSpaceId;
+    if (spaceId == null || spaceId.trim().isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _spaceMembers = const [];
+        _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+      return;
+    }
+    setState(() => _loadingSpaceMembers = true);
+    try {
+      final members = await dbRepo.listSpaceMembers(spaceId);
+      if (!mounted) return;
+      final selectedStillValid = _selectedAssignedTo == null || members.any((m) => m.userId == _selectedAssignedTo);
+      setState(() {
+        _spaceMembers = members;
+        if (!selectedStillValid) _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+    } catch (e) {
+      debugPrint('Space members load failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _spaceMembers = const [];
+        _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _selectedSpaceId = _availableSpaces.any((s) => s.id == widget.initialSpaceId)
+        ? widget.initialSpaceId
+        : null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRegularTasks();
       _loadUserGoalsForCurrentBlock();
+      _loadSpaceMembersForSelectedSpace();
     });
   }
 
@@ -760,6 +840,8 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
         everyNDays: _everyNDays,
         weekdays: _weekdays,
         userGoalId: _selectedUserGoalId,
+        spaceId: _selectedSpaceId,
+        assignedTo: _selectedSpaceId == null ? null : _selectedAssignedTo,
         recurringGroupId: _editingRecurringGroupId ?? _newRecurringGroupId(),
         isEditingExisting: _editingRecurringGroupId != null,
       ),
@@ -1184,7 +1266,54 @@ class _RecurringGoalSheetState extends State<RecurringGoalSheet> {
                         ),
                       ],
 
-                      const SizedBox(height: 18),
+                      if (_availableSpaces.isNotEmpty) ...[
+                        const SizedBox(height: 18),
+                        NestSectionTitle(_taskLocationTitle(context)),
+                        const SizedBox(height: 8),
+                        NestCard(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            children: [
+                              DropdownButtonFormField<String?>(
+                                value: _selectedSpaceId,
+                                isExpanded: true,
+                                decoration: _input(
+                                  label: _taskLocationTitle(context),
+                                  icon: Icons.groups_2_rounded,
+                                ),
+                                items: [
+                                  DropdownMenuItem<String?>(value: null, child: Text(_personalTaskLabel(context), overflow: TextOverflow.ellipsis)),
+                                  ..._availableSpaces.map((space) => DropdownMenuItem<String?>(value: space.id, child: Text('${space.icon} ${space.name}', overflow: TextOverflow.ellipsis))),
+                                ],
+                                onChanged: (value) async {
+                                  setState(() {
+                                    _selectedSpaceId = value;
+                                    _selectedAssignedTo = null;
+                                    _spaceMembers = const [];
+                                  });
+                                  await _loadSpaceMembersForSelectedSpace();
+                                },
+                              ),
+                              if (_selectedSpaceId != null) ...[
+                                const SizedBox(height: 10),
+                                DropdownButtonFormField<String?>(
+                                  value: _spaceMembers.any((m) => m.userId == _selectedAssignedTo) ? _selectedAssignedTo : null,
+                                  isExpanded: true,
+                                  decoration: _input(
+                                    label: _assigneeLabel(context),
+                                    icon: Icons.person_outline_rounded,
+                                  ),
+                                  items: [
+                                    DropdownMenuItem<String?>(value: null, child: Text(_notAssignedLabel(context), overflow: TextOverflow.ellipsis)),
+                                    ..._spaceMembers.map((m) => DropdownMenuItem<String?>(value: m.userId, child: Text(_spaceMemberLabel(m), overflow: TextOverflow.ellipsis))),
+                                  ],
+                                  onChanged: _loadingSpaceMembers ? null : (value) => setState(() => _selectedAssignedTo = value),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
 
                       Row(
                         children: [

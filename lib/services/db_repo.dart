@@ -12,6 +12,7 @@ import 'legacy_expenses_mixin.dart';
 import 'habits_repo_mixin.dart';
 import 'mental_repo_mixin.dart';
 import 'user_goals_repo_mixin.dart';
+import 'spaces_repo_mixin.dart';
 
 class DbRepo extends BaseRepo
     with
@@ -23,6 +24,7 @@ class DbRepo extends BaseRepo
         LegacyExpensesRepoMixin,
         HabitsRepoMixin,
         MentalRepoMixin,
-        UserGoalsRepoMixin {
+        UserGoalsRepoMixin,
+        SpacesRepoMixin {
   DbRepo(SupabaseClient client) : super(client);
 }

@@ -12,6 +12,7 @@ import '../widgets/add_expense_dialog.dart';
 import '../widgets/add_income_dialog.dart';
 import '../widgets/add_jar_dialog.dart';
 import '../widgets/nest/nest_background.dart';
+import '../services/onboarding_tour_service.dart';
 import 'shopping_tracker_card.dart';
 
 
@@ -45,6 +46,45 @@ class _ExpensesView extends StatefulWidget {
 class _ExpensesViewState extends State<_ExpensesView> {
   _BudgetTab _tab = _BudgetTab.overview;
   _BudgetPeriod _period = _BudgetPeriod.month;
+  final GlobalKey _controlsTourKey = GlobalKey(debugLabel: 'tour_expenses_controls');
+  final GlobalKey _summaryTourKey = GlobalKey(debugLabel: 'tour_expenses_summary');
+  final GlobalKey _transactionsTourKey = GlobalKey(debugLabel: 'tour_expenses_transactions');
+  final GlobalKey _fabTourKey = GlobalKey(debugLabel: 'tour_expenses_fab');
+  bool _expensesTourQueued = false;
+
+  @override
+  void initState() {
+    super.initState();
+    OnboardingTourService.fullFlowStep.addListener(_maybeRunExpensesTour);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRunExpensesTour());
+  }
+
+  @override
+  void dispose() {
+    OnboardingTourService.fullFlowStep.removeListener(_maybeRunExpensesTour);
+    super.dispose();
+  }
+
+  void _maybeRunExpensesTour() {
+    if (!mounted || _expensesTourQueued) return;
+    if (!OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.expenses)) return;
+    _expensesTourQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.expenses,
+        showTour: () => OnboardingTourService.showExpensesTour(
+          context: context,
+          controlsKey: _controlsTourKey,
+          summaryKey: _summaryTourKey,
+          transactionsKey: _transactionsTourKey,
+          fabKey: _fabTourKey,
+        ),
+      );
+      if (mounted) _expensesTourQueued = false;
+    });
+  }
 
   String _periodDataKey = '';
   bool _periodLoading = false;
@@ -475,26 +515,37 @@ class _ExpensesViewState extends State<_ExpensesView> {
                             onBack: () => Navigator.of(context).maybePop(),
                           ),
                           const SizedBox(height: 14),
-                          _PeriodRow(
-                            period: _period,
-                            selectedDay: m.selectedDay,
-                            onPeriodChanged: (v) {
-                              setState(() => _period = v);
-                              _invalidatePeriodData();
-                            },
-                            onPrev: () => _shiftPeriod(context, -1),
-                            onNext: () => _shiftPeriod(context, 1),
-                          ),
-                          const SizedBox(height: 12),
-                          _BudgetTabs(
-                            tab: _tab,
-                            onChanged: (v) => setState(() => _tab = v),
+                          KeyedSubtree(
+                            key: _controlsTourKey,
+                            child: Column(
+                              children: [
+                                _PeriodRow(
+                                  period: _period,
+                                  selectedDay: m.selectedDay,
+                                  onPeriodChanged: (v) {
+                                    setState(() => _period = v);
+                                    _invalidatePeriodData();
+                                  },
+                                  onPrev: () => _shiftPeriod(context, -1),
+                                  onNext: () => _shiftPeriod(context, 1),
+                                ),
+                                const SizedBox(height: 12),
+                                _BudgetTabs(
+                                  tab: _tab,
+                                  onChanged: (v) => setState(() => _tab = v),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 14),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 220),
-                            child: switch (_tab) {
-                              _BudgetTab.overview => _OverviewTab(
+                          KeyedSubtree(
+                            key: _transactionsTourKey,
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              child: switch (_tab) {
+                              _BudgetTab.overview => KeyedSubtree(
+                                key: _summaryTourKey,
+                                child: _OverviewTab(
                                   key: ValueKey('overview-${_period.name}-$periodLabel'),
                                   period: _period,
                                   periodLabel: periodLabel,
@@ -512,6 +563,7 @@ class _ExpensesViewState extends State<_ExpensesView> {
                                   onNextPeriod: () => _shiftPeriod(context, 1),
                                   onTxTap: (tx, categoryName) => _openTxActions(context, tx, categoryName),
                                 ),
+                              ),
                               _BudgetTab.jars => _JarsTab(
                                   key: const ValueKey('jars'),
                                   income: income,
@@ -523,7 +575,8 @@ class _ExpensesViewState extends State<_ExpensesView> {
                               _BudgetTab.lists => const _ListsTab(
                                   key: ValueKey('lists'),
                                 ),
-                            },
+                              },
+                            ),
                           ),
                           ],
                         ),
@@ -532,9 +585,12 @@ class _ExpensesViewState extends State<_ExpensesView> {
                     Positioned(
                       right: 18,
                       bottom: bottom - 80,
-                      child: _Fab(
-                        label: t.add,
-                        onTap: () => _showAddMenu(context),
+                      child: KeyedSubtree(
+                        key: _fabTourKey,
+                        child: _Fab(
+                          label: t.add,
+                          onTap: () => _showAddMenu(context),
+                        ),
                       ),
                     ),
                   ],

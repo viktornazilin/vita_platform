@@ -6,9 +6,11 @@ import '../main.dart';
 import '../models/goal.dart';
 import '../models/goals_calendar_model.dart';
 import '../models/home_model.dart';
+import '../models/ladna_space.dart';
 import '../models/profile_model.dart';
 import '../models/user_goal.dart';
 import '../models/user_goals_model.dart';
+import '../services/onboarding_tour_service.dart';
 import '../widgets/add_day_goal_sheet.dart';
 
 import 'day_goals_screen.dart';
@@ -18,6 +20,20 @@ bool get _ladnaDarkMode =>
     WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
 
 Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
+
+
+bool _ladnaSpaceIsActive(LadnaSpace space) {
+  final validUntil = space.validUntil;
+  if (validUntil == null) return true;
+
+  final today = DateUtils.dateOnly(DateTime.now());
+  final until = DateUtils.dateOnly(validUntil);
+  return !until.isBefore(today);
+}
+
+List<LadnaSpace> _ladnaActiveSpaces(Iterable<LadnaSpace> spaces) {
+  return spaces.where(_ladnaSpaceIsActive).toList(growable: false);
+}
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -50,6 +66,22 @@ class _GoalsViewState extends State<_GoalsView> {
   _TaskView _taskView = _TaskView.dashboard;
   GoalHorizon? _horizon;
 
+  final GlobalKey _modeTourKey = GlobalKey(debugLabel: 'tour_goals_mode');
+  final GlobalKey _filterTourKey = GlobalKey(debugLabel: 'tour_goals_filter');
+  final GlobalKey _summaryTourKey = GlobalKey(debugLabel: 'tour_goals_summary');
+  final GlobalKey _addTourKey = GlobalKey(debugLabel: 'tour_goals_add');
+  bool _goalsTourQueued = false;
+
+  bool _loadingSpaces = false;
+  int? _lastObservedHomeIndex;
+  bool _personalOnly = false;
+  String? _selectedSpaceId;
+  List<LadnaSpace> _spaces = const [];
+
+  Map<String, LadnaSpace> get _spacesById => {
+        for (final space in _spaces) space.id: space,
+      };
+
   DateTime _anchor = DateUtils.dateOnly(DateTime.now());
   bool _loadingWeek = false;
   bool _loadingMonth = false;
@@ -74,7 +106,81 @@ class _GoalsViewState extends State<_GoalsView> {
   @override
   void initState() {
     super.initState();
+    OnboardingTourService.fullFlowStep.addListener(_maybeRunGoalsTour);
+    _loadSpaces();
     _loadWeek();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRunGoalsTour());
+  }
+
+  @override
+  void dispose() {
+    OnboardingTourService.fullFlowStep.removeListener(_maybeRunGoalsTour);
+    super.dispose();
+  }
+
+  void _maybeRunGoalsTour() {
+    if (!mounted || _goalsTourQueued) return;
+    if (!OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.goals)) return;
+    _goalsTourQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.goals,
+        showTour: () => OnboardingTourService.showGoalsTour(
+          context: context,
+          addKey: _addTourKey,
+          modeKey: _modeTourKey,
+          filterKey: _filterTourKey,
+          summaryKey: _summaryTourKey,
+        ),
+      );
+      if (mounted) _goalsTourQueued = false;
+    });
+  }
+
+  Future<void> _loadSpaces({bool reloadTasksWhenFilterInvalid = false}) async {
+    if (!mounted) return;
+    setState(() => _loadingSpaces = true);
+    var filterInvalid = false;
+
+    try {
+      final spaces = _ladnaActiveSpaces(await dbRepo.listSpaces());
+      if (!mounted) return;
+      setState(() {
+        _spaces = spaces;
+        if (_selectedSpaceId != null &&
+            !_spaces.any((space) => space.id == _selectedSpaceId)) {
+          _selectedSpaceId = null;
+          _personalOnly = false;
+          filterInvalid = true;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _spaces = const []);
+    } finally {
+      if (mounted) setState(() => _loadingSpaces = false);
+    }
+
+    if (reloadTasksWhenFilterInvalid && filterInvalid && mounted) {
+      await _reloadTasksForCurrentView();
+    }
+  }
+
+  Future<void> _reloadTasksForCurrentView() async {
+    await _loadWeek();
+    if (_taskView == _TaskView.month || _taskView == _TaskView.calendar) {
+      await _loadMonth();
+    }
+  }
+
+  void _setSpaceFilter({String? spaceId, bool personalOnly = false}) {
+    setState(() {
+      _selectedSpaceId = spaceId;
+      _personalOnly = personalOnly;
+    });
+    _reloadTasksForCurrentView();
   }
 
   Future<void> _loadWeek() async {
@@ -84,7 +190,12 @@ class _GoalsViewState extends State<_GoalsView> {
     try {
       for (final day in _weekDays) {
         final utc = DateTime.utc(day.year, day.month, day.day);
-        final goals = await dbRepo.getGoalsByDate(utc, lifeBlock: null);
+        final goals = await dbRepo.getGoalsByDate(
+          utc,
+          lifeBlock: null,
+          spaceId: _selectedSpaceId,
+          personalOnly: _personalOnly,
+        );
         goals.sort((a, b) => a.startTime.compareTo(b.startTime));
         next[DateUtils.dateOnly(day)] = goals;
       }
@@ -106,7 +217,12 @@ class _GoalsViewState extends State<_GoalsView> {
     try {
       for (final day in _monthDays) {
         final utc = DateTime.utc(day.year, day.month, day.day);
-        final goals = await dbRepo.getGoalsByDate(utc, lifeBlock: null);
+        final goals = await dbRepo.getGoalsByDate(
+          utc,
+          lifeBlock: null,
+          spaceId: _selectedSpaceId,
+          personalOnly: _personalOnly,
+        );
         goals.sort((a, b) => a.startTime.compareTo(b.startTime));
         next[DateUtils.dateOnly(day)] = goals;
       }
@@ -187,10 +303,12 @@ class _GoalsViewState extends State<_GoalsView> {
           lifeBlock: null,
           availableBlocks: calendar.lifeBlocks,
           availableUserGoals: _currentUserGoalLinks(),
+          initialSpaceId: _personalOnly ? null : _selectedSpaceId,
+          initialPersonalOnly: _personalOnly,
         ),
       ),
     );
-    if (mounted) _loadWeek();
+    if (mounted) _reloadTasksForCurrentView();
   }
 
   Future<void> _openAddTask([DateTime? date]) async {
@@ -209,6 +327,8 @@ class _GoalsViewState extends State<_GoalsView> {
         availableBlocks: calendar.lifeBlocks,
         availableUserGoals: links,
         initialDate: targetDate,
+        availableSpaces: _ladnaActiveSpaces(_spaces),
+        initialSpaceId: _personalOnly ? null : _selectedSpaceId,
       ),
     );
 
@@ -234,9 +354,12 @@ class _GoalsViewState extends State<_GoalsView> {
         spentHours: result.hours,
         startTime: start,
         userGoalId: result.userGoalId,
+        spaceId: _personalOnly ? null : (result.spaceId ?? _selectedSpaceId),
+        assignedTo: result.assignedTo,
+        visibility: (_personalOnly || (result.spaceId ?? _selectedSpaceId) == null) ? 'private' : 'space',
       );
 
-      if (mounted) _loadWeek();
+      if (mounted) _reloadTasksForCurrentView();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
@@ -329,6 +452,22 @@ class _GoalsViewState extends State<_GoalsView> {
     final text = _GoalsText.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
 
+    int? observedHomeIndex;
+    try {
+      observedHomeIndex = context.watch<HomeModel>().selectedIndex;
+    } catch (_) {
+      observedHomeIndex = null;
+    }
+
+    if (observedHomeIndex == 1 && _lastObservedHomeIndex != 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadSpaces(reloadTasksWhenFilterInvalid: true);
+        }
+      });
+    }
+    _lastObservedHomeIndex = observedHomeIndex;
+
     return Scaffold(
       backgroundColor: _LadnaColors.page,
       body: SafeArea(
@@ -348,13 +487,16 @@ class _GoalsViewState extends State<_GoalsView> {
                           onBack: _handleBack,
                         ),
                         const SizedBox(height: 14),
-                        _Segmented<_MainTab>(
-                          value: _tab,
-                          items: [
-                            _SegmentItem(_MainTab.tasks, text.tasks),
-                            _SegmentItem(_MainTab.goals, text.goals),
-                          ],
-                          onChanged: (v) => setState(() => _tab = v),
+                        KeyedSubtree(
+                          key: _modeTourKey,
+                          child: _Segmented<_MainTab>(
+                            value: _tab,
+                            items: [
+                              _SegmentItem(_MainTab.tasks, text.tasks),
+                              _SegmentItem(_MainTab.goals, text.goals),
+                            ],
+                            onChanged: (v) => setState(() => _tab = v),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         if (_tab == _MainTab.tasks) ..._buildTasks(context),
@@ -371,9 +513,12 @@ class _GoalsViewState extends State<_GoalsView> {
               // Keep the local action button just above that bar instead of
               // floating in the middle of the content.
               bottom: 28 + bottom,
-              child: _Fab(
-                label: text.add,
-                onTap: _tab == _MainTab.tasks ? () => _openAddTask(_anchor) : _openAddUserGoal,
+              child: KeyedSubtree(
+                key: _addTourKey,
+                child: _Fab(
+                  label: text.add,
+                  onTap: _tab == _MainTab.tasks ? () => _openAddTask(_anchor) : _openAddUserGoal,
+                ),
               ),
             ),
           ],
@@ -420,6 +565,19 @@ class _GoalsViewState extends State<_GoalsView> {
           ),
         ],
       ),
+      const SizedBox(height: 10),
+      KeyedSubtree(
+        key: _filterTourKey,
+        child: _TaskSpaceFilterBar(
+          spaces: _spaces,
+          selectedSpaceId: _selectedSpaceId,
+          personalOnly: _personalOnly,
+          loading: _loadingSpaces,
+          onAll: () => _setSpaceFilter(),
+          onPersonal: () => _setSpaceFilter(personalOnly: true),
+          onSpace: (space) => _setSpaceFilter(spaceId: space.id),
+        ),
+      ),
       const SizedBox(height: 14),
       if (_taskView == _TaskView.dashboard) ..._buildTasksDashboard(context),
       if (_taskView == _TaskView.week) ..._buildTasksWeek(context),
@@ -438,11 +596,14 @@ class _GoalsViewState extends State<_GoalsView> {
     const targetHours = 98.0;
 
     return [
-      _WeekSummaryCard(
-        title: text.weekSummary,
-        value: '${hours.toStringAsFixed(1)} / ${targetHours.toStringAsFixed(0)} ${text.hoursShort}',
-        subtitle: text.completedTasks(done, totalGoals.length),
-        progress: targetHours == 0 ? 0.0 : (hours / targetHours).clamp(0.0, 1.0).toDouble(),
+      KeyedSubtree(
+        key: _summaryTourKey,
+        child: _WeekSummaryCard(
+          title: text.weekSummary,
+          value: '${hours.toStringAsFixed(1)} / ${targetHours.toStringAsFixed(0)} ${text.hoursShort}',
+          subtitle: text.completedTasks(done, totalGoals.length),
+          progress: targetHours == 0 ? 0.0 : (hours / targetHours).clamp(0.0, 1.0).toDouble(),
+        ),
       ),
       const SizedBox(height: 14),
       _SectionLabel(text.thisWeek),
@@ -487,6 +648,7 @@ class _GoalsViewState extends State<_GoalsView> {
           return _DayTasksCard(
             date: day,
             goals: goals,
+            spacesById: _spacesById,
             isToday: DateUtils.isSameDay(day, today),
             onTap: () => _openDay(day),
           );
@@ -735,6 +897,131 @@ class _Segmented<T> extends StatelessWidget {
   }
 }
 
+
+class _TaskSpaceFilterBar extends StatelessWidget {
+  const _TaskSpaceFilterBar({
+    required this.spaces,
+    required this.selectedSpaceId,
+    required this.personalOnly,
+    required this.loading,
+    required this.onAll,
+    required this.onPersonal,
+    required this.onSpace,
+  });
+
+  final List<LadnaSpace> spaces;
+  final String? selectedSpaceId;
+  final bool personalOnly;
+  final bool loading;
+  final VoidCallback onAll;
+  final VoidCallback onPersonal;
+  final ValueChanged<LadnaSpace> onSpace;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _GoalsText.of(context);
+
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        children: [
+          _TaskSpaceFilterChip(
+            label: text.all,
+            selected: !personalOnly && selectedSpaceId == null,
+            onTap: onAll,
+          ),
+          const SizedBox(width: 8),
+          _TaskSpaceFilterChip(
+            label: text.personalTasks,
+            selected: personalOnly,
+            onTap: onPersonal,
+          ),
+          if (loading) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _LadnaColors.card,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: _LadnaColors.border),
+              ),
+              child: const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ] else
+            ...spaces.map(
+              (space) => Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: _TaskSpaceFilterChip(
+                  label: '${space.icon} ${space.name}',
+                  selected: selectedSpaceId == space.id,
+                  onTap: () => onSpace(space),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskSpaceFilterChip extends StatelessWidget {
+  const _TaskSpaceFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? _LadnaColors.primary : _LadnaColors.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? _LadnaColors.primary : _LadnaColors.border,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? .24 : .16),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: selected ? Colors.white : _LadnaColors.mid,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _WeekSummaryCard extends StatelessWidget {
   final String title;
   final String value;
@@ -866,12 +1153,14 @@ class _DayRow extends StatelessWidget {
 class _DayTasksCard extends StatelessWidget {
   final DateTime date;
   final List<Goal> goals;
+  final Map<String, LadnaSpace> spacesById;
   final bool isToday;
   final VoidCallback onTap;
 
   const _DayTasksCard({
     required this.date,
     required this.goals,
+    required this.spacesById,
     required this.isToday,
     required this.onTap,
   });
@@ -931,7 +1220,10 @@ class _DayTasksCard extends StatelessWidget {
             ),
             if (goals.isNotEmpty) ...[
               const SizedBox(height: 10),
-              ...goals.take(3).map((goal) => _TaskPreviewRow(goal: goal)),
+              ...goals.take(3).map((goal) => _TaskPreviewRow(
+                    goal: goal,
+                    space: spacesById[goal.spaceId],
+                  )),
               if (goals.length > 3)
                 Padding(
                   padding: const EdgeInsets.only(top: 6, left: 48),
@@ -947,7 +1239,9 @@ class _DayTasksCard extends StatelessWidget {
 
 class _TaskPreviewRow extends StatelessWidget {
   final Goal goal;
-  const _TaskPreviewRow({required this.goal});
+  final LadnaSpace? space;
+
+  const _TaskPreviewRow({required this.goal, this.space});
 
   @override
   Widget build(BuildContext context) {
@@ -961,6 +1255,30 @@ class _TaskPreviewRow extends StatelessWidget {
             color: goal.isCompleted ? _LadnaColors.primary : _LadnaColors.muted,
           ),
           const SizedBox(width: 8),
+          if (space != null) ...[
+            Container(
+              constraints: const BoxConstraints(maxWidth: 86),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? 0.22 : 0.10),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? 0.26 : 0.14),
+                ),
+              ),
+              child: Text(
+                '${space!.icon} ${space!.name}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: _LadnaColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
           Expanded(
             child: Text(
               goal.title,
@@ -2092,6 +2410,7 @@ class _GoalsText {
   String get thisWeek => pick({'ru':'Эта неделя','en':'This week','de':'Diese Woche','fr':'Cette semaine','es':'Esta semana','tr':'Bu hafta'});
   String get todayShort => pick({'ru':'сег','en':'today','de':'heute','fr':'auj.','es':'hoy','tr':'bugün'});
   String get all => pick({'ru':'Все','en':'All','de':'Alle','fr':'Tous','es':'Todo','tr':'Tümü'});
+  String get personalTasks => pick({'ru':'Личные','en':'Personal','de':'Persönlich','fr':'Personnel','es':'Personal','tr':'Kişisel'});
   String get upToOneMonth => pick({'ru':'До 1 мес','en':'Up to 1 mo','de':'Bis 1 Mon.','fr':'Jusq. 1 mois','es':'Hasta 1 mes','tr':'1 aya kadar'});
   String get upToSixMonths => pick({'ru':'До 6 мес','en':'Up to 6 mo','de':'Bis 6 Mon.','fr':'Jusq. 6 mois','es':'Hasta 6 meses','tr':'6 aya kadar'});
   String get yearPlus => pick({'ru':'На год+','en':'Year+','de':'1 Jahr+','fr':'1 an+','es':'Año+','tr':'1 yıl+'});

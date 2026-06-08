@@ -10,9 +10,14 @@ class Goal {
   final int importance;
   final String emotion;
   final double spentHours;
-
-  // ✅ ДОБАВИТЬ
   final String? userGoalId;
+
+  // Spaces / shared tasks
+  final String? spaceId;
+  final String? assignedTo;
+  final String visibility;
+  final String? completedBy;
+  final DateTime? completedAt;
 
   Goal({
     required this.id,
@@ -26,15 +31,24 @@ class Goal {
     this.importance = 1,
     this.emotion = '',
     this.spentHours = 0,
-    this.userGoalId, // ✅
+    this.userGoalId,
+    this.spaceId,
+    this.assignedTo,
+    this.visibility = 'private',
+    this.completedBy,
+    this.completedAt,
   });
 
   double get hours => spentHours;
 
+  bool get isSpaceGoal => spaceId != null && spaceId!.trim().isNotEmpty;
+  bool get isPrivateGoal => !isSpaceGoal;
+  bool get hasAssignee => assignedTo != null && assignedTo!.trim().isNotEmpty;
+
   factory Goal.fromMap(Map<String, dynamic> map) => Goal(
         id: map['id'] as String,
         userId: map['user_id'] as String,
-        title: map['title'] as String,
+        title: (map['title'] ?? '') as String,
         description: (map['description'] ?? '') as String,
         deadline: DateTime.parse(map['deadline'] as String),
         startTime: DateTime.parse(map['start_time'] as String),
@@ -43,9 +57,14 @@ class Goal {
         importance: (map['importance'] ?? 1) as int,
         emotion: (map['emotion'] ?? '') as String,
         spentHours: (map['spent_hours'] ?? 0).toDouble(),
-
-        // ✅ ДОБАВИТЬ
         userGoalId: map['user_goal_id'] as String?,
+        spaceId: map['space_id'] as String?,
+        assignedTo: map['assigned_to'] as String?,
+        visibility: (map['visibility'] ?? 'private') as String,
+        completedBy: map['completed_by'] as String?,
+        completedAt: map['completed_at'] == null
+            ? null
+            : DateTime.parse(map['completed_at'] as String),
       );
 
   Map<String, dynamic> toMap() => {
@@ -60,9 +79,12 @@ class Goal {
         'importance': importance,
         'emotion': emotion,
         'spent_hours': spentHours,
-
-        // ✅ ДОБАВИТЬ
         'user_goal_id': userGoalId,
+        'space_id': spaceId,
+        'assigned_to': assignedTo,
+        'visibility': visibility,
+        'completed_by': completedBy,
+        'completed_at': completedAt?.toIso8601String(),
       };
 
   Goal copyWith({
@@ -77,9 +99,12 @@ class Goal {
     int? importance,
     String? emotion,
     double? spentHours,
-
-    // ✅ ДОБАВИТЬ
     String? userGoalId,
+    String? spaceId,
+    String? assignedTo,
+    String? visibility,
+    String? completedBy,
+    DateTime? completedAt,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -93,9 +118,12 @@ class Goal {
       importance: importance ?? this.importance,
       emotion: emotion ?? this.emotion,
       spentHours: spentHours ?? this.spentHours,
-
-      // ✅
       userGoalId: userGoalId ?? this.userGoalId,
+      spaceId: spaceId ?? this.spaceId,
+      assignedTo: assignedTo ?? this.assignedTo,
+      visibility: visibility ?? this.visibility,
+      completedBy: completedBy ?? this.completedBy,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 }

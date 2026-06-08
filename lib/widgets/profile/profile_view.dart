@@ -13,6 +13,9 @@ import '../../controllers/locale_controller.dart';
 import '../../main.dart';
 import '../../models/habits_model.dart';
 import '../../models/home_model.dart';
+import '../../models/ladna_space.dart';
+import '../../models/space_invite.dart';
+import '../../models/space_member.dart';
 import '../../models/profile_model.dart';
 import '../../widgets/nest/nest_background.dart';
 import '../../widgets/nest/nest_sheet.dart';
@@ -34,6 +37,17 @@ TextStyle _ladnaRowTitle(BuildContext context) => TextStyle(fontSize: 13, fontWe
 TextStyle _ladnaRowSubtitle(BuildContext context) => TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _ladnaMuted(context));
 TextStyle _ladnaSmallMuted(BuildContext context) => TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _ladnaMuted(context));
 TextStyle _ladnaBodyMuted(BuildContext context) => TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _ladnaBody(context));
+
+String _formatLadnaDate(BuildContext context, DateTime date) {
+  return MaterialLocalizations.of(context).formatMediumDate(date);
+}
+
+String _spaceValidityLabel(BuildContext context, LadnaSpace space) {
+  final t = _LadnaText.of(context);
+  final validUntil = space.validUntil;
+  if (validUntil == null) return t.spaceNoDeadline;
+  return t.spaceValidUntil(_formatLadnaDate(context, validUntil));
+}
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -152,6 +166,9 @@ class _ProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _LifeBalanceCard(blocks: blocks),
+          const SizedBox(height: 16),
+          _SectionLabel(t.spaces),
+          const _SpacesProfileCard(),
           const SizedBox(height: 16),
           _SectionLabel(t.habits),
           const _HabitsPreviewCard(),
@@ -1321,6 +1338,873 @@ class _HabitsPreviewCard extends StatelessWidget {
       };
 }
 
+class _SpacesProfileCard extends StatefulWidget {
+  const _SpacesProfileCard();
+
+  @override
+  State<_SpacesProfileCard> createState() => _SpacesProfileCardState();
+}
+
+class _SpacesProfileCardState extends State<_SpacesProfileCard> {
+  bool _loading = true;
+  List<LadnaSpace> _spaces = const [];
+  List<SpaceInvite> _invites = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (mounted) setState(() => _loading = true);
+    try {
+      final results = await Future.wait<dynamic>([
+        dbRepo.listSpaces(),
+        dbRepo.listIncomingSpaceInvites(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _spaces = (results[0] as List<LadnaSpace>);
+        _invites = (results[1] as List<SpaceInvite>);
+      });
+    } catch (e) {
+      if (mounted) _snack(context, '${_LadnaText.of(context).spacesLoadFailed}: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _createSpace() async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => const _SpaceEditorSheet(),
+    );
+    if (changed == true) await _load();
+  }
+
+  Future<void> _openSpace(LadnaSpace space) async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SpaceDetailsSheet(space: space),
+    );
+    if (changed == true) await _load();
+  }
+
+  Future<void> _acceptInvite(SpaceInvite invite) async {
+    try {
+      await dbRepo.acceptSpaceInvite(invite.id);
+      await _load();
+      if (mounted) _snack(context, _LadnaText.of(context).spaceInviteAccepted);
+    } catch (e) {
+      if (mounted) _snack(context, '${_LadnaText.of(context).spaceInviteAcceptFailed}: $e');
+    }
+  }
+
+  Future<void> _declineInvite(SpaceInvite invite) async {
+    try {
+      await dbRepo.declineSpaceInvite(invite.id);
+      await _load();
+    } catch (e) {
+      if (mounted) _snack(context, '${_LadnaText.of(context).spaceInviteDeclineFailed}: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+
+    return _BaseCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(t.mySpaces, style: _ladnaCardTitle(context))),
+              _SmallSquareButton(icon: Icons.add_rounded, onTap: _createSpace),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(t.spacesHint, style: _ladnaSmallMuted(context)),
+          const SizedBox(height: 12),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            )
+          else ...[
+            if (_invites.isNotEmpty) ...[
+              Text(t.incomingInvites, style: _ladnaRowTitle(context)),
+              const SizedBox(height: 8),
+              for (final invite in _invites) ...[
+                _SpaceInviteRow(
+                  invite: invite,
+                  onAccept: () => _acceptInvite(invite),
+                  onDecline: () => _declineInvite(invite),
+                ),
+                const SizedBox(height: 8),
+              ],
+              const SizedBox(height: 6),
+              const _CardDivider(),
+              const SizedBox(height: 10),
+            ],
+            if (_spaces.isEmpty)
+              _SpacesEmptyState(onCreate: _createSpace)
+            else
+              for (var i = 0; i < _spaces.length; i++) ...[
+                _SpaceRow(space: _spaces[i], onTap: () => _openSpace(_spaces[i])),
+                if (i != _spaces.length - 1) const _CardDivider(),
+              ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SpacesEmptyState extends StatelessWidget {
+  const _SpacesEmptyState({required this.onCreate});
+
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _ladnaSoftSurface(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _ladnaBorder(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _IconBox(icon: Icons.group_work_outlined, background: _LadnaColors.primarySoft),
+              const SizedBox(width: 10),
+              Expanded(child: Text(t.noSpacesYet, style: _ladnaRowTitle(context))),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(t.noSpacesHint, style: _ladnaSmallMuted(context)),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 42,
+            child: FilledButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text(t.createSpace),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpaceRow extends StatelessWidget {
+  const _SpaceRow({required this.space, required this.onTap});
+
+  final LadnaSpace space;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+    final description = (space.description ?? '').trim();
+    final validity = _spaceValidityLabel(context, space);
+    final subtitle = description.isEmpty ? validity : '$description · $validity';
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            _SpaceAvatar(icon: space.icon, color: _spaceColorFromHex(space.color)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(space.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: _ladnaRowTitle(context)),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _ladnaRowSubtitle(context),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, size: 20, color: _ladnaMuted(context)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpaceInviteRow extends StatelessWidget {
+  const _SpaceInviteRow({
+    required this.invite,
+    required this.onAccept,
+    required this.onDecline,
+  });
+
+  final SpaceInvite invite;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+    final space = invite.space;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _ladnaSoftSurface(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _ladnaBorder(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _SpaceAvatar(icon: space?.icon ?? '👥', color: _spaceColorFromHex(space?.color)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(space?.name ?? t.space, style: _ladnaRowTitle(context)),
+                    const SizedBox(height: 2),
+                    Text(t.spaceInviteSubtitle, style: _ladnaRowSubtitle(context)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onDecline,
+                  child: Text(t.declineInvite),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: onAccept,
+                  child: Text(t.acceptInvite),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpaceDetailsSheet extends StatefulWidget {
+  const _SpaceDetailsSheet({required this.space});
+
+  final LadnaSpace space;
+
+  @override
+  State<_SpaceDetailsSheet> createState() => _SpaceDetailsSheetState();
+}
+
+class _SpaceDetailsSheetState extends State<_SpaceDetailsSheet> {
+  bool _loading = true;
+  bool _busy = false;
+  List<SpaceMember> _members = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  bool get _isOwner {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    return uid != null && uid == widget.space.ownerId;
+  }
+
+  Future<void> _loadMembers() async {
+    if (mounted) setState(() => _loading = true);
+    try {
+      final members = await dbRepo.listSpaceMembers(widget.space.id);
+      if (!mounted) return;
+      setState(() => _members = members);
+    } catch (e) {
+      if (mounted) _snack(context, '${_LadnaText.of(context).spaceMembersLoadFailed}: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _invite() async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SpaceInviteSheet(space: widget.space),
+    );
+    if (changed == true) await _loadMembers();
+  }
+
+  Future<void> _edit() async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SpaceEditorSheet(space: widget.space),
+    );
+    if (changed == true && mounted) Navigator.pop(context, true);
+  }
+
+  Future<void> _deleteOrLeave() async {
+    final t = _LadnaText.of(context);
+    final ok = await _confirmSheet(
+      context,
+      title: _isOwner ? t.deleteSpace : t.leaveSpace,
+      body: _isOwner ? t.deleteSpaceConfirm : t.leaveSpaceConfirm,
+      confirmLabel: _isOwner ? t.delete : t.leaveSpace,
+      destructive: _isOwner,
+    );
+    if (ok != true) return;
+
+    setState(() => _busy = true);
+    try {
+      if (_isOwner) {
+        await dbRepo.deleteSpace(widget.space.id);
+      } else {
+        await dbRepo.leaveSpace(widget.space.id);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) _snack(context, '${t.spaceActionFailed}: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+
+    return NestSheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + MediaQuery.of(context).padding.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                _SpaceAvatar(icon: widget.space.icon, color: _spaceColorFromHex(widget.space.color), size: 42),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.space.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: _LadnaTextStyle.serifTitle.copyWith(fontSize: 21, color: _ladnaText(context))),
+                      const SizedBox(height: 2),
+                      Text('${t.spaceManageSubtitle} · ${_spaceValidityLabel(context, widget.space)}', style: _ladnaSmallMuted(context)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  icon: Icon(Icons.close_rounded, color: _ladnaMuted(context)),
+                ),
+              ],
+            ),
+            if ((widget.space.description ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(widget.space.description!.trim(), style: _ladnaBodyMuted(context).copyWith(height: 1.35)),
+            ],
+            const SizedBox(height: 16),
+            Text(t.members, style: _ladnaRowTitle(context)),
+            const SizedBox(height: 8),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Center(child: CircularProgressIndicator.adaptive()),
+              )
+            else if (_members.isEmpty)
+              Text(t.noMembersYet, style: _ladnaBodyMuted(context))
+            else
+              _BaseCard(
+                child: Column(
+                  children: [
+                    for (var i = 0; i < _members.length; i++) ...[
+                      _SpaceMemberRow(member: _members[i]),
+                      if (i != _members.length - 1) const _CardDivider(),
+                    ],
+                  ],
+                ),
+              ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _busy ? null : _edit,
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text(t.edit),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _busy ? null : _invite,
+                    icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                    label: Text(t.inviteMember),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: _busy ? null : _deleteOrLeave,
+              icon: Icon(_isOwner ? Icons.delete_outline_rounded : Icons.logout_rounded, size: 18),
+              label: Text(_isOwner ? t.deleteSpace : t.leaveSpace),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpaceMemberRow extends StatelessWidget {
+  const _SpaceMemberRow({required this.member});
+
+  final SpaceMember member;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+    final currentUid = Supabase.instance.client.auth.currentUser?.id;
+    final isCurrentUser = currentUid != null && currentUid == member.userId;
+    final title = isCurrentUser
+        ? t.you
+        : ((member.name ?? member.email)?.trim().isNotEmpty == true
+            ? (member.name ?? member.email)!.trim()
+            : _shortUserId(member.userId));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+      child: Row(
+        children: [
+          _IconBox(icon: Icons.person_outline_rounded, background: _LadnaColors.primarySoft),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: _ladnaRowTitle(context)),
+                const SizedBox(height: 2),
+                Text(_spaceRoleLabel(context, member.role), style: _ladnaRowSubtitle(context)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpaceEditorSheet extends StatefulWidget {
+  const _SpaceEditorSheet({this.space});
+
+  final LadnaSpace? space;
+
+  @override
+  State<_SpaceEditorSheet> createState() => _SpaceEditorSheetState();
+}
+
+class _SpaceEditorSheetState extends State<_SpaceEditorSheet> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _descriptionCtrl;
+  late final TextEditingController _iconCtrl;
+  late final TextEditingController _colorCtrl;
+  DateTime? _validUntil;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final space = widget.space;
+    _nameCtrl = TextEditingController(text: space?.name ?? '');
+    _descriptionCtrl = TextEditingController(text: space?.description ?? '');
+    _iconCtrl = TextEditingController(text: space?.icon ?? '🏠');
+    _colorCtrl = TextEditingController(text: space?.color ?? '#6B54C0');
+    _validUntil = space?.validUntil == null ? null : DateUtils.dateOnly(space!.validUntil!);
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _descriptionCtrl.dispose();
+    _iconCtrl.dispose();
+    _colorCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickValidUntil() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final initial = _validUntil == null || _validUntil!.isBefore(today)
+        ? today.add(const Duration(days: 30))
+        : _validUntil!;
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: today,
+      lastDate: DateTime(today.year + 10, 12, 31),
+    );
+
+    if (picked == null || !mounted) return;
+    setState(() => _validUntil = DateUtils.dateOnly(picked));
+  }
+
+  Future<void> _save() async {
+    final t = _LadnaText.of(context);
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
+      _snack(context, t.spaceNameRequired);
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final space = widget.space;
+      if (space == null) {
+        await dbRepo.createSpace(
+          name: name,
+          description: _descriptionCtrl.text.trim(),
+          icon: _iconCtrl.text.trim().isEmpty ? '🏠' : _iconCtrl.text.trim(),
+          color: _colorCtrl.text.trim(),
+          validUntil: _validUntil,
+        );
+      } else {
+        await dbRepo.updateSpace(
+          spaceId: space.id,
+          name: name,
+          description: _descriptionCtrl.text.trim(),
+          icon: _iconCtrl.text.trim().isEmpty ? '🏠' : _iconCtrl.text.trim(),
+          color: _colorCtrl.text.trim(),
+          validUntil: _validUntil,
+        );
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) _snack(context, '${t.spaceSaveFailed}: $e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+    final isEdit = widget.space != null;
+    final validUntil = _validUntil;
+    final validityText = validUntil == null
+        ? t.spaceNoDeadline
+        : t.spaceValidUntil(_formatLadnaDate(context, validUntil));
+
+    return NestSheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          8,
+          16,
+          16 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                isEdit ? t.editSpace : t.createSpace,
+                style: _LadnaTextStyle.serifTitle.copyWith(fontSize: 21, color: _ladnaText(context)),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _nameCtrl,
+                maxLength: 40,
+                decoration: InputDecoration(labelText: t.spaceName, counterText: ''),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _descriptionCtrl,
+                maxLength: 120,
+                minLines: 1,
+                maxLines: 3,
+                decoration: InputDecoration(labelText: t.spaceDescription, counterText: ''),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _iconCtrl,
+                      maxLength: 2,
+                      decoration: InputDecoration(labelText: t.spaceIcon, counterText: ''),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _colorCtrl,
+                      decoration: InputDecoration(labelText: t.spaceColor),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _BaseCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        _IconBox(
+                          icon: Icons.event_available_rounded,
+                          background: _LadnaColors.primarySoft,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(t.spaceValidity, style: _ladnaRowTitle(context)),
+                              const SizedBox(height: 2),
+                              Text(validityText, style: _ladnaRowSubtitle(context)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _saving ? null : _pickValidUntil,
+                            icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                            label: Text(validUntil == null ? t.setDeadline : t.changeDeadline),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        if (validUntil != null)
+                          Expanded(
+                            child: TextButton.icon(
+                              onPressed: _saving ? null : () => setState(() => _validUntil = null),
+                              icon: const Icon(Icons.all_inclusive_rounded, size: 18),
+                              label: Text(t.noDeadline),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(t.spaceValidityHint, style: _ladnaSmallMuted(context)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(child: OutlinedButton(onPressed: _saving ? null : () => Navigator.pop(context, false), child: Text(t.cancel))),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _saving ? null : _save,
+                      icon: _saving
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
+                          : const Icon(Icons.check_rounded, size: 18),
+                      label: Text(_saving ? t.saving : t.save),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpaceInviteSheet extends StatefulWidget {
+  const _SpaceInviteSheet({required this.space});
+
+  final LadnaSpace space;
+
+  @override
+  State<_SpaceInviteSheet> createState() => _SpaceInviteSheetState();
+}
+
+class _SpaceInviteSheetState extends State<_SpaceInviteSheet> {
+  final _emailCtrl = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final t = _LadnaText.of(context);
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      _snack(context, t.enterValidEmail);
+      return;
+    }
+
+    setState(() => _sending = true);
+    try {
+      await dbRepo.inviteUserToSpace(spaceId: widget.space.id, email: email);
+      if (mounted) {
+        _snack(context, t.spaceInviteSent);
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) _snack(context, '${t.spaceInviteSendFailed}: $e');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _LadnaText.of(context);
+
+    return NestSheet(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          8,
+          16,
+          16 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(t.inviteMember, style: _LadnaTextStyle.serifTitle.copyWith(fontSize: 21, color: _ladnaText(context))),
+            const SizedBox(height: 6),
+            Text(t.inviteMemberHint(widget.space.name), style: _ladnaBodyMuted(context)),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _emailCtrl,
+              autofocus: true,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(labelText: t.email),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(child: OutlinedButton(onPressed: _sending ? null : () => Navigator.pop(context, false), child: Text(t.cancel))),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _sending ? null : _send,
+                    icon: _sending
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator.adaptive(strokeWidth: 2))
+                        : const Icon(Icons.send_rounded, size: 18),
+                    label: Text(_sending ? t.saving : t.sendInvite),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpaceAvatar extends StatelessWidget {
+  const _SpaceAvatar({required this.icon, required this.color, this.size = 36});
+
+  final String icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withOpacity(_ladnaIsDark(context) ? 0.26 : 0.14),
+        borderRadius: BorderRadius.circular(size * 0.30),
+        border: Border.all(color: color.withOpacity(_ladnaIsDark(context) ? 0.42 : 0.22)),
+      ),
+      child: Text(
+        icon.trim().isEmpty ? '🏠' : icon.trim(),
+        style: TextStyle(fontSize: size * 0.48),
+      ),
+    );
+  }
+}
+
+Color _spaceColorFromHex(String? raw) {
+  final value = (raw ?? '').trim();
+  if (value.isEmpty) return _LadnaColors.primary;
+  final normalized = value.replaceAll('#', '').toUpperCase();
+  if (!RegExp(r'^[0-9A-F]{6}$').hasMatch(normalized)) return _LadnaColors.primary;
+  return Color(int.parse('FF$normalized', radix: 16));
+}
+
+String _shortUserId(String id) {
+  if (id.length <= 8) return id;
+  return '${id.substring(0, 4)}…${id.substring(id.length - 4)}';
+}
+
+String _spaceRoleLabel(BuildContext context, String role) {
+  final t = _LadnaText.of(context);
+  switch (role) {
+    case 'owner':
+      return t.spaceRoleOwner;
+    case 'admin':
+      return t.spaceRoleAdmin;
+    case 'viewer':
+      return t.spaceRoleViewer;
+    default:
+      return t.spaceRoleMember;
+  }
+}
+
 class _HabitManageRow extends StatelessWidget {
   const _HabitManageRow({
     required this.title,
@@ -2390,5 +3274,98 @@ class _LadnaText {
   String get deleteHabit => pick({'ru': 'Удалить привычку?', 'en': 'Delete habit?', 'de': 'Gewohnheit löschen?', 'fr': 'Supprimer l’habitude ?', 'es': '¿Eliminar hábito?', 'tr': 'Alışkanlık silinsin mi?'});
   String deleteHabitQuestion(String title) => pick({'ru': 'Привычка "$title" будет удалена.', 'en': 'Habit "$title" will be deleted.', 'de': 'Die Gewohnheit "$title" wird gelöscht.', 'fr': 'L’habitude "$title" sera supprimée.', 'es': 'El hábito "$title" se eliminará.', 'tr': '"$title" alışkanlığı silinecek.'});
   String get delete => pick({'ru': 'Удалить', 'en': 'Delete', 'de': 'Löschen', 'fr': 'Supprimer', 'es': 'Eliminar', 'tr': 'Sil'});
+  String get spaces => pick({'ru': 'Пространства', 'en': 'Spaces', 'de': 'Bereiche', 'fr': 'Espaces', 'es': 'Espacios', 'tr': 'Alanlar'});
+  String get space => pick({'ru': 'Пространство', 'en': 'Space', 'de': 'Bereich', 'fr': 'Espace', 'es': 'Espacio', 'tr': 'Alan'});
+  String get mySpaces => pick({'ru': 'Мои пространства', 'en': 'My spaces', 'de': 'Meine Bereiche', 'fr': 'Mes espaces', 'es': 'Mis espacios', 'tr': 'Alanlarım'});
+  String get spacesHint => pick({
+        'ru': 'Создавай общие пространства для дома, семьи, поездок и проектов.',
+        'en': 'Create shared spaces for home, family, trips, and projects.',
+        'de': 'Erstelle gemeinsame Bereiche für Zuhause, Familie, Reisen und Projekte.',
+        'fr': 'Crée des espaces partagés pour la maison, la famille, les voyages et les projets.',
+        'es': 'Crea espacios compartidos para casa, familia, viajes y proyectos.',
+        'tr': 'Ev, aile, seyahat ve projeler için ortak alanlar oluştur.',
+      });
+  String get noSpacesYet => pick({'ru': 'Пространств пока нет', 'en': 'No spaces yet', 'de': 'Noch keine Bereiche', 'fr': 'Aucun espace', 'es': 'Aún no hay espacios', 'tr': 'Henüz alan yok'});
+  String get noSpacesHint => pick({
+        'ru': 'Создай первое пространство и пригласи туда других пользователей.',
+        'en': 'Create your first space and invite other users.',
+        'de': 'Erstelle deinen ersten Bereich und lade andere Nutzer ein.',
+        'fr': 'Crée ton premier espace et invite d’autres utilisateurs.',
+        'es': 'Crea tu primer espacio e invita a otros usuarios.',
+        'tr': 'İlk alanını oluştur ve diğer kullanıcıları davet et.',
+      });
+  String get createSpace => pick({'ru': 'Создать пространство', 'en': 'Create space', 'de': 'Bereich erstellen', 'fr': 'Créer un espace', 'es': 'Crear espacio', 'tr': 'Alan oluştur'});
+  String get editSpace => pick({'ru': 'Редактировать пространство', 'en': 'Edit space', 'de': 'Bereich bearbeiten', 'fr': 'Modifier l’espace', 'es': 'Editar espacio', 'tr': 'Alanı düzenle'});
+  String get deleteSpace => pick({'ru': 'Удалить пространство', 'en': 'Delete space', 'de': 'Bereich löschen', 'fr': 'Supprimer l’espace', 'es': 'Eliminar espacio', 'tr': 'Alanı sil'});
+  String get leaveSpace => pick({'ru': 'Покинуть пространство', 'en': 'Leave space', 'de': 'Bereich verlassen', 'fr': 'Quitter l’espace', 'es': 'Salir del espacio', 'tr': 'Alandan ayrıl'});
+  String get deleteSpaceConfirm => pick({
+        'ru': 'Пространство и связанные с ним общие данные будут удалены. Это действие нельзя отменить.',
+        'en': 'This space and its shared data will be deleted. This cannot be undone.',
+        'de': 'Dieser Bereich und die gemeinsamen Daten werden gelöscht. Das kann nicht rückgängig gemacht werden.',
+        'fr': 'Cet espace et ses données partagées seront supprimés. Cette action est irréversible.',
+        'es': 'Este espacio y sus datos compartidos se eliminarán. Esta acción no se puede deshacer.',
+        'tr': 'Bu alan ve paylaşılan verileri silinecek. Bu işlem geri alınamaz.',
+      });
+  String get leaveSpaceConfirm => pick({
+        'ru': 'Ты больше не будешь видеть задачи и данные этого пространства.',
+        'en': 'You will no longer see tasks and data from this space.',
+        'de': 'Du wirst Aufgaben und Daten aus diesem Bereich nicht mehr sehen.',
+        'fr': 'Tu ne verras plus les tâches et données de cet espace.',
+        'es': 'Ya no verás tareas ni datos de este espacio.',
+        'tr': 'Bu alandaki görevleri ve verileri artık görmeyeceksin.',
+      });
+  String get spaceName => pick({'ru': 'Название пространства', 'en': 'Space name', 'de': 'Name des Bereichs', 'fr': 'Nom de l’espace', 'es': 'Nombre del espacio', 'tr': 'Alan adı'});
+  String get spaceNameRequired => pick({'ru': 'Введите название пространства', 'en': 'Enter a space name', 'de': 'Gib einen Namen ein', 'fr': 'Saisis un nom', 'es': 'Introduce un nombre', 'tr': 'Bir alan adı gir'});
+  String get spaceDescription => pick({'ru': 'Описание', 'en': 'Description', 'de': 'Beschreibung', 'fr': 'Description', 'es': 'Descripción', 'tr': 'Açıklama'});
+  String get spaceIcon => pick({'ru': 'Иконка', 'en': 'Icon', 'de': 'Icon', 'fr': 'Icône', 'es': 'Icono', 'tr': 'Simge'});
+  String get spaceColor => pick({'ru': 'Цвет HEX', 'en': 'HEX color', 'de': 'HEX-Farbe', 'fr': 'Couleur HEX', 'es': 'Color HEX', 'tr': 'HEX renk'});
+  String get spaceValidity => pick({'ru': 'Срок действия', 'en': 'Validity', 'de': 'Gültigkeit', 'fr': 'Validité', 'es': 'Validez', 'tr': 'Geçerlilik'});
+  String get noDeadline => pick({'ru': 'Бессрочно', 'en': 'No deadline', 'de': 'Unbefristet', 'fr': 'Sans limite', 'es': 'Sin fecha límite', 'tr': 'Süresiz'});
+  String get spaceNoDeadline => pick({'ru': 'Бессрочное пространство', 'en': 'No expiration date', 'de': 'Unbefristeter Bereich', 'fr': 'Espace sans expiration', 'es': 'Espacio sin vencimiento', 'tr': 'Süresiz alan'});
+  String get setDeadline => pick({'ru': 'Задать срок', 'en': 'Set date', 'de': 'Datum setzen', 'fr': 'Définir la date', 'es': 'Fijar fecha', 'tr': 'Tarih belirle'});
+  String get changeDeadline => pick({'ru': 'Изменить срок', 'en': 'Change date', 'de': 'Datum ändern', 'fr': 'Modifier la date', 'es': 'Cambiar fecha', 'tr': 'Tarihi değiştir'});
+  String spaceValidUntil(String date) => pick({'ru': 'Действует до $date', 'en': 'Valid until $date', 'de': 'Gültig bis $date', 'fr': 'Valide jusqu’au $date', 'es': 'Válido hasta $date', 'tr': '$date tarihine kadar geçerli'});
+  String get spaceValidityHint => pick({
+        'ru': 'После этой даты пространство останется в базе, но исчезнет с экранов и из выбора задач.',
+        'en': 'After this date, the space stays in the database but disappears from screens and task selection.',
+        'de': 'Nach diesem Datum bleibt der Bereich in der Datenbank, wird aber auf den Screens und in der Aufgabenauswahl ausgeblendet.',
+        'fr': 'Après cette date, l’espace reste en base mais disparaît des écrans et du choix des tâches.',
+        'es': 'Después de esta fecha, el espacio queda en la base, pero desaparece de las pantallas y de la selección de tareas.',
+        'tr': 'Bu tarihten sonra alan veritabanında kalır, ancak ekranlardan ve görev seçiminden kaybolur.',
+      });
+  String get spaceTapToManage => pick({'ru': 'Нажми, чтобы управлять участниками', 'en': 'Tap to manage members', 'de': 'Tippen, um Mitglieder zu verwalten', 'fr': 'Toucher pour gérer les membres', 'es': 'Toca para gestionar miembros', 'tr': 'Üyeleri yönetmek için dokun'});
+  String get spaceManageSubtitle => pick({'ru': 'Участники и приглашения', 'en': 'Members and invites', 'de': 'Mitglieder und Einladungen', 'fr': 'Membres et invitations', 'es': 'Miembros e invitaciones', 'tr': 'Üyeler ve davetler'});
+  String get members => pick({'ru': 'Участники', 'en': 'Members', 'de': 'Mitglieder', 'fr': 'Membres', 'es': 'Miembros', 'tr': 'Üyeler'});
+  String get noMembersYet => pick({'ru': 'Участников пока нет', 'en': 'No members yet', 'de': 'Noch keine Mitglieder', 'fr': 'Aucun membre', 'es': 'Aún no hay miembros', 'tr': 'Henüz üye yok'});
+  String get inviteMember => pick({'ru': 'Пригласить', 'en': 'Invite', 'de': 'Einladen', 'fr': 'Inviter', 'es': 'Invitar', 'tr': 'Davet et'});
+  String inviteMemberHint(String spaceName) => pick({
+        'ru': 'Приглашение будет отправлено в пространство «$spaceName».',
+        'en': 'The invite will be sent for “$spaceName”.',
+        'de': 'Die Einladung wird für „$spaceName“ gesendet.',
+        'fr': 'L’invitation sera envoyée pour « $spaceName ».',
+        'es': 'La invitación se enviará para “$spaceName”.',
+        'tr': 'Davet “$spaceName” alanı için gönderilecek.',
+      });
+  String get email => pick({'ru': 'Email', 'en': 'Email', 'de': 'E-Mail', 'fr': 'E-mail', 'es': 'Email', 'tr': 'E-posta'});
+  String get sendInvite => pick({'ru': 'Отправить', 'en': 'Send', 'de': 'Senden', 'fr': 'Envoyer', 'es': 'Enviar', 'tr': 'Gönder'});
+  String get enterValidEmail => pick({'ru': 'Введите корректный email', 'en': 'Enter a valid email', 'de': 'Gib eine gültige E-Mail ein', 'fr': 'Saisis un e-mail valide', 'es': 'Introduce un email válido', 'tr': 'Geçerli bir e-posta gir'});
+  String get incomingInvites => pick({'ru': 'Входящие приглашения', 'en': 'Incoming invites', 'de': 'Eingehende Einladungen', 'fr': 'Invitations reçues', 'es': 'Invitaciones recibidas', 'tr': 'Gelen davetler'});
+  String get spaceInviteSubtitle => pick({'ru': 'Вас пригласили в общее пространство', 'en': 'You were invited to a shared space', 'de': 'Du wurdest in einen gemeinsamen Bereich eingeladen', 'fr': 'Tu as été invité dans un espace partagé', 'es': 'Te invitaron a un espacio compartido', 'tr': 'Ortak bir alana davet edildin'});
+  String get acceptInvite => pick({'ru': 'Принять', 'en': 'Accept', 'de': 'Annehmen', 'fr': 'Accepter', 'es': 'Aceptar', 'tr': 'Kabul et'});
+  String get declineInvite => pick({'ru': 'Отклонить', 'en': 'Decline', 'de': 'Ablehnen', 'fr': 'Refuser', 'es': 'Rechazar', 'tr': 'Reddet'});
+  String get spaceInviteAccepted => pick({'ru': 'Приглашение принято.', 'en': 'Invite accepted.', 'de': 'Einladung angenommen.', 'fr': 'Invitation acceptée.', 'es': 'Invitación aceptada.', 'tr': 'Davet kabul edildi.'});
+  String get spaceInviteSent => pick({'ru': 'Приглашение отправлено.', 'en': 'Invite sent.', 'de': 'Einladung gesendet.', 'fr': 'Invitation envoyée.', 'es': 'Invitación enviada.', 'tr': 'Davet gönderildi.'});
+  String get you => pick({'ru': 'Вы', 'en': 'You', 'de': 'Du', 'fr': 'Toi', 'es': 'Tú', 'tr': 'Sen'});
+  String get spaceRoleOwner => pick({'ru': 'Владелец', 'en': 'Owner', 'de': 'Eigentümer', 'fr': 'Propriétaire', 'es': 'Propietario', 'tr': 'Sahip'});
+  String get spaceRoleAdmin => pick({'ru': 'Администратор', 'en': 'Admin', 'de': 'Admin', 'fr': 'Admin', 'es': 'Admin', 'tr': 'Yönetici'});
+  String get spaceRoleMember => pick({'ru': 'Участник', 'en': 'Member', 'de': 'Mitglied', 'fr': 'Membre', 'es': 'Miembro', 'tr': 'Üye'});
+  String get spaceRoleViewer => pick({'ru': 'Только просмотр', 'en': 'Viewer', 'de': 'Nur Ansicht', 'fr': 'Lecture seule', 'es': 'Solo lectura', 'tr': 'Sadece görüntüleme'});
+  String get spacesLoadFailed => pick({'ru': 'Не удалось загрузить пространства', 'en': 'Could not load spaces'});
+  String get spaceMembersLoadFailed => pick({'ru': 'Не удалось загрузить участников', 'en': 'Could not load members'});
+  String get spaceSaveFailed => pick({'ru': 'Не удалось сохранить пространство', 'en': 'Could not save space'});
+  String get spaceActionFailed => pick({'ru': 'Не удалось выполнить действие', 'en': 'Could not complete the action'});
+  String get spaceInviteSendFailed => pick({'ru': 'Не удалось отправить приглашение', 'en': 'Could not send invite'});
+  String get spaceInviteAcceptFailed => pick({'ru': 'Не удалось принять приглашение', 'en': 'Could not accept invite'});
+  String get spaceInviteDeclineFailed => pick({'ru': 'Не удалось отклонить приглашение', 'en': 'Could not decline invite'});
   String get noData => pick({'ru': 'Нет данных', 'en': 'No data', 'de': 'Keine Daten', 'fr': 'Aucune donnée', 'es': 'Sin datos', 'tr': 'Veri yok'});
 }

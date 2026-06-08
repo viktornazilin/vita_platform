@@ -10,6 +10,8 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../main.dart';
 import '../models/goal.dart';
 import '../models/day_goals_model.dart';
+import '../models/ladna_space.dart';
+import '../services/onboarding_tour_service.dart';
 import '../widgets/add_day_goal_sheet.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
@@ -22,11 +24,27 @@ const String _kVisionApiKey = String.fromEnvironment(
   defaultValue: '',
 );
 
+
+bool _ladnaSpaceIsActive(LadnaSpace space) {
+  final validUntil = space.validUntil;
+  if (validUntil == null) return true;
+
+  final today = DateUtils.dateOnly(DateTime.now());
+  final until = DateUtils.dateOnly(validUntil);
+  return !until.isBefore(today);
+}
+
+List<LadnaSpace> _ladnaActiveSpaces(Iterable<LadnaSpace> spaces) {
+  return spaces.where(_ladnaSpaceIsActive).toList(growable: false);
+}
+
 class DayGoalsScreen extends StatelessWidget {
   final DateTime date;
   final String? lifeBlock;
   final List<String> availableBlocks;
   final List<UserGoalLinkOption> availableUserGoals;
+  final String? initialSpaceId;
+  final bool initialPersonalOnly;
 
   const DayGoalsScreen({
     super.key,
@@ -34,6 +52,8 @@ class DayGoalsScreen extends StatelessWidget {
     required this.lifeBlock,
     this.availableBlocks = const [],
     this.availableUserGoals = const [],
+    this.initialSpaceId,
+    this.initialPersonalOnly = false,
   });
 
   @override
@@ -43,17 +63,27 @@ class DayGoalsScreen extends StatelessWidget {
         date: date,
         lifeBlock: lifeBlock,
         availableBlocks: availableBlocks,
+        spaceId: initialSpaceId,
+        personalOnly: initialPersonalOnly,
       )..load(),
-      child: _DayGoalsView(availableUserGoals: availableUserGoals),
+      child: _DayGoalsView(
+        availableUserGoals: availableUserGoals,
+        initialSpaceId: initialSpaceId,
+        initialPersonalOnly: initialPersonalOnly,
+      ),
     );
   }
 }
 
 class _DayGoalsView extends StatefulWidget {
   final List<UserGoalLinkOption> availableUserGoals;
+  final String? initialSpaceId;
+  final bool initialPersonalOnly;
 
   const _DayGoalsView({
     required this.availableUserGoals,
+    this.initialSpaceId,
+    this.initialPersonalOnly = false,
   });
 
   @override
@@ -62,11 +92,45 @@ class _DayGoalsView extends StatefulWidget {
 
 class _DayGoalsViewState extends State<_DayGoalsView> {
   final _scroll = ScrollController();
+  final GlobalKey _summaryTourKey = GlobalKey(debugLabel: 'tour_day_summary');
+  final GlobalKey _filterTourKey = GlobalKey(debugLabel: 'tour_day_filter');
+  final GlobalKey _fabTourKey = GlobalKey(debugLabel: 'tour_day_fab');
+  bool _dayTourQueued = false;
 
   bool _busy = false;
   bool _hideCompleted = false;
   String _selectedBlock = 'all';
+  List<LadnaSpace> _spaces = const [];
+  bool _spacesLoading = false;
+  String? _selectedSpaceId;
+  bool _personalOnly = false;
   final Set<_DaySection> _expandedSections = {..._DaySection.values};
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSpaceId = widget.initialSpaceId;
+    _personalOnly = widget.initialPersonalOnly;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSpaces();
+      _maybeRunDayGoalsTour();
+    });
+  }
+
+  void _maybeRunDayGoalsTour() {
+    if (!mounted || _dayTourQueued) return;
+    _dayTourQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await OnboardingTourService.showDayGoalsTourIfNeeded(
+        context: context,
+        summaryKey: _summaryTourKey,
+        filterKey: _filterTourKey,
+        fabKey: _fabTourKey,
+      );
+      if (mounted) _dayTourQueued = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -89,7 +153,49 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
     }
   }
 
+  Future<void> _loadSpaces() async {
+    if (_spacesLoading) return;
+    setState(() => _spacesLoading = true);
+    var filterInvalid = false;
+    try {
+      final spaces = _ladnaActiveSpaces(await dbRepo.listSpaces());
+      if (!mounted) return;
+      setState(() {
+        _spaces = spaces;
+        if (_selectedSpaceId != null &&
+            !_spaces.any((space) => space.id == _selectedSpaceId)) {
+          _selectedSpaceId = null;
+          _personalOnly = false;
+          filterInvalid = true;
+        }
+      });
+      if (filterInvalid && mounted) {
+        await context.read<DayGoalsModel>().setSpaceFilter(
+              selectedSpaceId: null,
+              onlyPersonal: false,
+            );
+      }
+    } catch (e) {
+      if (mounted) _snack(e.toString());
+    } finally {
+      if (mounted) setState(() => _spacesLoading = false);
+    }
+  }
+
+  Future<void> _setSpaceFilter({String? spaceId, bool personalOnly = false}) async {
+    setState(() {
+      _selectedSpaceId = spaceId;
+      _personalOnly = personalOnly;
+    });
+    await context.read<DayGoalsModel>().setSpaceFilter(
+          selectedSpaceId: spaceId,
+          onlyPersonal: personalOnly,
+        );
+  }
+
   Future<void> _openAdd() async {
+    await _loadSpaces();
+    if (!mounted) return;
     final vm = context.read<DayGoalsModel>();
 
     final res = await showModalBottomSheet<AddGoalResult>(
@@ -103,6 +209,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           availableBlocks: vm.availableBlocks,
           availableUserGoals: widget.availableUserGoals,
           initialDate: vm.date,
+          availableSpaces: _ladnaActiveSpaces(_spaces),
+          initialSpaceId: _personalOnly ? null : _selectedSpaceId,
         ),
       ),
     );
@@ -120,6 +228,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           hours: res.hours,
           startTime: res.startTime,
           userGoalId: res.userGoalId,
+          spaceId: _personalOnly ? null : (res.spaceId ?? _selectedSpaceId),
+          assignedTo: res.assignedTo,
         );
 
         await vm.load();
@@ -141,6 +251,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   }
 
   Future<void> _openRecurring() async {
+    await _loadSpaces();
+    if (!mounted) return;
     final vm = context.read<DayGoalsModel>();
 
     final plan = await showModalBottomSheet<recurring.RecurringGoalPlan>(
@@ -151,6 +263,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
       builder: (_) => _LadnaSheet(
         child: recurring.RecurringGoalSheet(
           availableBlocks: vm.availableBlocks,
+          availableSpaces: _ladnaActiveSpaces(_spaces),
+          initialSpaceId: _personalOnly ? null : _selectedSpaceId,
         ),
       ),
     );
@@ -187,6 +301,9 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
             'spent_hours': plan.plannedHours,
             'start_time': startTime,
             'user_goal_id': plan.userGoalId,
+            'space_id': _personalOnly ? null : (plan.spaceId ?? _selectedSpaceId),
+            'assigned_to': plan.assignedTo,
+            'visibility': (_personalOnly || (plan.spaceId ?? _selectedSpaceId) == null) ? 'private' : 'space',
             'is_recurring': true,
             'recurring_group_id': plan.recurringGroupId,
             'recurrence_type': plan.type == recurring.RecurrenceType.weekly
@@ -254,6 +371,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
   }
 
   Future<void> _openEdit(Goal g) async {
+    await _loadSpaces();
+    if (!mounted) return;
     final vm = context.read<DayGoalsModel>();
 
     final res = await showModalBottomSheet<EditGoalResult>(
@@ -268,6 +387,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           availableBlocks: vm.availableBlocks,
           availableUserGoals: widget.availableUserGoals,
           initialUserGoalId: g.userGoalId,
+          availableSpaces: _ladnaActiveSpaces(_spaces),
         ),
       ),
     );
@@ -287,6 +407,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           startTime: res.startTime,
           targetDate: res.selectedDate,
           userGoalId: res.userGoalId,
+          spaceId: res.spaceId,
+          assignedTo: res.assignedTo,
         );
 
         await vm.load();
@@ -432,21 +554,42 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
                                 onBack: () => Navigator.maybePop(context),
                               ),
                               const SizedBox(height: 16),
-                              _HeroSummaryCard(
-                                totalGoals: totalGoals,
-                                completedGoals: completedGoals,
-                                remainingGoals: remainingGoals,
-                                remainingHours: remainingHours,
+                              KeyedSubtree(
+                                key: _summaryTourKey,
+                                child: _HeroSummaryCard(
+                                  totalGoals: totalGoals,
+                                  completedGoals: completedGoals,
+                                  remainingGoals: remainingGoals,
+                                  remainingHours: remainingHours,
+                                ),
                               ),
                               const SizedBox(height: 14),
-                              _BlockChips(
-                                blocks: _chipBlocks(vm.availableBlocks, allGoals),
-                                selected: activeBlock,
-                                fixedBlock: fixedBlock,
-                                onSelected: (block) {
-                                  if (fixedBlock != null) return;
-                                  setState(() => _selectedBlock = block);
-                                },
+                              KeyedSubtree(
+                                key: _filterTourKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _SpaceFilterChips(
+                                      spaces: _spaces,
+                                      loading: _spacesLoading,
+                                      selectedSpaceId: _selectedSpaceId,
+                                      personalOnly: _personalOnly,
+                                      onAll: () => _setSpaceFilter(),
+                                      onPersonal: () => _setSpaceFilter(personalOnly: true),
+                                      onSpace: (spaceId) => _setSpaceFilter(spaceId: spaceId),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _BlockChips(
+                                      blocks: _chipBlocks(vm.availableBlocks, allGoals),
+                                      selected: activeBlock,
+                                      fixedBlock: fixedBlock,
+                                      onSelected: (block) {
+                                        if (fixedBlock != null) return;
+                                        setState(() => _selectedBlock = block);
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 12),
                               _HideCompletedToolbar(
@@ -474,23 +617,26 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           floatingActionButton: Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + 14),
-            child: _MainFab(
-              onAdd: () {
-                if (_busy) return;
-                _openAdd();
-              },
-              onRecurring: () {
-                if (_busy) return;
-                _openRecurring();
-              },
-              onScan: () {
-                if (_busy) return;
-                _onScanPressed();
-              },
-              onCalendar: () {
-                if (_busy) return;
-                _openGoogleCalendarSync();
-              },
+            child: KeyedSubtree(
+              key: _fabTourKey,
+              child: _MainFab(
+                onAdd: () {
+                  if (_busy) return;
+                  _openAdd();
+                },
+                onRecurring: () {
+                  if (_busy) return;
+                  _openRecurring();
+                },
+                onScan: () {
+                  if (_busy) return;
+                  _onScanPressed();
+                },
+                onCalendar: () {
+                  if (_busy) return;
+                  _openGoogleCalendarSync();
+                },
+              ),
             ),
           ),
         ),
@@ -514,6 +660,9 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
   List<Widget> _buildSections(Map<_DaySection, List<Goal>> grouped) {
     final sections = <Widget>[];
+    final spaceLabels = {
+      for (final space in _spaces) space.id: '${space.icon} ${space.name}',
+    };
 
     for (final section in _DaySection.values) {
       final items = grouped[section] ?? const <Goal>[];
@@ -543,6 +692,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
             onToggleGoal: _toggleComplete,
             onEdit: _openEdit,
             onDelete: _confirmAndDelete,
+            spaceLabels: spaceLabels,
             onMoveToDoneState: (goal, done) {
               if (goal.isCompleted == done) return;
               _toggleComplete(goal);
@@ -966,6 +1116,113 @@ class _StatTile extends StatelessWidget {
   }
 }
 
+
+class _SpaceFilterChips extends StatelessWidget {
+  final List<LadnaSpace> spaces;
+  final bool loading;
+  final String? selectedSpaceId;
+  final bool personalOnly;
+  final VoidCallback onAll;
+  final VoidCallback onPersonal;
+  final ValueChanged<String> onSpace;
+
+  const _SpaceFilterChips({
+    required this.spaces,
+    required this.loading,
+    required this.selectedSpaceId,
+    required this.personalOnly,
+    required this.onAll,
+    required this.onPersonal,
+    required this.onSpace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <Widget>[
+      _SpaceChip(
+        label: _dgPick(context, ru: 'Все', en: 'All', de: 'Alle', fr: 'Tous', es: 'Todo', tr: 'Tümü'),
+        selected: selectedSpaceId == null && !personalOnly,
+        onTap: onAll,
+      ),
+      _SpaceChip(
+        label: _dgPick(context, ru: 'Личные', en: 'Personal', de: 'Persönlich', fr: 'Personnel', es: 'Personal', tr: 'Kişisel'),
+        selected: personalOnly,
+        onTap: onPersonal,
+      ),
+      for (final space in spaces)
+        _SpaceChip(
+          label: '${space.icon} ${space.name}',
+          selected: selectedSpaceId == space.id,
+          onTap: () => onSpace(space.id),
+        ),
+      if (loading)
+        const SizedBox(
+          width: 34,
+          height: 34,
+          child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))),
+        ),
+    ];
+
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, index) => items[index],
+      ),
+    );
+  }
+}
+
+class _SpaceChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SpaceChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? _LadnaColors.purple : (_LadnaColors._dark ? const Color(0xFF2A2144) : Colors.white.withOpacity(0.72)),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: selected ? Colors.transparent : _LadnaColors.stroke),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: _LadnaColors.purple.withOpacity(0.18),
+                    blurRadius: 28,
+                    offset: const Offset(0, 12),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: selected ? Colors.white : (_LadnaColors._dark ? const Color(0xFFF4F0FF) : _LadnaColors.muted),
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BlockChips extends StatelessWidget {
   final List<String> blocks;
   final String selected;
@@ -1076,6 +1333,7 @@ class _DaySectionCard extends StatelessWidget {
   final Future<void> Function(Goal goal) onToggleGoal;
   final Future<void> Function(Goal goal) onEdit;
   final Future<void> Function(Goal goal) onDelete;
+  final Map<String, String> spaceLabels;
   final void Function(Goal goal, bool done) onMoveToDoneState;
 
   const _DaySectionCard({
@@ -1087,6 +1345,7 @@ class _DaySectionCard extends StatelessWidget {
     required this.onToggleGoal,
     required this.onEdit,
     required this.onDelete,
+    required this.spaceLabels,
     required this.onMoveToDoneState,
   });
 
@@ -1165,6 +1424,7 @@ class _DaySectionCard extends StatelessWidget {
                     onToggleGoal: onToggleGoal,
                     onEdit: onEdit,
                     onDelete: onDelete,
+                    spaceLabels: spaceLabels,
                     onMoveToDoneState: onMoveToDoneState,
                   );
 
@@ -1177,6 +1437,7 @@ class _DaySectionCard extends StatelessWidget {
                     onToggleGoal: onToggleGoal,
                     onEdit: onEdit,
                     onDelete: onDelete,
+                    spaceLabels: spaceLabels,
                     onMoveToDoneState: onMoveToDoneState,
                   );
 
@@ -1237,6 +1498,7 @@ class _TaskLane extends StatelessWidget {
   final Future<void> Function(Goal goal) onToggleGoal;
   final Future<void> Function(Goal goal) onEdit;
   final Future<void> Function(Goal goal) onDelete;
+  final Map<String, String> spaceLabels;
   final void Function(Goal goal, bool done) onMoveToDoneState;
 
   const _TaskLane({
@@ -1248,6 +1510,7 @@ class _TaskLane extends StatelessWidget {
     required this.onToggleGoal,
     required this.onEdit,
     required this.onDelete,
+    required this.spaceLabels,
     required this.onMoveToDoneState,
   });
 
@@ -1319,6 +1582,7 @@ class _TaskLane extends StatelessWidget {
                       child: _TaskCard(
                         goal: goal,
                         done: doneLane,
+                        spaceLabels: spaceLabels,
                         dragging: true,
                         onToggle: () {},
                         onEdit: () {},
@@ -1331,6 +1595,7 @@ class _TaskLane extends StatelessWidget {
                     child: _TaskCard(
                       goal: goal,
                       done: doneLane,
+                      spaceLabels: spaceLabels,
                       onToggle: () => onToggleGoal(goal),
                       onEdit: () => onEdit(goal),
                       onDelete: () => onDelete(goal),
@@ -1339,6 +1604,7 @@ class _TaskLane extends StatelessWidget {
                   child: _TaskCard(
                     goal: goal,
                     done: doneLane,
+                    spaceLabels: spaceLabels,
                     onToggle: () => onToggleGoal(goal),
                     onEdit: () => onEdit(goal),
                     onDelete: () => onDelete(goal),
@@ -1392,6 +1658,7 @@ class _TaskCard extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final Map<String, String> spaceLabels;
   final bool dragging;
 
   const _TaskCard({
@@ -1400,6 +1667,7 @@ class _TaskCard extends StatelessWidget {
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
+    this.spaceLabels = const {},
     this.dragging = false,
   });
 
@@ -1482,6 +1750,8 @@ class _TaskCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
+              if (goal.spaceId != null)
+                _MetaPill(text: spaceLabels[goal.spaceId!] ?? _dgPick(context, ru: '👥 Пространство', en: '👥 Space', de: '👥 Bereich', fr: '👥 Espace', es: '👥 Espacio', tr: '👥 Alan')),
               _MetaPill(text: '🕥 ${_formatGoalTime(goal.startTime)}'),
               _MetaPill(text: '⏱ ${_formatHours(context, goal.hours)}'),
               if (goal.description.trim().isNotEmpty)

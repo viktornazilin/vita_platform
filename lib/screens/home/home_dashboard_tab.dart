@@ -9,7 +9,9 @@ import '../../models/home_model.dart';
 import '../../models/mood.dart';
 import '../../models/mood_model.dart';
 import '../../models/reports_model.dart';
+import '../../models/space_invite.dart';
 import '../../services/home_ai_insight_service.dart';
+import '../../services/onboarding_tour_service.dart';
 import '../day_goals_screen.dart';
 
 
@@ -50,10 +52,17 @@ class _HomeDashboardBody extends StatefulWidget {
 class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     with AutomaticKeepAliveClientMixin {
   Future<_HabitsSnapshot>? _habitsFuture;
+  Future<List<SpaceInvite>>? _spaceInvitesFuture;
   Future<HomeAiInsightResult>? _aiInsightFuture;
   String? _aiLocale;
 
   static Color get _primary => const Color(0xFF6B54C0);
+
+  final GlobalKey _homeHeaderTourKey = GlobalKey(debugLabel: 'tour_home_header');
+  final GlobalKey _focusTourKey = GlobalKey(debugLabel: 'tour_home_focus');
+  final GlobalKey _invitesTourKey = GlobalKey(debugLabel: 'tour_home_invites');
+  final GlobalKey _overviewTourKey = GlobalKey(debugLabel: 'tour_home_overview');
+  bool _homeTourQueued = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -62,6 +71,36 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   void initState() {
     super.initState();
     _habitsFuture = _loadHabits();
+    _spaceInvitesFuture = _loadIncomingSpaceInvites();
+    OnboardingTourService.fullFlowStep.addListener(_maybeRunHomeTour);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRunHomeTour());
+  }
+
+  @override
+  void dispose() {
+    OnboardingTourService.fullFlowStep.removeListener(_maybeRunHomeTour);
+    super.dispose();
+  }
+
+  void _maybeRunHomeTour() {
+    if (!mounted || _homeTourQueued) return;
+    if (!OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.home)) return;
+    _homeTourQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.home,
+        showTour: () => OnboardingTourService.showHomeDashboardTour(
+          context: context,
+          headerKey: _homeHeaderTourKey,
+          focusKey: _focusTourKey,
+          invitesKey: _invitesTourKey,
+          overviewKey: _overviewTourKey,
+        ),
+      );
+      if (mounted) _homeTourQueued = false;
+    });
   }
 
   @override
@@ -97,6 +136,50 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     }
   }
 
+  Future<List<SpaceInvite>> _loadIncomingSpaceInvites() async {
+    try {
+      return await dbRepo.listIncomingSpaceInvites();
+    } catch (_) {
+      return const <SpaceInvite>[];
+    }
+  }
+
+  Future<void> _acceptSpaceInvite(SpaceInvite invite) async {
+    try {
+      await dbRepo.acceptSpaceInvite(invite.id);
+      if (!mounted) return;
+      setState(() {
+        _spaceInvitesFuture = _loadIncomingSpaceInvites();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_pick(const {
+          'ru': 'Приглашение принято',
+          'en': 'Invite accepted',
+          'de': 'Einladung angenommen',
+          'fr': 'Invitation acceptée',
+          'es': 'Invitación aceptada',
+          'tr': 'Davet kabul edildi',
+        }))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  Future<void> _declineSpaceInvite(SpaceInvite invite) async {
+    try {
+      await dbRepo.declineSpaceInvite(invite.id);
+      if (!mounted) return;
+      setState(() {
+        _spaceInvitesFuture = _loadIncomingSpaceInvites();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
   String? _readDynamicString(dynamic object, String field) {
     try {
       if (object is Map) return object[field]?.toString();
@@ -119,6 +202,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
     final locale = Localizations.localeOf(context).languageCode.toLowerCase();
     setState(() {
       _habitsFuture = _loadHabits();
+      _spaceInvitesFuture = _loadIncomingSpaceInvites();
       _aiInsightFuture = _shouldFetchWeeklyAiInsight()
           ? HomeAiInsightService.instance.fetch(locale: locale)
           : null;
@@ -356,10 +440,13 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 116),
         children: [
-          _HomeHeader(
-            title: _homeTitle(),
-            date: _dateLabel(),
-            onProfileTap: () => context.read<HomeModel>().select(3),
+          KeyedSubtree(
+            key: _homeHeaderTourKey,
+            child: _HomeHeader(
+              title: _homeTitle(),
+              date: _dateLabel(),
+              onProfileTap: () => context.read<HomeModel>().select(3),
+            ),
           ),
           const SizedBox(height: 18),
           _SectionLabel(text: _pick(const {
@@ -371,14 +458,35 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             'tr': 'Bugünün odağı',
           })),
           const SizedBox(height: 9),
-          _FocusCard(
-            done: doneGoals,
-            total: totalGoals,
-            goals: visibleGoals,
-            onToggleGoal: _toggleGoal,
-            onOpenTasks: () => context.read<HomeModel>().select(1),
+          KeyedSubtree(
+            key: _focusTourKey,
+            child: _FocusCard(
+              done: doneGoals,
+              total: totalGoals,
+              goals: visibleGoals,
+              onToggleGoal: _toggleGoal,
+              onOpenTasks: () => context.read<HomeModel>().select(1),
+            ),
           ),
-          const SizedBox(height: 18),
+          FutureBuilder<List<SpaceInvite>>(
+            future: _spaceInvitesFuture,
+            builder: (context, snapshot) {
+              final invites = snapshot.data ?? const <SpaceInvite>[];
+              if (invites.isEmpty) return const SizedBox(height: 18);
+              return Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 18),
+                child: KeyedSubtree(
+                  key: _invitesTourKey,
+                  child: _SpaceInvitesHomeCard(
+                    invites: invites,
+                    onAccept: _acceptSpaceInvite,
+                    onDecline: _declineSpaceInvite,
+                    onOpenProfile: () => context.read<HomeModel>().select(3),
+                  ),
+                ),
+              );
+            },
+          ),
           _SectionLabel(text: _pick(const {
             'ru': 'Обзор дня',
             'en': 'Day overview',
@@ -404,9 +512,11 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
 
               return Column(
                 children: [
-                  _MiniGrid(
-                    moodLabel: todayMood?.emoji ?? '😊',
-                    moodValue: todayMood == null
+                  KeyedSubtree(
+                    key: _overviewTourKey,
+                    child: _MiniGrid(
+                      moodLabel: todayMood?.emoji ?? '😊',
+                      moodValue: todayMood == null
                         ? _pick(const {
                             'ru': 'Нет отметки',
                             'en': 'No entry',
@@ -429,7 +539,8 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                     habitDone: habits.done,
                     habitTotal: habits.total,
                     hours: todayHours,
-                    targetHours: targetHours,
+                      targetHours: targetHours,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _WeekCard(
@@ -872,6 +983,213 @@ class _FocusTaskRow extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+}
+
+
+class _SpaceInvitesHomeCard extends StatelessWidget {
+  const _SpaceInvitesHomeCard({
+    required this.invites,
+    required this.onAccept,
+    required this.onDecline,
+    required this.onOpenProfile,
+  });
+
+  final List<SpaceInvite> invites;
+  final ValueChanged<SpaceInvite> onAccept;
+  final ValueChanged<SpaceInvite> onDecline;
+  final VoidCallback onOpenProfile;
+
+  static Color get _primary => const Color(0xFF6B54C0);
+  static Color get _lime => const Color(0xFFD4E040);
+
+  String _pick(BuildContext context, Map<String, String> values) {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return values[code] ?? values['en'] ?? values.values.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final invite = invites.first;
+    final space = invite.space;
+    final title = (space?.name.trim().isNotEmpty == true)
+        ? space!.name.trim()
+        : _pick(context, const {
+            'ru': 'Пространство',
+            'en': 'Space',
+            'de': 'Bereich',
+            'fr': 'Espace',
+            'es': 'Espacio',
+            'tr': 'Alan',
+          });
+    final icon = (space?.icon.trim().isNotEmpty == true) ? space!.icon.trim() : '👥';
+    final extra = invites.length - 1;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _primary.withOpacity(_ladnaDarkMode ? 0.30 : 0.14),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _primary.withOpacity(_ladnaDarkMode ? 0.22 : 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _primary.withOpacity(0.25)),
+                ),
+                child: Text(icon, style: const TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _pick(context, const {
+                        'ru': 'Новое приглашение',
+                        'en': 'New invitation',
+                        'de': 'Neue Einladung',
+                        'fr': 'Nouvelle invitation',
+                        'es': 'Nueva invitación',
+                        'tr': 'Yeni davet',
+                      }),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w900,
+                        color: _lime,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (extra > 0)
+                GestureDetector(
+                  onTap: onOpenProfile,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _primary.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '+$extra',
+                      style: TextStyle(
+                        color: _ladnaAdaptive(_primary, _lime),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _pick(context, const {
+              'ru': 'Вас пригласили в общее пространство. Примите приглашение, чтобы видеть общие задачи.',
+              'en': 'You were invited to a shared space. Accept it to see shared tasks.',
+              'de': 'Du wurdest in einen gemeinsamen Bereich eingeladen. Nimm an, um gemeinsame Aufgaben zu sehen.',
+              'fr': 'Tu as été invité dans un espace partagé. Accepte pour voir les tâches communes.',
+              'es': 'Te invitaron a un espacio compartido. Acepta para ver tareas comunes.',
+              'tr': 'Paylaşılan bir alana davet edildin. Ortak görevleri görmek için kabul et.',
+            }),
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+            ),
+          ),
+          const SizedBox(height: 13),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 42,
+                  child: OutlinedButton(
+                    onPressed: () => onDecline(invite),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _ladnaAdaptive(_primary, _lime),
+                      side: BorderSide(color: _ladnaAdaptive(_primary.withOpacity(0.30), _lime.withOpacity(0.38))),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      _pick(context, const {
+                        'ru': 'Отклонить',
+                        'en': 'Decline',
+                        'de': 'Ablehnen',
+                        'fr': 'Refuser',
+                        'es': 'Rechazar',
+                        'tr': 'Reddet',
+                      }),
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 42,
+                  child: FilledButton(
+                    onPressed: () => onAccept(invite),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      _pick(context, const {
+                        'ru': 'Принять',
+                        'en': 'Accept',
+                        'de': 'Annehmen',
+                        'fr': 'Accepter',
+                        'es': 'Aceptar',
+                        'tr': 'Kabul et',
+                      }),
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

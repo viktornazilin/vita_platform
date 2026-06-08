@@ -3,8 +3,24 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 import 'package:nest_app/main.dart';
+import 'package:nest_app/models/ladna_space.dart';
+import 'package:nest_app/models/space_member.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:nest_app/core/security/secure_crypto_service.dart';
+
+
+bool _ladnaSpaceIsActive(LadnaSpace space) {
+  final validUntil = space.validUntil;
+  if (validUntil == null) return true;
+
+  final today = DateUtils.dateOnly(DateTime.now());
+  final until = DateUtils.dateOnly(validUntil);
+  return !until.isBefore(today);
+}
+
+List<LadnaSpace> _ladnaActiveSpaces(Iterable<LadnaSpace> spaces) {
+  return spaces.where(_ladnaSpaceIsActive).toList(growable: false);
+}
 
 class UserGoalLinkOption {
   final String id;
@@ -31,6 +47,8 @@ class AddGoalResult {
   final TimeOfDay startTime;
   final TimeOfDay? endTime;
   final String? userGoalId;
+  final String? spaceId;
+  final String? assignedTo;
 
   const AddGoalResult({
     required this.title,
@@ -43,6 +61,8 @@ class AddGoalResult {
     required this.startTime,
     this.endTime,
     this.userGoalId,
+    this.spaceId,
+    this.assignedTo,
   });
 }
 
@@ -56,6 +76,9 @@ class AddDayGoalSheet extends StatefulWidget {
 
   final String? initialUserGoalId;
   final DateTime? initialDate;
+  final List<LadnaSpace> availableSpaces;
+  final String? initialSpaceId;
+  final String? initialAssignedTo;
 
   const AddDayGoalSheet({
     super.key,
@@ -64,6 +87,9 @@ class AddDayGoalSheet extends StatefulWidget {
     this.availableUserGoals = const [],
     this.initialUserGoalId,
     this.initialDate,
+    this.availableSpaces = const [],
+    this.initialSpaceId,
+    this.initialAssignedTo,
   });
 
   @override
@@ -88,6 +114,12 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
   bool _loadingUserGoals = false;
   List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
+
+  String? _selectedSpaceId;
+  String? _selectedAssignedTo;
+  List<LadnaSpace> _availableSpaces = const [];
+  bool _loadingSpaceMembers = false;
+  List<SpaceMember> _spaceMembers = const [];
 
   String _normalizeBlock(String value) {
     var v = value.trim().toLowerCase();
@@ -544,6 +576,109 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
     }
   }
 
+
+  String _taskLocationTitle(BuildContext context) => _localized(context, const {
+        'ru': 'Где создать задачу',
+        'en': 'Where to create the task',
+        'de': 'Wo die Aufgabe erstellt wird',
+        'fr': 'Où créer la tâche',
+        'es': 'Dónde crear la tarea',
+        'tr': 'Görev nerede oluşturulsun',
+      });
+
+  String _personalTaskLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Только мне',
+        'en': 'Only me',
+        'de': 'Nur für mich',
+        'fr': 'Seulement moi',
+        'es': 'Solo para mí',
+        'tr': 'Sadece ben',
+      });
+
+  String _assigneeLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Исполнитель',
+        'en': 'Assignee',
+        'de': 'Verantwortlich',
+        'fr': 'Responsable',
+        'es': 'Responsable',
+        'tr': 'Atanan kişi',
+      });
+
+  String _notAssignedLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Не назначать',
+        'en': 'Not assigned',
+        'de': 'Nicht zuweisen',
+        'fr': 'Non assigné',
+        'es': 'Sin asignar',
+        'tr': 'Atanmadı',
+      });
+
+  String _spaceMemberLabel(SpaceMember member) {
+    final name = member.name?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final email = member.email?.trim();
+    if (email != null && email.isNotEmpty) return email;
+    final id = member.userId.trim();
+    return id.length <= 8 ? id : '${id.substring(0, 8)}…';
+  }
+
+  Future<void> _loadAvailableSpaces() async {
+    try {
+      final spaces = _ladnaActiveSpaces(await dbRepo.listSpaces());
+      if (!mounted) return;
+      final selectedStillExists = _selectedSpaceId == null ||
+          spaces.any((space) => space.id == _selectedSpaceId);
+      setState(() {
+        _availableSpaces = spaces;
+        if (!selectedStillExists) {
+          _selectedSpaceId = null;
+          _selectedAssignedTo = null;
+          _spaceMembers = const [];
+        }
+      });
+      if (_selectedSpaceId != null) {
+        await _loadSpaceMembersForSelectedSpace();
+      }
+    } catch (e) {
+      debugPrint('Spaces load failed: $e');
+    }
+  }
+
+  Future<void> _loadSpaceMembersForSelectedSpace() async {
+    final spaceId = _selectedSpaceId;
+    if (spaceId == null || spaceId.trim().isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _spaceMembers = const [];
+        _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+      return;
+    }
+
+    setState(() => _loadingSpaceMembers = true);
+
+    try {
+      final members = await dbRepo.listSpaceMembers(spaceId);
+      if (!mounted) return;
+      final selectedStillValid = _selectedAssignedTo == null ||
+          members.any((member) => member.userId == _selectedAssignedTo);
+      setState(() {
+        _spaceMembers = members;
+        if (!selectedStillValid) _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+    } catch (e) {
+      debugPrint('Space members load failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _spaceMembers = const [];
+        _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -559,9 +694,15 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
 
     _selectedUserGoalId = widget.initialUserGoalId;
     _selectedDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
+    _availableSpaces = _ladnaActiveSpaces(widget.availableSpaces);
+    _selectedSpaceId = _availableSpaces.any((s) => s.id == widget.initialSpaceId)
+        ? widget.initialSpaceId
+        : null;
+    _selectedAssignedTo = widget.initialAssignedTo;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserGoalsForCurrentBlock();
+      _loadAvailableSpaces();
     });
   }
 
@@ -766,6 +907,8 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
         startTime: _startTime,
         endTime: _endTime,
         userGoalId: _selectedUserGoalId,
+        spaceId: _selectedSpaceId,
+        assignedTo: _selectedSpaceId == null ? null : _selectedAssignedTo,
       ),
     );
   }
@@ -1052,6 +1195,117 @@ class _AddDayGoalSheetState extends State<AddDayGoalSheet> {
                               },
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (_availableSpaces.isNotEmpty) ...[
+                    _Section(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.groups_2_rounded, color: scheme.primary),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _taskLocationTitle(context),
+                                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: scheme.onSurface,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          DropdownButtonFormField<String?>(
+                            value: _selectedSpaceId,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: isDark
+                                  ? scheme.surfaceContainerHighest.withOpacity(0.36)
+                                  : Colors.white.withOpacity(0.78),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: scheme.outlineVariant.withOpacity(0.60)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: scheme.outlineVariant.withOpacity(0.55)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: scheme.primary, width: 1.4),
+                              ),
+                            ),
+                            items: [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(_personalTaskLabel(context), overflow: TextOverflow.ellipsis),
+                              ),
+                              ..._availableSpaces.map(
+                                (space) => DropdownMenuItem<String?>(
+                                  value: space.id,
+                                  child: Text('${space.icon} ${space.name}', overflow: TextOverflow.ellipsis),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) async {
+                              setState(() {
+                                _selectedSpaceId = value;
+                                _selectedAssignedTo = null;
+                                _spaceMembers = const [];
+                              });
+                              await _loadSpaceMembersForSelectedSpace();
+                            },
+                          ),
+                          if (_selectedSpaceId != null) ...[
+                            const SizedBox(height: 10),
+                            DropdownButtonFormField<String?>(
+                              value: _spaceMembers.any((m) => m.userId == _selectedAssignedTo)
+                                  ? _selectedAssignedTo
+                                  : null,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: _assigneeLabel(context),
+                                filled: true,
+                                fillColor: isDark
+                                    ? scheme.surfaceContainerHighest.withOpacity(0.36)
+                                    : Colors.white.withOpacity(0.78),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(color: scheme.outlineVariant.withOpacity(0.60)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(color: scheme.outlineVariant.withOpacity(0.55)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(color: scheme.primary, width: 1.4),
+                                ),
+                              ),
+                              items: [
+                                DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text(_notAssignedLabel(context), overflow: TextOverflow.ellipsis),
+                                ),
+                                ..._spaceMembers.map(
+                                  (member) => DropdownMenuItem<String?>(
+                                    value: member.userId,
+                                    child: Text(_spaceMemberLabel(member), overflow: TextOverflow.ellipsis),
+                                  ),
+                                ),
+                              ],
+                              onChanged: _loadingSpaceMembers
+                                  ? null
+                                  : (value) => setState(() => _selectedAssignedTo = value),
+                            ),
+                          ],
                         ],
                       ),
                     ),

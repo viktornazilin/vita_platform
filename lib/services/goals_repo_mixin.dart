@@ -10,8 +10,13 @@ mixin GoalsRepoMixin on BaseRepo {
   // Goals CRUD
   // =========================
 
-  Future<List<Goal>> fetchGoals({String? lifeBlock, String? userGoalId}) async {
-    var q = client.from('goals').select().eq('user_id', uid);
+  Future<List<Goal>> fetchGoals({
+    String? lifeBlock,
+    String? userGoalId,
+    String? spaceId,
+    bool personalOnly = false,
+  }) async {
+    var q = client.from('goals').select();
 
     if (lifeBlock != null) {
       q = q.eq('life_block', lifeBlock);
@@ -19,12 +24,18 @@ mixin GoalsRepoMixin on BaseRepo {
     if (userGoalId != null) {
       q = q.eq('user_goal_id', userGoalId);
     }
+    if (spaceId != null) {
+      q = q.eq('space_id', spaceId);
+    } else if (personalOnly) {
+      q = q.isFilter('space_id', null);
+    }
 
     final res = await q.order('created_at', ascending: false);
     final rows = (res as List).cast<Map<String, dynamic>>();
 
+    final visibleRows = await _filterRowsByActiveSpaces(rows);
     final decryptedRows = await Future.wait(
-      rows.map(_decryptGoalRow),
+      visibleRows.map(_decryptGoalRow),
     );
 
     return decryptedRows.map(Goal.fromMap).toList();
@@ -40,6 +51,9 @@ mixin GoalsRepoMixin on BaseRepo {
     double spentHours = 1.0,
     required DateTime startTime,
     String? userGoalId,
+    String? spaceId,
+    String? assignedTo,
+    String visibility = 'private',
   }) async {
     final encryptedPayload = await _encryptGoalPayload(
       title: title,
@@ -65,6 +79,9 @@ mixin GoalsRepoMixin on BaseRepo {
       'spent_hours': spentHours,
       'start_time': startTime.toIso8601String(),
       'user_goal_id': userGoalId,
+      'space_id': spaceId,
+      'assigned_to': assignedTo,
+      'visibility': spaceId == null ? 'private' : visibility,
     };
 
     final res = await client.from('goals').insert(insert).select().single();
@@ -110,6 +127,13 @@ mixin GoalsRepoMixin on BaseRepo {
             'spent_hours': _asDouble(item['spent_hours'] ?? 1.0),
             'start_time': _asIsoString(item['start_time']),
             'user_goal_id': item['user_goal_id'],
+            'space_id': item['space_id'],
+            'assigned_to': item['assigned_to'],
+            'visibility': item['space_id'] == null
+                ? (item['visibility'] ?? 'private')
+                : (item['visibility'] ?? 'space'),
+            if (item.containsKey('completed_by')) 'completed_by': item['completed_by'],
+            if (item.containsKey('completed_at')) 'completed_at': item['completed_at'],
             if (item.containsKey('is_recurring'))
               'is_recurring': item['is_recurring'] == true,
             if (item.containsKey('recurring_group_id'))
@@ -130,8 +154,9 @@ mixin GoalsRepoMixin on BaseRepo {
     final res = await client.from('goals').insert(payload).select();
     final rows = (res as List).cast<Map<String, dynamic>>();
 
+    final visibleRows = await _filterRowsByActiveSpaces(rows);
     final decryptedRows = await Future.wait(
-      rows.map(_decryptGoalRow),
+      visibleRows.map(_decryptGoalRow),
     );
 
     return decryptedRows.map(Goal.fromMap).toList();
@@ -161,9 +186,13 @@ mixin GoalsRepoMixin on BaseRepo {
           'spent_hours': goal.spentHours,
           'start_time': goal.startTime.toIso8601String(),
           'user_goal_id': _extractUserGoalId(goal),
+          'space_id': _extractSpaceId(goal),
+          'assigned_to': _extractAssignedTo(goal),
+          'visibility': _extractVisibility(goal),
+          'completed_by': _extractCompletedBy(goal),
+          'completed_at': _extractCompletedAtIso(goal),
         })
-        .eq('id', goal.id)
-        .eq('user_id', uid);
+        .eq('id', goal.id);
   }
 
   Future<void> updateGoalFields({
@@ -178,6 +207,11 @@ mixin GoalsRepoMixin on BaseRepo {
     double? spentHours,
     DateTime? startTime,
     Object? userGoalId = _unset,
+    Object? spaceId = _unset,
+    Object? assignedTo = _unset,
+    String? visibility,
+    Object? completedBy = _unset,
+    Object? completedAt = _unset,
   }) async {
     final update = <String, dynamic>{};
 
@@ -189,7 +223,6 @@ mixin GoalsRepoMixin on BaseRepo {
           .from('goals')
           .select('title, description, emotion, encrypted_payload')
           .eq('id', goalId)
-          .eq('user_id', uid)
           .maybeSingle();
 
       if (current != null) {
@@ -228,10 +261,27 @@ mixin GoalsRepoMixin on BaseRepo {
     if (!identical(userGoalId, _unset)) {
       update['user_goal_id'] = userGoalId;
     }
+    if (!identical(spaceId, _unset)) {
+      update['space_id'] = spaceId;
+      update['visibility'] = spaceId == null ? 'private' : (visibility ?? 'space');
+    } else if (visibility != null) {
+      update['visibility'] = visibility;
+    }
+    if (!identical(assignedTo, _unset)) {
+      update['assigned_to'] = assignedTo;
+    }
+    if (!identical(completedBy, _unset)) {
+      update['completed_by'] = completedBy;
+    }
+    if (!identical(completedAt, _unset)) {
+      update['completed_at'] = completedAt is DateTime
+          ? completedAt.toUtc().toIso8601String()
+          : completedAt;
+    }
 
     if (update.isEmpty) return;
 
-    await client.from('goals').update(update).eq('id', goalId).eq('user_id', uid);
+    await client.from('goals').update(update).eq('id', goalId);
   }
 
   Future<void> deleteGoal(String id) async {
@@ -241,14 +291,13 @@ mixin GoalsRepoMixin on BaseRepo {
         .from('goals')
         .delete()
         .eq('id', idValue)
-        .eq('user_id', uid)
         .select('id');
 
     final deleted = (res as List).cast<Map<String, dynamic>>();
     if (deleted.isEmpty) {
       final still = await client
           .from('goals')
-          .select('id,user_id')
+          .select('id,user_id,space_id')
           .eq('id', idValue)
           .maybeSingle();
 
@@ -262,6 +311,8 @@ mixin GoalsRepoMixin on BaseRepo {
     DateTime date, {
     String? lifeBlock,
     String? userGoalId,
+    String? spaceId,
+    bool personalOnly = false,
   }) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
@@ -269,7 +320,6 @@ mixin GoalsRepoMixin on BaseRepo {
     var q = client
         .from('goals')
         .select()
-        .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
 
@@ -279,12 +329,18 @@ mixin GoalsRepoMixin on BaseRepo {
     if (userGoalId != null) {
       q = q.eq('user_goal_id', userGoalId);
     }
+    if (spaceId != null) {
+      q = q.eq('space_id', spaceId);
+    } else if (personalOnly) {
+      q = q.isFilter('space_id', null);
+    }
 
     final res = await q.order('start_time', ascending: true);
     final rows = (res as List).cast<Map<String, dynamic>>();
 
+    final visibleRows = await _filterRowsByActiveSpaces(rows);
     final decryptedRows = await Future.wait(
-      rows.map(_decryptGoalRow),
+      visibleRows.map(_decryptGoalRow),
     );
 
     return decryptedRows.map(Goal.fromMap).toList();
@@ -294,14 +350,14 @@ mixin GoalsRepoMixin on BaseRepo {
     final res = await client
         .from('goals')
         .select()
-        .eq('user_id', uid)
         .eq('user_goal_id', userGoalId)
         .order('start_time', ascending: true);
 
     final rows = (res as List).cast<Map<String, dynamic>>();
 
+    final visibleRows = await _filterRowsByActiveSpaces(rows);
     final decryptedRows = await Future.wait(
-      rows.map(_decryptGoalRow),
+      visibleRows.map(_decryptGoalRow),
     );
 
     return decryptedRows.map(Goal.fromMap).toList();
@@ -320,7 +376,6 @@ mixin GoalsRepoMixin on BaseRepo {
         .from('goals')
         .select('is_completed')
         .eq('id', id)
-        .eq('user_id', uid)
         .maybeSingle();
     if (row == null) return;
 
@@ -328,9 +383,12 @@ mixin GoalsRepoMixin on BaseRepo {
 
     await client
         .from('goals')
-        .update({'is_completed': newVal})
-        .eq('id', id)
-        .eq('user_id', uid);
+        .update({
+          'is_completed': newVal,
+          'completed_by': newVal ? uid : null,
+          'completed_at': newVal ? DateTime.now().toUtc().toIso8601String() : null,
+        })
+        .eq('id', id);
 
     if (newVal) {
       await addXP(10);
@@ -358,7 +416,8 @@ mixin GoalsRepoMixin on BaseRepo {
         .order('deadline', ascending: true);
 
     final rows = (res as List).cast<Map<String, dynamic>>();
-    final decryptedRows = await Future.wait(rows.map(_decryptGoalRow));
+    final visibleRows = await _filterRowsByActiveSpaces(rows);
+    final decryptedRows = await Future.wait(visibleRows.map(_decryptGoalRow));
 
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final row in decryptedRows) {
@@ -450,6 +509,8 @@ mixin GoalsRepoMixin on BaseRepo {
     int limit = 8,
     String? lifeBlock,
     String? userGoalId,
+    String? spaceId,
+    bool personalOnly = false,
   }) async {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return [];
@@ -457,15 +518,19 @@ mixin GoalsRepoMixin on BaseRepo {
     var req = client
         .from('goals')
         .select(
-          'title, description, emotion, encrypted_payload, created_at, deadline, life_block, user_goal_id',
-        )
-        .eq('user_id', uid);
+          'title, description, emotion, encrypted_payload, created_at, deadline, life_block, user_goal_id, space_id, assigned_to, visibility, completed_by, completed_at',
+        );
 
     if (lifeBlock != null) {
       req = req.eq('life_block', lifeBlock);
     }
     if (userGoalId != null) {
       req = req.eq('user_goal_id', userGoalId);
+    }
+    if (spaceId != null) {
+      req = req.eq('space_id', spaceId);
+    } else if (personalOnly) {
+      req = req.isFilter('space_id', null);
     }
 
     // Server-side ILIKE is no longer possible for encrypted titles.
@@ -502,13 +567,14 @@ mixin GoalsRepoMixin on BaseRepo {
     required DateTime end,
     String? lifeBlock,
     String? userGoalId,
+    String? spaceId,
+    bool personalOnly = false,
   }) async {
     var q = client
         .from('goals')
         .select(
-          'title, description, emotion, encrypted_payload, deadline, life_block, user_goal_id',
+          'title, description, emotion, encrypted_payload, deadline, life_block, user_goal_id, space_id, assigned_to, visibility, completed_by, completed_at',
         )
-        .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
 
@@ -517,6 +583,11 @@ mixin GoalsRepoMixin on BaseRepo {
     }
     if (userGoalId != null) {
       q = q.eq('user_goal_id', userGoalId);
+    }
+    if (spaceId != null) {
+      q = q.eq('space_id', spaceId);
+    } else if (personalOnly) {
+      q = q.isFilter('space_id', null);
     }
 
     final res = await q;
@@ -531,6 +602,8 @@ mixin GoalsRepoMixin on BaseRepo {
     int lookbackDays = 30,
     String? lifeBlock,
     String? userGoalId,
+    String? spaceId,
+    bool personalOnly = false,
   }) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -540,9 +613,8 @@ mixin GoalsRepoMixin on BaseRepo {
     var q = client
         .from('goals')
         .select(
-          'title, description, emotion, encrypted_payload, deadline, life_block, user_goal_id',
+          'title, description, emotion, encrypted_payload, deadline, life_block, user_goal_id, space_id, assigned_to, visibility, completed_by, completed_at',
         )
-        .eq('user_id', uid)
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
 
@@ -552,12 +624,18 @@ mixin GoalsRepoMixin on BaseRepo {
     if (userGoalId != null) {
       q = q.eq('user_goal_id', userGoalId);
     }
+    if (spaceId != null) {
+      q = q.eq('space_id', spaceId);
+    } else if (personalOnly) {
+      q = q.isFilter('space_id', null);
+    }
 
     final res = await q;
     final rows = (res as List).cast<Map<String, dynamic>>();
 
+    final visibleRows = await _filterRowsByActiveSpaces(rows);
     final decryptedRows = await Future.wait(
-      rows.map(_decryptGoalRow),
+      visibleRows.map(_decryptGoalRow),
     );
 
     final Map<String, Set<String>> daysByTitle = {};
@@ -650,11 +728,12 @@ mixin GoalsRepoMixin on BaseRepo {
     required DateTime end,
     String? lifeBlock,
     String? userGoalId,
+    String? spaceId,
+    bool personalOnly = false,
   }) async {
     var q = client
         .from('goals')
         .select()
-        .eq('user_id', uid)
         .gte('start_time', start.toIso8601String())
         .lt('start_time', end.toIso8601String());
 
@@ -664,12 +743,18 @@ mixin GoalsRepoMixin on BaseRepo {
     if (userGoalId != null) {
       q = q.eq('user_goal_id', userGoalId);
     }
+    if (spaceId != null) {
+      q = q.eq('space_id', spaceId);
+    } else if (personalOnly) {
+      q = q.isFilter('space_id', null);
+    }
 
     final res = await q.order('start_time', ascending: true);
     final rows = (res as List).cast<Map<String, dynamic>>();
 
+    final visibleRows = await _filterRowsByActiveSpaces(rows);
     final decryptedRows = await Future.wait(
-      rows.map(_decryptGoalRow),
+      visibleRows.map(_decryptGoalRow),
     );
 
     return decryptedRows.map(Goal.fromMap).toList();
@@ -679,14 +764,15 @@ mixin GoalsRepoMixin on BaseRepo {
     DateTime date, {
     String? lifeBlock,
     String? userGoalId,
+    String? spaceId,
+    bool personalOnly = false,
   }) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
 
     var q = client
         .from('goals')
-        .select('spent_hours, life_block, user_goal_id')
-        .eq('user_id', uid)
+        .select('spent_hours, life_block, user_goal_id, space_id')
         .gte('deadline', start.toIso8601String())
         .lt('deadline', end.toIso8601String());
 
@@ -695,6 +781,11 @@ mixin GoalsRepoMixin on BaseRepo {
     }
     if (userGoalId != null) {
       q = q.eq('user_goal_id', userGoalId);
+    }
+    if (spaceId != null) {
+      q = q.eq('space_id', spaceId);
+    } else if (personalOnly) {
+      q = q.isFilter('space_id', null);
     }
 
     final res = await q;
@@ -721,6 +812,43 @@ mixin GoalsRepoMixin on BaseRepo {
     };
 
     return _crypto.encryptJson(payload);
+  }
+
+  String _dateOnlyIso(DateTime value) {
+    final d = DateTime(value.year, value.month, value.day);
+    return d.toIso8601String().split('T').first;
+  }
+
+  Future<Set<String>> _activeSpaceIds() async {
+    final today = _dateOnlyIso(DateTime.now());
+    final res = await client
+        .from('spaces')
+        .select('id')
+        .or('valid_until.is.null,valid_until.gte.$today');
+
+    return (res as List)
+        .map((row) => (row as Map)['id']?.toString())
+        .whereType<String>()
+        .where((id) => id.trim().isNotEmpty)
+        .toSet();
+  }
+
+  Future<List<Map<String, dynamic>>> _filterRowsByActiveSpaces(
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final rowsWithSpace = rows.where((row) {
+      final value = row['space_id'];
+      return value != null && value.toString().trim().isNotEmpty;
+    }).toList();
+
+    if (rowsWithSpace.isEmpty) return rows;
+
+    final activeIds = await _activeSpaceIds();
+    return rows.where((row) {
+      final value = row['space_id'];
+      if (value == null || value.toString().trim().isEmpty) return true;
+      return activeIds.contains(value.toString());
+    }).toList();
   }
 
   Future<Map<String, dynamic>> _decryptGoalRow(Map<String, dynamic> row) async {
@@ -791,6 +919,53 @@ mixin GoalsRepoMixin on BaseRepo {
       return null;
     }
   }
+
+  String? _extractSpaceId(Goal goal) {
+    try {
+      return (goal as dynamic).spaceId as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extractAssignedTo(Goal goal) {
+    try {
+      return (goal as dynamic).assignedTo as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _extractVisibility(Goal goal) {
+    try {
+      final visibility = (goal as dynamic).visibility?.toString();
+      if (visibility == 'space' || visibility == 'private') return visibility!;
+    } catch (_) {
+      // ignore
+    }
+
+    return _extractSpaceId(goal) == null ? 'private' : 'space';
+  }
+
+  String? _extractCompletedBy(Goal goal) {
+    try {
+      return (goal as dynamic).completedBy as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extractCompletedAtIso(Goal goal) {
+    try {
+      final value = (goal as dynamic).completedAt;
+      if (value is DateTime) return value.toUtc().toIso8601String();
+      if (value is String) return value;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
 }
 
 class _TitleStat {

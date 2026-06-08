@@ -17,6 +17,7 @@ import '../models/home_model.dart';
 import '../models/mood.dart';
 import '../models/reports_model.dart';
 import '../services/home_ai_insight_service.dart';
+import '../services/onboarding_tour_service.dart';
 import '../widgets/nest/nest_background.dart';
 
 bool get _ladnaDarkMode =>
@@ -51,6 +52,43 @@ class _ReportsView extends StatefulWidget {
 
 class _ReportsViewState extends State<_ReportsView> {
   _ReportTab _tab = _ReportTab.summary;
+  final GlobalKey _periodTourKey = GlobalKey(debugLabel: 'tour_reports_period');
+  final GlobalKey _tabsTourKey = GlobalKey(debugLabel: 'tour_reports_tabs');
+  final GlobalKey _chartTourKey = GlobalKey(debugLabel: 'tour_reports_chart');
+  bool _reportsTourQueued = false;
+
+  @override
+  void initState() {
+    super.initState();
+    OnboardingTourService.fullFlowStep.addListener(_maybeRunReportsTour);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRunReportsTour());
+  }
+
+  @override
+  void dispose() {
+    OnboardingTourService.fullFlowStep.removeListener(_maybeRunReportsTour);
+    super.dispose();
+  }
+
+  void _maybeRunReportsTour() {
+    if (!mounted || _reportsTourQueued) return;
+    if (!OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.reports)) return;
+    _reportsTourQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.reports,
+        showTour: () => OnboardingTourService.showReportsTour(
+          context: context,
+          periodKey: _periodTourKey,
+          tabsKey: _tabsTourKey,
+          chartKey: _chartTourKey,
+        ),
+      );
+      if (mounted) _reportsTourQueued = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,12 +117,18 @@ class _ReportsViewState extends State<_ReportsView> {
                     children: [
                       _Header(title: t.reports),
                       const SizedBox(height: 14),
-                      _PeriodRow(model: model, t: t),
+                      KeyedSubtree(
+                        key: _periodTourKey,
+                        child: _PeriodRow(model: model, t: t),
+                      ),
                       const SizedBox(height: 12),
-                      _ReportTabs(
-                        value: _tab,
-                        t: t,
-                        onChanged: (v) => setState(() => _tab = v),
+                      KeyedSubtree(
+                        key: _tabsTourKey,
+                        child: _ReportTabs(
+                          value: _tab,
+                          t: t,
+                          onChanged: (v) => setState(() => _tab = v),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       AnimatedSwitcher(
@@ -94,7 +138,7 @@ class _ReportsViewState extends State<_ReportsView> {
                         child: KeyedSubtree(
                           key: ValueKey(_tab),
                           child: switch (_tab) {
-                            _ReportTab.summary => _SummaryTab(model: model, t: t),
+                            _ReportTab.summary => _SummaryTab(model: model, t: t, chartKey: _chartTourKey),
                             _ReportTab.progress => _ProgressTab(model: model, t: t),
                             _ReportTab.habits => _HabitsTab(model: model, t: t),
                             _ReportTab.mood => _MoodTab(model: model, t: t),
@@ -118,8 +162,13 @@ class _ReportsViewState extends State<_ReportsView> {
 class _SummaryTab extends StatelessWidget {
   final ReportsModel model;
   final _ReportsText t;
+  final GlobalKey chartKey;
 
-  const _SummaryTab({required this.model, required this.t});
+  const _SummaryTab({
+    required this.model,
+    required this.t,
+    required this.chartKey,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -143,16 +192,19 @@ class _SummaryTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _PulseCard(
-          pulse: pulse,
-          verdict: _pulseVerdict(pulse, t),
-          taskPct: taskPct,
-          taskSub: '$completed ${t.outOf} $total',
-          habitPct: habitPct,
-          moodValue: avgMood,
-          focusHours: model.totalHours,
-          bars: _pulseBarsForGoals(goals, model.period),
-          t: t,
+        KeyedSubtree(
+          key: chartKey,
+          child: _PulseCard(
+            pulse: pulse,
+            verdict: _pulseVerdict(pulse, t),
+            taskPct: taskPct,
+            taskSub: '$completed ${t.outOf} $total',
+            habitPct: habitPct,
+            moodValue: avgMood,
+            focusHours: model.totalHours,
+            bars: _pulseBarsForGoals(goals, model.period),
+            t: t,
+          ),
         ),
         const SizedBox(height: 12),
         _MetricGrid(

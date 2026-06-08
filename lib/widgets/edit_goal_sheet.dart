@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 import 'package:nest_app/main.dart';
+import 'package:nest_app/models/ladna_space.dart';
+import 'package:nest_app/models/space_member.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:nest_app/core/security/secure_crypto_service.dart';
 
@@ -12,6 +14,20 @@ import 'add_day_goal_sheet.dart';
 import 'nest/nest_card.dart';
 import 'nest/nest_pill.dart';
 import 'nest/nest_section_title.dart';
+
+
+bool _ladnaSpaceIsActive(LadnaSpace space) {
+  final validUntil = space.validUntil;
+  if (validUntil == null) return true;
+
+  final today = DateUtils.dateOnly(DateTime.now());
+  final until = DateUtils.dateOnly(validUntil);
+  return !until.isBefore(today);
+}
+
+List<LadnaSpace> _ladnaActiveSpaces(Iterable<LadnaSpace> spaces) {
+  return spaces.where(_ladnaSpaceIsActive).toList(growable: false);
+}
 
 class EditGoalResult {
   final String title;
@@ -24,6 +40,8 @@ class EditGoalResult {
   final TimeOfDay? endTime;
   final DateTime selectedDate;
   final String? userGoalId;
+  final String? spaceId;
+  final String? assignedTo;
 
   const EditGoalResult({
     required this.title,
@@ -36,6 +54,8 @@ class EditGoalResult {
     this.endTime,
     required this.selectedDate,
     this.userGoalId,
+    this.spaceId,
+    this.assignedTo,
   });
 }
 
@@ -48,6 +68,7 @@ class EditGoalSheet extends StatefulWidget {
   /// Оставлено для совместимости, но больше не используется
   final List<UserGoalLinkOption> availableUserGoals;
   final String? initialUserGoalId;
+  final List<LadnaSpace> availableSpaces;
 
   const EditGoalSheet({
     super.key,
@@ -56,6 +77,7 @@ class EditGoalSheet extends StatefulWidget {
     required this.availableBlocks,
     this.availableUserGoals = const [],
     this.initialUserGoalId,
+    this.availableSpaces = const [],
   });
 
   @override
@@ -82,6 +104,12 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
 
   bool _loadingUserGoals = false;
   List<UserGoalLinkOption> _userGoalsForSelectedBlock = const [];
+
+  String? _selectedSpaceId;
+  String? _selectedAssignedTo;
+  List<LadnaSpace> _availableSpaces = const [];
+  bool _loadingSpaceMembers = false;
+  List<SpaceMember> _spaceMembers = const [];
 
   String _normalizeBlock(String value) {
     var v = value.trim().toLowerCase();
@@ -511,6 +539,109 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     }
   }
 
+
+  String _taskLocationTitle(BuildContext context) => _localized(context, const {
+        'ru': 'Где создать задачу',
+        'en': 'Where to create the task',
+        'de': 'Wo die Aufgabe erstellt wird',
+        'fr': 'Où créer la tâche',
+        'es': 'Dónde crear la tarea',
+        'tr': 'Görev nerede oluşturulsun',
+      });
+
+  String _personalTaskLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Только мне',
+        'en': 'Only me',
+        'de': 'Nur für mich',
+        'fr': 'Seulement moi',
+        'es': 'Solo para mí',
+        'tr': 'Sadece ben',
+      });
+
+  String _assigneeLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Исполнитель',
+        'en': 'Assignee',
+        'de': 'Verantwortlich',
+        'fr': 'Responsable',
+        'es': 'Responsable',
+        'tr': 'Atanan kişi',
+      });
+
+  String _notAssignedLabel(BuildContext context) => _localized(context, const {
+        'ru': 'Не назначать',
+        'en': 'Not assigned',
+        'de': 'Nicht zuweisen',
+        'fr': 'Non assigné',
+        'es': 'Sin asignar',
+        'tr': 'Atanmadı',
+      });
+
+  String _spaceMemberLabel(SpaceMember member) {
+    final name = member.name?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final email = member.email?.trim();
+    if (email != null && email.isNotEmpty) return email;
+    final id = member.userId.trim();
+    return id.length <= 8 ? id : '${id.substring(0, 8)}…';
+  }
+
+  Future<void> _loadAvailableSpaces() async {
+    try {
+      final spaces = _ladnaActiveSpaces(await dbRepo.listSpaces());
+      if (!mounted) return;
+      final selectedStillExists = _selectedSpaceId == null ||
+          spaces.any((space) => space.id == _selectedSpaceId);
+      setState(() {
+        _availableSpaces = spaces;
+        if (!selectedStillExists) {
+          _selectedSpaceId = null;
+          _selectedAssignedTo = null;
+          _spaceMembers = const [];
+        }
+      });
+      if (_selectedSpaceId != null) {
+        await _loadSpaceMembersForSelectedSpace();
+      }
+    } catch (e) {
+      debugPrint('Spaces load failed: $e');
+    }
+  }
+
+  Future<void> _loadSpaceMembersForSelectedSpace() async {
+    final spaceId = _selectedSpaceId;
+    if (spaceId == null || spaceId.trim().isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _spaceMembers = const [];
+        _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+      return;
+    }
+
+    setState(() => _loadingSpaceMembers = true);
+
+    try {
+      final members = await dbRepo.listSpaceMembers(spaceId);
+      if (!mounted) return;
+      final selectedStillValid = _selectedAssignedTo == null ||
+          members.any((member) => member.userId == _selectedAssignedTo);
+      setState(() {
+        _spaceMembers = members;
+        if (!selectedStillValid) _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+    } catch (e) {
+      debugPrint('Space members load failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _spaceMembers = const [];
+        _selectedAssignedTo = null;
+        _loadingSpaceMembers = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -536,9 +667,15 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
     _selectedDate = DateUtils.dateOnly(g.startTime);
 
     _selectedUserGoalId = widget.initialUserGoalId;
+    _availableSpaces = _ladnaActiveSpaces(widget.availableSpaces);
+    _selectedSpaceId = _availableSpaces.any((s) => s.id == g.spaceId)
+        ? g.spaceId
+        : null;
+    _selectedAssignedTo = g.assignedTo;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserGoalsForCurrentBlock();
+      _loadAvailableSpaces();
     });
   }
 
@@ -734,6 +871,8 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
         endTime: _end,
         selectedDate: DateUtils.dateOnly(_selectedDate),
         userGoalId: _selectedUserGoalId,
+        spaceId: _selectedSpaceId,
+        assignedTo: _selectedSpaceId == null ? null : _selectedAssignedTo,
       ),
     );
   }

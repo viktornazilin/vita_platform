@@ -11,6 +11,7 @@ import '../widgets/nest/nest_background.dart';
 import '../widgets/home/health_tracker_card.dart';
 import '../widgets/home/hobby_tracker_card.dart';
 import '../widgets/mood/mental_week_card.dart';
+import '../services/onboarding_tour_service.dart';
 
 
 bool get _ladnaDarkMode =>
@@ -116,19 +117,50 @@ class _PersonalViewState extends State<_PersonalView> {
 
   static const _maxLen = 200;
 
+  final GlobalKey _tabsTourKey = GlobalKey(debugLabel: 'tour_personal_tabs');
+  final GlobalKey _moodTourKey = GlobalKey(debugLabel: 'tour_personal_mood');
+  final GlobalKey _trackersTourKey = GlobalKey(debugLabel: 'tour_personal_trackers');
+  bool _personalTourQueued = false;
+
   @override
   void initState() {
     super.initState();
+    OnboardingTourService.fullFlowStep.addListener(_maybeRunPersonalTour);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(_syncMoodFormForSelectedDay);
+      _maybeRunPersonalTour();
     });
   }
 
   @override
   void dispose() {
+    OnboardingTourService.fullFlowStep.removeListener(_maybeRunPersonalTour);
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _maybeRunPersonalTour() {
+    if (!mounted || _personalTourQueued) return;
+    if (!OnboardingTourService.shouldRunFullStep(NestFullOnboardingStep.personal)) return;
+    _personalTourQueued = true;
+    if (_tab != 1) {
+      setState(() => _tab = 1);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await OnboardingTourService.runFullFlowScreenStep(
+        context: context,
+        step: NestFullOnboardingStep.personal,
+        showTour: () => OnboardingTourService.showPersonalTour(
+          context: context,
+          tabsKey: _tabsTourKey,
+          moodKey: _moodTourKey,
+          trackersKey: _trackersTourKey,
+        ),
+      );
+      if (mounted) _personalTourQueued = false;
+    });
   }
 
   String _t(
@@ -312,8 +344,10 @@ class _PersonalViewState extends State<_PersonalView> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _LadnaTabs(
-                  selectedIndex: _tab,
+                child: KeyedSubtree(
+                  key: _tabsTourKey,
+                  child: _LadnaTabs(
+                    selectedIndex: _tab,
                   labels: [
                     _t(
                       context,
@@ -343,7 +377,8 @@ class _PersonalViewState extends State<_PersonalView> {
                       tr: 'Hobiler',
                     ),
                   ],
-                  onChanged: (index) => setState(() => _tab = index),
+                    onChanged: (index) => setState(() => _tab = index),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -367,8 +402,11 @@ class _PersonalViewState extends State<_PersonalView> {
                     ),
                     _TabScroller(
                       onRefresh: _refresh,
-                      child: _MoodTab(
-                        selectedEmoji: _selectedEmoji,
+                      child: KeyedSubtree(
+                        key: _moodTourKey,
+                        child: _MoodTab(
+                          trackersKey: _trackersTourKey,
+                          selectedEmoji: _selectedEmoji,
                         noteController: _noteController,
                         maxLen: _maxLen,
                         saving: _saving,
@@ -378,7 +416,8 @@ class _PersonalViewState extends State<_PersonalView> {
                         weekdayLabel: (day) => _weekdayLabel(context, day),
                         onEmojiChanged: (emoji) =>
                             setState(() => _selectedEmoji = emoji),
-                        onSave: _saveMood,
+                          onSave: _saveMood,
+                        ),
                       ),
                     ),
                     _TabScroller(
@@ -419,6 +458,7 @@ class _TabScroller extends StatelessWidget {
 }
 
 class _MoodTab extends StatelessWidget {
+  final GlobalKey trackersKey;
   final String selectedEmoji;
   final TextEditingController noteController;
   final int maxLen;
@@ -431,6 +471,7 @@ class _MoodTab extends StatelessWidget {
   final VoidCallback onSave;
 
   const _MoodTab({
+    required this.trackersKey,
     required this.selectedEmoji,
     required this.noteController,
     required this.maxLen,
@@ -584,11 +625,14 @@ class _MoodTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        MentalWeekCard(
-          days: weekDays,
-          weekdayLabel: weekdayLabel,
-          maxItems: 3,
-          debug: false,
+        KeyedSubtree(
+          key: trackersKey,
+          child: MentalWeekCard(
+            days: weekDays,
+            weekdayLabel: weekdayLabel,
+            maxItems: 3,
+            debug: false,
+          ),
         ),
         const SizedBox(height: 14),
         _SectionLabel(

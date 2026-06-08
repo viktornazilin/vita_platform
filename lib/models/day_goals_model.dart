@@ -7,10 +7,18 @@ class DayGoalsModel extends ChangeNotifier {
   final String? lifeBlock;
   final List<String> availableBlocks;
 
+  /// null + personalOnly=false => all visible goals: private + space goals.
+  /// null + personalOnly=true  => only private goals.
+  /// non-null                  => only goals from selected space.
+  String? spaceId;
+  bool personalOnly;
+
   DayGoalsModel({
     required this.date,
     required this.lifeBlock,
     this.availableBlocks = const [],
+    this.spaceId,
+    this.personalOnly = false,
   });
 
   List<Goal> _goals = [];
@@ -34,6 +42,15 @@ class DayGoalsModel extends ChangeNotifier {
   DateTime _combineDateAndTimeUtc(DateTime value, TimeOfDay time) =>
       DateTime.utc(value.year, value.month, value.day, time.hour, time.minute);
 
+  Future<void> setSpaceFilter({
+    String? selectedSpaceId,
+    bool onlyPersonal = false,
+  }) async {
+    spaceId = selectedSpaceId;
+    personalOnly = onlyPersonal;
+    await load();
+  }
+
   Future<void> load() async {
     final myRev = ++_rev;
 
@@ -44,6 +61,8 @@ class DayGoalsModel extends ChangeNotifier {
       final allDay = await dbRepo.getGoalsByDate(
         DateTime.utc(date.year, date.month, date.day),
         lifeBlock: lifeBlock,
+        spaceId: spaceId,
+        personalOnly: personalOnly,
       );
 
       if (myRev != _rev) return;
@@ -76,8 +95,11 @@ class DayGoalsModel extends ChangeNotifier {
     required double hours,
     required TimeOfDay startTime,
     String? userGoalId,
+    String? spaceId,
+    String? assignedTo,
   }) async {
     final startDateTimeUtc = _combineDateAndTimeUtc(date, startTime);
+    final normalizedSpaceId = _blankToNull(spaceId);
 
     await dbRepo.createGoal(
       title: title.trim(),
@@ -89,6 +111,9 @@ class DayGoalsModel extends ChangeNotifier {
       spentHours: hours,
       startTime: startDateTimeUtc,
       userGoalId: userGoalId,
+      spaceId: normalizedSpaceId,
+      assignedTo: _blankToNull(assignedTo),
+      visibility: normalizedSpaceId == null ? 'private' : 'space',
     );
 
     await load();
@@ -105,6 +130,8 @@ class DayGoalsModel extends ChangeNotifier {
     required TimeOfDay startTime,
     DateTime? targetDate,
     String? userGoalId,
+    String? spaceId,
+    String? assignedTo,
   }) async {
     // ВАЖНО:
     // Раньше дата всегда бралась из DayGoalsModel.date, то есть из текущего
@@ -116,6 +143,7 @@ class DayGoalsModel extends ChangeNotifier {
     final effectiveDate = targetDate ?? date;
     final deadlineUtc = _dateOnlyUtc(effectiveDate);
     final startDateTimeUtc = _combineDateAndTimeUtc(effectiveDate, startTime);
+    final normalizedSpaceId = _blankToNull(spaceId);
 
     await dbRepo.updateGoalFields(
       goalId: id,
@@ -128,6 +156,9 @@ class DayGoalsModel extends ChangeNotifier {
       spentHours: hours,
       startTime: startDateTimeUtc,
       userGoalId: userGoalId,
+      spaceId: normalizedSpaceId,
+      assignedTo: _blankToNull(assignedTo),
+      visibility: normalizedSpaceId == null ? 'private' : 'space',
     );
 
     await load();
@@ -136,5 +167,11 @@ class DayGoalsModel extends ChangeNotifier {
   Future<void> deleteGoal(String id) async {
     await dbRepo.deleteGoal(id);
     await load();
+  }
+
+  String? _blankToNull(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
   }
 }
