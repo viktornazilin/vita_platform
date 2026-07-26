@@ -20,10 +20,7 @@ import '../services/home_ai_insight_service.dart';
 import '../services/onboarding_tour_service.dart';
 import '../widgets/nest/nest_background.dart';
 
-bool get _ladnaDarkMode =>
-    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
-
-Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
+// (dark-mode helpers removed — see _LadnaColors below, now context-based)
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -96,7 +93,7 @@ class _ReportsViewState extends State<_ReportsView> {
     final t = _ReportsText.of(context);
 
     return Scaffold(
-      backgroundColor: _LadnaColors.surface,
+      backgroundColor: _LadnaColors.surface(context),
       body: NestBackground(
         child: SafeArea(
           bottom: false,
@@ -486,7 +483,7 @@ class _PulseCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.35 : 0.22),
+            color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.35 : 0.22),
             blurRadius: 18,
             offset: const Offset(0, 4),
           ),
@@ -712,14 +709,14 @@ class _MonthEfficiencyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(t.monthEfficiency, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark))),
+              Expanded(child: Text(t.monthEfficiency, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context)))),
               Text('${(progress * 100).round()}%', style: const TextStyle(fontFamily: 'PlayfairDisplay', fontFamilyFallback: ['PlayfairDisplay', 'Georgia'], fontSize: 22, color: _LadnaColors.primary, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 10),
           _ProgressBar(value: progress, height: 6),
           const SizedBox(height: 7),
-          Text(t.monthEfficiencySubtitle(completed, total, daysLeft), style: TextStyle(fontSize: 11, color: _LadnaColors.muted)),
+          Text(t.monthEfficiencySubtitle(completed, total, daysLeft), style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
         ],
       ),
     );
@@ -745,9 +742,9 @@ class _SpherePlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.factVsDesiredBalance, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark)),
+          Text(t.factVsDesiredBalance, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
           const SizedBox(height: 3),
-          Text(t.balancePlanFactHint, style: TextStyle(fontSize: 11, color: _LadnaColors.muted)),
+          Text(t.balancePlanFactHint, style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
           const SizedBox(height: 12),
           if (desiredEntries.isEmpty)
             _EmptyText(t.balanceEmptyHint)
@@ -767,14 +764,14 @@ class _SpherePlanCard extends StatelessWidget {
                       fact: fact,
                       wanted: wanted,
                       delta: delta,
-                      color: _blockColor(blockKey),
+                      color: _blockColor(context, blockKey),
                     ),
                   );
                 }),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _LegendItem(color: _LadnaColors.card, text: t.planLegend),
+                    _LegendItem(color: _LadnaColors.card(context), text: t.planLegend),
                     const SizedBox(width: 12),
                     _LegendItem(color: _LadnaColors.primary, text: t.factLegend),
                     const SizedBox(width: 12),
@@ -803,7 +800,7 @@ class _SphereBalanceRow extends StatelessWidget {
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 9),
-        SizedBox(width: 82, child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: _LadnaColors.mid, fontWeight: FontWeight.w700))),
+        SizedBox(width: 82, child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: _LadnaColors.mid(context), fontWeight: FontWeight.w700))),
         const SizedBox(width: 8),
         Expanded(
           child: LayoutBuilder(builder: (context, c) {
@@ -814,9 +811,9 @@ class _SphereBalanceRow extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.centerLeft,
                 children: [
-                  Container(height: 5, decoration: BoxDecoration(color: _LadnaColors.card, borderRadius: BorderRadius.circular(999))),
+                  Container(height: 5, decoration: BoxDecoration(color: _LadnaColors.card(context), borderRadius: BorderRadius.circular(999))),
                   Container(width: factW, height: 5, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(999))),
-                  Positioned(left: wantX.clamp(0, c.maxWidth - 2), child: Container(width: 2, height: 14, decoration: BoxDecoration(color: _LadnaColors.muted.withOpacity(0.8), borderRadius: BorderRadius.circular(2)))),
+                  Positioned(left: wantX.clamp(0, c.maxWidth - 2), child: Container(width: 2, height: 14, decoration: BoxDecoration(color: _LadnaColors.muted(context).withOpacity(0.8), borderRadius: BorderRadius.circular(2)))),
                 ],
               ),
             );
@@ -828,7 +825,7 @@ class _SphereBalanceRow extends StatelessWidget {
           child: Text(
             delta == 0 ? '✓' : '${delta > 0 ? '+' : ''}$delta%',
             textAlign: TextAlign.right,
-            style: TextStyle(fontSize: 11, color: delta == 0 ? _LadnaColors.green : (delta > 0 ? _LadnaColors.lime : _LadnaColors.muted), fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 11, color: delta == 0 ? _LadnaColors.green : (delta > 0 ? _LadnaColors.lime : _LadnaColors.muted(context)), fontWeight: FontWeight.w900),
           ),
         ),
       ],
@@ -846,9 +843,9 @@ class _LegendItem extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 18, height: 3, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2), border: Border.all(color: _LadnaColors.border))),
+        Container(width: 18, height: 3, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2), border: Border.all(color: _LadnaColors.border(context)))),
         const SizedBox(width: 5),
-        Text(text, style: TextStyle(fontSize: 10, color: _LadnaColors.muted)),
+        Text(text, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
       ],
     );
   }
@@ -924,7 +921,7 @@ class _PeriodComparisonCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: _LadnaColors.dark,
+              color: _LadnaColors.dark(context),
             ),
           ),
           const SizedBox(height: 14),
@@ -933,13 +930,13 @@ class _PeriodComparisonCard extends StatelessWidget {
             if (row != rows.last) const SizedBox(height: 12),
           ],
           const SizedBox(height: 10),
-          Divider(height: 1, color: _LadnaColors.border),
+          Divider(height: 1, color: _LadnaColors.border(context)),
           const SizedBox(height: 9),
           Row(
             children: [
               _LegendDot(color: _LadnaColors.primary, text: t.currentPeriodShort),
               const SizedBox(width: 14),
-              _LegendDot(color: _LadnaColors.card, text: t.previousPeriodShort),
+              _LegendDot(color: _LadnaColors.card(context), text: t.previousPeriodShort),
             ],
           ),
         ],
@@ -968,7 +965,7 @@ class _ComparisonMetricRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              color: _LadnaColors.mid,
+              color: _LadnaColors.mid(context),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -980,7 +977,7 @@ class _ComparisonMetricRow extends StatelessWidget {
             children: [
               _ProgressBar(value: row.currentProgress, height: 5),
               const SizedBox(height: 5),
-              _ProgressBar(value: row.previousProgress, height: 5, color: _LadnaColors.card),
+              _ProgressBar(value: row.previousProgress, height: 5, color: _LadnaColors.card(context)),
               const SizedBox(height: 5),
               Row(
                 children: [
@@ -988,7 +985,7 @@ class _ComparisonMetricRow extends StatelessWidget {
                     '${row.currentText} ${t.currentPeriodShort}',
                     style: TextStyle(
                       fontSize: 10.5,
-                      color: _LadnaColors.dark,
+                      color: _LadnaColors.dark(context),
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -997,7 +994,7 @@ class _ComparisonMetricRow extends StatelessWidget {
                     '${row.previousText} ${t.previousPeriodShort}',
                     style: TextStyle(
                       fontSize: 10.5,
-                      color: _LadnaColors.muted,
+                      color: _LadnaColors.muted(context),
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1037,7 +1034,7 @@ class _LegendDot extends StatelessWidget {
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
-        Text(text, style: TextStyle(fontSize: 11, color: _LadnaColors.muted, fontWeight: FontWeight.w700)),
+        Text(text, style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context), fontWeight: FontWeight.w700)),
       ],
     );
   }
@@ -1212,7 +1209,7 @@ class _BestDayCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _LadnaColors.primary,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: _LadnaColors.softShadow,
+        boxShadow: _LadnaColors.softShadow(context),
       ),
       child: Row(
         children: [
@@ -1263,14 +1260,14 @@ class _StreaksCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.streaks, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark)),
+          Text(t.streaks, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
           const SizedBox(height: 12),
           if (blocks.isEmpty)
             _EmptyText(t.noDataYet)
           else
             Column(
               children: blocks.map((e) {
-                final color = _blockColor(e.key);
+                final color = _blockColor(context, e.key);
                 final done = e.value.$1;
                 final total = math.max(e.value.$2, 1);
                 final seed = e.key.hashCode.abs();
@@ -1278,7 +1275,7 @@ class _StreaksCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
-                      SizedBox(width: 72, child: Text(_blockLabel(e.key, t), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, color: _LadnaColors.muted, fontWeight: FontWeight.w700))),
+                      SizedBox(width: 72, child: Text(_blockLabel(e.key, t), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context), fontWeight: FontWeight.w700))),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Row(
@@ -1289,7 +1286,7 @@ class _StreaksCard extends StatelessWidget {
                                 height: 16,
                                 margin: const EdgeInsets.only(right: 3),
                                 decoration: BoxDecoration(
-                                  color: isDone ? color.withOpacity(i < 8 ? .35 : 1) : _LadnaColors.card,
+                                  color: isDone ? color.withOpacity(i < 8 ? .35 : 1) : _LadnaColors.card(context),
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                               ),
@@ -1298,7 +1295,7 @@ class _StreaksCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text('$done/7 · ${math.min(done, 7)}', style: TextStyle(fontSize: 10, color: _LadnaColors.muted, fontWeight: FontWeight.w900)),
+                      Text('$done/7 · ${math.min(done, 7)}', style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context), fontWeight: FontWeight.w900)),
                     ],
                   ),
                 );
@@ -1331,10 +1328,10 @@ class _WeakLinkCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _LadnaColors.lime.withOpacity(_ladnaDarkMode ? 0.10 : 0.08),
+        color: _LadnaColors.lime.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.10 : 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _LadnaColors.lime.withOpacity(.25)),
-        boxShadow: _LadnaColors.softShadow,
+        boxShadow: _LadnaColors.softShadow(context),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1345,9 +1342,9 @@ class _WeakLinkCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(t.weakLink, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _LadnaColors.dark)),
+                Text(t.weakLink, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _LadnaColors.dark(context))),
                 const SizedBox(height: 6),
-                Text(t.weakLinkRecommendation(label, pct), style: TextStyle(fontSize: 12, height: 1.5, color: _LadnaColors.mid)),
+                Text(t.weakLinkRecommendation(label, pct), style: TextStyle(fontSize: 12, height: 1.5, color: _LadnaColors.mid(context))),
               ],
             ),
           ),
@@ -1376,28 +1373,28 @@ class _CorrelationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark)),
+          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
           const SizedBox(height: 12),
           ...rows.map((r) {
             final pos = r.value.startsWith('+');
             final neg = r.value.startsWith('−') || r.value.startsWith('-');
             return Container(
               padding: const EdgeInsets.symmetric(vertical: 9),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: _LadnaColors.border))),
+              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: _LadnaColors.border(context)))),
               child: Row(
                 children: [
-                  Container(width: 30, height: 30, decoration: BoxDecoration(color: _LadnaColors.card, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.insights_rounded, size: 15, color: _LadnaColors.primary)),
+                  Container(width: 30, height: 30, decoration: BoxDecoration(color: _LadnaColors.card(context), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.insights_rounded, size: 15, color: _LadnaColors.primary)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(r.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _LadnaColors.dark)),
-                        Text(r.desc, style: TextStyle(fontSize: 11, color: _LadnaColors.muted)),
+                        Text(r.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
+                        Text(r.desc, style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
                       ],
                     ),
                   ),
-                  Text(r.value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: pos ? _LadnaColors.green : (neg ? const Color(0xFFD45060) : _LadnaColors.muted))),
+                  Text(r.value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: pos ? _LadnaColors.green : (neg ? const Color(0xFFD45060) : _LadnaColors.muted(context)))),
                 ],
               ),
             );
@@ -1420,7 +1417,7 @@ class _MoodDaysCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.byDays, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark)),
+          Text(t.byDays, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
           const SizedBox(height: 11),
           if (moods.isEmpty)
             _EmptyText(t.noDataYet)
@@ -1483,7 +1480,7 @@ class _Header extends StatelessWidget {
                 fontSize: 22,
                 height: 1.05,
                 fontWeight: FontWeight.w700,
-                color: _LadnaColors.dark,
+                color: _LadnaColors.dark(context),
                 letterSpacing: -0.3,
               ),
             ),
@@ -1518,7 +1515,7 @@ class _PeriodRow extends StatelessWidget {
           child: Container(
             height: 38,
             decoration: BoxDecoration(
-              color: _LadnaColors.card,
+              color: _LadnaColors.card(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1532,7 +1529,7 @@ class _PeriodRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: _LadnaColors.dark,
+                      color: _LadnaColors.dark(context),
                     ),
                   ),
                 ),
@@ -1622,7 +1619,7 @@ class _MetricCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              color: _LadnaColors.muted,
+              color: _LadnaColors.muted(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1636,7 +1633,7 @@ class _MetricCard extends StatelessWidget {
               fontFamilyFallback: const ['PlayfairDisplay', 'Georgia'],
               fontSize: 26,
               fontWeight: FontWeight.w600,
-              color: highlight ? _LadnaColors.green : _LadnaColors.dark,
+              color: highlight ? _LadnaColors.green : _LadnaColors.dark(context),
               height: 1,
             ),
           ),
@@ -1647,7 +1644,7 @@ class _MetricCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              color: _LadnaColors.muted,
+              color: _LadnaColors.muted(context),
             ),
           ),
         ],
@@ -1683,7 +1680,7 @@ class _ProgressCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: _LadnaColors.dark,
+                    color: _LadnaColors.dark(context),
                   ),
                 ),
               ),
@@ -1692,7 +1689,7 @@ class _ProgressCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: _LadnaColors.muted,
+                  color: _LadnaColors.muted(context),
                 ),
               ),
             ],
@@ -1704,7 +1701,7 @@ class _ProgressCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               subtitle,
-              style: TextStyle(fontSize: 11, color: _LadnaColors.muted),
+              style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context)),
             ),
           ),
         ],
@@ -1741,7 +1738,7 @@ class _SphereCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: _LadnaColors.dark,
+                    color: _LadnaColors.dark(context),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1753,7 +1750,7 @@ class _SphereCard extends StatelessWidget {
                       label: _blockLabel(e.key, _ReportsText.of(context)),
                       progress: pct,
                       percentText: '${(pct * 100).round()}%',
-                      color: _blockColor(e.key),
+                      color: _blockColor(context, e.key),
                     ),
                   );
                 }),
@@ -1784,7 +1781,7 @@ class _ExtraCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: _LadnaColors.dark,
+              color: _LadnaColors.dark(context),
             ),
           ),
           const SizedBox(height: 11),
@@ -1896,15 +1893,15 @@ class _AiCardState extends State<_AiCard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0x121C1630)),
-            _ladnaAdaptive(const Color(0xFFE5D8BF), const Color(0x1AD4E040)),
+            (Theme.of(context).brightness == Brightness.dark ? const Color(0x121C1630) : const Color(0xFFE2DDEF)),
+            (Theme.of(context).brightness == Brightness.dark ? const Color(0x1AD4E040) : const Color(0xFFE5D8BF)),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _LadnaColors.primary.withOpacity(.20)),
-        boxShadow: _LadnaColors.softShadow,
+        boxShadow: _LadnaColors.softShadow(context),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -1916,9 +1913,9 @@ class _AiCardState extends State<_AiCard> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: _ladnaAdaptive(_LadnaColors.dark, const Color(0x26D4E040)),
+                  color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x26D4E040) : _LadnaColors.dark(context)),
                   borderRadius: BorderRadius.circular(9),
-                  border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x40D4E040))),
+                  border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x40D4E040) : Colors.transparent)),
                 ),
                 child: Center(
                   child: Text(
@@ -1950,7 +1947,7 @@ class _AiCardState extends State<_AiCard> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 11,
-                        color: _LadnaColors.muted,
+                        color: _LadnaColors.muted(context),
                       ),
                     ),
                   ],
@@ -1977,7 +1974,7 @@ class _AiCardState extends State<_AiCard> {
             text,
             style: TextStyle(
               fontSize: 12,
-              color: _LadnaColors.mid,
+              color: _LadnaColors.mid(context),
               height: 1.5,
             ),
           ),
@@ -2102,7 +2099,7 @@ class _MoodChartCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: _LadnaColors.dark,
+              color: _LadnaColors.dark(context),
             ),
           ),
           const SizedBox(height: 14),
@@ -2142,7 +2139,7 @@ class _MoodChartCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w500,
-                                  color: _LadnaColors.muted,
+                                  color: _LadnaColors.muted(context),
                                 ),
                               ),
                             ],
@@ -2174,7 +2171,7 @@ class _Heatmap extends StatelessWidget {
     return Column(
       children: [
         ...entries.map((entry) {
-          final color = _blockColor(entry.key);
+          final color = _blockColor(context, entry.key);
           final seed = entry.key.hashCode.abs();
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -2188,7 +2185,7 @@ class _Heatmap extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 10,
-                      color: _LadnaColors.muted,
+                      color: _LadnaColors.muted(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -2203,12 +2200,12 @@ class _Heatmap extends StatelessWidget {
                           height: 16,
                           margin: const EdgeInsets.only(right: 3),
                           decoration: BoxDecoration(
-                            color: done ? color : _LadnaColors.card,
+                            color: done ? color : _LadnaColors.card(context),
                             borderRadius: BorderRadius.circular(3),
                             border: done
                                 ? null
                                 : Border.all(
-                                    color: _LadnaColors.border,
+                                    color: _LadnaColors.border(context),
                                     width: 1,
                                   ),
                           ),
@@ -2226,18 +2223,18 @@ class _Heatmap extends StatelessWidget {
           children: [
             Text(
               t.fourWeeksAgo,
-              style: TextStyle(fontSize: 10, color: _LadnaColors.muted),
+              style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context)),
             ),
             const Spacer(),
-            Container(width: 10, height: 10, decoration: BoxDecoration(color: _LadnaColors.card, borderRadius: BorderRadius.circular(2))),
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: _LadnaColors.card(context), borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 5),
-            Text(t.missed, style: TextStyle(fontSize: 10, color: _LadnaColors.muted)),
+            Text(t.missed, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
             const SizedBox(width: 12),
             Container(width: 10, height: 10, decoration: BoxDecoration(color: _LadnaColors.primary, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 5),
-            Text(t.done, style: TextStyle(fontSize: 10, color: _LadnaColors.muted)),
+            Text(t.done, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
             const Spacer(),
-            Text(t.today, style: TextStyle(fontSize: 10, color: _LadnaColors.muted)),
+            Text(t.today, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
           ],
         ),
       ],
@@ -2273,7 +2270,7 @@ class _SphereRow extends StatelessWidget {
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: _LadnaColors.mid, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 12, color: _LadnaColors.mid(context), fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(width: 8),
@@ -2284,7 +2281,7 @@ class _SphereRow extends StatelessWidget {
           child: Text(
             percentText,
             textAlign: TextAlign.right,
-            style: TextStyle(fontSize: 11, color: _LadnaColors.muted),
+            style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context)),
           ),
         ),
       ],
@@ -2311,13 +2308,13 @@ class _TopDayRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 48,
-            child: Text(label, style: TextStyle(fontSize: 12, color: _LadnaColors.mid, fontWeight: FontWeight.w600)),
+            child: Text(label, style: TextStyle(fontSize: 12, color: _LadnaColors.mid(context), fontWeight: FontWeight.w600)),
           ),
           Expanded(child: _ProgressBar(value: progress, height: 6)),
           const SizedBox(width: 8),
           SizedBox(
             width: 56,
-            child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: _LadnaColors.muted)),
+            child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
           ),
         ],
       ),
@@ -2347,11 +2344,11 @@ class _HabitStatRow extends StatelessWidget {
           Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 9),
           Expanded(
-            child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: _LadnaColors.mid, fontWeight: FontWeight.w600)),
+            child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: _LadnaColors.mid(context), fontWeight: FontWeight.w600)),
           ),
           SizedBox(width: 72, child: _ProgressBar(value: progress, height: 6, color: color ?? _LadnaColors.primary)),
           const SizedBox(width: 8),
-          SizedBox(width: 36, child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: _LadnaColors.muted))),
+          SizedBox(width: 36, child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context)))),
         ],
       ),
     );
@@ -2402,13 +2399,13 @@ class _DetailRow extends StatelessWidget {
       padding: EdgeInsets.only(bottom: isLast ? 0 : 9, top: 1),
       margin: EdgeInsets.only(bottom: isLast ? 0 : 8),
       decoration: BoxDecoration(
-        border: isLast ? null : Border(bottom: BorderSide(color: _LadnaColors.border)),
+        border: isLast ? null : Border(bottom: BorderSide(color: _LadnaColors.border(context))),
       ),
       child: Row(
         children: [
           SizedBox(
             width: 92,
-            child: Text(label, style: TextStyle(fontSize: 12, color: _LadnaColors.mid)),
+            child: Text(label, style: TextStyle(fontSize: 12, color: _LadnaColors.mid(context))),
           ),
           if (progress != null) ...[
             Expanded(child: _ProgressBar(value: progress!, height: 6, color: color ?? _LadnaColors.primary)),
@@ -2418,12 +2415,12 @@ class _DetailRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: _LadnaColors.card,
+              color: _LadnaColors.card(context),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               value,
-              style: TextStyle(fontSize: 12, color: _LadnaColors.dark, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: 12, color: _LadnaColors.dark(context), fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -2450,10 +2447,10 @@ class _LadnaCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _LadnaColors.lightSurface,
+        color: _LadnaColors.lightSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _LadnaColors.border),
-        boxShadow: _LadnaColors.softShadow,
+        border: Border.all(color: _LadnaColors.border(context)),
+        boxShadow: _LadnaColors.softShadow(context),
       ),
       child: child,
     );
@@ -2479,7 +2476,7 @@ class _ProgressBar extends StatelessWidget {
       child: LinearProgressIndicator(
         value: v,
         minHeight: height,
-        backgroundColor: _LadnaColors.card,
+        backgroundColor: _LadnaColors.card(context),
         valueColor: AlwaysStoppedAnimation<Color>(color),
       ),
     );
@@ -2500,7 +2497,7 @@ class _SectionLabel extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: _LadnaColors.muted,
+          color: _LadnaColors.muted(context),
           letterSpacing: 1.2,
         ),
       ),
@@ -2517,7 +2514,7 @@ class _EmptyText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(fontSize: 12, color: _LadnaColors.muted, height: 1.4),
+      style: TextStyle(fontSize: 12, color: _LadnaColors.muted(context), height: 1.4),
     );
   }
 }
@@ -2542,7 +2539,7 @@ class _RoundIconButton extends StatelessWidget {
         child: SizedBox(
           width: 32,
           height: 32,
-          child: Icon(icon, size: 22, color: _LadnaColors.mid),
+          child: Icon(icon, size: 22, color: _LadnaColors.mid(context)),
         ),
       ),
     );
@@ -2563,7 +2560,7 @@ class _SmallArrow extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(9),
       onTap: onTap,
-      child: SizedBox(width: 34, height: 38, child: Icon(icon, color: _LadnaColors.mid)),
+      child: SizedBox(width: 34, height: 38, child: Icon(icon, color: _LadnaColors.mid(context))),
     );
   }
 }
@@ -2592,7 +2589,7 @@ class _SegmentedPill<T> extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 13),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? _LadnaColors.activePill : Colors.transparent,
+            color: active ? _LadnaColors.activePill(context) : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
             boxShadow: active
                 ? [
@@ -2612,7 +2609,7 @@ class _SegmentedPill<T> extends StatelessWidget {
             style: TextStyle(
               fontSize: compact ? 11 : 12,
               fontWeight: FontWeight.w700,
-              color: active ? _LadnaColors.dark : _LadnaColors.muted,
+              color: active ? _LadnaColors.dark(context) : _LadnaColors.muted(context),
             ),
           ),
         ),
@@ -2627,7 +2624,7 @@ class _SegmentedPill<T> extends StatelessWidget {
         height: 38,
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: _LadnaColors.card,
+          color: _LadnaColors.card(context),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -2639,22 +2636,29 @@ class _SegmentedPill<T> extends StatelessWidget {
   }
 }
 
+// Раньше эти геттеры читали яркость ОС напрямую, в обход ThemeController.
+// primary/green/lime не зависят от темы, поэтому остались константами
+// (это также нужно — они использовались как значения по умолчанию в
+// конструкторах, а значения по умолчанию в Dart обязаны быть константами).
+// Остальные resolve'ятся из контекста.
 class _LadnaColors {
-  static Color get surface => _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E));
-  static Color get lightSurface => _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630));
-  static Color get card => _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0x1F6B54C0));
-  static Color get activePill => _ladnaAdaptive(Colors.white, const Color(0xFF6B54C0));
+  static bool _isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
+
+  static Color surface(BuildContext context) => _isDark(context) ? const Color(0xFF100C1E) : const Color(0xFFF5F3FA);
+  static Color lightSurface(BuildContext context) => _isDark(context) ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE);
+  static Color card(BuildContext context) => _isDark(context) ? const Color(0x1F6B54C0) : const Color(0xFFEAE6F5);
+  static Color activePill(BuildContext context) => _isDark(context) ? const Color(0xFF6B54C0) : Colors.white;
   static const Color primary = Color(0xFF6B54C0);
-  static Color get dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
-  static Color get mid => _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF));
-  static Color get muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
+  static Color dark(BuildContext context) => _isDark(context) ? const Color(0xFFF0EEFF) : const Color(0xFF160E38);
+  static Color mid(BuildContext context) => _isDark(context) ? const Color(0x99FFFFFF) : const Color(0xFF555268);
+  static Color muted(BuildContext context) => _isDark(context) ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8);
   static const Color green = Color(0xFF16B8A8);
   static const Color lime = Color(0xFFD4E040);
-  static Color get border => _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0));
+  static Color border(BuildContext context) => _isDark(context) ? const Color(0x2E6B54C0) : const Color(0xFFE0DCF0);
 
-  static List<BoxShadow> get softShadow => [
+  static List<BoxShadow> softShadow(BuildContext context) => [
         BoxShadow(
-          color: Colors.black.withOpacity(_ladnaDarkMode ? .30 : .07),
+          color: Colors.black.withOpacity(_isDark(context) ? .30 : .07),
           blurRadius: 12,
           offset: const Offset(0, 2),
         ),
@@ -2854,13 +2858,13 @@ String _bestStreakText(ReportsModel model) {
   return '—';
 }
 
-Color _blockColor(String block) {
+Color _blockColor(BuildContext context, String block) {
   final key = block.toLowerCase();
   if (key.contains('finance') || key.contains('фин')) return _LadnaColors.green;
   if (key.contains('career') || key.contains('кар')) return _LadnaColors.lime;
   if (key.contains('education') || key.contains('edu') || key.contains('образ')) return _LadnaColors.primary;
   if (key.contains('health') || key.contains('зд')) return const Color(0xFF7260B8);
-  return _LadnaColors.mid;
+  return _LadnaColors.mid(context);
 }
 
 String _blockLabel(String block, _ReportsText t) {

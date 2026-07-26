@@ -12,14 +12,12 @@ import '../models/user_goal.dart';
 import '../models/user_goals_model.dart';
 import '../services/onboarding_tour_service.dart';
 import '../widgets/add_day_goal_sheet.dart';
+import '../controllers/theme_controller.dart';
 
 import 'day_goals_screen.dart';
 
 
-bool get _ladnaDarkMode =>
-    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
-
-Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
+// (dark-mode helpers removed — see _LadnaColors/_LadnaDecor/_LadnaText below, now context-based)
 
 
 bool _ladnaSpaceIsActive(LadnaSpace space) {
@@ -415,10 +413,10 @@ class _GoalsViewState extends State<_GoalsView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: _LadnaColors.surface,
+        backgroundColor: _LadnaColors.surface(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(text.deleteGoal, style: _LadnaText.cardTitle.copyWith(fontSize: 18)),
-        content: Text(text.deleteGoalQuestion, style: _LadnaText.bodySmall),
+        title: Text(text.deleteGoal, style: _LadnaText.cardTitle(context).copyWith(fontSize: 18)),
+        content: Text(text.deleteGoalQuestion, style: _LadnaText.bodySmall(context)),
         actionsPadding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
         actions: [
           TextButton(
@@ -469,7 +467,7 @@ class _GoalsViewState extends State<_GoalsView> {
     _lastObservedHomeIndex = observedHomeIndex;
 
     return Scaffold(
-      backgroundColor: _LadnaColors.page,
+      backgroundColor: _LadnaColors.page(context),
       body: SafeArea(
         bottom: false,
         child: Stack(
@@ -785,7 +783,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: _LadnaDecor.header,
+      decoration: _LadnaDecor.header(context),
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       child: Row(
         children: [
@@ -804,13 +802,13 @@ class _Header extends StatelessWidget {
                     fontSize: 22,
                     height: 1.05,
                     fontWeight: FontWeight.w700,
-                    color: _LadnaColors.dark,
+                    color: _LadnaColors.dark(context),
                     letterSpacing: -0.3,
                   ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!, style: _LadnaText.caption),
+                  Text(subtitle!, style: _LadnaText.caption(context)),
                 ],
               ],
             ),
@@ -845,7 +843,7 @@ class _Segmented<T> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: _LadnaColors.card,
+        color: _LadnaColors.card(context),
         borderRadius: BorderRadius.circular(dense ? 12 : 14),
       ),
       child: Row(
@@ -860,14 +858,14 @@ class _Segmented<T> extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: dense ? 7 : 9),
                 decoration: BoxDecoration(
                   color: selected
-                      ? (_ladnaDarkMode ? _LadnaColors.primary : Colors.white)
+                      ? ((Theme.of(context).brightness == Brightness.dark) ? _LadnaColors.primary(context) : Colors.white)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(dense ? 9 : 11),
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: _ladnaDarkMode
-                                ? _LadnaColors.primary.withOpacity(0.28)
+                            color: (Theme.of(context).brightness == Brightness.dark)
+                                ? _LadnaColors.primary(context).withOpacity(0.28)
                                 : const Color(0x171C1812),
                             blurRadius: 6,
                             offset: const Offset(0, 1),
@@ -884,8 +882,8 @@ class _Segmented<T> extends StatelessWidget {
                     fontSize: dense ? 11 : 13,
                     fontWeight: FontWeight.w700,
                     color: selected
-                        ? (_ladnaDarkMode ? Colors.white : _LadnaColors.dark)
-                        : _LadnaColors.muted,
+                        ? ((Theme.of(context).brightness == Brightness.dark) ? Colors.white : _LadnaColors.dark(context))
+                        : _LadnaColors.muted(context),
                   ),
                 ),
               ),
@@ -945,9 +943,9 @@ class _TaskSpaceFilterBar extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: _LadnaColors.card,
+                color: _LadnaColors.card(context),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: _LadnaColors.border),
+                border: Border.all(color: _LadnaColors.border(context)),
               ),
               child: const SizedBox(
                 width: 14,
@@ -992,15 +990,15 @@ class _TaskSpaceFilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? _LadnaColors.primary : _LadnaColors.card,
+          color: selected ? _LadnaColors.primary(context) : _LadnaColors.card(context),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? _LadnaColors.primary : _LadnaColors.border,
+            color: selected ? _LadnaColors.primary(context) : _LadnaColors.border(context),
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? .24 : .16),
+                    color: _LadnaColors.primary(context).withOpacity((Theme.of(context).brightness == Brightness.dark) ? .24 : .16),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -1014,7 +1012,7 @@ class _TaskSpaceFilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: selected ? Colors.white : _LadnaColors.mid,
+            color: selected ? Colors.white : _LadnaColors.mid(context),
           ),
         ),
       ),
@@ -1043,8 +1041,8 @@ class _WeekSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(title, style: _LadnaText.cardTitle)),
-              Text(value, style: _LadnaText.caption.copyWith(fontWeight: FontWeight.w700)),
+              Expanded(child: Text(title, style: _LadnaText.cardTitle(context))),
+              Text(value, style: _LadnaText.caption(context).copyWith(fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 9),
@@ -1052,7 +1050,7 @@ class _WeekSummaryCard extends StatelessWidget {
           const SizedBox(height: 6),
           Align(
             alignment: Alignment.centerLeft,
-            child: Text(subtitle, style: _LadnaText.caption),
+            child: Text(subtitle, style: _LadnaText.caption(context)),
           ),
         ],
       ),
@@ -1092,12 +1090,12 @@ class _DayRow extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 7),
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
           decoration: BoxDecoration(
-            color: isToday ? _LadnaColors.surface : _LadnaColors.surfaceLight,
+            color: isToday ? _LadnaColors.surface(context) : _LadnaColors.surfaceLight(context),
             borderRadius: BorderRadius.circular(13),
             border: Border.all(
-              color: isToday ? _LadnaColors.primary.withOpacity(0.25) : _LadnaColors.border.withOpacity(0.8),
+              color: isToday ? _LadnaColors.primary(context).withOpacity(0.25) : _LadnaColors.border(context).withOpacity(0.8),
             ),
-            boxShadow: _LadnaDecor.shadow,
+            boxShadow: _LadnaDecor.shadow(context),
           ),
           child: Row(
             children: [
@@ -1112,15 +1110,15 @@ class _DayRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 9,
-                        color: isToday ? _LadnaColors.primary : _LadnaColors.muted,
+                        color: isToday ? _LadnaColors.primary(context) : _LadnaColors.muted(context),
                         fontWeight: FontWeight.w800,
                         letterSpacing: .3,
                       ),
                     ),
                     Text(
                       '${date.day}',
-                      style: _LadnaText.serifNumber.copyWith(
-                        color: isToday ? _LadnaColors.primary : _LadnaColors.dark,
+                      style: _LadnaText.serifNumber(context).copyWith(
+                        color: isToday ? _LadnaColors.primary(context) : _LadnaColors.dark(context),
                       ),
                     ),
                   ],
@@ -1136,11 +1134,11 @@ class _DayRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: isToday ? _LadnaColors.primary : _LadnaColors.muted,
+                  color: isToday ? _LadnaColors.primary(context) : _LadnaColors.muted(context),
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded, size: 18, color: _LadnaColors.muted),
+              Icon(Icons.chevron_right_rounded, size: 18, color: _LadnaColors.muted(context)),
             ],
           ),
         ),
@@ -1186,7 +1184,7 @@ class _DayTasksCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: isToday ? _LadnaColors.primary : _LadnaColors.card,
+                    color: isToday ? _LadnaColors.primary(context) : _LadnaColors.card(context),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -1194,7 +1192,7 @@ class _DayTasksCard extends StatelessWidget {
                       '${date.day}',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        color: isToday ? Colors.white : _LadnaColors.muted,
+                        color: isToday ? Colors.white : _LadnaColors.muted(context),
                       ),
                     ),
                   ),
@@ -1204,18 +1202,18 @@ class _DayTasksCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_weekdayShort(context, date), style: _LadnaText.cardTitle),
+                      Text(_weekdayShort(context, date), style: _LadnaText.cardTitle(context)),
                       const SizedBox(height: 2),
                       Text(
                         goals.isEmpty
                             ? text.noTasks
                             : '$done/${goals.length} ${text.completed} · ${hours.toStringAsFixed(1)} ${text.hoursShort}',
-                        style: _LadnaText.caption,
+                        style: _LadnaText.caption(context),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: _LadnaColors.muted),
+                Icon(Icons.chevron_right_rounded, color: _LadnaColors.muted(context)),
               ],
             ),
             if (goals.isNotEmpty) ...[
@@ -1227,7 +1225,7 @@ class _DayTasksCard extends StatelessWidget {
               if (goals.length > 3)
                 Padding(
                   padding: const EdgeInsets.only(top: 6, left: 48),
-                  child: Text('+${goals.length - 3}', style: _LadnaText.caption),
+                  child: Text('+${goals.length - 3}', style: _LadnaText.caption(context)),
                 ),
             ],
           ],
@@ -1252,7 +1250,7 @@ class _TaskPreviewRow extends StatelessWidget {
           Icon(
             goal.isCompleted ? Icons.check_circle_rounded : Icons.circle_outlined,
             size: 16,
-            color: goal.isCompleted ? _LadnaColors.primary : _LadnaColors.muted,
+            color: goal.isCompleted ? _LadnaColors.primary(context) : _LadnaColors.muted(context),
           ),
           const SizedBox(width: 8),
           if (space != null) ...[
@@ -1260,10 +1258,10 @@ class _TaskPreviewRow extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 86),
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
-                color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? 0.22 : 0.10),
+                color: _LadnaColors.primary(context).withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.22 : 0.10),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? 0.26 : 0.14),
+                  color: _LadnaColors.primary(context).withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.26 : 0.14),
                 ),
               ),
               child: Text(
@@ -1273,7 +1271,7 @@ class _TaskPreviewRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
-                  color: _LadnaColors.primary,
+                  color: _LadnaColors.primary(context),
                 ),
               ),
             ),
@@ -1287,7 +1285,7 @@ class _TaskPreviewRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: goal.isCompleted ? _LadnaColors.muted : _LadnaColors.dark,
+                color: goal.isCompleted ? _LadnaColors.muted(context) : _LadnaColors.dark(context),
                 decoration: goal.isCompleted ? TextDecoration.lineThrough : null,
               ),
             ),
@@ -1364,12 +1362,12 @@ class _CalendarGrid extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: isToday ? _LadnaColors.primary : _LadnaColors.surfaceLight,
+              color: isToday ? _LadnaColors.primary(context) : _LadnaColors.surfaceLight(context),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isToday ? _LadnaColors.primary : _LadnaColors.border,
+                color: isToday ? _LadnaColors.primary(context) : _LadnaColors.border(context),
               ),
-              boxShadow: isToday ? _LadnaDecor.shadow : null,
+              boxShadow: isToday ? _LadnaDecor.shadow(context) : null,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1379,7 +1377,7 @@ class _CalendarGrid extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
-                    color: isToday ? Colors.white : _LadnaColors.dark,
+                    color: isToday ? Colors.white : _LadnaColors.dark(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1387,7 +1385,7 @@ class _CalendarGrid extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isToday ? Colors.white.withOpacity(.18) : _LadnaColors.card,
+                      color: isToday ? Colors.white.withOpacity(.18) : _LadnaColors.card(context),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -1395,7 +1393,7 @@ class _CalendarGrid extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
-                        color: isToday ? Colors.white : _LadnaColors.muted,
+                        color: isToday ? Colors.white : _LadnaColors.muted(context),
                       ),
                     ),
                   )
@@ -1404,7 +1402,7 @@ class _CalendarGrid extends StatelessWidget {
                     width: 5,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: isToday ? Colors.white.withOpacity(.6) : _LadnaColors.card,
+                      color: isToday ? Colors.white.withOpacity(.6) : _LadnaColors.card(context),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1423,7 +1421,7 @@ class _CalendarGrid extends StatelessWidget {
             children: List.generate(7, (i) {
               final monday = DateTime(2026, 1, 5 + i);
               return Expanded(
-                child: Center(child: Text(_weekdayShort(context, monday), style: _LadnaText.microUpper)),
+                child: Center(child: Text(_weekdayShort(context, monday), style: _LadnaText.microUpper(context))),
               );
             }),
           ),
@@ -1466,33 +1464,33 @@ class _SphereGoalsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(text.bySpheres, style: _LadnaText.cardTitle)),
+              Expanded(child: Text(text.bySpheres, style: _LadnaText.cardTitle(context))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _LadnaColors.card,
+                  color: _LadnaColors.card(context),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(text.hide, style: _LadnaText.caption),
+                child: Text(text.hide, style: _LadnaText.caption(context)),
               ),
             ],
           ),
           const SizedBox(height: 11),
           ...byBlock.entries.map((entry) {
-            final color = _blockColor(entry.key);
+            final color = _blockColor(context, entry.key);
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
                   Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 9),
-                  SizedBox(width: 84, child: Text(_lifeBlockLabel(context, entry.key), style: _LadnaText.bodySmall)),
+                  SizedBox(width: 84, child: Text(_lifeBlockLabel(context, entry.key), style: _LadnaText.bodySmall(context))),
                   Expanded(child: _Progress(value: entry.value.length / maxCount, color: color)),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: _LadnaColors.card, borderRadius: BorderRadius.circular(20)),
-                    child: Text(text.goalsCount(entry.value.length), style: _LadnaText.micro),
+                    decoration: BoxDecoration(color: _LadnaColors.card(context), borderRadius: BorderRadius.circular(20)),
+                    child: Text(text.goalsCount(entry.value.length), style: _LadnaText.micro(context)),
                   ),
                 ],
               ),
@@ -1519,7 +1517,7 @@ class _UserGoalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _blockColor(goal.lifeBlock);
+    final color = _blockColor(context, goal.lifeBlock);
     final text = _GoalsText.of(context);
     final progress = goal.isCompleted ? 1.0 : _fakeProgress(goal);
 
@@ -1547,7 +1545,7 @@ class _UserGoalTile extends StatelessWidget {
                         width: 12,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: goal.isCompleted ? _LadnaColors.green : color,
+                          color: goal.isCompleted ? _LadnaColors.green(context) : color,
                           shape: BoxShape.circle,
                         ),
                         child: goal.isCompleted
@@ -1562,15 +1560,15 @@ class _UserGoalTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_horizonLabel(text, goal.horizon), style: _LadnaText.microUpper),
+                      Text(_horizonLabel(text, goal.horizon), style: _LadnaText.microUpper(context)),
                       const SizedBox(height: 2),
                       Text(
                         goal.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: _LadnaText.bodyTitle.copyWith(
+                        style: _LadnaText.bodyTitle(context).copyWith(
                           decoration: goal.isCompleted ? TextDecoration.lineThrough : null,
-                          color: goal.isCompleted ? _LadnaColors.muted : _LadnaColors.dark,
+                          color: goal.isCompleted ? _LadnaColors.muted(context) : _LadnaColors.dark(context),
                         ),
                       ),
                     ],
@@ -1597,7 +1595,7 @@ class _UserGoalTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Icon(Icons.chevron_right_rounded, size: 18, color: _LadnaColors.muted),
+                    Icon(Icons.chevron_right_rounded, size: 18, color: _LadnaColors.muted(context)),
                   ],
                 ),
               ],
@@ -1605,9 +1603,9 @@ class _UserGoalTile extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Text(text.progress, style: _LadnaText.caption),
+                Text(text.progress, style: _LadnaText.caption(context)),
                 const Spacer(),
-                Text('${(progress * 100).round()}%', style: _LadnaText.caption.copyWith(fontWeight: FontWeight.w700)),
+                Text('${(progress * 100).round()}%', style: _LadnaText.caption(context).copyWith(fontWeight: FontWeight.w700)),
               ],
             ),
             const SizedBox(height: 5),
@@ -1725,13 +1723,13 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
         children: [
           _SheetHandle(),
           const SizedBox(height: 16),
-          Text(widget.initial == null ? text.newGoal : text.editGoal, style: _LadnaText.serifTitle.copyWith(fontSize: 22)),
+          Text(widget.initial == null ? text.newGoal : text.editGoal, style: _LadnaText.serifTitle(context).copyWith(fontSize: 22)),
           const SizedBox(height: 16),
           _Input(controller: _title, label: text.title),
           const SizedBox(height: 10),
           _Input(controller: _description, label: text.description, maxLines: 3),
           const SizedBox(height: 14),
-          Text(text.sphere, style: _LadnaText.microUpper),
+          Text(text.sphere, style: _LadnaText.microUpper(context)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -1747,7 +1745,7 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
             }).toList(),
           ),
           const SizedBox(height: 14),
-          Text(text.horizon, style: _LadnaText.microUpper),
+          Text(text.horizon, style: _LadnaText.microUpper(context)),
           const SizedBox(height: 8),
           _Segmented<GoalHorizon>(
             value: _horizon,
@@ -1766,7 +1764,7 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
             child: FilledButton(
               onPressed: _submit,
               style: FilledButton.styleFrom(
-                backgroundColor: _LadnaColors.primary,
+                backgroundColor: _LadnaColors.primary(context),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
@@ -1794,8 +1792,8 @@ class _BottomNav extends StatelessWidget {
       height: 78 + bottom,
       padding: EdgeInsets.only(top: 9, bottom: bottom),
       decoration: BoxDecoration(
-        color: _ladnaAdaptive(const Color(0xF7F7F3EC), const Color(0xF7100C1E)),
-        border: Border(top: BorderSide(color: _LadnaColors.border.withOpacity(.8))),
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xF7100C1E) : const Color(0xF7F7F3EC),
+        border: Border(top: BorderSide(color: _LadnaColors.border(context).withOpacity(.8))),
         boxShadow: const [BoxShadow(color: Color(0x14160E38), blurRadius: 18, offset: Offset(0, -6))],
       ),
       child: Row(
@@ -1827,7 +1825,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? _LadnaColors.primary : _LadnaColors.muted;
+    final color = active ? _LadnaColors.primary(context) : _LadnaColors.muted(context);
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -1857,14 +1855,14 @@ class _CenterMenu extends StatelessWidget {
             width: 46,
             height: 32,
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [_LadnaColors.primary, Color(0xFFE8B854)]),
+              gradient: LinearGradient(colors: [_LadnaColors.primary(context), Color(0xFFE8B854)]),
               borderRadius: BorderRadius.circular(16),
               boxShadow: const [BoxShadow(color: Color(0x736B54C0), blurRadius: 10, offset: Offset(0, 2))],
             ),
             child: const Center(child: Text('✦', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
           ),
           const SizedBox(height: 3),
-          Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _LadnaColors.primary)),
+          Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _LadnaColors.primary(context))),
         ],
       ),
     );
@@ -1882,8 +1880,8 @@ class _ArrowButton extends StatelessWidget {
         child: Container(
           width: 30,
           height: 30,
-          decoration: BoxDecoration(color: _LadnaColors.card, borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, size: 18, color: _LadnaColors.mid),
+          decoration: BoxDecoration(color: _LadnaColors.card(context), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, size: 18, color: _LadnaColors.mid(context)),
         ),
       );
 }
@@ -1900,11 +1898,11 @@ class _RoundIconButton extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: _LadnaColors.primary.withOpacity(.12),
+            color: _LadnaColors.primary(context).withOpacity(.12),
             shape: BoxShape.circle,
-            border: Border.all(color: _LadnaColors.primary.withOpacity(.2)),
+            border: Border.all(color: _LadnaColors.primary(context).withOpacity(.2)),
           ),
-          child: Icon(icon, size: 20, color: _LadnaColors.mid),
+          child: Icon(icon, size: 20, color: _LadnaColors.mid(context)),
         ),
       );
 }
@@ -1916,7 +1914,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(3, 2, 0, 8),
-        child: Text(text.toUpperCase(), style: _LadnaText.microUpper),
+        child: Text(text.toUpperCase(), style: _LadnaText.microUpper(context)),
       );
 }
 
@@ -1935,7 +1933,7 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         margin: margin,
         padding: padding,
-        decoration: _LadnaDecor.card,
+        decoration: _LadnaDecor.card(context),
         child: child,
       );
 }
@@ -1951,11 +1949,11 @@ class _EmptyCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            Icon(Icons.track_changes_rounded, color: _LadnaColors.primary, size: 30),
+            Icon(Icons.track_changes_rounded, color: _LadnaColors.primary(context), size: 30),
             const SizedBox(height: 8),
-            Text(title, style: _LadnaText.cardTitle),
+            Text(title, style: _LadnaText.cardTitle(context)),
             const SizedBox(height: 4),
-            Text(subtitle, textAlign: TextAlign.center, style: _LadnaText.caption),
+            Text(subtitle, textAlign: TextAlign.center, style: _LadnaText.caption(context)),
           ],
         ),
       );
@@ -1976,7 +1974,7 @@ class _Progress extends StatelessWidget {
         child: LinearProgressIndicator(
           minHeight: 6,
           value: value.clamp(0.0, 1.0).toDouble(),
-          backgroundColor: _LadnaColors.card,
+          backgroundColor: _LadnaColors.card(context),
           valueColor: AlwaysStoppedAnimation(color),
         ),
       );
@@ -1995,7 +1993,7 @@ class _Fab extends StatelessWidget {
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            color: _LadnaColors.primary,
+            color: _LadnaColors.primary(context),
             borderRadius: BorderRadius.circular(13),
             boxShadow: const [BoxShadow(color: Color(0x736B54C0), blurRadius: 14, offset: Offset(0, 4))],
           ),
@@ -2021,7 +2019,7 @@ class _Sheet extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 10, 16, 16 + bottom),
       decoration: BoxDecoration(
-        color: _LadnaColors.surface,
+        color: _LadnaColors.surface(context),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SingleChildScrollView(child: child),
@@ -2035,7 +2033,7 @@ class _SheetHandle extends StatelessWidget {
         child: Container(
           width: 40,
           height: 4,
-          decoration: BoxDecoration(color: _LadnaColors.dark.withOpacity(.15), borderRadius: BorderRadius.circular(99)),
+          decoration: BoxDecoration(color: _LadnaColors.dark(context).withOpacity(.15), borderRadius: BorderRadius.circular(99)),
         ),
       );
 }
@@ -2057,13 +2055,13 @@ class _Chip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? _LadnaColors.primary : _LadnaColors.card,
+            color: selected ? _LadnaColors.primary(context) : _LadnaColors.card(context),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: selected ? _LadnaColors.primary : _LadnaColors.border),
+            border: Border.all(color: selected ? _LadnaColors.primary(context) : _LadnaColors.border(context)),
           ),
           child: Text(
             label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? Colors.white : _LadnaColors.mid),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? Colors.white : _LadnaColors.mid(context)),
           ),
         ),
       );
@@ -2087,10 +2085,10 @@ class _Input extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           filled: true,
-          fillColor: _LadnaColors.surfaceLight,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _LadnaColors.border)),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _LadnaColors.border)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _LadnaColors.primary, width: 1.4)),
+          fillColor: _LadnaColors.surfaceLight(context),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _LadnaColors.border(context))),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _LadnaColors.border(context))),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _LadnaColors.primary(context), width: 1.4)),
         ),
       );
 }
@@ -2266,121 +2264,147 @@ String _horizonLabel(_GoalsText text, GoalHorizon horizon) {
   }
 }
 
-Color _blockColor(String key) {
+Color _blockColor(BuildContext context, String key) {
   switch (_normalizeLifeBlock(key)) {
     case 'career':
-      return _LadnaColors.coral;
+      return _LadnaColors.coral(context);
     case 'finance':
-      return _LadnaColors.green;
+      return _LadnaColors.green(context);
     case 'education':
-      return _LadnaColors.primary;
+      return _LadnaColors.primary(context);
     case 'family':
-      return _LadnaColors.mid;
+      return _LadnaColors.mid(context);
     case 'health':
       return const Color(0xFFEB9898);
     case 'hobbies':
     case 'hobby':
       return const Color(0xFF825ABE);
     default:
-      return _LadnaColors.primary;
+      return _LadnaColors.primary(context);
   }
 }
 
+// Раньше _LadnaColors/_LadnaDecor были статическими геттерами, читавшими
+// яркость ОС напрямую (в обход ThemeController), а _LadnaText — с "static
+// final" стилями, которые считаются ОДИН РАЗ при первом обращении и потом
+// навсегда кешируются: даже если тема потом меняется, цвет текста в этих
+// стилях "замораживался" на значении при первом использовании. Теперь все
+// три — статические методы, принимающие BuildContext и резолвящие цвет
+// заново при каждом вызове, из ThemeController.
 class _LadnaColors {
-  static Color get page => _ladnaAdaptive(const Color(0xFFD6D0EC), const Color(0xFF100C1E));
-  static Color get surface => _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E));
-  static Color get surfaceLight => _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630));
-  static Color get card => _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630));
-  static Color get border => _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0));
-  static Color get primary => const Color(0xFF6B54C0);
-  static Color get dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
-  static Color get mid => _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF));
-  static Color get muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
-  static Color get green => const Color(0xFF16B8A8);
-  static Color get coral => const Color(0xFFD4E040);
+  static bool _isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
+
+  static Color page(BuildContext context) =>
+      _isDark(context) ? ThemeController.kLadnaSurfaceDark : const Color(0xFFD6D0EC);
+  static Color surface(BuildContext context) =>
+      _isDark(context) ? ThemeController.kLadnaSurfaceDark : ThemeController.kLadnaSurfaceLight;
+  static Color surfaceLight(BuildContext context) =>
+      _isDark(context) ? ThemeController.kLadnaCardDark : ThemeController.kLadnaCardLight;
+  static Color card(BuildContext context) =>
+      _isDark(context) ? ThemeController.kLadnaCardDark : ThemeController.kLadnaTintLight;
+  static Color border(BuildContext context) =>
+      _isDark(context) ? ThemeController.kLadnaBorderDark : ThemeController.kLadnaBorderLight;
+  static Color primary(BuildContext context) => ThemeController.kLadnaPrimary;
+  static Color dark(BuildContext context) =>
+      _isDark(context) ? ThemeController.kLadnaTextDark : ThemeController.kLadnaTextLight;
+  static Color mid(BuildContext context) =>
+      _isDark(context) ? const Color(0x99FFFFFF) : ThemeController.kLadnaText;
+  static Color muted(BuildContext context) =>
+      _isDark(context) ? const Color(0x4DFFFFFF) : ThemeController.kLadnaMuted;
+  static Color green(BuildContext context) => ThemeController.kLadnaTeal;
+  static Color coral(BuildContext context) => ThemeController.kLadnaLime;
 }
 
 class _LadnaDecor {
-  static BoxDecoration get header => BoxDecoration(
-    gradient: LinearGradient(
-      colors: [
-        _ladnaAdaptive(const Color(0xFFF0EEF8), const Color(0x1F6B54C0)),
-        _ladnaAdaptive(const Color(0xFFE6E2F4), const Color(0x1F6B54C0)),
-      ],
-    ),
-    borderRadius: BorderRadius.circular(20),
-    border: Border.all(color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? .25 : .15)),
-    boxShadow: shadow,
-  );
+  static BoxDecoration header(BuildContext context) {
+    final isDark = _LadnaColors._isDark(context);
+    return BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          isDark ? const Color(0x1F6B54C0) : const Color(0xFFF0EEF8),
+          isDark ? const Color(0x1F6B54C0) : const Color(0xFFE6E2F4),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: _LadnaColors.primary(context).withOpacity(isDark ? .25 : .15)),
+      boxShadow: shadow(context),
+    );
+  }
 
-  static BoxDecoration get card => BoxDecoration(
-    color: _LadnaColors.surfaceLight,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: _LadnaColors.primary.withOpacity(_ladnaDarkMode ? .18 : .10)),
-    boxShadow: shadow,
-  );
+  static BoxDecoration card(BuildContext context) {
+    final isDark = _LadnaColors._isDark(context);
+    return BoxDecoration(
+      color: _LadnaColors.surfaceLight(context),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: _LadnaColors.primary(context).withOpacity(isDark ? .18 : .10)),
+      boxShadow: shadow(context),
+    );
+  }
 
-  static List<BoxShadow> get shadow => [
-    BoxShadow(
-      color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.07),
-      blurRadius: 12,
-      offset: const Offset(0, 2),
-    ),
-  ];
+  static List<BoxShadow> shadow(BuildContext context) {
+    final isDark = _LadnaColors._isDark(context);
+    return [
+      BoxShadow(
+        color: Colors.black.withOpacity(isDark ? 0.30 : 0.07),
+        blurRadius: 12,
+        offset: const Offset(0, 2),
+      ),
+    ];
+  }
 }
 
 class _LadnaText {
-  static final serifTitle = TextStyle(
+  static TextStyle serifTitle(BuildContext context) => TextStyle(
     fontFamily: 'PlayfairDisplay',
     fontSize: 17,
     fontWeight: FontWeight.w700,
-    color: _LadnaColors.dark,
+    color: _LadnaColors.dark(context),
     letterSpacing: -.2,
   );
 
-  static final serifNumber = TextStyle(
+  static TextStyle serifNumber(BuildContext context) => TextStyle(
     fontFamily: 'PlayfairDisplay',
     fontSize: 22,
     fontWeight: FontWeight.w700,
-    color: _LadnaColors.dark,
+    color: _LadnaColors.dark(context),
     height: 1,
   );
 
-  static final cardTitle = TextStyle(
+  static TextStyle cardTitle(BuildContext context) => TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w800,
-    color: _LadnaColors.dark,
+    color: _LadnaColors.dark(context),
   );
 
-  static final bodyTitle = TextStyle(
+  static TextStyle bodyTitle(BuildContext context) => TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w800,
-    color: _LadnaColors.dark,
+    color: _LadnaColors.dark(context),
     height: 1.35,
   );
 
-  static final bodySmall = TextStyle(
+  static TextStyle bodySmall(BuildContext context) => TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
-    color: _LadnaColors.mid,
+    color: _LadnaColors.mid(context),
   );
 
-  static final caption = TextStyle(
+  static TextStyle caption(BuildContext context) => TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    color: _LadnaColors.muted,
+    color: _LadnaColors.muted(context),
   );
 
-  static final micro = TextStyle(
+  static TextStyle micro(BuildContext context) => TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.w600,
-    color: _LadnaColors.muted,
+    color: _LadnaColors.muted(context),
   );
 
-  static final microUpper = TextStyle(
+  static TextStyle microUpper(BuildContext context) => TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.w800,
-    color: _LadnaColors.muted,
+    color: _LadnaColors.muted(context),
     letterSpacing: 1.1,
   );
 }

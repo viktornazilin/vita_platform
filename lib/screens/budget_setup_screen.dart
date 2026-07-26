@@ -10,18 +10,52 @@ import 'package:nest_app/widgets/add_jar_dialog.dart';
 import 'package:nest_app/widgets/empty_state.dart';
 import 'package:nest_app/widgets/limit_sheet.dart';
 import 'package:nest_app/widgets/nest/nest_background.dart';
+import 'package:nest_app/controllers/theme_controller.dart';
 
 
-const _pageBackground = Color(0xFFD6D0EC);
-const _surface = Color(0xFFF5F3FA);
-const _card = Color(0xFFEAE6F5);
-const _primary = Color(0xFF6B54C0);
-const _primaryDark = Color(0xFF160E38);
-const _muted = Color(0xFF9090A8);
-const _text = Color(0xFF555268);
-const _border = Color(0xFFE0DCF0);
-const _lime = Color(0xFFD4E040);
-const _teal = Color(0xFF16B8A8);
+// Раньше вся палитра этого экрана была захардкожена только под светлую
+// тему (без единого Theme.of(context)), поэтому в тёмном режиме экран
+// оставался светлым, пока весь остальной интерфейс становился тёмным.
+// _BudgetColors резолвит цвета из ThemeController так же, как остальные
+// экраны приложения.
+class _BudgetColors {
+  final Color surface;
+  final Color card;
+  final Color primary;
+  final Color primaryDark;
+  final Color muted;
+  final Color text;
+  final Color border;
+  final Color lime;
+  final Color teal;
+
+  const _BudgetColors({
+    required this.surface,
+    required this.card,
+    required this.primary,
+    required this.primaryDark,
+    required this.muted,
+    required this.text,
+    required this.border,
+    required this.lime,
+    required this.teal,
+  });
+
+  factory _BudgetColors.of(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _BudgetColors(
+      surface: isDark ? ThemeController.kLadnaSurfaceDark : ThemeController.kLadnaSurfaceLight,
+      card: isDark ? ThemeController.kLadnaCardDark : ThemeController.kLadnaTintLight,
+      primary: ThemeController.kLadnaPrimary,
+      primaryDark: isDark ? ThemeController.kLadnaTextDark : ThemeController.kLadnaTextLight,
+      muted: isDark ? const Color(0x99FFFFFF) : ThemeController.kLadnaMuted,
+      text: isDark ? const Color(0xCCFFFFFF) : ThemeController.kLadnaText,
+      border: isDark ? ThemeController.kLadnaBorderDark : ThemeController.kLadnaBorderLight,
+      lime: ThemeController.kLadnaLime,
+      teal: ThemeController.kLadnaTeal,
+    );
+  }
+}
 
 class BudgetSetupScreen extends StatelessWidget {
   const BudgetSetupScreen({super.key});
@@ -49,17 +83,6 @@ class _SetupViewState extends State<_SetupView> {
   final GlobalKey _saveKey = GlobalKey();
 
   bool _saving = false;
-
-  static const _pageBackground = Color(0xFFD6D0EC);
-  static const _surface = Color(0xFFF5F3FA);
-  static const _card = Color(0xFFEAE6F5);
-  static const _primary = Color(0xFF6B54C0);
-  static const _primaryDark = Color(0xFF160E38);
-  static const _muted = Color(0xFF9090A8);
-  static const _text = Color(0xFF555268);
-  static const _border = Color(0xFFE0DCF0);
-  static const _lime = Color(0xFFD4E040);
-  static const _teal = Color(0xFF16B8A8);
 
   @override
   void initState() {
@@ -174,12 +197,13 @@ class _SetupViewState extends State<_SetupView> {
     required dynamic category,
   }) async {
     final l = AppLocalizations.of(context)!;
+    final c = _BudgetColors.of(context);
 
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
-      backgroundColor: _surface,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(34)),
       ),
@@ -194,8 +218,8 @@ class _SetupViewState extends State<_SetupView> {
               children: [
                 Text(
                   category.name as String,
-                  style: const TextStyle(
-                    color: _primaryDark,
+                  style: TextStyle(
+                    color: c.primaryDark,
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
@@ -204,8 +228,8 @@ class _SetupViewState extends State<_SetupView> {
                 const SizedBox(height: 6),
                 Text(
                   l.budgetIncomeCategoriesSubtitle,
-                  style: const TextStyle(
-                    color: _muted,
+                  style: TextStyle(
+                    color: c.muted,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -214,7 +238,7 @@ class _SetupViewState extends State<_SetupView> {
                 _ActionRow(
                   icon: Icons.delete_outline_rounded,
                   title: l.commonDelete,
-                  tone: _primary,
+                  tone: c.primary,
                   onTap: () async {
                     Navigator.pop(sheetContext);
                     await _deleteCategory(
@@ -328,6 +352,7 @@ class _SetupViewState extends State<_SetupView> {
     String? helper,
   }) {
     final l = AppLocalizations.of(context)!;
+    final c = _BudgetColors.of(context);
 
     return _LadnaSection(
       icon: icon,
@@ -342,8 +367,8 @@ class _SetupViewState extends State<_SetupView> {
           if (helper != null) ...[
             Text(
               helper,
-              style: const TextStyle(
-                color: _text,
+              style: TextStyle(
+                color: c.text,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
@@ -373,10 +398,11 @@ class _SetupViewState extends State<_SetupView> {
 
   Widget _buildJarsSection(BuildContext context, BudgetModel m) {
     final l = AppLocalizations.of(context)!;
+    final c = _BudgetColors.of(context);
 
     return _LadnaSection(
       icon: Icons.savings_outlined,
-      tone: _lime,
+      tone: c.lime,
       title: l.budgetJarsTitle,
       subtitle: l.budgetJarsSubtitle,
       actionLabel: l.budgetAddJar,
@@ -416,6 +442,7 @@ class _SetupViewState extends State<_SetupView> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final c = _BudgetColors.of(context);
     final m = context.watch<BudgetModel>();
 
     if (m.loading) {
@@ -458,7 +485,7 @@ class _SetupViewState extends State<_SetupView> {
                         subtitle: l.budgetIncomeCategoriesSubtitle,
                         icon: Icons.trending_up_rounded,
                         categories: m.incomeCategories,
-                        tone: _teal,
+                        tone: c.teal,
                         helper: _BudgetSetupText.of(context).incomeHelper,
                         onAdd: () => _addCategory(
                           context: context,
@@ -486,7 +513,7 @@ class _SetupViewState extends State<_SetupView> {
                         subtitle: l.budgetExpenseCategoriesSubtitle,
                         icon: Icons.shopping_bag_outlined,
                         categories: m.expenseCategories,
-                        tone: _primary,
+                        tone: c.primary,
                         helper: _BudgetSetupText.of(context).expenseHelper,
                         onAdd: () => _addCategory(
                           context: context,
@@ -593,15 +620,16 @@ class _SetupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [_surface, _card]),
+        gradient: LinearGradient(colors: [c.surface, c.card]),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border),
+        border: Border.all(color: c.border),
         boxShadow: [
           BoxShadow(
-            color: _primaryDark.withOpacity(0.06),
+            color: c.primaryDark.withOpacity(0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -622,12 +650,13 @@ class _SetupHeader extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _primaryDark,
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    color: c.primaryDark,
+                    fontSize: 22,
                     height: 1.05,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.25,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -635,8 +664,8 @@ class _SetupHeader extends StatelessWidget {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _muted,
+                  style: TextStyle(
+                    color: c.muted,
                     fontSize: 11,
                     height: 1.2,
                     fontWeight: FontWeight.w700,
@@ -672,16 +701,17 @@ class _LadnaSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 16),
       decoration: BoxDecoration(
-        color: _surface.withOpacity(0.96),
+        color: c.surface.withOpacity(0.96),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border, width: 1.1),
+        border: Border.all(color: c.border, width: 1.1),
         boxShadow: [
           BoxShadow(
-            color: _primaryDark.withOpacity(0.045),
+            color: c.primaryDark.withOpacity(0.045),
             blurRadius: 18,
             offset: const Offset(0, 9),
           ),
@@ -711,8 +741,8 @@ class _LadnaSection extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _primaryDark,
+                      style: TextStyle(
+                        color: c.primaryDark,
                         fontSize: 17,
                         height: 1.1,
                         fontWeight: FontWeight.w900,
@@ -724,8 +754,8 @@ class _LadnaSection extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _muted,
+                      style: TextStyle(
+                        color: c.muted,
                         fontSize: 11.5,
                         height: 1.25,
                         fontWeight: FontWeight.w700,
@@ -763,6 +793,7 @@ class _PrimaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -772,11 +803,11 @@ class _PrimaryActionButton extends StatelessWidget {
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: BoxDecoration(
-            color: _primary,
+            color: c.primary,
             borderRadius: BorderRadius.circular(13),
             boxShadow: [
               BoxShadow(
-                color: _primary.withOpacity(0.18),
+                color: c.primary.withOpacity(0.18),
                 blurRadius: 12,
                 offset: const Offset(0, 5),
               ),
@@ -819,6 +850,7 @@ class _CategoryPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -828,9 +860,9 @@ class _CategoryPill extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 38, maxWidth: 230),
           padding: const EdgeInsets.fromLTRB(13, 8, 9, 8),
           decoration: BoxDecoration(
-            color: Color.lerp(_card, tone, 0.12),
+            color: Color.lerp(c.card, tone, 0.12),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Color.lerp(_border, tone, 0.32)!),
+            border: Border.all(color: Color.lerp(c.border, tone, 0.32)!),
             boxShadow: [
               BoxShadow(
                 color: tone.withOpacity(0.07),
@@ -846,8 +878,8 @@ class _CategoryPill extends StatelessWidget {
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _primaryDark,
+                  style: TextStyle(
+                    color: c.primaryDark,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.2,
@@ -858,12 +890,12 @@ class _CategoryPill extends StatelessWidget {
               InkWell(
                 borderRadius: BorderRadius.circular(999),
                 onTap: onDelete,
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.all(3),
                   child: Icon(
                     Icons.close_rounded,
                     size: 17,
-                    color: _text,
+                    color: c.text,
                   ),
                 ),
               ),
@@ -890,12 +922,13 @@ class _JarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -904,10 +937,10 @@ class _JarTile extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: _lime.withOpacity(0.20),
+              color: c.lime.withOpacity(0.20),
               borderRadius: BorderRadius.circular(13),
             ),
-            child: const Icon(Icons.account_balance_wallet_outlined, color: _primaryDark),
+            child: Icon(Icons.account_balance_wallet_outlined, color: c.primaryDark),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -916,8 +949,8 @@ class _JarTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: _primaryDark,
+                  style: TextStyle(
+                    color: c.primaryDark,
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
@@ -925,8 +958,8 @@ class _JarTile extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   summary,
-                  style: const TextStyle(
-                    color: _text,
+                  style: TextStyle(
+                    color: c.text,
                     fontSize: 11.5,
                     height: 1.25,
                     fontWeight: FontWeight.w700,
@@ -939,8 +972,8 @@ class _JarTile extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
-                      backgroundColor: _card,
-                      color: _lime,
+                      backgroundColor: c.card,
+                      color: c.lime,
                     ),
                   ),
                 ],
@@ -949,7 +982,7 @@ class _JarTile extends StatelessWidget {
           ),
           IconButton(
             onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded, color: _text),
+            icon: Icon(Icons.delete_outline_rounded, color: c.text),
           ),
         ],
       ),
@@ -965,18 +998,19 @@ class _EmptySetupBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Color.lerp(_surface, tone, 0.05),
+        color: Color.lerp(c.surface, tone, 0.05),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Color.lerp(_border, tone, 0.20)!),
+        border: Border.all(color: Color.lerp(c.border, tone, 0.20)!),
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          color: _text,
+        style: TextStyle(
+          color: c.text,
           fontSize: 12,
           height: 1.3,
           fontWeight: FontWeight.w700,
@@ -994,6 +1028,7 @@ class _RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1003,11 +1038,11 @@ class _RoundIconButton extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: _card.withOpacity(0.82),
+            color: c.card.withOpacity(0.82),
             shape: BoxShape.circle,
-            border: Border.all(color: _border),
+            border: Border.all(color: c.border),
           ),
-          child: Icon(icon, color: _text, size: 25),
+          child: Icon(icon, color: c.text, size: 25),
         ),
       ),
     );
@@ -1029,6 +1064,7 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1039,24 +1075,24 @@ class _ActionRow extends StatelessWidget {
           padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            color: Color.lerp(_surface, tone, 0.06),
-            border: Border.all(color: Color.lerp(_border, tone, 0.28)!),
+            color: Color.lerp(c.surface, tone, 0.06),
+            border: Border.all(color: Color.lerp(c.border, tone, 0.28)!),
           ),
           child: Row(
             children: [
-              Icon(icon, color: _primaryDark),
+              Icon(icon, color: c.primaryDark),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: _primaryDark,
+                  style: TextStyle(
+                    color: c.primaryDark,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: _text),
+              Icon(Icons.chevron_right_rounded, color: c.text),
             ],
           ),
         ),
@@ -1074,16 +1110,17 @@ class _LadnaSaveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _BudgetColors.of(context);
     return SafeArea(
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         decoration: BoxDecoration(
-          color: _surface.withOpacity(0.94),
-          border: const Border(top: BorderSide(color: _border)),
+          color: c.surface.withOpacity(0.94),
+          border: Border(top: BorderSide(color: c.border)),
           boxShadow: [
             BoxShadow(
-              color: _primaryDark.withOpacity(0.12),
+              color: c.primaryDark.withOpacity(0.12),
               blurRadius: 22,
               offset: const Offset(0, -10),
             ),
@@ -1098,11 +1135,11 @@ class _LadnaSaveBar extends StatelessWidget {
               height: 50,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: _primary,
+                color: c.primary,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: _primary.withOpacity(0.24),
+                    color: c.primary.withOpacity(0.24),
                     blurRadius: 18,
                     offset: const Offset(0, 9),
                   ),

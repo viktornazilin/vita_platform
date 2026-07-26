@@ -13,12 +13,10 @@ import '../../models/space_invite.dart';
 import '../../services/home_ai_insight_service.dart';
 import '../../services/onboarding_tour_service.dart';
 import '../day_goals_screen.dart';
+import '../../widgets/nest/nest_section_title.dart';
 
 
-bool get _ladnaDarkMode =>
-    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
-
-Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
+// (dark-mode helpers removed — colors now resolved via Theme.of(context), see below)
 
 class HomeDashboardTab extends StatelessWidget {
   const HomeDashboardTab({super.key});
@@ -449,14 +447,14 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
             ),
           ),
           const SizedBox(height: 18),
-          _SectionLabel(text: _pick(const {
+          NestSectionTitle(_pick(const {
             'ru': 'Фокус сегодня',
             'en': 'Today focus',
             'de': 'Fokus heute',
             'fr': 'Focus du jour',
             'es': 'Foco de hoy',
             'tr': 'Bugünün odağı',
-          })),
+          }), padding: EdgeInsets.zero),
           const SizedBox(height: 9),
           KeyedSubtree(
             key: _focusTourKey,
@@ -487,14 +485,14 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
               );
             },
           ),
-          _SectionLabel(text: _pick(const {
+          NestSectionTitle(_pick(const {
             'ru': 'Обзор дня',
             'en': 'Day overview',
             'de': 'Tagesübersicht',
             'fr': 'Aperçu du jour',
             'es': 'Resumen del día',
             'tr': 'Gün özeti',
-          })),
+          }), padding: EdgeInsets.zero),
           const SizedBox(height: 9),
           FutureBuilder<_HabitsSnapshot>(
             future: _habitsFuture,
@@ -576,8 +574,8 @@ class _HomeHeader extends StatelessWidget {
   final String date;
   final VoidCallback onProfileTap;
 
-  static Color get _dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
-  static Color get _muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
+  static Color _dark(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38));
+  static Color _muted(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8));
   static Color get _primary => const Color(0xFF6B54C0);
 
   @override
@@ -590,15 +588,15 @@ class _HomeHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            _ladnaAdaptive(const Color(0xFFF0EEF8), const Color(0x1F6B54C0)),
-            _ladnaAdaptive(const Color(0xFFE6E2F4), const Color(0x1F6B54C0)),
+            (Theme.of(context).brightness == Brightness.dark ? const Color(0x1F6B54C0) : const Color(0xFFF0EEF8)),
+            (Theme.of(context).brightness == Brightness.dark ? const Color(0x1F6B54C0) : const Color(0xFFE6E2F4)),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _primary.withOpacity(_ladnaDarkMode ? .25 : .15), width: 1),
+        border: Border.all(color: _primary.withOpacity((Theme.of(context).brightness == Brightness.dark) ? .25 : .15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.40 : 0.035),
+            color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.40 : 0.035),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -628,11 +626,11 @@ class _HomeHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: 'PlayfairDisplay',
-                    fontSize: 21,
-                    height: 1.0,
+                    fontSize: 22,
+                    height: 1.05,
                     fontWeight: FontWeight.w700,
-                    color: _dark,
-                    letterSpacing: -0.5,
+                    color: _dark(context),
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -644,7 +642,7 @@ class _HomeHeader extends StatelessWidget {
                     fontSize: 12,
                     height: 1.0,
                     fontWeight: FontWeight.w600,
-                    color: _muted,
+                    color: _muted(context),
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -677,25 +675,6 @@ class _HabitsSnapshot {
   final int total;
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.text});
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 10.5,
-        height: 1,
-        fontWeight: FontWeight.w900,
-        color: Color(0xFF9090A8),
-        letterSpacing: 1.8,
-      ),
-    );
-  }
-}
-
 class _FocusCard extends StatelessWidget {
   const _FocusCard({
     required this.done,
@@ -712,9 +691,9 @@ class _FocusCard extends StatelessWidget {
   final VoidCallback onOpenTasks;
 
   static Color get _primary => const Color(0xFF6B54C0);
-  static Color get _focusStart => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFF1E1548));
-  static Color get _focusEnd => _ladnaAdaptive(const Color(0xFF2A1C5A), const Color(0xFF2A1C60));
-  static Color get _focusDot => _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040));
+  static Color _focusStart(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1548) : const Color(0xFF160E38));
+  static Color _focusEnd(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2A1C60) : const Color(0xFF2A1C5A));
+  static Color _focusDot(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFD4E040) : const Color(0xFF6B54C0));
   static const Color _mutedOnDark = Color(0xFFB6AED6);
 
   String _pick(BuildContext context, Map<String, String> values) {
@@ -742,7 +721,7 @@ class _FocusCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_focusStart, _focusEnd],
+          colors: [_focusStart(context), _focusEnd(context)],
         ),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
@@ -772,9 +751,9 @@ class _FocusCard extends StatelessWidget {
                     width: 7,
                     height: 7,
                     decoration: BoxDecoration(
-                      color: _focusDot,
+                      color: _focusDot(context),
                       shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: _focusDot.withOpacity(0.7), blurRadius: 8)],
+                      boxShadow: [BoxShadow(color: _focusDot(context).withOpacity(0.7), blurRadius: 8)],
                     ),
                   ),
                   const SizedBox(width: 9),
@@ -787,7 +766,7 @@ class _FocusCard extends StatelessWidget {
                       'es': '{done} de {total} hecho',
                       'tr': '{done}/{total} tamamlandı',
                     }).replaceAll('{done}', done.toString()).replaceAll('{total}', shownTotal.toString()).toUpperCase(),
-                    style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w900, color: _focusDot, letterSpacing: 1.2),
+                    style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w900, color: _focusDot(context), letterSpacing: 1.2),
                   ),
                 ],
               ),
@@ -1029,15 +1008,15 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
+        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE)),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _primary.withOpacity(_ladnaDarkMode ? 0.30 : 0.14),
+          color: _primary.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.14),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.05),
+            color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.05),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -1053,7 +1032,7 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
                 height: 42,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: _primary.withOpacity(_ladnaDarkMode ? 0.22 : 0.12),
+                  color: _primary.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.22 : 0.12),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: _primary.withOpacity(0.25)),
                 ),
@@ -1090,7 +1069,7 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
-                        color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38)),
                       ),
                     ),
                   ],
@@ -1108,7 +1087,7 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
                     child: Text(
                       '+$extra',
                       style: TextStyle(
-                        color: _ladnaAdaptive(_primary, _lime),
+                        color: (Theme.of(context).brightness == Brightness.dark ? _lime : _primary),
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1131,7 +1110,7 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
               fontSize: 12.5,
               height: 1.35,
               fontWeight: FontWeight.w600,
-              color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+              color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x99FFFFFF) : const Color(0xFF9090A8)),
             ),
           ),
           const SizedBox(height: 13),
@@ -1143,8 +1122,8 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () => onDecline(invite),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _ladnaAdaptive(_primary, _lime),
-                      side: BorderSide(color: _ladnaAdaptive(_primary.withOpacity(0.30), _lime.withOpacity(0.38))),
+                      foregroundColor: (Theme.of(context).brightness == Brightness.dark ? _lime : _primary),
+                      side: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? _lime.withOpacity(0.38) : _primary.withOpacity(0.30))),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: Text(
@@ -1300,10 +1279,10 @@ class _MiniCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
+        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0)), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : const Color(0xFFE0DCF0)), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1311,7 +1290,7 @@ class _MiniCard extends StatelessWidget {
         children: [
           Text(icon, style: const TextStyle(fontSize: 24, height: 1)),
           const Spacer(),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8)))),
           const SizedBox(height: 4),
           Text(
             value,
@@ -1322,12 +1301,12 @@ class _MiniCard extends StatelessWidget {
               fontSize: valueIsSerif ? 20 : 14,
               height: 1,
               fontWeight: FontWeight.w900,
-              color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+              color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38)),
               letterSpacing: -0.4,
             ),
           ),
           const SizedBox(height: 3),
-          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
+          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w700, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x40FFFFFF) : const Color(0xFF9090A8)))),
         ],
       ),
     );
@@ -1361,10 +1340,10 @@ class _WeekCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
+        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0)), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : const Color(0xFFE0DCF0)), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
       ),
       child: Column(
         children: [
@@ -1373,10 +1352,10 @@ class _WeekCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${_pick(context, const {'ru': 'Неделя', 'en': 'Week', 'de': 'Woche', 'fr': 'Semaine', 'es': 'Semana', 'tr': 'Hafta'})} $weekNumber',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF))),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38))),
                 ),
               ),
-              Text(range, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)))),
+              Text(range, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8)))),
             ],
           ),
           const SizedBox(height: 13),
@@ -1394,7 +1373,7 @@ class _WeekCard extends StatelessWidget {
                   onTap: () => onDayTap(day),
                   child: Column(
                     children: [
-                      Text(labels[index], style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x40FFFFFF)))),
+                      Text(labels[index], style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x40FFFFFF) : const Color(0xFF9090A8)))),
                       const SizedBox(height: 7),
                       Container(
                         width: 30,
@@ -1405,14 +1384,14 @@ class _WeekCard extends StatelessWidget {
                               ? const Color(0xFF6B54C0)
                               : isDone
                                   ? const Color(0xFF16B8A8).withOpacity(0.12)
-                                  : _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0x0DFFFFFF)),
+                                  : (Theme.of(context).brightness == Brightness.dark ? const Color(0x0DFFFFFF) : const Color(0xFFEAE6F5)),
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isToday
                                 ? const Color(0xFF6B54C0)
                                 : isDone
                                     ? const Color(0xFF16B8A8).withOpacity(0.45)
-                                    : _ladnaAdaptive(const Color(0xFFDCD5F2), const Color(0x336B54C0)),
+                                    : (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : const Color(0xFFDCD5F2)),
                             width: 1.5,
                           ),
                           boxShadow: isToday ? [BoxShadow(color: const Color(0xFF6B54C0).withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 4))] : null,
@@ -1426,7 +1405,7 @@ class _WeekCard extends StatelessWidget {
                                 ? Colors.white
                                 : isDone
                                     ? const Color(0xFF16B8A8)
-                                    : _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
+                                    : (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8)),
                           ),
                         ),
                       ),
@@ -1513,10 +1492,10 @@ class _AiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0xFF1C1630)),
+        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1630) : const Color(0xFFE2DDEF)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _ladnaAdaptive(const Color(0xFFD8CCF0), const Color(0x33D4E040))),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
+        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x33D4E040) : const Color(0xFFD8CCF0))),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1525,14 +1504,14 @@ class _AiCard extends StatelessWidget {
             width: 42,
             height: 42,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0x26D4E040)), borderRadius: BorderRadius.circular(12), border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x40D4E040)))),
+            decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x26D4E040) : const Color(0xFF160E38)), borderRadius: BorderRadius.circular(12), border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x40D4E040) : Colors.transparent))),
             child: isLoading
                 ? const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6B54C0)),
                   )
-                : Text('✦', style: TextStyle(fontSize: 22, color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040)))),
+                : Text('✦', style: TextStyle(fontSize: 22, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFD4E040) : const Color(0xFF6B54C0)))),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1544,10 +1523,10 @@ class _AiCard extends StatelessWidget {
                           ? const {'ru': 'AI-наблюдение недели', 'en': 'Weekly AI observation', 'de': 'Wöchentliche AI-Beobachtung', 'fr': 'Observation IA hebdomadaire', 'es': 'Observación semanal de IA', 'tr': 'Haftalık AI gözlemi'}
                           : const {'ru': 'Статистика дня', 'en': 'Day statistics', 'de': 'Tagesstatistik', 'fr': 'Statistique du jour', 'es': 'Estadística del día', 'tr': 'Gün istatistiği'})
                       .toUpperCase(),
-                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: 1.3, color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFD4E040))),
+                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, letterSpacing: 1.3, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFD4E040) : const Color(0xFF6B54C0))),
                 ),
                 const SizedBox(height: 6),
-                Text(text, style: TextStyle(fontSize: 13, height: 1.45, fontWeight: FontWeight.w700, color: _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF)))),
+                Text(text, style: TextStyle(fontSize: 13, height: 1.45, fontWeight: FontWeight.w700, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x99FFFFFF) : const Color(0xFF555268)))),
               ],
             ),
           ),

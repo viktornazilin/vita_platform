@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,18 +7,17 @@ import '../domain/category.dart' as dm;
 import '../domain/jar.dart';
 import '../main.dart';
 import '../models/budget_model.dart';
+import '../models/home_model.dart';
 import '../widgets/add_expense_dialog.dart';
 import '../widgets/add_income_dialog.dart';
 import '../widgets/add_jar_dialog.dart';
 import '../widgets/nest/nest_background.dart';
+import '../controllers/theme_controller.dart';
 import '../services/onboarding_tour_service.dart';
 import 'shopping_tracker_card.dart';
 
 
-bool get _ladnaDarkMode =>
-    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
-
-Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
+// (dark-mode helpers removed — colors now resolved via _LadnaColors.of(context), see below)
 
 class ExpensesScreen extends StatelessWidget {
   const ExpensesScreen({super.key});
@@ -63,6 +61,21 @@ class _ExpensesViewState extends State<_ExpensesView> {
   void dispose() {
     OnboardingTourService.fullFlowStep.removeListener(_maybeRunExpensesTour);
     super.dispose();
+  }
+
+  void _goBack() {
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.maybePop();
+      return;
+    }
+    // When opened as a bottom-nav tab there is no route to pop — fall back
+    // to selecting the Home tab, same as mood_screen/goals_screen.
+    try {
+      context.read<HomeModel>().select(0);
+    } catch (_) {
+      // If this screen is opened without HomeModel above it, do nothing safely.
+    }
   }
 
   void _maybeRunExpensesTour() {
@@ -511,8 +524,7 @@ class _ExpensesViewState extends State<_ExpensesView> {
                         children: [
                           _LadnaHeader(
                             title: t.budget,
-                            canPop: Navigator.of(context).canPop(),
-                            onBack: () => Navigator.of(context).maybePop(),
+                            onBack: _goBack,
                           ),
                           const SizedBox(height: 14),
                           KeyedSubtree(
@@ -615,7 +627,7 @@ class _Fab extends StatelessWidget {
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            color: _LadnaColors.primary,
+            color: ThemeController.kLadnaPrimary,
             borderRadius: BorderRadius.circular(13),
             boxShadow: const [
               BoxShadow(
@@ -769,35 +781,37 @@ class _ListsTab extends StatelessWidget {
 
 class _LadnaHeader extends StatelessWidget {
   final String title;
-  final bool canPop;
   final VoidCallback onBack;
   const _LadnaHeader({
     required this.title,
-    required this.canPop,
     required this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_LadnaColors.surface, _LadnaColors.card],
+          colors: [c.surface, c.card],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _LadnaColors.border),
-        boxShadow: _LadnaShadows.card,
+        border: Border.all(color: c.border),
+        boxShadow: c.cardShadow,
       ),
       child: Row(
         children: [
-          if (canPop) ...[
-            _CircleButton(
-              icon: Icons.chevron_left_rounded,
-              onTap: onBack,
-            ),
-            const SizedBox(width: 10),
-          ],
+          // Раньше кнопка назад показывалась только если canPop() было true.
+          // Так как этот экран открывается как таб снизу (пуш-стека нет),
+          // кнопка вообще не появлялась — в отличие от Goals/Personal/Reports,
+          // где кнопка есть всегда и при отсутствии стека переключает на
+          // таб Home. Теперь ведёт себя так же.
+          _CircleButton(
+            icon: Icons.chevron_left_rounded,
+            onTap: onBack,
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               title,
@@ -806,7 +820,7 @@ class _LadnaHeader extends StatelessWidget {
                 fontSize: 22,
                 height: 1.05,
                 fontWeight: FontWeight.w700,
-                color: _LadnaColors.dark,
+                color: c.dark,
                 letterSpacing: -0.3,
               ),
             ),
@@ -834,6 +848,7 @@ class _PeriodRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     final t = _BudgetText.of(context);
 
     return Row(
@@ -868,7 +883,7 @@ class _PeriodRow extends StatelessWidget {
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: _LadnaColors.card,
+              color: c.card,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -883,7 +898,7 @@ class _PeriodRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: _LadnaColors.dark,
+                      color: c.dark,
                     ),
                   ),
                 ),
@@ -941,11 +956,12 @@ class _SegmentedPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Container(
       height: 38,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: _LadnaColors.card,
+        color: c.card,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -969,8 +985,9 @@ class _SegmentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Material(
-      color: active ? _LadnaColors.primary : Colors.transparent,
+      color: active ? c.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(9),
       child: InkWell(
         borderRadius: BorderRadius.circular(9),
@@ -986,7 +1003,7 @@ class _SegmentItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: active ? Colors.white : _LadnaColors.muted,
+              color: active ? Colors.white : c.muted,
             ),
           ),
         ),
@@ -1243,6 +1260,7 @@ class _PeriodNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Row(
       children: [
         _SquareButton(icon: Icons.chevron_left_rounded, onTap: onPrev),
@@ -1252,7 +1270,7 @@ class _PeriodNav extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: _LadnaColors.card,
+              color: c.card,
               borderRadius: BorderRadius.circular(10),
             ),
             child: loading
@@ -1268,7 +1286,7 @@ class _PeriodNav extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: _LadnaColors.dark,
+                      color: c.dark,
                     ),
                   ),
           ),
@@ -1293,6 +1311,7 @@ class _DayNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Row(
       children: [
         _SquareButton(icon: Icons.chevron_left_rounded, onTap: onPrev),
@@ -1302,7 +1321,7 @@ class _DayNav extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: _LadnaColors.card,
+              color: c.card,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -1312,7 +1331,7 @@ class _DayNav extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: _LadnaColors.dark,
+                color: c.dark,
               ),
             ),
           ),
@@ -1339,6 +1358,7 @@ class _TransactionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     final t = _BudgetText.of(context);
 
     if (transactions.isEmpty) {
@@ -1366,7 +1386,7 @@ class _TransactionList extends StatelessWidget {
                   title: note.isNotEmpty ? note : cat.name,
                   subtitle: cat.name,
                   amount: '${isExpense ? '−' : '+'}${_formatMoney(tx.amount)} €',
-                  amountColor: isExpense ? _LadnaColors.coral : _LadnaColors.green,
+                  amountColor: isExpense ? c.coral : c.green,
                   onTap: () => onTxTap(tx, cat.name),
                 );
               },
@@ -1390,6 +1410,7 @@ class _CategoryBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     final t = _BudgetText.of(context);
 
     if (data.isEmpty) return _EmptyCard(text: emptyText);
@@ -1405,7 +1426,7 @@ class _CategoryBars extends StatelessWidget {
           Text(
             t.moneyGoesTo,
             style: TextStyle(
-              color: _LadnaColors.dark,
+              color: c.dark,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
@@ -1416,7 +1437,7 @@ class _CategoryBars extends StatelessWidget {
               name: _categoryName(entries[i].key),
               amount: entries[i].value,
               value: (entries[i].value / max).clamp(0.0, 1.0),
-              color: _accentColor(i),
+              color: _accentColor(context, i),
             ),
             if (i != entries.take(6).length - 1) const SizedBox(height: 10),
           ],
@@ -1441,6 +1462,7 @@ class _CategoryBarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Row(
       children: [
         SizedBox(
@@ -1450,7 +1472,7 @@ class _CategoryBarRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: _LadnaColors.text,
+              color: c.text,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -1463,7 +1485,7 @@ class _CategoryBarRow extends StatelessWidget {
             child: LinearProgressIndicator(
               minHeight: 7,
               value: value,
-              backgroundColor: _LadnaColors.card,
+              backgroundColor: c.card,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -1475,7 +1497,7 @@ class _CategoryBarRow extends StatelessWidget {
             '${_formatMoney(amount)} €',
             textAlign: TextAlign.right,
             style: TextStyle(
-              color: _LadnaColors.dark,
+              color: c.dark,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
@@ -1502,7 +1524,7 @@ class _JarList extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < jars.length; i++) ...[
-            _JarRow(jar: jars[i], color: _accentColor(i)),
+            _JarRow(jar: jars[i], color: _accentColor(context, i)),
             if (i != jars.length - 1) const _SoftDivider(),
           ],
         ],
@@ -1522,6 +1544,7 @@ class _JarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     final target = jar.targetAmount ?? (jar.currentAmount <= 0 ? 1 : jar.currentAmount * 2);
     final progress = target <= 0 ? 0.0 : (jar.currentAmount / target).clamp(0.0, 1.0);
     final subtitle = jar.targetAmount == null
@@ -1537,10 +1560,10 @@ class _JarRow extends StatelessWidget {
             height: 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: _LadnaColors.primary.withOpacity(0.12),
+              color: c.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text('✦', style: TextStyle(color: _LadnaColors.primary)),
+            child: Text('✦', style: TextStyle(color: c.primary)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1552,7 +1575,7 @@ class _JarRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _LadnaColors.dark,
+                    color: c.dark,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1563,7 +1586,7 @@ class _JarRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _LadnaColors.muted,
+                    color: c.muted,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1580,7 +1603,7 @@ class _JarRow extends StatelessWidget {
                 Text(
                   '${(progress * 100).round()}%',
                   style: TextStyle(
-                    color: _LadnaColors.muted,
+                    color: c.muted,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1591,7 +1614,7 @@ class _JarRow extends StatelessWidget {
                   child: LinearProgressIndicator(
                     minHeight: 5,
                     value: progress,
-                    backgroundColor: _LadnaColors.card,
+                    backgroundColor: c.card,
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
@@ -1625,6 +1648,7 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1640,7 +1664,7 @@ class _TransactionRow extends StatelessWidget {
                   color: iconBackground,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, size: 17, color: _LadnaColors.dark),
+                child: Icon(icon, size: 17, color: c.dark),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1652,7 +1676,7 @@ class _TransactionRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: _LadnaColors.dark,
+                        color: c.dark,
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -1663,7 +1687,7 @@ class _TransactionRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: _LadnaColors.muted,
+                        color: c.muted,
                         fontWeight: FontWeight.w500,
                         fontSize: 11,
                       ),
@@ -1700,14 +1724,15 @@ class _SurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Container(
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: _LadnaColors.surfaceLight,
+        color: c.surfaceLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _LadnaColors.border),
-        boxShadow: _LadnaShadows.card,
+        border: Border.all(color: c.border),
+        boxShadow: c.cardShadow,
       ),
       child: child,
     );
@@ -1721,12 +1746,13 @@ class _EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return _SurfaceCard(
       child: Text(
         text,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: _LadnaColors.muted,
+          color: c.muted,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -1752,7 +1778,8 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFE07272) : _LadnaColors.primary;
+    final c = _LadnaColors.of(context);
+    final color = danger ? const Color(0xFFE07272) : c.primary;
 
     return Material(
       color: Colors.transparent,
@@ -1778,13 +1805,13 @@ class _ActionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(color: _LadnaColors.dark, fontWeight: FontWeight.w700, fontSize: 13)),
+                    Text(title, style: TextStyle(color: c.dark, fontWeight: FontWeight.w700, fontSize: 13)),
                     const SizedBox(height: 1),
-                    Text(subtitle, style: TextStyle(color: _LadnaColors.muted, fontWeight: FontWeight.w500, fontSize: 11)),
+                    Text(subtitle, style: TextStyle(color: c.muted, fontWeight: FontWeight.w500, fontSize: 11)),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: _LadnaColors.muted),
+              Icon(Icons.chevron_right_rounded, color: c.muted),
             ],
           ),
         ),
@@ -1800,11 +1827,12 @@ class _SheetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: _LadnaColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _LadnaColors.border),
+        border: Border.all(color: c.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.18),
@@ -1826,11 +1854,12 @@ class _SheetHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Container(
       width: 42,
       height: 4,
       decoration: BoxDecoration(
-        color: _LadnaColors.dark.withOpacity(0.15),
+        color: c.dark.withOpacity(0.15),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -1844,10 +1873,11 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Text(
       text.toUpperCase(),
       style: TextStyle(
-        color: _LadnaColors.muted,
+        color: c.muted,
         fontSize: 10,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,
@@ -1861,7 +1891,8 @@ class _SoftDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(height: 1, color: _LadnaColors.border);
+    final c = _LadnaColors.of(context);
+    return Container(height: 1, color: c.border);
   }
 }
 
@@ -1876,8 +1907,9 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Material(
-      color: _LadnaColors.primary.withOpacity(0.12),
+      color: c.primary.withOpacity(0.12),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -1885,7 +1917,7 @@ class _CircleButton extends StatelessWidget {
         child: SizedBox(
           width: 32,
           height: 32,
-          child: Icon(icon, color: _LadnaColors.text, size: 20),
+          child: Icon(icon, color: c.text, size: 20),
         ),
       ),
     );
@@ -1903,8 +1935,9 @@ class _SquareButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Material(
-      color: _LadnaColors.card,
+      color: c.card,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -1912,7 +1945,7 @@ class _SquareButton extends StatelessWidget {
         child: SizedBox(
           width: 30,
           height: 30,
-          child: Icon(icon, color: _LadnaColors.text, size: 20),
+          child: Icon(icon, color: c.text, size: 20),
         ),
       ),
     );
@@ -1930,6 +1963,7 @@ class _SmallChevron extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1938,7 +1972,7 @@ class _SmallChevron extends StatelessWidget {
         child: SizedBox(
           width: 28,
           height: 28,
-          child: Icon(icon, color: _LadnaColors.text, size: 20),
+          child: Icon(icon, color: c.text, size: 20),
         ),
       ),
     );
@@ -1952,38 +1986,72 @@ class _GlowCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _LadnaColors.of(context);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: _LadnaColors.primary.withOpacity(0.18),
+        color: c.primary.withOpacity(0.18),
         shape: BoxShape.circle,
       ),
     );
   }
 }
 
+// Раньше _LadnaColors был статическим классом с геттерами, которые читали
+// яркость ОС напрямую (через _ladnaAdaptive/_ladnaDarkMode), из-за чего
+// ручной выбор темы в настройках (ThemeController) на этом экране
+// игнорировался. Теперь это обычный класс, резолвящийся из контекста и
+// использующий те же токены ThemeController, что и остальное приложение.
 class _LadnaColors {
-  static Color get surface => _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E));
-  static Color get surfaceLight => _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630));
-  static Color get card => _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630));
-  static Color get border => _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0));
-  static Color get primary => const Color(0xFF6B54C0);
-  static Color get dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
-  static Color get text => _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF));
-  static Color get muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
-  static Color get green => const Color(0xFF16B8A8);
-  static Color get coral => const Color(0xFFD4E040);
-}
+  final Color surface;
+  final Color surfaceLight;
+  final Color card;
+  final Color border;
+  final Color primary;
+  final Color dark;
+  final Color text;
+  final Color muted;
+  final Color green;
+  final Color coral;
+  final List<BoxShadow> cardShadow;
 
-class _LadnaShadows {
-  static final card = [
-    BoxShadow(
-      color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.07),
-      blurRadius: 12,
-      offset: const Offset(0, 2),
-    ),
-  ];
+  const _LadnaColors({
+    required this.surface,
+    required this.surfaceLight,
+    required this.card,
+    required this.border,
+    required this.primary,
+    required this.dark,
+    required this.text,
+    required this.muted,
+    required this.green,
+    required this.coral,
+    required this.cardShadow,
+  });
+
+  factory _LadnaColors.of(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _LadnaColors(
+      surface: isDark ? ThemeController.kLadnaSurfaceDark : ThemeController.kLadnaSurfaceLight,
+      surfaceLight: isDark ? ThemeController.kLadnaCardDark : ThemeController.kLadnaCardLight,
+      card: isDark ? ThemeController.kLadnaCardDark : ThemeController.kLadnaTintLight,
+      border: isDark ? ThemeController.kLadnaBorderDark : ThemeController.kLadnaBorderLight,
+      primary: ThemeController.kLadnaPrimary,
+      dark: isDark ? ThemeController.kLadnaTextDark : ThemeController.kLadnaTextLight,
+      text: isDark ? const Color(0x99FFFFFF) : ThemeController.kLadnaText,
+      muted: isDark ? const Color(0x4DFFFFFF) : ThemeController.kLadnaMuted,
+      green: ThemeController.kLadnaTeal,
+      coral: ThemeController.kLadnaLime,
+      cardShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(isDark ? 0.30 : 0.07),
+          blurRadius: 12,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
 }
 
 class _BudgetText {
@@ -2117,13 +2185,14 @@ String _categoryName(dynamic key) {
   return value.isEmpty ? '—' : value;
 }
 
-Color _accentColor(int index) {
+Color _accentColor(BuildContext context, int index) {
+  final c = _LadnaColors.of(context);
   final colors = [
-    _LadnaColors.coral,
-    _LadnaColors.primary,
-    _LadnaColors.green,
-    _LadnaColors.text,
-    _LadnaColors.muted,
+    c.coral,
+    c.primary,
+    c.green,
+    c.text,
+    c.muted,
   ];
   return colors[index % colors.length];
 }

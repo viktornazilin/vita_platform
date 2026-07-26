@@ -8,16 +8,23 @@ import '../models/mood.dart';
 import '../models/mood_model.dart';
 import '../models/home_model.dart';
 import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_card.dart';
+import '../widgets/nest/nest_section_title.dart';
 import '../widgets/home/health_tracker_card.dart';
 import '../widgets/home/hobby_tracker_card.dart';
 import '../widgets/mood/mental_week_card.dart';
 import '../services/onboarding_tour_service.dart';
 
 
-bool get _ladnaDarkMode =>
-    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+// Раньше эти функции читали яркость системы напрямую, из-за чего экран
+// игнорировал ручной выбор темы в настройках (ThemeController.setMode) и
+// всегда следовал системной теме. Теперь берём тему из контекста, как и
+// везде в приложении.
+bool _ladnaDarkMode(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark;
 
-Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
+Color _ladnaAdaptive(BuildContext context, Color light, Color dark) =>
+    _ladnaDarkMode(context) ? dark : light;
 
 
 int _ladnaMoodScore(String emoji) {
@@ -519,7 +526,7 @@ class _MoodTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _LadnaCard(
+        NestCard(
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,7 +562,7 @@ class _MoodTab extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+                      color: _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -563,7 +570,7 @@ class _MoodTab extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
-                        color: _ladnaAdaptive(const Color(0xFF6B54C0), const Color(0xFFE9DDFF)),
+                        color: _ladnaAdaptive(context, const Color(0xFF6B54C0), const Color(0xFFE9DDFF)),
                       ),
                     ),
                   ),
@@ -577,7 +584,7 @@ class _MoodTab extends StatelessWidget {
                         fontSize: 10.5,
                         height: 1.2,
                         fontWeight: FontWeight.w600,
-                        color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                        color: _ladnaAdaptive(context, const Color(0xFF9090A8), const Color(0x99FFFFFF)),
                       ),
                     ),
                   ),
@@ -635,8 +642,8 @@ class _MoodTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        _SectionLabel(
-          text: _t(
+        NestSectionTitle(
+          _t(
             context,
             ru: 'Последние записи',
             en: 'Recent entries',
@@ -645,6 +652,7 @@ class _MoodTab extends StatelessWidget {
             es: 'Entradas recientes',
             tr: 'Son kayıtlar',
           ),
+          padding: EdgeInsets.zero,
         ),
         const SizedBox(height: 8),
         if (model.loading)
@@ -653,7 +661,7 @@ class _MoodTab extends StatelessWidget {
             child: Center(child: CircularProgressIndicator.adaptive()),
           )
         else if (moods.isEmpty)
-          _LadnaCard(
+          NestCard(
             padding: const EdgeInsets.all(14),
             child: Text(
               _t(
@@ -666,20 +674,20 @@ class _MoodTab extends StatelessWidget {
                 tr: 'Henüz kayıt yok.',
               ),
               style: TextStyle(
-                color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                color: _ladnaAdaptive(context, const Color(0xFF9090A8), const Color(0x99FFFFFF)),
                 fontWeight: FontWeight.w600,
               ),
             ),
           )
         else
-          _LadnaCard(
+          NestCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
                 for (final mood in moods.take(5)) ...[
                   _MoodHistoryRow(mood: mood),
                   if (mood != moods.take(5).last)
-                    Divider(height: 1, color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
+                    Divider(height: 1, color: _ladnaAdaptive(context, const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
                 ],
               ],
             ),
@@ -738,7 +746,7 @@ class _DayNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final isToday = _isToday(selectedDay);
 
-    return _LadnaCard(
+    return NestCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       child: Row(
         children: [
@@ -765,7 +773,7 @@ class _DayNav extends StatelessWidget {
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.1,
-                    color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                    color: _ladnaAdaptive(context, const Color(0xFF9090A8), const Color(0x99FFFFFF)),
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -777,7 +785,7 @@ class _DayNav extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                    color: _ladnaAdaptive(context, const Color(0xFF160E38), const Color(0xFFF0EEFF)),
                   ),
                 ),
               ],
@@ -809,8 +817,8 @@ class _DayNavButton extends StatelessWidget {
 
     return Material(
       color: enabled
-          ? _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF241B3A))
-          : _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)).withOpacity(0.45),
+          ? _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF241B3A))
+          : _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)).withOpacity(0.45),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -822,8 +830,8 @@ class _DayNavButton extends StatelessWidget {
             icon,
             size: 22,
             color: enabled
-                ? _ladnaAdaptive(const Color(0xFF555268), const Color(0xFFE9DDFF))
-                : _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
+                ? _ladnaAdaptive(context, const Color(0xFF555268), const Color(0xFFE9DDFF))
+                : _ladnaAdaptive(context, const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
           ),
         ),
       ),
@@ -855,7 +863,7 @@ class _MoodHistoryRow extends StatelessWidget {
                   date,
                   style: TextStyle(
                     fontSize: 12,
-                    color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+                    color: _ladnaAdaptive(context, const Color(0xFF9090A8), const Color(0x99FFFFFF)),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -866,7 +874,7 @@ class _MoodHistoryRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 13,
-                    color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                    color: _ladnaAdaptive(context, const Color(0xFF160E38), const Color(0xFFF0EEFF)),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -876,14 +884,14 @@ class _MoodHistoryRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
             decoration: BoxDecoration(
-              color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+              color: _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               '${_ladnaMoodScore(mood.emoji)} / 5',
               style: TextStyle(
                 fontSize: 11,
-                color: _ladnaAdaptive(const Color(0xFF555268), const Color(0x99FFFFFF)),
+                color: _ladnaAdaptive(context, const Color(0xFF555268), const Color(0x99FFFFFF)),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -909,13 +917,13 @@ class _LadnaHeader extends StatelessWidget {
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E)), _ladnaAdaptive(const Color(0xFFE2DDEF), const Color(0x1F6B54C0))],
+          colors: [_ladnaAdaptive(context, const Color(0xFFF5F3FA), const Color(0xFF100C1E)), _ladnaAdaptive(context, const Color(0xFFE2DDEF), const Color(0x1F6B54C0))],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
+        border: Border.all(color: _ladnaAdaptive(context, const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.045),
+            color: Colors.black.withOpacity(_ladnaDarkMode(context) ? 0.30 : 0.045),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -930,9 +938,9 @@ class _LadnaHeader extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+                color: _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
                 shape: BoxShape.circle,
-                border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
+                border: Border.all(color: _ladnaAdaptive(context, const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
               ),
               child: const Icon(
                 Icons.chevron_left_rounded,
@@ -949,7 +957,7 @@ class _LadnaHeader extends StatelessWidget {
                 fontSize: 22,
                 height: 1.05,
                 fontWeight: FontWeight.w700,
-                color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+                color: _ladnaAdaptive(context, const Color(0xFF160E38), const Color(0xFFF0EEFF)),
                 letterSpacing: -0.3,
               ),
             ),
@@ -976,7 +984,7 @@ class _LadnaTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+        color: _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -990,7 +998,7 @@ class _LadnaTabs extends StatelessWidget {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: selected ? _ladnaAdaptive(Colors.white, const Color(0xFF1C1630)) : Colors.transparent,
+                  color: selected ? _ladnaAdaptive(context, Colors.white, const Color(0xFF1C1630)) : Colors.transparent,
                   borderRadius: BorderRadius.circular(11),
                   boxShadow: selected
                       ? [
@@ -1009,8 +1017,8 @@ class _LadnaTabs extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: selected
-                        ? _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF))
-                        : _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
+                        ? _ladnaAdaptive(context, const Color(0xFF160E38), const Color(0xFFF0EEFF))
+                        : _ladnaAdaptive(context, const Color(0xFF9090A8), const Color(0x4DFFFFFF)),
                   ),
                 ),
               ),
@@ -1018,37 +1026,6 @@ class _LadnaTabs extends StatelessWidget {
           );
         }),
       ),
-    );
-  }
-}
-
-class _LadnaCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-
-  const _LadnaCard({
-    required this.child,
-    required this.padding,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630)),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.045),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: child,
     );
   }
 }
@@ -1071,7 +1048,7 @@ class _CardHeader extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: 13,
-              color: _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF)),
+              color: _ladnaAdaptive(context, const Color(0xFF160E38), const Color(0xFFF0EEFF)),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1080,7 +1057,7 @@ class _CardHeader extends StatelessWidget {
           trailing,
           style: TextStyle(
             fontSize: 11,
-            color: _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x99FFFFFF)),
+            color: _ladnaAdaptive(context, const Color(0xFF9090A8), const Color(0x99FFFFFF)),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1111,7 +1088,7 @@ class _MoodBubble extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: selected ? _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)) : _ladnaAdaptive(const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
+          color: selected ? _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)) : _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
           border: Border.all(
             color: selected ? const Color(0xFF6B54C0) : Colors.transparent,
             width: 2,
@@ -1125,21 +1102,3 @@ class _MoodBubble extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-
-  const _SectionLabel({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text.toUpperCase(),
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF9090A8),
-        letterSpacing: 1.2,
-      ),
-    );
-  }
-}
