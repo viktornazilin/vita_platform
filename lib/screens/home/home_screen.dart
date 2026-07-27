@@ -11,13 +11,6 @@ import 'home_dashboard_tab.dart';
 import 'home_launcher_sheet.dart';
 import '../../services/onboarding_tour_service.dart';
 import '../../services/user_service.dart';
-import '../../core/security/secure_crypto_service.dart';
-
-// ВРЕМЕННО: панель восстановления ключа. Показывается ВСЕГДА, в любой
-// сборке — никаких специальных флагов сборки передавать не нужно, собирайте
-// и деплойте как обычно. Удалить весь блок (и оба debug-метода из
-// SecureCryptoService) сразу после того, как ключ будет восстановлен.
-const bool _kKeyRecoveryEnabled = true;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -285,39 +278,6 @@ class _HomeViewState extends State<_HomeView> {
           bottom: false,
           child: Column(
             children: [
-              if (_kKeyRecoveryEnabled)
-                Container(
-                  width: double.infinity,
-                  color: Colors.red,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showStoredKeysDialog(context),
-                          icon: const Icon(Icons.visibility),
-                          label: const Text('ПОКАЗАТЬ КЛЮЧ'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showKeyRecoveryDialog(context),
-                          icon: const Icon(Icons.key),
-                          label: const Text('ВСТАВИТЬ КЛЮЧ'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               Expanded(
                 child: IndexedStack(
                   index: selected,
@@ -355,121 +315,6 @@ class _HomeViewState extends State<_HomeView> {
           model.select(4);
           OnboardingTourService.setActiveHomeTab(4);
         },
-      ),
-    );
-  }
-
-  Future<void> _showStoredKeysDialog(BuildContext context) async {
-    final keys = await SecureCryptoService().debugReadAllStoredKeys();
-
-    if (!context.mounted) return;
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Ключи в secure storage (debug)'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: keys.isEmpty
-                ? const Text('Ни одного ключа не найдено.')
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: keys.entries
-                        .map(
-                          (e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  e.key,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                SelectableText(
-                                  e.value,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Закрыть'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showKeyRecoveryDialog(BuildContext context) async {
-    final controller = TextEditingController();
-    final messenger = ScaffoldMessenger.of(context);
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Восстановление ключа (debug)'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Вставьте base64-ключ, скопированный из веб-версии '
-              '(значение вида "имя_ключа => base64...", нужна только часть '
-              'после "=> ").',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Base64 ключ',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final key = controller.text.trim();
-              Navigator.of(dialogContext).pop();
-              if (key.isEmpty) return;
-
-              try {
-                await SecureCryptoService().importRecoveredWebKey(key);
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ Ключ импортирован. Перезапустите приложение.'),
-                  ),
-                );
-              } catch (e) {
-                messenger.showSnackBar(
-                  SnackBar(content: Text('Ошибка: $e')),
-                );
-              }
-            },
-            child: const Text('Импортировать'),
-          ),
-        ],
       ),
     );
   }
