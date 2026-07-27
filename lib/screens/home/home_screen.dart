@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,6 +13,24 @@ import '../../services/onboarding_tour_service.dart';
 import '../../services/user_service.dart';
 // ВРЕМЕННО: путь поправьте под реальное расположение файла в вашем проекте.
 import '../../services/secure_crypto_service.dart';
+
+// ВРЕМЕННО: кнопки восстановления ключа появляются ТОЛЬКО если билд собран
+// с флагом --dart-define=ENABLE_KEY_RECOVERY_DEBUG=true. В обычной сборке
+// (в том числе в TestFlight/App Store без этого флага) флаг = false и весь
+// блок ниже компилятор просто выкидывает — код останется в репозитории, но
+// в бинарнике его не будет и в UI ничего не появится.
+//
+// Собрать разово билд с этой кнопкой:
+//   flutter build ipa --release --dart-define=ENABLE_KEY_RECOVERY_DEBUG=true
+//   flutter build web --release --dart-define=ENABLE_KEY_RECOVERY_DEBUG=true
+//
+// Следующий обычный релиз (без этого флага) — кнопки исчезают сами собой,
+// без правок кода. Когда всё восстановите, всё равно удалите этот блок и
+// оба debug-метода из SecureCryptoService насовсем — так чище и безопаснее.
+const bool _kKeyRecoveryEnabled = bool.fromEnvironment(
+  'ENABLE_KEY_RECOVERY_DEBUG',
+  defaultValue: false,
+);
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -319,18 +336,87 @@ class _HomeViewState extends State<_HomeView> {
           OnboardingTourService.setActiveHomeTab(4);
         },
       ),
-      // ВРЕМЕННО: кнопка восстановления ключа шифрования из веб-версии.
-      // Видна только в debug-сборках. Удалить весь блок после того, как
-      // ключ будет один раз успешно импортирован.
-      floatingActionButton: kDebugMode
-          ? FloatingActionButton.small(
-              heroTag: 'debug_key_recovery_fab',
-              backgroundColor: Colors.redAccent,
-              tooltip: 'Восстановить ключ шифрования (debug)',
-              onPressed: () => _showKeyRecoveryDialog(context),
-              child: const Icon(Icons.key, size: 18),
+      // ВРЕМЕННО: кнопки для восстановления ключа шифрования.
+      // Видны только в debug-сборках. Удалить весь блок после того, как
+      // ключ будет один раз успешно просмотрен/импортирован.
+      floatingActionButton: _kKeyRecoveryEnabled
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'debug_key_view_fab',
+                  backgroundColor: Colors.blueGrey,
+                  tooltip: 'Показать ключи шифрования (debug)',
+                  onPressed: () => _showStoredKeysDialog(context),
+                  child: const Icon(Icons.visibility, size: 18),
+                ),
+                const SizedBox(height: 10),
+                FloatingActionButton.small(
+                  heroTag: 'debug_key_recovery_fab',
+                  backgroundColor: Colors.redAccent,
+                  tooltip: 'Восстановить ключ шифрования (debug)',
+                  onPressed: () => _showKeyRecoveryDialog(context),
+                  child: const Icon(Icons.key, size: 18),
+                ),
+              ],
             )
           : null,
+    );
+  }
+
+  Future<void> _showStoredKeysDialog(BuildContext context) async {
+    final keys = await SecureCryptoService().debugReadAllStoredKeys();
+
+    if (!context.mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ключи в secure storage (debug)'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: keys.isEmpty
+                ? const Text('Ни одного ключа не найдено.')
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: keys.entries
+                        .map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  e.key,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                SelectableText(
+                                  e.value,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Закрыть'),
+          ),
+        ],
+      ),
     );
   }
 

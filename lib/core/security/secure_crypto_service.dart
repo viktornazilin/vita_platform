@@ -138,6 +138,28 @@ class SecureCryptoService {
   /// ⚠️ Удалить этот метод и любой UI, который его вызывает, после
   /// однократного восстановления — хранить/показывать ключ шифрования в
   /// интерфейсе небезопасно.
+  /// ВРЕМЕННЫЙ debug-метод: возвращает все непустые ключи шифрования,
+  /// найденные в secure storage (текущее имя + все legacy-имена), в виде
+  /// map {имя_в_storage: base64_значение}. Нужен только для того, чтобы
+  /// один раз скопировать ключ с одной сборки (например, веб) и вставить
+  /// его в другую через importRecoveredWebKey.
+  ///
+  /// ⚠️ Удалить вместе с UI, который это показывает, после восстановления —
+  /// показывать ключ шифрования на экране небезопасно на постоянной основе.
+  Future<Map<String, String>> debugReadAllStoredKeys() async {
+    final result = <String, String>{};
+    final keysToCheck = <String>[_keyStorageKey, ..._legacyKeyStorageKeys];
+
+    for (final key in keysToCheck) {
+      final value = await _storage.read(key: key);
+      if (value != null && value.isNotEmpty) {
+        result[key] = value;
+      }
+    }
+
+    return result;
+  }
+
   Future<void> importRecoveredWebKey(String recoveredBase64Key) async {
     // Быстрая валидация: ключ AES-256 после base64-декодирования должен
     // быть ровно 32 байта.
