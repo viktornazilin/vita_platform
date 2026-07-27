@@ -123,6 +123,51 @@ class SecureCryptoService {
     );
   }
 
+  /// ВРЕМЕННЫЙ метод для ручного восстановления ключа шифрования,
+  /// который использовался веб-версией приложения (другой storage backend,
+  /// поэтому native-приложение не видит его само).
+  ///
+  /// Что делает:
+  /// 1. Если в native secure storage уже есть какой-то ключ (например,
+  ///    сгенерированный автоматически при первом запуске TestFlight-сборки),
+  ///    сохраняет его под legacy-именем 'local_encryption_key_v1', чтобы
+  ///    decryptJson мог по-прежнему расшифровать данные, созданные уже внутри
+  ///    native-приложения (если такие успели появиться).
+  /// 2. Записывает переданный ключ (полученный из веб-версии) как основной.
+  ///
+  /// ⚠️ Удалить этот метод и любой UI, который его вызывает, после
+  /// однократного восстановления — хранить/показывать ключ шифрования в
+  /// интерфейсе небезопасно.
+  Future<void> importRecoveredWebKey(String recoveredBase64Key) async {
+    // Быстрая валидация: ключ AES-256 после base64-декодирования должен
+    // быть ровно 32 байта.
+    final decoded = base64Decode(recoveredBase64Key);
+    if (decoded.length != 32) {
+      throw const FormatException(
+        'Некорректный ключ: после декодирования base64 должно быть 32 байта.',
+      );
+    }
+
+    final current = await _storage.read(key: _keyStorageKey);
+    if (current != null &&
+        current.isNotEmpty &&
+        current != recoveredBase64Key) {
+      await _storage.write(
+        key: 'local_encryption_key_v1',
+        value: current,
+      );
+      debugPrint(
+        '✅ Текущий native-ключ сохранён как резервный (local_encryption_key_v1)',
+      );
+    }
+
+    await _storage.write(
+      key: _keyStorageKey,
+      value: recoveredBase64Key,
+    );
+    debugPrint('✅ Ключ из веб-версии импортирован как основной ($_keyStorageKey)');
+  }
+
   Future<SecretKey> _getOrCreateSecretKey() async {
     final existingKey = await _storage.read(key: _keyStorageKey);
 

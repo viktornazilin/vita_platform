@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,6 +12,8 @@ import 'home_dashboard_tab.dart';
 import 'home_launcher_sheet.dart';
 import '../../services/onboarding_tour_service.dart';
 import '../../services/user_service.dart';
+// ВРЕМЕННО: путь поправьте под реальное расположение файла в вашем проекте.
+import '../../services/secure_crypto_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -315,6 +318,77 @@ class _HomeViewState extends State<_HomeView> {
           model.select(4);
           OnboardingTourService.setActiveHomeTab(4);
         },
+      ),
+      // ВРЕМЕННО: кнопка восстановления ключа шифрования из веб-версии.
+      // Видна только в debug-сборках. Удалить весь блок после того, как
+      // ключ будет один раз успешно импортирован.
+      floatingActionButton: kDebugMode
+          ? FloatingActionButton.small(
+              heroTag: 'debug_key_recovery_fab',
+              backgroundColor: Colors.redAccent,
+              tooltip: 'Восстановить ключ шифрования (debug)',
+              onPressed: () => _showKeyRecoveryDialog(context),
+              child: const Icon(Icons.key, size: 18),
+            )
+          : null,
+    );
+  }
+
+  Future<void> _showKeyRecoveryDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    final messenger = ScaffoldMessenger.of(context);
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Восстановление ключа (debug)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Вставьте base64-ключ, скопированный из веб-версии '
+              '(значение вида "имя_ключа => base64...", нужна только часть '
+              'после "=> ").',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Base64 ключ',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final key = controller.text.trim();
+              Navigator.of(dialogContext).pop();
+              if (key.isEmpty) return;
+
+              try {
+                await SecureCryptoService().importRecoveredWebKey(key);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Ключ импортирован. Перезапустите приложение.'),
+                  ),
+                );
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Ошибка: $e')),
+                );
+              }
+            },
+            child: const Text('Импортировать'),
+          ),
+        ],
       ),
     );
   }
