@@ -11,8 +11,7 @@ import 'home_dashboard_tab.dart';
 import 'home_launcher_sheet.dart';
 import '../../services/onboarding_tour_service.dart';
 import '../../services/user_service.dart';
-// ВРЕМЕННО: путь поправьте под реальное расположение файла в вашем проекте.
-import '../../services/secure_crypto_service.dart';
+import '../../core/security/secure_crypto_service.dart';
 
 // ВРЕМЕННО: кнопки восстановления ключа появляются ТОЛЬКО если билд собран
 // с флагом --dart-define=ENABLE_KEY_RECOVERY_DEBUG=true. В обычной сборке
