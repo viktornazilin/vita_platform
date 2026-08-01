@@ -137,6 +137,18 @@ class _GoalsViewState extends State<_GoalsView> {
     });
   }
 
+  /// Life blocks are fetched asynchronously by [GoalsCalendarModel] right when
+  /// this screen is built. If a sheet/screen that needs them is opened before
+  /// that fetch resolves (e.g. tapping "add task" immediately after entering
+  /// this screen), `calendar.lifeBlocks` is still empty and only "Общее"
+  /// shows up — until the user leaves and re-enters, by which point the
+  /// fetch has quietly finished. Awaiting it here closes that race.
+  Future<void> _ensureLifeBlocksLoaded(GoalsCalendarModel calendar) async {
+    if (calendar.lifeBlocks.isEmpty) {
+      await calendar.loadBlocks();
+    }
+  }
+
   Future<void> _loadSpaces({bool reloadTasksWhenFilterInvalid = false}) async {
     if (!mounted) return;
     setState(() => _loadingSpaces = true);
@@ -294,6 +306,8 @@ class _GoalsViewState extends State<_GoalsView> {
 
   Future<void> _openDay(DateTime date) async {
     final calendar = context.read<GoalsCalendarModel>();
+    await _ensureLifeBlocksLoaded(calendar);
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => DayGoalsScreen(
@@ -312,6 +326,8 @@ class _GoalsViewState extends State<_GoalsView> {
   Future<void> _openAddTask([DateTime? date]) async {
     final targetDate = DateUtils.dateOnly(date ?? _anchor);
     final calendar = context.read<GoalsCalendarModel>();
+    await _ensureLifeBlocksLoaded(calendar);
+    if (!mounted) return;
     final links = _currentUserGoalLinks();
 
     final result = await showModalBottomSheet<AddGoalResult>(
@@ -367,6 +383,8 @@ class _GoalsViewState extends State<_GoalsView> {
   Future<void> _openAddUserGoal() async {
     final model = context.read<UserGoalsModel>();
     final calendar = context.read<GoalsCalendarModel>();
+    await _ensureLifeBlocksLoaded(calendar);
+    if (!mounted) return;
 
     final result = await showModalBottomSheet<UserGoalUpsert>(
       context: context,
@@ -388,6 +406,8 @@ class _GoalsViewState extends State<_GoalsView> {
   Future<void> _editUserGoal(UserGoal goal) async {
     final model = context.read<UserGoalsModel>();
     final calendar = context.read<GoalsCalendarModel>();
+    await _ensureLifeBlocksLoaded(calendar);
+    if (!mounted) return;
 
     final result = await showModalBottomSheet<UserGoalUpsert>(
       context: context,

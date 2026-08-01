@@ -513,7 +513,7 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
                   KeyedSubtree(
                     key: _overviewTourKey,
                     child: _MiniGrid(
-                      moodLabel: todayMood?.emoji ?? '😊',
+                      moodEmoji: todayMood?.emoji,
                       moodValue: todayMood == null
                         ? _pick(const {
                             'ru': 'Нет отметки',
@@ -612,7 +612,7 @@ class _HomeHeader extends StatelessWidget {
               color: _primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text('🏠', style: TextStyle(fontSize: 26)),
+            child: const Icon(Icons.home_rounded, size: 24, color: Color(0xFF6B54C0)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -660,7 +660,7 @@ class _HomeHeader extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: _primary.withOpacity(0.25), width: 1.5),
               ),
-              child: const Text('👤', style: TextStyle(fontSize: 22)),
+              child: const Icon(Icons.person_rounded, size: 22, color: Color(0xFF6B54C0)),
             ),
           ),
         ],
@@ -703,17 +703,11 @@ class _FocusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shownTotal = total == 0 ? 3 : total;
-    final rows = goals.isEmpty
-        ? <_FocusRowData>[
-            _FocusRowData(_pick(context, const {'ru': 'Утренняя пробежка', 'en': 'Morning run'}), true, null),
-            _FocusRowData(_pick(context, const {'ru': 'Написать отчёт по проекту', 'en': 'Write project report'}), false, null),
-            _FocusRowData(_pick(context, const {'ru': 'Проверить бюджет недели', 'en': 'Check weekly budget'}), false, null),
-          ]
-        : goals.map((g) {
-            final title = g.title.trim().isEmpty ? '—' : g.title.trim();
-            return _FocusRowData(title, g.isCompleted, g);
-          }).toList();
+    final hasGoals = goals.isNotEmpty;
+    final rows = goals.map((g) {
+      final title = g.title.trim().isEmpty ? '—' : g.title.trim();
+      return _FocusRowData(title, g.isCompleted, g);
+    }).toList();
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -758,28 +752,46 @@ class _FocusCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 9),
                   Text(
-                    _pick(context, const {
-                      'ru': '{done} из {total} выполнено',
-                      'en': '{done} of {total} done',
-                      'de': '{done} von {total} erledigt',
-                      'fr': '{done} sur {total} terminé',
-                      'es': '{done} de {total} hecho',
-                      'tr': '{done}/{total} tamamlandı',
-                    }).replaceAll('{done}', done.toString()).replaceAll('{total}', shownTotal.toString()).toUpperCase(),
+                    hasGoals
+                        ? _pick(context, const {
+                            'ru': '{done} из {total} выполнено',
+                            'en': '{done} of {total} done',
+                            'de': '{done} von {total} erledigt',
+                            'fr': '{done} sur {total} terminé',
+                            'es': '{done} de {total} hecho',
+                            'tr': '{done}/{total} tamamlandı',
+                          }).replaceAll('{done}', done.toString()).replaceAll('{total}', total.toString()).toUpperCase()
+                        : _pick(context, const {
+                            'ru': 'ЗАДАЧ НА СЕГОДНЯ НЕТ',
+                            'en': 'NO TASKS FOR TODAY',
+                            'de': 'KEINE AUFGABEN HEUTE',
+                            'fr': 'AUCUNE TÂCHE AUJOURD’HUI',
+                            'es': 'SIN TAREAS HOY',
+                            'tr': 'BUGÜN İÇİN GÖREV YOK',
+                          }).toUpperCase(),
                     style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w900, color: _focusDot(context), letterSpacing: 1.2),
                   ),
                 ],
               ),
               const SizedBox(height: 18),
               Text(
-                _pick(context, const {
-                  'ru': 'День под контролем',
-                  'en': 'Day under control',
-                  'de': 'Tag im Griff',
-                  'fr': 'Journée maîtrisée',
-                  'es': 'Día bajo control',
-                  'tr': 'Gün kontrol altında',
-                }),
+                hasGoals
+                    ? _pick(context, const {
+                        'ru': 'День под контролем',
+                        'en': 'Day under control',
+                        'de': 'Tag im Griff',
+                        'fr': 'Journée maîtrisée',
+                        'es': 'Día bajo control',
+                        'tr': 'Gün kontrol altında',
+                      })
+                    : _pick(context, const {
+                        'ru': 'Пока пусто',
+                        'en': 'Nothing planned yet',
+                        'de': 'Noch nichts geplant',
+                        'fr': 'Rien de prévu',
+                        'es': 'Nada planeado aún',
+                        'tr': 'Henüz bir şey yok',
+                      }),
                 style: const TextStyle(
                   fontFamily: 'PlayfairDisplay',
                   fontSize: 23,
@@ -791,29 +803,66 @@ class _FocusCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                _pick(context, const {
-                  'ru': 'Три задачи — это достаточно',
-                  'en': 'Three tasks are enough',
-                  'de': 'Drei Aufgaben reichen',
-                  'fr': 'Trois tâches suffisent',
-                  'es': 'Tres tareas son suficientes',
-                  'tr': 'Üç görev yeterlidir',
-                }),
+                hasGoals
+                    ? _pick(context, const {
+                        'ru': 'Отмечайте задачи по мере выполнения',
+                        'en': 'Check off tasks as you go',
+                        'de': 'Hake Aufgaben nach Erledigung ab',
+                        'fr': 'Cochez les tâches au fur et à mesure',
+                        'es': 'Marca las tareas a medida que avanzas',
+                        'tr': 'Görevleri tamamladıkça işaretleyin',
+                      })
+                    : _pick(context, const {
+                        'ru': 'Добавьте первую задачу на сегодня',
+                        'en': 'Add your first task for today',
+                        'de': 'Füge deine erste Aufgabe für heute hinzu',
+                        'fr': 'Ajoutez votre première tâche du jour',
+                        'es': 'Añade tu primera tarea de hoy',
+                        'tr': 'Bugün için ilk görevini ekle',
+                      }),
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _mutedOnDark),
               ),
               const SizedBox(height: 18),
-              ...rows.take(3).map((row) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _FocusTaskRow(
-                      title: row.title,
-                      done: row.done,
-                      dismissKey: row.goal == null ? null : ValueKey('home-focus-${row.goal!.id}-${row.done}'),
-                      onTap: row.goal == null ? null : () => onToggleGoal(row.goal!),
-                      onSwipeComplete: row.goal == null || row.done ? null : () async {
-                        onToggleGoal(row.goal!);
-                      },
-                    ),
-                  )),
+              if (hasGoals)
+                ...rows.take(3).map((row) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _FocusTaskRow(
+                        title: row.title,
+                        done: row.done,
+                        dismissKey: ValueKey('home-focus-${row.goal!.id}-${row.done}'),
+                        onTap: () => onToggleGoal(row.goal!),
+                        onSwipeComplete: row.done ? null : () async {
+                          onToggleGoal(row.goal!);
+                        },
+                      ),
+                    ))
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.10)),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.check_circle_outline_rounded, size: 26, color: _mutedOnDark.withOpacity(0.7)),
+                      const SizedBox(height: 8),
+                      Text(
+                        _pick(context, const {
+                          'ru': 'Список задач пуст',
+                          'en': 'No tasks yet',
+                          'de': 'Keine Aufgaben',
+                          'fr': 'Aucune tâche',
+                          'es': 'Sin tareas',
+                          'tr': 'Görev yok',
+                        }),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _mutedOnDark),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: onOpenTasks,
@@ -822,14 +871,23 @@ class _FocusCard extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(12)),
                   child: Text(
-                    _pick(context, const {
-                      'ru': '→ Все задачи',
-                      'en': '→ All tasks',
-                      'de': '→ Alle Aufgaben',
-                      'fr': '→ Toutes les tâches',
-                      'es': '→ Todas las tareas',
-                      'tr': '→ Tüm görevler',
-                    }),
+                    hasGoals
+                        ? _pick(context, const {
+                            'ru': '→ Все задачи',
+                            'en': '→ All tasks',
+                            'de': '→ Alle Aufgaben',
+                            'fr': '→ Toutes les tâches',
+                            'es': '→ Todas las tareas',
+                            'tr': '→ Tüm görevler',
+                          })
+                        : _pick(context, const {
+                            'ru': '→ Добавить задачу',
+                            'en': '→ Add a task',
+                            'de': '→ Aufgabe hinzufügen',
+                            'fr': '→ Ajouter une tâche',
+                            'es': '→ Añadir tarea',
+                            'tr': '→ Görev ekle',
+                          }),
                     style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900),
                   ),
                 ),
@@ -1002,7 +1060,8 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
             'es': 'Espacio',
             'tr': 'Alan',
           });
-    final icon = (space?.icon.trim().isNotEmpty == true) ? space!.icon.trim() : '👥';
+    final spaceIcon = space?.icon.trim();
+    final hasCustomSpaceIcon = spaceIcon != null && spaceIcon.isNotEmpty;
     final extra = invites.length - 1;
 
     return Container(
@@ -1036,7 +1095,9 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: _primary.withOpacity(0.25)),
                 ),
-                child: Text(icon, style: const TextStyle(fontSize: 22)),
+                child: hasCustomSpaceIcon
+                    ? Text(spaceIcon, style: const TextStyle(fontSize: 22))
+                    : Icon(Icons.group_rounded, size: 22, color: _primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1175,7 +1236,7 @@ class _SpaceInvitesHomeCard extends StatelessWidget {
 
 class _MiniGrid extends StatelessWidget {
   const _MiniGrid({
-    required this.moodLabel,
+    required this.moodEmoji,
     required this.moodValue,
     required this.taskPercent,
     required this.doneTasks,
@@ -1186,7 +1247,7 @@ class _MiniGrid extends StatelessWidget {
     required this.targetHours,
   });
 
-  final String moodLabel;
+  final String? moodEmoji;
   final String moodValue;
   final int taskPercent;
   final int doneTasks;
@@ -1210,26 +1271,27 @@ class _MiniGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = <Widget>[
       _MiniCard(
-        icon: moodLabel,
+        icon: Icons.sentiment_neutral_rounded,
+        moodEmoji: moodEmoji,
         label: _pick(context, const {'ru': 'Настроение', 'en': 'Mood', 'de': 'Stimmung', 'fr': 'Humeur', 'es': 'Ánimo', 'tr': 'Ruh hali'}),
         value: moodValue,
         valueIsSerif: false,
         subtitle: _pick(context, const {'ru': 'сегодня', 'en': 'today', 'de': 'heute', 'fr': 'aujourd’hui', 'es': 'hoy', 'tr': 'bugün'}),
       ),
       _MiniCard(
-        icon: '✅',
+        icon: Icons.check_circle_rounded,
         label: _pick(context, const {'ru': 'Задачи', 'en': 'Tasks', 'de': 'Aufgaben', 'fr': 'Tâches', 'es': 'Tareas', 'tr': 'Görevler'}),
         value: '$taskPercent%',
-        subtitle: '$doneTasks ${_pick(context, const {'ru': 'из', 'en': 'of', 'de': 'von', 'fr': 'sur', 'es': 'de', 'tr': '/'})} ${totalTasks == 0 ? 3 : totalTasks}',
+        subtitle: '$doneTasks ${_pick(context, const {'ru': 'из', 'en': 'of', 'de': 'von', 'fr': 'sur', 'es': 'de', 'tr': '/'})} $totalTasks',
       ),
       _MiniCard(
-        icon: '🔥',
+        icon: Icons.local_fire_department_rounded,
         label: _pick(context, const {'ru': 'Привычки', 'en': 'Habits', 'de': 'Gewohnheiten', 'fr': 'Habitudes', 'es': 'Hábitos', 'tr': 'Alışkanlıklar'}),
-        value: '$habitDone/${habitTotal == 0 ? 5 : habitTotal}',
+        value: '$habitDone/$habitTotal',
         subtitle: _pick(context, const {'ru': 'сегодня', 'en': 'today', 'de': 'heute', 'fr': 'aujourd’hui', 'es': 'hoy', 'tr': 'bugün'}),
       ),
       _MiniCard(
-        icon: '⏱',
+        icon: Icons.timer_rounded,
         label: _pick(context, const {'ru': 'Фокус-часы', 'en': 'Focus hours', 'de': 'Fokusstunden', 'fr': 'Heures focus', 'es': 'Horas foco', 'tr': 'Odak saatleri'}),
         value: _fmt(hours),
         subtitle: '${_pick(context, const {'ru': 'из', 'en': 'of', 'de': 'von', 'fr': 'sur', 'es': 'de', 'tr': '/'})} ${_fmt(targetHours)} ч',
@@ -1266,31 +1328,56 @@ class _MiniGrid extends StatelessWidget {
 }
 
 class _MiniCard extends StatelessWidget {
-  const _MiniCard({required this.icon, required this.label, required this.value, required this.subtitle, this.valueIsSerif = true});
+  const _MiniCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.subtitle,
+    this.valueIsSerif = true,
+    this.moodEmoji,
+  });
 
-  final String icon;
+  final IconData icon;
   final String label;
   final String value;
   final String subtitle;
   final bool valueIsSerif;
+  /// Real mood emoji chosen by the user for a logged entry. When present it is
+  /// shown instead of [icon] since it reflects the user's own data, not a
+  /// decorative placeholder.
+  final String? moodEmoji;
+
+  static const Color _accent = Color(0xFF6B54C0);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE)),
+        color: (isDark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : const Color(0xFFE0DCF0)), width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
+        border: Border.all(color: (isDark ? const Color(0x336B54C0) : const Color(0xFFE0DCF0)), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.30 : 0.04), blurRadius: 12, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 24, height: 1)),
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _accent.withOpacity(isDark ? 0.20 : 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: (moodEmoji != null && moodEmoji!.isNotEmpty)
+                ? Text(moodEmoji!, style: const TextStyle(fontSize: 17, height: 1))
+                : Icon(icon, size: 17, color: _accent),
+          ),
           const Spacer(),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8)))),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: (isDark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8)))),
           const SizedBox(height: 4),
           Text(
             value,
@@ -1301,12 +1388,12 @@ class _MiniCard extends StatelessWidget {
               fontSize: valueIsSerif ? 20 : 14,
               height: 1,
               fontWeight: FontWeight.w900,
-              color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38)),
+              color: (isDark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38)),
               letterSpacing: -0.4,
             ),
           ),
           const SizedBox(height: 3),
-          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w700, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x40FFFFFF) : const Color(0xFF9090A8)))),
+          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10.5, height: 1, fontWeight: FontWeight.w700, color: (isDark ? const Color(0x40FFFFFF) : const Color(0xFF9090A8)))),
         ],
       ),
     );
@@ -1511,7 +1598,7 @@ class _AiCard extends StatelessWidget {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6B54C0)),
                   )
-                : Text('✦', style: TextStyle(fontSize: 22, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFD4E040) : const Color(0xFF6B54C0)))),
+                : Icon(Icons.auto_awesome_rounded, size: 20, color: (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFD4E040) : const Color(0xFF6B54C0))),
           ),
           const SizedBox(width: 12),
           Expanded(

@@ -225,7 +225,7 @@ class _LauncherSheet extends StatelessWidget {
                     child: SizedBox(
                       height: 118,
                       child: _MenuCard(
-                        emoji: '🏠',
+                        icon: Icons.home_rounded,
                         label: _ladnaText(context, const {'ru': 'Главная', 'en': 'Home', 'de': 'Home', 'fr': 'Accueil', 'es': 'Inicio', 'tr': 'Ana sayfa'}),
                         tint: _primary.withOpacity(0.12),
                         onTap: () => _select(context, 0),
@@ -237,7 +237,7 @@ class _LauncherSheet extends StatelessWidget {
                     child: SizedBox(
                       height: 118,
                       child: _MenuCard(
-                        emoji: '🎯',
+                        icon: Icons.track_changes_rounded,
                         label: _ladnaText(context, const {'ru': 'Цели и задачи', 'en': 'Goals & tasks', 'de': 'Ziele & Aufgaben', 'fr': 'Objectifs & tâches', 'es': 'Metas y tareas', 'tr': 'Hedefler ve görevler'}),
                         tint: const Color(0xFFEBDADA),
                         onTap: () => _select(context, 1),
@@ -253,7 +253,7 @@ class _LauncherSheet extends StatelessWidget {
                     child: SizedBox(
                       height: 106,
                       child: _MenuCard(
-                        emoji: '💛',
+                        icon: Icons.favorite_rounded,
                         label: _ladnaText(context, const {'ru': 'Личное', 'en': 'Personal', 'de': 'Persönlich', 'fr': 'Personnel', 'es': 'Personal', 'tr': 'Kişisel'}),
                         tint: const Color(0xFFDDEEEB),
                         onTap: () => _select(context, 2),
@@ -265,7 +265,7 @@ class _LauncherSheet extends StatelessWidget {
                     child: SizedBox(
                       height: 106,
                       child: _MenuCard(
-                        emoji: '📊',
+                        icon: Icons.bar_chart_rounded,
                         label: _ladnaText(context, const {'ru': 'Отчёты', 'en': 'Reports', 'de': 'Berichte', 'fr': 'Rapports', 'es': 'Informes', 'tr': 'Raporlar'}),
                         tint: const Color(0xFFE8EDF8),
                         onTap: () => _select(context, 4),
@@ -277,7 +277,7 @@ class _LauncherSheet extends StatelessWidget {
                     child: SizedBox(
                       height: 106,
                       child: _MenuCard(
-                        emoji: '💰',
+                        icon: Icons.account_balance_wallet_rounded,
                         label: _ladnaText(context, const {'ru': 'Бюджет', 'en': 'Budget', 'de': 'Budget', 'fr': 'Budget', 'es': 'Presupuesto', 'tr': 'Bütçe'}),
                         tint: const Color(0xFFEDE7F7),
                         onTap: () => _select(context, 5),
@@ -297,7 +297,7 @@ class _LauncherSheet extends StatelessWidget {
               })),
               const SizedBox(height: 10),
               _QuickAction(
-                emoji: '⚡',
+                icon: Icons.bolt_rounded,
                 tint: _primary.withOpacity(0.12),
                 title: _ladnaText(context, const {'ru': 'Массовое добавление', 'en': 'Bulk add', 'de': 'Schnellerfassung', 'fr': 'Ajout groupé', 'es': 'Añadir en bloque', 'tr': 'Toplu ekleme'}),
                 subtitle: _ladnaText(context, const {'ru': 'Расходы + Задачи + Настроение', 'en': 'Expenses + Tasks + Mood', 'de': 'Ausgaben + Aufgaben + Stimmung', 'fr': 'Dépenses + tâches + humeur', 'es': 'Gastos + tareas + ánimo', 'tr': 'Gider + görev + ruh hali'}),
@@ -305,7 +305,7 @@ class _LauncherSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _QuickAction(
-                emoji: '✦',
+                icon: Icons.auto_awesome_rounded,
                 tint: const Color(0xFFE8EDF8),
                 title: _ladnaText(context, const {'ru': 'AI-план на неделю', 'en': 'AI weekly plan', 'de': 'AI-Wochenplan', 'fr': 'Plan IA hebdo', 'es': 'Plan semanal IA', 'tr': 'AI haftalık plan'}),
                 subtitle: _ladnaText(context, const {'ru': 'Анализ целей и прогресса', 'en': 'Goals and progress analysis', 'de': 'Analyse von Zielen und Fortschritt', 'fr': 'Analyse des objectifs et progrès', 'es': 'Análisis de metas y progreso', 'tr': 'Hedef ve ilerleme analizi'}),
@@ -313,7 +313,7 @@ class _LauncherSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _QuickAction(
-                emoji: '💡',
+                icon: Icons.lightbulb_rounded,
                 tint: const Color(0xFFEDE7F7),
                 title: _ladnaText(context, const {'ru': 'AI-инсайты', 'en': 'AI insights', 'de': 'AI-Insights', 'fr': 'Insights IA', 'es': 'Insights IA', 'tr': 'AI içgörüleri'}),
                 subtitle: _ladnaText(context, const {'ru': 'Как события влияют на цели', 'en': 'How events influence goals', 'de': 'Wie Ereignisse Ziele beeinflussen', 'fr': 'Comment les événements influencent les objectifs', 'es': 'Cómo los eventos influyen en metas', 'tr': 'Olaylar hedefleri nasıl etkiler'}),
@@ -431,9 +431,10 @@ class _HeroLogoCard extends StatelessWidget {
                             color: const Color(0xFF6B54C0).withOpacity(0.20),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Text(
-                            '✦',
-                            style: TextStyle(fontSize: 30, color: Color(0xFFFAF6EE)),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 26,
+                            color: Color(0xFFFAF6EE),
                           ),
                         ),
                       ),
@@ -500,7 +501,7 @@ class _HeroLogoCard extends StatelessWidget {
                       final displayName = (profileName ?? snapshot.data ?? 'Ladna').trim();
                       return Row(
                         children: [
-                          const Text('👤', style: TextStyle(fontSize: 22)),
+                          const Icon(Icons.person_rounded, size: 20, color: Color(0xFFFAF6EE)),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -514,7 +515,7 @@ class _HeroLogoCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const Text('›', style: TextStyle(color: Color(0xFF9F95C8), fontSize: 25)),
+                          const Icon(Icons.chevron_right_rounded, color: Color(0xFF9F95C8), size: 24),
                         ],
                       );
                     },
@@ -548,9 +549,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _MenuCard extends StatelessWidget {
-  const _MenuCard({required this.emoji, required this.label, required this.tint, required this.onTap});
+  const _MenuCard({required this.icon, required this.label, required this.tint, required this.onTap});
 
-  final String emoji;
+  final IconData icon;
   final String label;
   final Color tint;
   final VoidCallback onTap;
@@ -578,7 +579,7 @@ class _MenuCard extends StatelessWidget {
               height: 46,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark) ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(14), border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : Colors.transparent))),
-              child: Text(emoji, style: TextStyle(fontSize: 25)),
+              child: Icon(icon, size: 22, color: _LauncherSheet._primary),
             ),
             const SizedBox(height: 10),
             Text(
@@ -600,9 +601,9 @@ class _MenuCard extends StatelessWidget {
 }
 
 class _QuickAction extends StatelessWidget {
-  const _QuickAction({required this.emoji, required this.tint, required this.title, required this.subtitle, required this.onTap});
+  const _QuickAction({required this.icon, required this.tint, required this.title, required this.subtitle, required this.onTap});
 
-  final String emoji;
+  final IconData icon;
   final Color tint;
   final String title;
   final String subtitle;
@@ -628,7 +629,7 @@ class _QuickAction extends StatelessWidget {
               height: 38,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark) ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(11), border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : Colors.transparent))),
-              child: Text(emoji, style: TextStyle(fontSize: 22)),
+              child: Icon(icon, size: 19, color: _LauncherSheet._primary),
             ),
             const SizedBox(width: 13),
             Expanded(
@@ -660,7 +661,7 @@ class _QuickAction extends StatelessWidget {
                 ],
               ),
             ),
-            Text('›', style: TextStyle(color: _LauncherSheet._muted(context), fontSize: 25, fontWeight: FontWeight.w700)),
+            Icon(Icons.chevron_right_rounded, color: _LauncherSheet._muted(context), size: 24),
           ],
         ),
       ),

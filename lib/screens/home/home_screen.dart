@@ -336,12 +336,12 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
   late final Set<String> _selected = widget.initialSelection.toSet();
 
   static const List<_LifeBlockOption> _options = [
-    _LifeBlockOption('health', '💪'),
-    _LifeBlockOption('career', '💼'),
-    _LifeBlockOption('family', '💛'),
-    _LifeBlockOption('finance', '💰'),
-    _LifeBlockOption('education', '📚'),
-    _LifeBlockOption('hobbies', '🎨'),
+    _LifeBlockOption('health', Icons.fitness_center_rounded),
+    _LifeBlockOption('career', Icons.work_rounded),
+    _LifeBlockOption('family', Icons.favorite_rounded),
+    _LifeBlockOption('finance', Icons.account_balance_wallet_rounded),
+    _LifeBlockOption('education', Icons.school_rounded),
+    _LifeBlockOption('hobbies', Icons.palette_rounded),
   ];
 
   String _t(BuildContext context, Map<String, String> values) {
@@ -488,7 +488,7 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
                       color: primary.withOpacity(isDark ? 0.16 : 0.11),
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: Text('✦', style: TextStyle(fontSize: 20, color: primary)),
+                    child: Icon(Icons.auto_awesome_rounded, size: 18, color: primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -555,7 +555,7 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
                       ),
                       child: Row(
                         children: [
-                          Text(option.emoji, style: const TextStyle(fontSize: 20)),
+                          Icon(option.icon, size: 18, color: selected ? primary : muted),
                           const SizedBox(width: 9),
                           Expanded(
                             child: Text(
@@ -611,10 +611,10 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
 }
 
 class _LifeBlockOption {
-  const _LifeBlockOption(this.key, this.emoji);
+  const _LifeBlockOption(this.key, this.icon);
 
   final String key;
-  final String emoji;
+  final IconData icon;
 }
 
 class _LadnaBottomNav extends StatelessWidget {
@@ -680,13 +680,13 @@ class _LadnaBottomNav extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _NavItem(
-            icon: '🏠',
+            icon: Icons.home_rounded,
             label: homeLabel,
             active: selectedIndex == 0,
             onTap: onHome,
           ),
           _NavItem(
-            icon: '🎯',
+            icon: Icons.track_changes_rounded,
             label: goalsLabel,
             active: selectedIndex == 1,
             onTap: onGoals,
@@ -719,7 +719,7 @@ class _LadnaBottomNav extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Text('✦', style: TextStyle(color: Colors.white, fontSize: 21)),
+                      child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -739,13 +739,13 @@ class _LadnaBottomNav extends StatelessWidget {
           ),
           _NavItem(
             key: helpKey,
-            icon: '💛',
+            icon: Icons.favorite_rounded,
             label: personalLabel,
             active: selectedIndex == 2,
             onTap: onPersonal,
           ),
           _NavItem(
-            icon: '📊',
+            icon: Icons.bar_chart_rounded,
             label: reportsLabel,
             active: selectedIndex == 4,
             onTap: onReports,
@@ -765,7 +765,7 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
   });
 
-  final String icon;
+  final IconData icon;
   final String label;
   final bool active;
   final VoidCallback onTap;
@@ -785,7 +785,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(icon, style: TextStyle(fontSize: 23, color: active ? activeColor : inactiveColor)),
+            Icon(icon, size: 22, color: active ? activeColor : inactiveColor),
             const SizedBox(height: 4),
             Text(
               label,

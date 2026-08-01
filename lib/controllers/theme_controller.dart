@@ -128,7 +128,7 @@ class ThemeController extends ChangeNotifier {
       cardColor: isDark ? kLadnaCardDark : kLadnaCardLight,
       dividerColor: scheme.outlineVariant,
       disabledColor: scheme.onSurfaceVariant.withOpacity(isDark ? 0.22 : 0.44),
-      fontFamily: 'Geologica',
+      fontFamily: '.SF Pro Text',
     );
 
     final textTheme = base.textTheme.apply(
@@ -137,27 +137,27 @@ class ThemeController extends ChangeNotifier {
       decorationColor: scheme.onSurface,
     ).copyWith(
       displayLarge: base.textTheme.displayLarge?.copyWith(
-        fontFamily: 'Playfair Display',
+        fontFamily: '.SF Pro Display',
         fontWeight: FontWeight.w600,
         height: 1.02,
         letterSpacing: -1,
         color: scheme.onSurface,
       ),
       displayMedium: base.textTheme.displayMedium?.copyWith(
-        fontFamily: 'Playfair Display',
+        fontFamily: '.SF Pro Display',
         fontWeight: FontWeight.w600,
         height: 1.02,
         letterSpacing: -0.8,
         color: scheme.onSurface,
       ),
       headlineLarge: base.textTheme.headlineLarge?.copyWith(
-        fontFamily: 'Playfair Display',
+        fontFamily: '.SF Pro Display',
         fontWeight: FontWeight.w600,
         height: 1.08,
         color: scheme.onSurface,
       ),
       headlineMedium: base.textTheme.headlineMedium?.copyWith(
-        fontFamily: 'Playfair Display',
+        fontFamily: '.SF Pro Display',
         fontWeight: FontWeight.w600,
         height: 1.10,
         color: scheme.onSurface,
