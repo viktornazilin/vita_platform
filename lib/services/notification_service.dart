@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -60,7 +61,9 @@ class NotificationService {
       debugPrint('NotificationService: failed to resolve local timezone: $e');
     }
 
-    const iosSettings = DarwinInitializationSettings(
+    // Не const: DarwinNotificationAction.plain(...) в flutter_local_notifications
+    // 18.0.1 не является const-фабрикой, поэтому весь объект собираем в рантайме.
+    final iosSettings = DarwinInitializationSettings(
       // Не просим разрешение автоматически при первом показе локального
       // уведомления — управляем этим сами через requestPermission().
       requestAlertPermission: false,

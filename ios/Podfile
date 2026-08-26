@@ -25,6 +25,13 @@ end
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
+# Firebase-поды (FirebaseCoreInternal → GoogleUtilities) написаны на Swift и
+# требуют модульных заголовков для сборки как статических библиотек — без
+# этой строки `pod install` падает с "cannot yet be integrated as static
+# libraries". Не переключаем на use_frameworks! (динамические), чтобы не
+# трогать линковку остальных плагинов — модульных заголовков достаточно.
+use_modular_headers!
+
 flutter_ios_podfile_setup
 
 target 'Runner' do
