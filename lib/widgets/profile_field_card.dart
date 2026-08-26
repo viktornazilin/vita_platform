@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'nest/nest_glass_colors.dart';
 
 class ProfileFieldCard extends StatelessWidget {
   final String label;
@@ -15,6 +16,7 @@ class ProfileFieldCard extends StatelessWidget {
     }
 
     final tt = Theme.of(context).textTheme;
+    final c = NestGlassColors.of(context);
 
     Widget body;
     if (value is List) {
@@ -35,7 +37,7 @@ class ProfileFieldCard extends StatelessWidget {
                     child: Text(
                       v.toString(),
                       style: tt.bodyMedium?.copyWith(
-                        color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                        color: c.text.withOpacity(0.75),
                         height: 1.25,
                       ),
                     ),
@@ -49,7 +51,7 @@ class ProfileFieldCard extends StatelessWidget {
       body = Text(
         value.toString(),
         style: tt.bodyMedium?.copyWith(
-          color: const Color(0xFF2E4B5A).withOpacity(0.75),
+          color: c.text.withOpacity(0.75),
           height: 1.25,
         ),
       );
@@ -64,14 +66,14 @@ class ProfileFieldCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.72),
+              color: c.cardFill.withOpacity(0.72),
               borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: const Color(0xFFD6E6F5)),
-              boxShadow: const [
+              border: Border.all(color: c.border),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x1A2B5B7A),
+                  color: c.shadow,
                   blurRadius: 26,
-                  offset: Offset(0, 14),
+                  offset: const Offset(0, 14),
                 ),
               ],
             ),
@@ -82,7 +84,7 @@ class ProfileFieldCard extends StatelessWidget {
                   label,
                   style: tt.labelLarge?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: const Color(0xFF2E4B5A),
+                    color: c.text,
                   ),
                 ),
                 const SizedBox(height: 10),

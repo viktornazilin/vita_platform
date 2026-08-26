@@ -5,6 +5,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../domain/category.dart' as dm;
 import '../domain/jar.dart';
+import '../domain/transaction_item.dart';
 import '../main.dart';
 import '../models/budget_model.dart';
 import '../models/home_model.dart';
@@ -12,6 +13,7 @@ import '../widgets/add_expense_dialog.dart';
 import '../widgets/add_income_dialog.dart';
 import '../widgets/add_jar_dialog.dart';
 import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_page_header.dart';
 import '../controllers/theme_controller.dart';
 import '../services/onboarding_tour_service.dart';
 import 'shopping_tracker_card.dart';
@@ -109,6 +111,115 @@ class _ExpensesViewState extends State<_ExpensesView> {
   void _invalidatePeriodData() {
     _periodDataKey = '';
     if (mounted) setState(() {});
+  }
+
+  // The optimistic local patches below exist because the model's own
+  // addExpense/addIncome/deleteTransaction already update instantly and
+  // save in the background (see BudgetModel). Calling _invalidatePeriodData()
+  // right after one of those used to force an immediate network refetch
+  // (dbRepo.listTransactionsBetween) that raced against that background
+  // save — if the fetch landed before the write committed, it silently
+  // overwrote the fresh optimistic totals with stale ones, and because the
+  // period cache stops falling back to the model's own (always-correct)
+  // getters once it's non-empty, the screen stayed wrong until the user
+  // left and reopened it. Patching the cache locally avoids the race
+  // entirely: no extra network call, no window for stale data to win.
+
+  bool _tryPeriodPatch(BudgetModel model, void Function() patch) {
+    if (_periodDataKey.isEmpty) {
+      // Nothing to patch — the screen is already reading straight from the
+      // model's own instantly-updated getters (dayTx/incomeMonth/expenseMonth/
+      // expenseBreakdownMonth), which already reflect the change.
+      return true;
+    }
+    final range = _rangeForPeriod(model.selectedDay);
+    if (_keyFor(range) != _periodDataKey) {
+      // The cached period no longer matches what's on screen (e.g. user
+      // navigated away); a stale patch here would be meaningless, and the
+      // next real navigation will trigger a fresh, correct fetch anyway.
+      return false;
+    }
+    setState(patch);
+    return true;
+  }
+
+  void _applyOptimisticPeriodAddition(
+    BudgetModel model, {
+    required String kind,
+    required double amount,
+    required String categoryId,
+    String? note,
+  }) {
+    final now = DateTime.now();
+    final ts = DateTime(
+      model.selectedDay.year,
+      model.selectedDay.month,
+      model.selectedDay.day,
+      now.hour,
+      now.minute,
+      now.second,
+    );
+
+    _tryPeriodPatch(model, () {
+      final tempTx = TransactionItem(
+        id: 'temp-${DateTime.now().microsecondsSinceEpoch}',
+        ts: ts,
+        kind: kind,
+        categoryId: categoryId,
+        amount: amount,
+        note: note,
+      );
+      _periodTransactions = [..._periodTransactions, tempTx]
+        ..sort((a, b) => (a.ts as DateTime).compareTo((b.ts as DateTime)));
+      if (kind == 'income') {
+        _periodIncome += amount;
+      } else {
+        _periodExpense += amount;
+        final category = model.expenseCategories.firstWhere(
+          (c) => c.id == categoryId,
+          orElse: () => dm.Category(id: categoryId, name: '—', kind: 'expense'),
+        );
+        _periodBreakdown = {
+          ..._periodBreakdown,
+          category: (_periodBreakdown[category] ?? 0) + amount,
+        };
+      }
+    });
+  }
+
+  void _applyOptimisticPeriodRemoval(
+    BudgetModel model, {
+    required String txId,
+    required String kind,
+    required double amount,
+    required String? categoryId,
+  }) {
+    _tryPeriodPatch(model, () {
+      _periodTransactions =
+          _periodTransactions.where((t) => t.id != txId).toList();
+      if (kind == 'income') {
+        _periodIncome = (_periodIncome - amount).clamp(0, double.infinity);
+      } else {
+        _periodExpense = (_periodExpense - amount).clamp(0, double.infinity);
+        if (categoryId != null) {
+          final category = model.expenseCategories.firstWhere(
+            (c) => c.id == categoryId,
+            orElse: () => dm.Category(id: categoryId, name: '—', kind: 'expense'),
+          );
+          final current = _periodBreakdown[category];
+          if (current != null) {
+            final updated = current - amount;
+            final next = {..._periodBreakdown};
+            if (updated > 0) {
+              next[category] = updated;
+            } else {
+              next.remove(category);
+            }
+            _periodBreakdown = next;
+          }
+        }
+      }
+    });
   }
 
   DateTimeRange _rangeForPeriod(DateTime selectedDay) {
@@ -246,7 +357,13 @@ class _ExpensesViewState extends State<_ExpensesView> {
         categoryId: res.categoryId,
         note: res.note,
       );
-      _invalidatePeriodData();
+      _applyOptimisticPeriodAddition(
+        m,
+        kind: 'expense',
+        amount: res.amount,
+        categoryId: res.categoryId,
+        note: res.note,
+      );
     }
   }
 
@@ -266,7 +383,13 @@ class _ExpensesViewState extends State<_ExpensesView> {
         categoryId: res.categoryId,
         note: res.note,
       );
-      _invalidatePeriodData();
+      _applyOptimisticPeriodAddition(
+        m,
+        kind: 'income',
+        amount: res.amount,
+        categoryId: res.categoryId,
+        note: res.note,
+      );
     }
   }
 
@@ -352,6 +475,8 @@ class _ExpensesViewState extends State<_ExpensesView> {
     required String categoryName,
     required double amount,
     required String txId,
+    required String kind,
+    String? categoryId,
   }) async {
     final t = _BudgetText.of(context);
     final confirmed = await showDialog<bool>(
@@ -374,8 +499,15 @@ class _ExpensesViewState extends State<_ExpensesView> {
     );
 
     if (confirmed == true && context.mounted) {
-      await context.read<BudgetModel>().deleteTransaction(txId);
-      _invalidatePeriodData();
+      final m = context.read<BudgetModel>();
+      await m.deleteTransaction(txId);
+      _applyOptimisticPeriodRemoval(
+        m,
+        txId: txId,
+        kind: kind,
+        amount: amount,
+        categoryId: categoryId,
+      );
     }
   }
 
@@ -424,6 +556,8 @@ class _ExpensesViewState extends State<_ExpensesView> {
         categoryName: categoryName,
         amount: tx.amount,
         txId: tx.id,
+        kind: tx.kind,
+        categoryId: tx.categoryId,
       );
       return;
     }
@@ -443,12 +577,25 @@ class _ExpensesViewState extends State<_ExpensesView> {
 
         if (res != null) {
           await m.deleteTransaction(tx.id);
+          _applyOptimisticPeriodRemoval(
+            m,
+            txId: tx.id,
+            kind: 'expense',
+            amount: tx.amount,
+            categoryId: tx.categoryId,
+          );
           await m.addExpense(
             amount: res.amount,
             categoryId: res.categoryId,
             note: res.note,
           );
-          _invalidatePeriodData();
+          _applyOptimisticPeriodAddition(
+            m,
+            kind: 'expense',
+            amount: res.amount,
+            categoryId: res.categoryId,
+            note: res.note,
+          );
         }
       } else {
         final res = await showDialog<AddIncomeResult>(
@@ -464,12 +611,25 @@ class _ExpensesViewState extends State<_ExpensesView> {
 
         if (res != null) {
           await m.deleteTransaction(tx.id);
+          _applyOptimisticPeriodRemoval(
+            m,
+            txId: tx.id,
+            kind: 'income',
+            amount: tx.amount,
+            categoryId: tx.categoryId,
+          );
           await m.addIncome(
             amount: res.amount,
             categoryId: res.categoryId,
             note: res.note,
           );
-          _invalidatePeriodData();
+          _applyOptimisticPeriodAddition(
+            m,
+            kind: 'income',
+            amount: res.amount,
+            categoryId: res.categoryId,
+            note: res.note,
+          );
         }
       }
     }
@@ -522,7 +682,7 @@ class _ExpensesViewState extends State<_ExpensesView> {
                           112 + bottom,
                         ),
                         children: [
-                          _LadnaHeader(
+                          NestPageHeader(
                             title: t.budget,
                             onBack: _goBack,
                           ),
@@ -779,58 +939,6 @@ class _ListsTab extends StatelessWidget {
   }
 }
 
-class _LadnaHeader extends StatelessWidget {
-  final String title;
-  final VoidCallback onBack;
-  const _LadnaHeader({
-    required this.title,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = _LadnaColors.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [c.surface, c.card],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: c.border),
-        boxShadow: c.cardShadow,
-      ),
-      child: Row(
-        children: [
-          // Раньше кнопка назад показывалась только если canPop() было true.
-          // Так как этот экран открывается как таб снизу (пуш-стека нет),
-          // кнопка вообще не появлялась — в отличие от Goals/Personal/Reports,
-          // где кнопка есть всегда и при отсутствии стека переключает на
-          // таб Home. Теперь ведёт себя так же.
-          _CircleButton(
-            icon: Icons.chevron_left_rounded,
-            onTap: onBack,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontFamily: 'PlayfairDisplay',
-                fontSize: 22,
-                height: 1.05,
-                fontWeight: FontWeight.w700,
-                color: c.dark,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _PeriodRow extends StatelessWidget {
   final _BudgetPeriod period;
   final DateTime selectedDay;
@@ -1072,11 +1180,11 @@ class _BalanceHero extends StatelessWidget {
               Text(
                 '${_formatMoney(free)} €',
                 style: TextStyle(
-                  fontFamily: 'PlayfairDisplay',
                   color: Colors.white,
-                  fontSize: 38,
+                  fontSize: 36,
                   height: 1,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1160,11 +1268,11 @@ class _CompactBalance extends StatelessWidget {
                 Text(
                   '${_formatMoney(free)} €',
                   style: TextStyle(
-                    fontFamily: 'PlayfairDisplay',
                     color: Colors.white,
                     fontSize: 26,
                     height: 1,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ],
@@ -1209,8 +1317,7 @@ class _DarkMetric extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: valueColor,
-              fontFamily: 'PlayfairDisplay',
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               fontSize: 17,
             ),
           ),
@@ -1700,8 +1807,7 @@ class _TransactionRow extends StatelessWidget {
                 amount,
                 style: TextStyle(
                   color: amountColor,
-                  fontFamily: 'PlayfairDisplay',
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   fontSize: 15,
                 ),
               ),
@@ -1893,34 +1999,6 @@ class _SoftDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = _LadnaColors.of(context);
     return Container(height: 1, color: c.border);
-  }
-}
-
-class _CircleButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _CircleButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = _LadnaColors.of(context);
-    return Material(
-      color: c.primary.withOpacity(0.12),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: Icon(icon, color: c.text, size: 20),
-        ),
-      ),
-    );
   }
 }
 

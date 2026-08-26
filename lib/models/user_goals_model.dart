@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/user_goal.dart';
@@ -101,60 +103,192 @@ class UserGoalsModel extends ChangeNotifier {
     load();
   }
 
+  /// Раньше: await create/updateUserGoal -> await load() (и функция не
+  /// возвращалась, пока сервер не ответит) — форма/шторка "зависала" на
+  /// секунду перед закрытием.
+  /// Теперь: временная (для новой цели) или обновлённая карточка появляется
+  /// в списке сразу, функция возвращает управление немедленно, а запрос и
+  /// тихая синхронизация со списком идут в фоне.
   Future<String?> upsert(UserGoalUpsert dto) async {
-    try {
-      if (dto.id == null || dto.id!.isEmpty) {
-        await repo.createUserGoal(
+    error = null;
+    final now = DateTime.now();
+    final isNew = dto.id == null || dto.id!.isEmpty;
+
+    if (isNew) {
+      final tempId = 'temp-${now.microsecondsSinceEpoch}';
+      final optimistic = UserGoal(
+        id: tempId,
+        userId: 'local',
+        lifeBlock: dto.lifeBlock,
+        horizon: dto.horizon,
+        title: dto.title.trim(),
+        description: dto.description,
+        targetDate: dto.targetDate,
+        isCompleted: dto.isCompleted,
+        completedAt: dto.completedAt,
+        sortOrder: dto.sortOrder,
+        createdAt: now,
+        updatedAt: now,
+      );
+      _items = [..._items, optimistic];
+      notifyListeners();
+
+      unawaited(_createInBackground(tempId: tempId, dto: dto));
+    } else {
+      final idx = _items.indexWhere((x) => x.id == dto.id);
+      final previous = idx != -1 ? _items[idx] : null;
+
+      if (previous != null) {
+        final optimistic = previous.copyWith(
           lifeBlock: dto.lifeBlock,
           horizon: dto.horizon,
-          title: dto.title,
+          title: dto.title.trim(),
           description: dto.description,
           targetDate: dto.targetDate,
-          sortOrder: dto.sortOrder,
           isCompleted: dto.isCompleted,
           completedAt: dto.completedAt,
-        );
-      } else {
-        await repo.updateUserGoal(
-          id: dto.id!,
-          lifeBlock: dto.lifeBlock,
-          horizon: dto.horizon,
-          title: dto.title,
-          description: dto.description,
-          targetDate: dto.targetDate,
           sortOrder: dto.sortOrder,
-          isCompleted: dto.isCompleted,
-          completedAt: dto.completedAt,
+          updatedAt: now,
         );
+        _items = [..._items];
+        _items[idx] = optimistic;
+        notifyListeners();
       }
 
-      await load();
-      return null;
-    } catch (e) {
-      return '$e';
+      unawaited(_updateInBackground(id: dto.id!, dto: dto, previous: previous));
     }
+
+    return null;
   }
 
-  Future<String?> delete(String id) async {
+  Future<void> _createInBackground({
+    required String tempId,
+    required UserGoalUpsert dto,
+  }) async {
     try {
-      await repo.deleteUserGoal(id);
-      await load();
-      return null;
-    } catch (e) {
-      return '$e';
-    }
-  }
-
-  Future<String?> toggleCompleted(UserGoal goal) async {
-    try {
-      await repo.setUserGoalCompleted(
-        id: goal.id,
-        completed: !goal.isCompleted,
+      await repo.createUserGoal(
+        lifeBlock: dto.lifeBlock,
+        horizon: dto.horizon,
+        title: dto.title,
+        description: dto.description,
+        targetDate: dto.targetDate,
+        sortOrder: dto.sortOrder,
+        isCompleted: dto.isCompleted,
+        completedAt: dto.completedAt,
       );
       await load();
-      return null;
     } catch (e) {
-      return '$e';
+      _items = _items.where((x) => x.id != tempId).toList();
+      error = '$e';
+      notifyListeners();
+    }
+  }
+
+  Future<void> _updateInBackground({
+    required String id,
+    required UserGoalUpsert dto,
+    required UserGoal? previous,
+  }) async {
+    try {
+      await repo.updateUserGoal(
+        id: id,
+        lifeBlock: dto.lifeBlock,
+        horizon: dto.horizon,
+        title: dto.title,
+        description: dto.description,
+        targetDate: dto.targetDate,
+        sortOrder: dto.sortOrder,
+        isCompleted: dto.isCompleted,
+        completedAt: dto.completedAt,
+      );
+      await load();
+    } catch (e) {
+      if (previous != null) {
+        final idx = _items.indexWhere((x) => x.id == id);
+        if (idx != -1) {
+          _items = [..._items];
+          _items[idx] = previous;
+        }
+      }
+      error = '$e';
+      notifyListeners();
+    }
+  }
+
+  /// Полностью оптимистично: цель уже загружена в _items, убираем сразу,
+  /// восстанавливаем при ошибке.
+  Future<String?> delete(String id) async {
+    error = null;
+    final idx = _items.indexWhere((x) => x.id == id);
+    final previous = idx != -1 ? _items[idx] : null;
+
+    if (previous != null) {
+      _items = _items.where((x) => x.id != id).toList();
+      notifyListeners();
+    }
+
+    unawaited(_deleteInBackground(id: id, previous: previous));
+
+    return null;
+  }
+
+  Future<void> _deleteInBackground({
+    required String id,
+    required UserGoal? previous,
+  }) async {
+    try {
+      await repo.deleteUserGoal(id);
+    } catch (e) {
+      if (previous != null) {
+        _items = [..._items, previous];
+        notifyListeners();
+      }
+      error = '$e';
+      notifyListeners();
+    }
+  }
+
+  /// Полностью оптимистично: переключаем isCompleted локально через
+  /// copyWith, без ожидания сети и без полной перезагрузки списка.
+  Future<String?> toggleCompleted(UserGoal goal) async {
+    error = null;
+    final idx = _items.indexWhere((x) => x.id == goal.id);
+    if (idx == -1) return null;
+
+    final previous = _items[idx];
+    final newCompleted = !previous.isCompleted;
+    final optimistic = previous.copyWith(
+      isCompleted: newCompleted,
+      completedAt: newCompleted ? DateTime.now() : null,
+    );
+    _items = [..._items];
+    _items[idx] = optimistic;
+    notifyListeners();
+
+    unawaited(_toggleCompletedInBackground(
+      id: goal.id,
+      completed: newCompleted,
+      previous: previous,
+    ));
+
+    return null;
+  }
+
+  Future<void> _toggleCompletedInBackground({
+    required String id,
+    required bool completed,
+    required UserGoal previous,
+  }) async {
+    try {
+      await repo.setUserGoalCompleted(id: id, completed: completed);
+    } catch (e) {
+      final idx = _items.indexWhere((x) => x.id == id);
+      if (idx != -1) {
+        _items = [..._items];
+        _items[idx] = previous;
+      }
+      error = '$e';
+      notifyListeners();
     }
   }
 
@@ -169,19 +303,14 @@ class UserGoalsModel extends ChangeNotifier {
     String? description,
     DateTime? targetDate,
     int sortOrder = 0,
-  }) async {
-    await repo.createUserGoal(
-      lifeBlock: lifeBlock,
-      horizon: horizon,
-      title: title,
-      description: description,
-      targetDate: targetDate,
-      sortOrder: sortOrder,
-      isCompleted: false,
-      completedAt: null,
-    );
-    await load();
-  }
+  }) => upsert(UserGoalUpsert(
+        lifeBlock: lifeBlock,
+        horizon: horizon,
+        title: title,
+        description: description,
+        targetDate: targetDate,
+        sortOrder: sortOrder,
+      ));
 
   Future<void> updateGoal({
     required String id,
@@ -193,18 +322,15 @@ class UserGoalsModel extends ChangeNotifier {
     required int sortOrder,
     bool isCompleted = false,
     DateTime? completedAt,
-  }) async {
-    await repo.updateUserGoal(
-      id: id,
-      lifeBlock: lifeBlock,
-      horizon: horizon,
-      title: title,
-      description: description,
-      targetDate: targetDate,
-      sortOrder: sortOrder,
-      isCompleted: isCompleted,
-      completedAt: completedAt,
-    );
-    await load();
-  }
+  }) => upsert(UserGoalUpsert(
+        id: id,
+        lifeBlock: lifeBlock,
+        horizon: horizon,
+        title: title,
+        description: description,
+        targetDate: targetDate,
+        sortOrder: sortOrder,
+        isCompleted: isCompleted,
+        completedAt: completedAt,
+      ));
 }

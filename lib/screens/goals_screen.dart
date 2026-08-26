@@ -13,6 +13,8 @@ import '../models/user_goals_model.dart';
 import '../services/onboarding_tour_service.dart';
 import '../widgets/add_day_goal_sheet.dart';
 import '../controllers/theme_controller.dart';
+import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_page_header.dart';
 
 import 'day_goals_screen.dart';
 
@@ -487,8 +489,9 @@ class _GoalsViewState extends State<_GoalsView> {
     _lastObservedHomeIndex = observedHomeIndex;
 
     return Scaffold(
-      backgroundColor: _LadnaColors.page(context),
-      body: SafeArea(
+      backgroundColor: Colors.transparent,
+      body: NestBackground(
+        child: SafeArea(
         bottom: false,
         child: Stack(
           children: [
@@ -499,7 +502,7 @@ class _GoalsViewState extends State<_GoalsView> {
                     padding: EdgeInsets.fromLTRB(16, 10, 16, 112 + bottom),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate.fixed([
-                        _Header(
+                        NestPageHeader(
                           title: text.goalsAndTasks,
                           subtitle: _periodTitle(context),
                           onBack: _handleBack,
@@ -541,6 +544,7 @@ class _GoalsViewState extends State<_GoalsView> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -786,56 +790,6 @@ class _GoalsViewState extends State<_GoalsView> {
           }),
       ],
     ];
-  }
-}
-
-class _Header extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-  final VoidCallback onBack;
-
-  const _Header({
-    required this.title,
-    this.subtitle,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: _LadnaDecor.header(context),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-      child: Row(
-        children: [
-          _RoundIconButton(icon: Icons.chevron_left_rounded, onTap: onBack),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'PlayfairDisplay',
-                    fontSize: 22,
-                    height: 1.05,
-                    fontWeight: FontWeight.w700,
-                    color: _LadnaColors.dark(context),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(subtitle!, style: _LadnaText.caption(context)),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -1137,7 +1091,7 @@ class _DayRow extends StatelessWidget {
                     ),
                     Text(
                       '${date.day}',
-                      style: _LadnaText.serifNumber(context).copyWith(
+                      style: _LadnaText.accentNumber(context).copyWith(
                         color: isToday ? _LadnaColors.primary(context) : _LadnaColors.dark(context),
                       ),
                     ),
@@ -1743,7 +1697,7 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
         children: [
           _SheetHandle(),
           const SizedBox(height: 16),
-          Text(widget.initial == null ? text.newGoal : text.editGoal, style: _LadnaText.serifTitle(context).copyWith(fontSize: 22)),
+          Text(widget.initial == null ? text.newGoal : text.editGoal, style: _LadnaText.sheetTitle(context).copyWith(fontSize: 22)),
           const SizedBox(height: 16),
           _Input(controller: _title, label: text.title),
           const SizedBox(height: 10),
@@ -2314,8 +2268,6 @@ Color _blockColor(BuildContext context, String key) {
 class _LadnaColors {
   static bool _isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
 
-  static Color page(BuildContext context) =>
-      _isDark(context) ? ThemeController.kLadnaSurfaceDark : const Color(0xFFD6D0EC);
   static Color surface(BuildContext context) =>
       _isDark(context) ? ThemeController.kLadnaSurfaceDark : ThemeController.kLadnaSurfaceLight;
   static Color surfaceLight(BuildContext context) =>
@@ -2374,18 +2326,16 @@ class _LadnaDecor {
 }
 
 class _LadnaText {
-  static TextStyle serifTitle(BuildContext context) => TextStyle(
-    fontFamily: 'PlayfairDisplay',
+  static TextStyle sheetTitle(BuildContext context) => TextStyle(
     fontSize: 17,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w800,
     color: _LadnaColors.dark(context),
     letterSpacing: -.2,
   );
 
-  static TextStyle serifNumber(BuildContext context) => TextStyle(
-    fontFamily: 'PlayfairDisplay',
+  static TextStyle accentNumber(BuildContext context) => TextStyle(
     fontSize: 22,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w800,
     color: _LadnaColors.dark(context),
     height: 1,
   );

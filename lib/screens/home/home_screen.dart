@@ -9,6 +9,7 @@ import '../profile_screen.dart';
 import '../reports_screen.dart';
 import 'home_dashboard_tab.dart';
 import 'home_launcher_sheet.dart';
+import '../../widgets/nest/nest_background.dart';
 import '../../services/onboarding_tour_service.dart';
 import '../../services/user_service.dart';
 
@@ -245,47 +246,24 @@ class _HomeViewState extends State<_HomeView> {
     final selected = model.selectedIndex.clamp(0, HomeScreen._screens.length - 1);
     final isHome = selected == 0;
 
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF100C1E) : _surface;
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       extendBody: true,
-      backgroundColor: bg,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? const [
-                    Color(0xFF100C1E),
-                    Color(0xFF100C1E),
-                    Color(0xFF160F2C),
-                    Color(0xFF0A0614),
-                  ]
-                : const [
-                    Color(0xFFFAF7EE),
-                    Color(0xFFF5F3FA),
-                    Color(0xFFEAF7F5),
-                    Color(0xFFEAF1FF),
-                  ],
-            stops: const [0.0, 0.36, 0.70, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              Expanded(
-                child: IndexedStack(
-                  index: selected,
-                  children: HomeScreen._screens,
-                ),
+      backgroundColor: Colors.transparent,
+      // Раньше здесь был свой градиент (другие цвета/стопы, без мягких
+      // бликов), из-за чего фон Home визуально отличался от остальных
+      // экранов. Теперь используется тот же NestBackground, что и везде.
+      body: NestBackground(
+        safeAreaBottom: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: IndexedStack(
+                index: selected,
+                children: HomeScreen._screens,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _LadnaBottomNav(
@@ -336,12 +314,12 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
   late final Set<String> _selected = widget.initialSelection.toSet();
 
   static const List<_LifeBlockOption> _options = [
-    _LifeBlockOption('health', Icons.fitness_center_rounded),
-    _LifeBlockOption('career', Icons.work_rounded),
-    _LifeBlockOption('family', Icons.favorite_rounded),
-    _LifeBlockOption('finance', Icons.account_balance_wallet_rounded),
-    _LifeBlockOption('education', Icons.school_rounded),
-    _LifeBlockOption('hobbies', Icons.palette_rounded),
+    _LifeBlockOption('health', '💪'),
+    _LifeBlockOption('career', '💼'),
+    _LifeBlockOption('family', '💛'),
+    _LifeBlockOption('finance', '💰'),
+    _LifeBlockOption('education', '📚'),
+    _LifeBlockOption('hobbies', '🎨'),
   ];
 
   String _t(BuildContext context, Map<String, String> values) {
@@ -488,19 +466,18 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
                       color: primary.withOpacity(isDark ? 0.16 : 0.11),
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: Icon(Icons.auto_awesome_rounded, size: 18, color: primary),
+                    child: Text('✦', style: TextStyle(fontSize: 20, color: primary)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _title(context),
                       style: TextStyle(
-                        fontFamily: 'PlayfairDisplay',
                         fontSize: 22,
                         height: 1.05,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         color: text,
-                        letterSpacing: -0.3,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -555,7 +532,7 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
                       ),
                       child: Row(
                         children: [
-                          Icon(option.icon, size: 18, color: selected ? primary : muted),
+                          Text(option.emoji, style: const TextStyle(fontSize: 20)),
                           const SizedBox(width: 9),
                           Expanded(
                             child: Text(
@@ -611,10 +588,124 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
 }
 
 class _LifeBlockOption {
-  const _LifeBlockOption(this.key, this.icon);
+  const _LifeBlockOption(this.key, this.emoji);
 
   final String key;
-  final IconData icon;
+  final String emoji;
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({
+    required this.title,
+    required this.date,
+    required this.onProfileTap,
+  });
+
+  final String title;
+  final String date;
+  final VoidCallback onProfileTap;
+
+  static const Color _dark = Color(0xFF160E38);
+  static const Color _muted = Color(0xFF9090A8);
+  static const Color _primary = Color(0xFF6B54C0);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerGradient = isDark
+        ? const [Color(0x1F6B54C0), Color(0x1F6B54C0)]
+        : const [Color(0xFFF5F3FA), Color(0xFFE2DDEF)];
+    final titleColor = isDark ? const Color(0xFFF0EEFF) : _dark;
+    final mutedColor = isDark ? Colors.white.withOpacity(0.30) : _muted;
+    final borderColor = isDark ? const Color(0x406B54C0) : const Color(0xFFDCD5F2);
+    final iconBg = isDark ? _primary.withOpacity(0.20) : _primary.withOpacity(0.12);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+      child: Container(
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: headerGradient,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.40 : 0.035),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Text('🏠', style: TextStyle(fontSize: 26)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 22,
+                      height: 1.05,
+                      fontWeight: FontWeight.w800,
+                      color: titleColor,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    date,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.0,
+                      fontWeight: FontWeight.w600,
+                      color: mutedColor,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: onProfileTap,
+              child: Container(
+                width: 43,
+                height: 43,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _primary.withOpacity(isDark ? 0.25 : 0.16),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _primary.withOpacity(isDark ? 0.40 : 0.25), width: 1.5),
+                ),
+                child: const Text('👤', style: TextStyle(fontSize: 22)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _LadnaBottomNav extends StatelessWidget {
@@ -719,7 +810,7 @@ class _LadnaBottomNav extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
+                      child: const Text('✦', style: TextStyle(color: Colors.white, fontSize: 21)),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -785,7 +876,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22, color: active ? activeColor : inactiveColor),
+            Icon(icon, size: 23, color: active ? activeColor : inactiveColor),
             const SizedBox(height: 4),
             Text(
               label,

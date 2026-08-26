@@ -1,6 +1,7 @@
 // lib/widgets/report_metric_row.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nest_app/controllers/theme_controller.dart';
 
 class ReportMetricRow extends StatelessWidget {
   final String label;
@@ -12,13 +13,14 @@ class ReportMetricRow extends StatelessWidget {
     required this.value,
   });
 
-  static const _card = Color(0xFFEAE6F5);
-  static const _border = Color(0xFFE0DCF0);
-  static const _dark = Color(0xFF160E38);
-  static const _mid = Color(0xFF555268);
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final card = isDark ? ThemeController.kLadnaCardDark : ThemeController.kLadnaTintLight;
+    final border = isDark ? ThemeController.kLadnaBorderDark : ThemeController.kLadnaBorderLight;
+    final dark = isDark ? ThemeController.kLadnaTextDark : ThemeController.kLadnaTextLight;
+    final mid = isDark ? const Color(0x99FFFFFF) : ThemeController.kLadnaText;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
@@ -26,8 +28,8 @@ class ReportMetricRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: _mid,
+              style: TextStyle(
+                color: mid,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -37,17 +39,17 @@ class ReportMetricRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _card,
+              color: card,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _border),
+              border: Border.all(color: border),
             ),
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: _dark,
+                color: dark,
                 fontSize: 12,
-                fontFeatures: [FontFeature.tabularFigures()],
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),

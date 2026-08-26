@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'nest/nest_glass_colors.dart';
 
 class MoodSelector extends StatelessWidget {
   final String selectedEmoji;
@@ -49,23 +50,25 @@ class _MoodChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? primary.withOpacity(0.16) : const Color(0xFFEFF7FF);
+    final c = NestGlassColors.of(context);
+
+    final bg = selected ? primary.withOpacity(0.16) : c.tint;
     final border = selected
         ? primary.withOpacity(0.45)
-        : const Color(0xFFBBD9F7);
+        : c.border;
     final shadow = selected
-        ? const [
+        ? [
             BoxShadow(
-              color: Color(0x1F2B5B7A),
+              color: c.shadow,
               blurRadius: 18,
-              offset: Offset(0, 10),
+              offset: const Offset(0, 10),
             ),
           ]
-        : const [
+        : [
             BoxShadow(
-              color: Color(0x142B5B7A),
+              color: c.shadow.withOpacity(c.isDark ? 0.20 : 0.08),
               blurRadius: 14,
-              offset: Offset(0, 8),
+              offset: const Offset(0, 8),
             ),
           ];
 
@@ -85,14 +88,14 @@ class _MoodChip extends StatelessWidget {
               curve: Curves.easeOut,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.70),
+                color: c.cardFill.withOpacity(0.70),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: border),
                 boxShadow: shadow,
                 gradient: RadialGradient(
                   center: Alignment.topLeft,
                   radius: 1.6,
-                  colors: [bg, Colors.white.withOpacity(0.55)],
+                  colors: [bg, c.cardFill.withOpacity(0.55)],
                 ),
               ),
               child: AnimatedDefaultTextStyle(

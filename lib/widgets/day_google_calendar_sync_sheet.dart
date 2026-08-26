@@ -6,6 +6,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 import '../main.dart'; // dbRepo
 import '../models/goals_calendar_model.dart';
 import '../services/google_calendar_service.dart';
+import 'nest/nest_glass_colors.dart';
 
 /// Синхронизация Google Calendar ТОЛЬКО для указанного дня:
 /// - Импорт: события дня -> цели
@@ -331,6 +332,7 @@ class _DayGoogleCalendarSyncSheetState
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
+    final c = NestGlassColors.of(context);
     final showImport = _mode == _DaySyncMode.import;
 
     final viewH = MediaQuery.of(context).size.height;
@@ -457,7 +459,7 @@ class _DayGoogleCalendarSyncSheetState
                                 _lifeBlockByEventId[id] ?? _defaultLifeBlock;
 
                             return Material(
-                              color: Colors.white.withOpacity(0.72),
+                              color: c.cardFill,
                               borderRadius: BorderRadius.circular(14),
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(14),
@@ -558,9 +560,9 @@ class _DayGoogleCalendarSyncSheetState
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.72),
+                          color: c.cardFill,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFD6E6F5)),
+                          border: Border.all(color: c.border),
                         ),
                         child: Text(
                           t.gcExportHint,

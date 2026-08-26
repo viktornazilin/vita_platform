@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'package:nest_app/l10n/app_localizations.dart';
+import 'package:nest_app/widgets/nest/nest_glass_colors.dart';
 
 Future<String?> showAddCategorySheet(
   BuildContext context, {
@@ -21,6 +22,7 @@ Future<String?> showAddCategorySheet(
       final l = AppLocalizations.of(ctx)!;
       final cs = Theme.of(ctx).colorScheme;
       final tt = Theme.of(ctx).textTheme;
+      final c = NestGlassColors.of(ctx);
 
       final bottom =
           MediaQuery.of(ctx).viewInsets.bottom +
@@ -46,6 +48,7 @@ Future<String?> showAddCategorySheet(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: _NestSheetCard(
+                c: c,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
                   child: Column(
@@ -65,14 +68,14 @@ Future<String?> showAddCategorySheet(
                       // header
                       Row(
                         children: [
-                          _IconBadge(icon: icon, accent: cs.primary),
+                          _IconBadge(icon: icon, c: c),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               title,
                               style: tt.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
-                                color: const Color(0xFF2E4B5A),
+                                color: c.text,
                               ),
                             ),
                           ),
@@ -130,12 +133,13 @@ Future<String?> showAddCategorySheet(
 }
 
 // ============================================================================
-// Shared “Nest” visuals (локально, без импорта)
+// Shared "Nest" visuals (локально, без импорта)
 // ============================================================================
 
 class _NestSheetCard extends StatelessWidget {
   final Widget child;
-  const _NestSheetCard({required this.child});
+  final NestGlassColors c;
+  const _NestSheetCard({required this.child, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -145,14 +149,14 @@ class _NestSheetCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.86),
+            color: c.cardFill,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
+            border: Border.all(color: c.border),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x1A2B5B7A),
+                color: c.shadow,
                 blurRadius: 26,
-                offset: Offset(0, 10),
+                offset: const Offset(0, 10),
               ),
             ],
           ),
@@ -165,8 +169,8 @@ class _NestSheetCard extends StatelessWidget {
 
 class _IconBadge extends StatelessWidget {
   final IconData icon;
-  final Color accent;
-  const _IconBadge({required this.icon, required this.accent});
+  final NestGlassColors c;
+  const _IconBadge({required this.icon, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -174,11 +178,11 @@ class _IconBadge extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.10),
+        color: c.accent.withOpacity(0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withOpacity(0.20)),
+        border: Border.all(color: c.accent.withOpacity(0.20)),
       ),
-      child: Center(child: Icon(icon, size: 18, color: accent)),
+      child: Center(child: Icon(icon, size: 18, color: c.accent)),
     );
   }
 }

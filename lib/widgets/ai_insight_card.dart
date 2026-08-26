@@ -2,6 +2,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
+import 'package:nest_app/widgets/nest/nest_glass_colors.dart';
 
 import '../../models/ai/ai_insight.dart';
 import '../widgets/info_chip.dart';
@@ -58,6 +59,7 @@ class AiInsightCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final t9n = AppLocalizations.of(context);
+    final c = NestGlassColors.of(context);
 
     final type = (item.type).toString();
     final typeIcon = _iconForType(type);
@@ -73,6 +75,7 @@ class AiInsightCard extends StatelessWidget {
         : 'mixed';
 
     return _NestCard(
+      c: c,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -82,7 +85,7 @@ class AiInsightCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _IconBadge(icon: typeIcon),
+                _IconBadge(icon: typeIcon, c: c),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -92,7 +95,7 @@ class AiInsightCard extends StatelessWidget {
                         item.title,
                         style: tt.titleSmall?.copyWith(
                           fontWeight: FontWeight.w900,
-                          color: const Color(0xFF2E4B5A),
+                          color: c.text,
                           height: 1.1,
                         ),
                       ),
@@ -104,8 +107,9 @@ class AiInsightCard extends StatelessWidget {
                           _SoftChip(
                             icon: Icons.category_rounded,
                             text: typeLabel,
+                            c: c,
                           ),
-                          _ImpactPill(direction: direction),
+                          _ImpactPill(direction: direction, c: c),
                         ],
                       ),
                     ],
@@ -150,7 +154,7 @@ class AiInsightCard extends StatelessWidget {
                 t9n.aiInsightEvidenceTitle,
                 style: tt.labelLarge?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2E4B5A),
+                  color: c.text,
                 ),
               ),
               const SizedBox(height: 8),
@@ -159,14 +163,14 @@ class AiInsightCard extends StatelessWidget {
                   .map(
                     (e) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: _BulletLine(text: e),
+                      child: _BulletLine(text: e, c: c),
                     ),
                   ),
             ],
 
             if ((item.suggestion ?? '').trim().isNotEmpty) ...[
               const SizedBox(height: 10),
-              _SuggestionBox(text: item.suggestion!.trim()),
+              _SuggestionBox(text: item.suggestion!.trim(), c: c),
             ],
           ],
         ),
@@ -181,7 +185,8 @@ class AiInsightCard extends StatelessWidget {
 
 class _NestCard extends StatelessWidget {
   final Widget child;
-  const _NestCard({required this.child});
+  final NestGlassColors c;
+  const _NestCard({required this.child, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -191,14 +196,14 @@ class _NestCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.78),
+            color: c.cardFill,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
+            border: Border.all(color: c.border),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x1A2B5B7A),
+                color: c.shadow,
                 blurRadius: 22,
-                offset: Offset(0, 8),
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -211,7 +216,8 @@ class _NestCard extends StatelessWidget {
 
 class _IconBadge extends StatelessWidget {
   final IconData icon;
-  const _IconBadge({required this.icon});
+  final NestGlassColors c;
+  const _IconBadge({required this.icon, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -219,12 +225,12 @@ class _IconBadge extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFF),
+        color: c.tint,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: c.border),
       ),
       child: Center(
-        child: Icon(icon, size: 20, color: const Color(0xFF3AA8E6)),
+        child: Icon(icon, size: 20, color: c.accent),
       ),
     );
   }
@@ -233,7 +239,8 @@ class _IconBadge extends StatelessWidget {
 class _SoftChip extends StatelessWidget {
   final IconData icon;
   final String text;
-  const _SoftChip({required this.icon, required this.text});
+  final NestGlassColors c;
+  const _SoftChip({required this.icon, required this.text, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -241,20 +248,20 @@ class _SoftChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFF),
+        color: c.tint,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF3AA8E6)),
+          Icon(icon, size: 14, color: c.accent),
           const SizedBox(width: 6),
           Text(
             text,
             style: tt.labelSmall?.copyWith(
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF2E4B5A),
+              color: c.text,
             ),
           ),
         ],
@@ -265,11 +272,11 @@ class _SoftChip extends StatelessWidget {
 
 class _BulletLine extends StatelessWidget {
   final String text;
-  const _BulletLine({required this.text});
+  final NestGlassColors c;
+  const _BulletLine({required this.text, required this.c});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     return Row(
@@ -280,7 +287,7 @@ class _BulletLine extends StatelessWidget {
           width: 6,
           height: 6,
           decoration: BoxDecoration(
-            color: const Color(0xFF3AA8E6),
+            color: c.accent,
             borderRadius: BorderRadius.circular(99),
           ),
         ),
@@ -290,7 +297,7 @@ class _BulletLine extends StatelessWidget {
             text,
             style: tt.bodySmall?.copyWith(
               height: 1.25,
-              color: cs.onSurfaceVariant,
+              color: c.muted,
             ),
           ),
         ),
@@ -301,7 +308,8 @@ class _BulletLine extends StatelessWidget {
 
 class _SuggestionBox extends StatelessWidget {
   final String text;
-  const _SuggestionBox({required this.text});
+  final NestGlassColors c;
+  const _SuggestionBox({required this.text, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -310,14 +318,14 @@ class _SuggestionBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFF),
+        color: c.tint,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF3AA8E6)),
+          Icon(Icons.lightbulb_outline_rounded, color: c.accent),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -325,7 +333,7 @@ class _SuggestionBox extends StatelessWidget {
               style: tt.bodySmall?.copyWith(
                 height: 1.25,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF2E4B5A),
+                color: c.text,
               ),
             ),
           ),
@@ -337,7 +345,8 @@ class _SuggestionBox extends StatelessWidget {
 
 class _ImpactPill extends StatelessWidget {
   final String direction; // positive | negative | mixed
-  const _ImpactPill({required this.direction});
+  final NestGlassColors c;
+  const _ImpactPill({required this.direction, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -363,9 +372,9 @@ class _ImpactPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFF),
+        color: c.tint,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -373,13 +382,13 @@ class _ImpactPill extends StatelessWidget {
           Icon(
             icon,
             size: 14,
-            color: const Color(0xFF2E4B5A).withOpacity(0.70),
+            color: c.text.withOpacity(0.70),
           ),
           const SizedBox(width: 6),
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: const Color(0xFF2E4B5A).withOpacity(0.75),
+              color: c.text.withOpacity(0.75),
               fontWeight: FontWeight.w900,
             ),
           ),

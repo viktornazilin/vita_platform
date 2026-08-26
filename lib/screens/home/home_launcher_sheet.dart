@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,7 +15,10 @@ import '../../widgets/mass_daily_entry_sheet.dart';
 import '../../main.dart';
 
 
-// (dark-mode helpers removed — colors now resolved via Theme.of(context))
+bool get _ladnaDarkMode =>
+    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+
+Color _ladnaAdaptive(Color light, Color dark) => _ladnaDarkMode ? dark : light;
 
 String _ladnaText(BuildContext context, Map<String, String> values) {
   final code = Localizations.localeOf(context).languageCode.toLowerCase();
@@ -31,7 +36,7 @@ void showHomeLauncherSheet({
     enableDrag: true,
     isDismissible: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.55 : 0.25),
+    barrierColor: Colors.black.withOpacity(_ladnaDarkMode ? 0.55 : 0.25),
     builder: (ctx) => _LauncherSheet(model: model),
   );
 }
@@ -41,11 +46,11 @@ class _LauncherSheet extends StatelessWidget {
 
   final HomeModel model;
 
-  static Color _surface(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF100C1E) : const Color(0xFFF5F3FA));
-  static Color _card(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1630) : const Color(0xFFFAFAFE));
+  static Color get _surface => _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E));
+  static Color get _card => _ladnaAdaptive(const Color(0xFFFAFAFE), const Color(0xFF1C1630));
   static Color get _primary => const Color(0xFF6B54C0);
-  static Color _dark(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38));
-  static Color _muted(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8));
+  static Color get _dark => _ladnaAdaptive(const Color(0xFF160E38), const Color(0xFFF0EEFF));
+  static Color get _muted => _ladnaAdaptive(const Color(0xFF9090A8), const Color(0x4DFFFFFF));
 
   Future<void> _openMassAdd(BuildContext context) async {
     final goalsModel = GoalsCalendarModel();
@@ -111,6 +116,13 @@ class _LauncherSheet extends StatelessWidget {
               )
               .toList(),
         );
+
+        // Обновляем сводное напоминание по привычкам только если это запись
+        // за СЕГОДНЯ — для прошлых дат (бэкфилл через "заполнить задним
+        // числом") планировать вечернее напоминание бессмысленно.
+        if (DateUtils.isSameDay(result.date, DateTime.now())) {
+          unawaited(syncHabitsReminder(DateUtils.dateOnly(result.date)));
+        }
       }
 
       if (result.mental.isNotEmpty) {
@@ -195,12 +207,12 @@ class _LauncherSheet extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF100C1E) : const Color(0xFFF5F3FA)),
-                (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0614) : const Color(0xFFEFE8D8)),
+                _ladnaAdaptive(const Color(0xFFF5F3FA), const Color(0xFF100C1E)),
+                _ladnaAdaptive(const Color(0xFFEFE8D8), const Color(0xFF0A0614)),
               ],
             ),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            border: Border(top: BorderSide(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : const Color(0xFFE0DCF0)))),
+            border: Border(top: BorderSide(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0)))),
           ),
           child: ListView(
             controller: controller,
@@ -211,7 +223,7 @@ class _LauncherSheet extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF1C1812).withOpacity(0.15)),
+                    color: _ladnaAdaptive(const Color(0xFF1C1812).withOpacity(0.15), const Color(0x4DFFFFFF)),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -431,10 +443,9 @@ class _HeroLogoCard extends StatelessWidget {
                             color: const Color(0xFF6B54C0).withOpacity(0.20),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 26,
-                            color: Color(0xFFFAF6EE),
+                          child: const Text(
+                            '✦',
+                            style: TextStyle(fontSize: 30, color: Color(0xFFFAF6EE)),
                           ),
                         ),
                       ),
@@ -448,12 +459,11 @@ class _HeroLogoCard extends StatelessWidget {
                         const Text(
                           'Ladna',
                           style: TextStyle(
-                            fontFamily: 'PlayfairDisplay',
                             fontSize: 31,
                             height: 1.0,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                             color: Color(0xFFFAF6EE),
-                            letterSpacing: -0.6,
+                            letterSpacing: -0.4,
                           ),
                         ),
                         const SizedBox(height: 5),
@@ -501,7 +511,7 @@ class _HeroLogoCard extends StatelessWidget {
                       final displayName = (profileName ?? snapshot.data ?? 'Ladna').trim();
                       return Row(
                         children: [
-                          const Icon(Icons.person_rounded, size: 20, color: Color(0xFFFAF6EE)),
+                          const Text('👤', style: TextStyle(fontSize: 22)),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -515,7 +525,7 @@ class _HeroLogoCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: Color(0xFF9F95C8), size: 24),
+                          const Text('›', style: TextStyle(color: Color(0xFF9F95C8), fontSize: 25)),
                         ],
                       );
                     },
@@ -539,7 +549,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: TextStyle(
-        color: _LauncherSheet._muted(context),
+        color: _LauncherSheet._muted,
         fontSize: 12,
         fontWeight: FontWeight.w900,
         letterSpacing: 2.2,
@@ -564,11 +574,11 @@ class _MenuCard extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _LauncherSheet._card(context),
+          color: _LauncherSheet._card,
           borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : const Color(0xFFE0DCF0))),
+          border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0))),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.035), blurRadius: 12, offset: const Offset(0, 5)),
+            BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.035), blurRadius: 12, offset: const Offset(0, 5)),
           ],
         ),
         child: Column(
@@ -578,8 +588,8 @@ class _MenuCard extends StatelessWidget {
               width: 46,
               height: 46,
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark) ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(14), border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : Colors.transparent))),
-              child: Icon(icon, size: 22, color: _LauncherSheet._primary),
+              decoration: BoxDecoration(color: _ladnaDarkMode ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(14), border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x336B54C0)))),
+              child: Icon(icon, size: 25, color: _LauncherSheet._dark),
             ),
             const SizedBox(height: 10),
             Text(
@@ -588,7 +598,7 @@ class _MenuCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: _LauncherSheet._dark(context),
+                color: _LauncherSheet._dark,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
               ),
@@ -617,10 +627,10 @@ class _QuickAction extends StatelessWidget {
         height: 70,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: _LauncherSheet._card(context),
+          color: _LauncherSheet._card,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : const Color(0xFFE0DCF0))),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.30 : 0.035), blurRadius: 12, offset: const Offset(0, 5))],
+          border: Border.all(color: _ladnaAdaptive(const Color(0xFFE0DCF0), const Color(0x336B54C0))),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(_ladnaDarkMode ? 0.30 : 0.035), blurRadius: 12, offset: const Offset(0, 5))],
         ),
         child: Row(
           children: [
@@ -628,8 +638,8 @@ class _QuickAction extends StatelessWidget {
               width: 38,
               height: 38,
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: (Theme.of(context).brightness == Brightness.dark) ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(11), border: Border.all(color: (Theme.of(context).brightness == Brightness.dark ? const Color(0x336B54C0) : Colors.transparent))),
-              child: Icon(icon, size: 19, color: _LauncherSheet._primary),
+              decoration: BoxDecoration(color: _ladnaDarkMode ? const Color(0xFF2A2140) : tint, borderRadius: BorderRadius.circular(11), border: Border.all(color: _ladnaAdaptive(Colors.transparent, const Color(0x336B54C0)))),
+              child: Icon(icon, size: 22, color: _LauncherSheet._dark),
             ),
             const SizedBox(width: 13),
             Expanded(
@@ -642,7 +652,7 @@ class _QuickAction extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: _LauncherSheet._dark(context),
+                      color: _LauncherSheet._dark,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
                     ),
@@ -653,7 +663,7 @@ class _QuickAction extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: _LauncherSheet._muted(context),
+                      color: _LauncherSheet._muted,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -661,7 +671,7 @@ class _QuickAction extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: _LauncherSheet._muted(context), size: 24),
+            Text('›', style: TextStyle(color: _LauncherSheet._muted, fontSize: 25, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

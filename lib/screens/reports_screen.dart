@@ -1,4 +1,3 @@
-
 // lib/screens/reports_screen.dart
 //
 // Ladna redesign: Reports
@@ -19,6 +18,7 @@ import '../models/reports_model.dart';
 import '../services/home_ai_insight_service.dart';
 import '../services/onboarding_tour_service.dart';
 import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_page_header.dart';
 
 // (dark-mode helpers removed — see _LadnaColors below, now context-based)
 
@@ -112,7 +112,7 @@ class _ReportsViewState extends State<_ReportsView> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
                     children: [
-                      _Header(title: t.reports),
+                      NestPageHeader(title: t.reports, onBack: () => _goToHome(context)),
                       const SizedBox(height: 14),
                       KeyedSubtree(
                         key: _periodTourKey,
@@ -544,13 +544,11 @@ class _PulseCard extends StatelessWidget {
                   Text(
                     '$pulse',
                     style: const TextStyle(
-                      fontFamily: 'PlayfairDisplay',
-                      fontFamilyFallback: ['PlayfairDisplay', 'Georgia'],
                       fontSize: 56,
                       height: 1,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
-                      letterSpacing: -2,
+                      letterSpacing: -1,
                     ),
                   ),
                   Padding(
@@ -710,7 +708,7 @@ class _MonthEfficiencyCard extends StatelessWidget {
           Row(
             children: [
               Expanded(child: Text(t.monthEfficiency, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context)))),
-              Text('${(progress * 100).round()}%', style: const TextStyle(fontFamily: 'PlayfairDisplay', fontFamilyFallback: ['PlayfairDisplay', 'Georgia'], fontSize: 22, color: _LadnaColors.primary, fontWeight: FontWeight.w600)),
+              Text('${(progress * 100).round()}%', style: const TextStyle(fontSize: 22, color: _LadnaColors.primary, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
             ],
           ),
           const SizedBox(height: 10),
@@ -1215,7 +1213,7 @@ class _BestDayCard extends StatelessWidget {
         children: [
           Text(
             '${day.date.day}',
-            style: const TextStyle(fontFamily: 'PlayfairDisplay', fontFamilyFallback: ['PlayfairDisplay', 'Georgia'], fontSize: 40, fontWeight: FontWeight.w600, color: Colors.white, height: 1),
+            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white, height: 1, letterSpacing: -0.5),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1235,7 +1233,7 @@ class _BestDayCard extends StatelessWidget {
             decoration: BoxDecoration(color: _LadnaColors.lime, borderRadius: BorderRadius.circular(10)),
             child: Column(
               children: [
-                Text('${day.completed}', style: const TextStyle(fontFamily: 'PlayfairDisplay', fontFamilyFallback: ['PlayfairDisplay', 'Georgia'], fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF3A3800), height: 1)),
+                Text('${day.completed}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF3A3800), height: 1)),
                 Text(t.done, style: const TextStyle(fontSize: 9, color: Color(0xFF3A3800), fontWeight: FontWeight.w800)),
               ],
             ),
@@ -1455,42 +1453,6 @@ void _goToHome(BuildContext context) {
 // Header / controls
 // -----------------------------------------------------------------------------
 
-class _Header extends StatelessWidget {
-  final String title;
-
-  const _Header({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return _LadnaCard(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
-      child: Row(
-        children: [
-          _RoundIconButton(
-            icon: Icons.chevron_left_rounded,
-            onTap: () => _goToHome(context),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontFamily: 'PlayfairDisplay',
-                fontFamilyFallback: const ['PlayfairDisplay', 'Georgia'],
-                fontSize: 22,
-                height: 1.05,
-                fontWeight: FontWeight.w700,
-                color: _LadnaColors.dark(context),
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _PeriodRow extends StatelessWidget {
   final ReportsModel model;
   final _ReportsText t;
@@ -1629,12 +1591,11 @@ class _MetricCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'PlayfairDisplay',
-              fontFamilyFallback: const ['PlayfairDisplay', 'Georgia'],
               fontSize: 26,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
               color: highlight ? _LadnaColors.green : _LadnaColors.dark(context),
               height: 1,
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 5),
@@ -2515,33 +2476,6 @@ class _EmptyText extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(fontSize: 12, color: _LadnaColors.muted(context), height: 1.4),
-    );
-  }
-}
-
-class _RoundIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _RoundIconButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: _LadnaColors.primary.withOpacity(.12),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: Icon(icon, size: 22, color: _LadnaColors.mid(context)),
-        ),
-      ),
     );
   }
 }

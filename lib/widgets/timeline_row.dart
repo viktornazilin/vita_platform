@@ -6,6 +6,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/goal.dart';
 import 'dashed_line.dart';
+import 'nest/nest_glass_colors.dart';
 
 class TimelineRow extends StatefulWidget {
   final Goal goal;
@@ -266,15 +267,16 @@ class _GoalContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w900,
       height: 1.18,
-      color: const Color(0xFF2E4B5A).withOpacity(goal.isCompleted ? 0.62 : 0.98),
+      color: c.text.withOpacity(goal.isCompleted ? 0.62 : 0.98),
     );
 
     final bodyStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
       height: 1.35,
-      color: const Color(0xFF496474).withOpacity(goal.isCompleted ? 0.58 : 0.88),
+      color: c.text.withOpacity(goal.isCompleted ? 0.58 : 0.88),
     );
 
     return Opacity(
@@ -504,6 +506,7 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final overlay = isCompleted ? 0.08 : 0.05;
 
     return ClipRRect(
@@ -517,7 +520,7 @@ class _GlassCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.72),
+                color: c.cardFill.withOpacity(0.72),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: accent.withOpacity(isCompleted ? 0.16 : 0.26),
@@ -528,7 +531,7 @@ class _GlassCard extends StatelessWidget {
                   end: Alignment.bottomRight,
                   colors: [
                     softBg.withOpacity(overlay + 0.08),
-                    Colors.white.withOpacity(0.02),
+                    c.cardFill.withOpacity(0.02),
                   ],
                 ),
                 boxShadow: const [
@@ -571,7 +574,7 @@ class _GlassCard extends StatelessWidget {
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.55),
+                            color: c.cardFill.withOpacity(0.55),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: accent.withOpacity(0.15),
@@ -580,7 +583,7 @@ class _GlassCard extends StatelessWidget {
                           child: Icon(
                             Icons.more_horiz_rounded,
                             size: 20,
-                            color: const Color(0xFF5C7A8E).withOpacity(0.9),
+                            color: c.muted.withOpacity(0.9),
                           ),
                         ),
                       ),
@@ -607,10 +610,9 @@ class _TimeBadge extends StatelessWidget {
     required this.accent,
   });
 
-  static const _ink = Color(0xFF2E4B5A);
-
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final borderColor = isCompleted
         ? accent.withOpacity(0.44)
         : accent.withOpacity(0.24);
@@ -618,7 +620,7 @@ class _TimeBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.78),
+        color: c.cardFill.withOpacity(0.78),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: borderColor, width: 1.1),
         boxShadow: const [
@@ -635,7 +637,7 @@ class _TimeBadge extends StatelessWidget {
           fontFeatures: const [FontFeature.tabularFigures()],
           fontWeight: FontWeight.w900,
           letterSpacing: 0.2,
-          color: _ink.withOpacity(0.92),
+          color: c.text.withOpacity(0.92),
         ),
       ),
     );
@@ -653,13 +655,14 @@ class _EmotionBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final text = (emotion ?? '').trim().isEmpty ? '🙂' : emotion!.trim();
 
     return Container(
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.72),
+        color: c.cardFill.withOpacity(0.72),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accent.withOpacity(0.18)),
         boxShadow: const [
@@ -694,6 +697,7 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       decoration: BoxDecoration(
@@ -709,7 +713,7 @@ class _MetaChip extends StatelessWidget {
           Text(
             text,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: const Color(0xFF385262),
+              color: c.text,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -798,18 +802,19 @@ class _GlassSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Material(
-          color: Colors.white.withOpacity(0.86),
+          color: c.cardFill.withOpacity(0.86),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(26),
               ),
-              border: Border.all(color: const Color(0xFFD6E6F5)),
+              border: Border.all(color: c.border),
             ),
             child: child,
           ),

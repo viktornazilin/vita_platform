@@ -5,11 +5,17 @@ class NestBackground extends StatelessWidget {
   final bool useSoftGradient;
   final bool useAccentGlow;
 
+  /// Если false — SafeArea не резервирует отступ снизу. Нужно экранам,
+  /// которые сами управляют нижней зоной (например, `Scaffold` с
+  /// `extendBody: true` и собственным `bottomNavigationBar`).
+  final bool safeAreaBottom;
+
   const NestBackground({
     super.key,
     required this.child,
     this.useSoftGradient = false,
     this.useAccentGlow = true,
+    this.safeAreaBottom = true,
   });
 
   @override
@@ -18,7 +24,7 @@ class NestBackground extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF100C1E) : const Color(0xFFF5F3FA),
+        color: isDark ? const Color(0xFF100C1E) : const Color(0xFFF6F3FB),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -28,10 +34,13 @@ class NestBackground extends StatelessWidget {
                   Color(0xFF0A0614),
                   Color(0xFF151026),
                 ]
+              // "Лавандовый туман" — мягкий, почти белый, с фиолетовым
+              // подтоном по всему фону (не уходит в кремовый/мятный, как
+              // было раньше).
               : const [
-                  Color(0xFFF5F3FA),
-                  Color(0xFFF8F6EF),
-                  Color(0xFFEFF7FA),
+                  Color(0xFFF8F6FC),
+                  Color(0xFFF3EFFA),
+                  Color(0xFFF6F3FB),
                 ],
           stops: const [0.0, 0.55, 1.0],
         ),
@@ -46,7 +55,7 @@ class NestBackground extends StatelessWidget {
                 size: 300,
                 color: isDark
                     ? const Color(0xFF6B54C0).withOpacity(0.22)
-                    : const Color(0xFF16B8A8).withOpacity(0.18),
+                    : const Color(0xFF6B54C0).withOpacity(0.14),
               ),
             ),
             Positioned(
@@ -56,7 +65,7 @@ class NestBackground extends StatelessWidget {
                 size: 300,
                 color: isDark
                     ? const Color(0xFFD4E040).withOpacity(0.08)
-                    : const Color(0xFFD4E040).withOpacity(0.18),
+                    : const Color(0xFF9A85E0).withOpacity(0.16),
               ),
             ),
             Positioned(
@@ -64,11 +73,11 @@ class NestBackground extends StatelessWidget {
               right: -125,
               child: _NestGlowOrb(
                 size: 360,
-                color: const Color(0xFF6B54C0).withOpacity(isDark ? 0.16 : 0.14),
+                color: const Color(0xFF6B54C0).withOpacity(isDark ? 0.16 : 0.12),
               ),
             ),
           ],
-          SafeArea(child: child),
+          SafeArea(bottom: safeAreaBottom, child: child),
         ],
       ),
     );

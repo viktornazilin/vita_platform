@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nest_app/widgets/nest/nest_glass_colors.dart';
 
 import '../../models/ai/ai_suggestion.dart';
 import '../widgets/info_chip.dart';
@@ -20,6 +21,7 @@ class AiSuggestionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final c = NestGlassColors.of(context);
 
     final d = item.displayDate;
     final dateStr =
@@ -32,14 +34,14 @@ class AiSuggestionTile extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.78),
+            color: c.cardFill,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE4DDF6)),
-            boxShadow: const [
+            border: Border.all(color: c.border),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x1A2B5B7A),
+                color: c.shadow,
                 blurRadius: 26,
-                offset: Offset(0, 14),
+                offset: const Offset(0, 14),
               ),
             ],
           ),
@@ -73,7 +75,7 @@ class AiSuggestionTile extends StatelessWidget {
                           fontSize: 13,
                           height: 1.08,
                           fontWeight: FontWeight.w900,
-                          color: const Color(0xFF17123A),
+                          color: c.text,
                         ),
                       ),
 
@@ -109,7 +111,7 @@ class AiSuggestionTile extends StatelessWidget {
                             fontSize: 11.5,
                             height: 1.22,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF7E7898),
+                            color: c.muted,
                           ),
                         ),
                       ],
@@ -119,7 +121,7 @@ class AiSuggestionTile extends StatelessWidget {
 
                 const SizedBox(width: 6),
 
-                _EditButton(onTap: onEdit),
+                _EditButton(onTap: onEdit, c: c),
               ],
             ),
           ),
@@ -131,7 +133,8 @@ class AiSuggestionTile extends StatelessWidget {
 
 class _EditButton extends StatelessWidget {
   final VoidCallback onTap;
-  const _EditButton({required this.onTap});
+  final NestGlassColors c;
+  const _EditButton({required this.onTap, required this.c});
 
   @override
   Widget build(BuildContext context) {
@@ -143,13 +146,13 @@ class _EditButton extends StatelessWidget {
         height: 38,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFFF4FAFF),
-          border: Border.all(color: const Color(0xFFE4DDF6)),
+          color: c.tint,
+          border: Border.all(color: c.border),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.edit_outlined,
           size: 20,
-          color: Color(0xFF3AA8E6),
+          color: c.accent,
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../main.dart'; // для dbRepo
 
@@ -6,6 +8,11 @@ class SettingsModel extends ChangeNotifier {
   double _targetHours = 14;
   bool _loading = true;
   String? _error;
+
+  /// true, пока фоновое сохранение ещё не подтверждено сервером — можно
+  /// использовать для маленького ненавязчивого индикатора ("Сохранение…"),
+  /// не блокируя при этом сам экран/кнопку.
+  bool saving = false;
 
   Map<String, double> get weights => _weights;
   double get targetHours => _targetHours;
@@ -46,17 +53,41 @@ class SettingsModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Раньше: экран/кнопка "Сохранить" ждали await saveSettings() перед тем,
+  /// как продолжить (например, закрыть экран) — видимая задержка.
+  /// Теперь: возвращаемся сразу (значения уже применены локально через
+  /// updateWeight/updateTargetHours), а запись в БД уходит в фоне. Если
+  /// сохранение не удастся — `error` обновится и экран (если ещё открыт)
+  /// сможет показать это ненавязчиво.
   Future<bool> saveSettings() async {
+    final weightsSnapshot = Map<String, double>.from(_weights);
+    final targetHoursSnapshot = _targetHours;
+
+    saving = true;
+    notifyListeners();
+
+    unawaited(_saveSettingsOnServer(
+      weights: weightsSnapshot,
+      targetHours: targetHoursSnapshot,
+    ));
+
+    return true;
+  }
+
+  Future<void> _saveSettingsOnServer({
+    required Map<String, double> weights,
+    required double targetHours,
+  }) async {
     try {
       await dbRepo.saveUserSettings(
-        weights: _weights,
-        targetHours: _targetHours,
+        weights: weights,
+        targetHours: targetHours,
       );
-      return true;
     } catch (e) {
       _error = 'Ошибка сохранения: $e';
+    } finally {
+      saving = false;
       notifyListeners();
-      return false;
     }
   }
 }

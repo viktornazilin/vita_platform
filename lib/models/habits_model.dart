@@ -1,5 +1,7 @@
 // lib/models/habits_model.dart
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -97,6 +99,12 @@ class HabitsModel extends ChangeNotifier {
     }
   }
 
+  /// Раньше: сначала ждали ответ Supabase (~секунда), и только потом
+  /// привычка появлялась в списке.
+  /// Теперь: привычка появляется в списке сразу (с временным id), а запрос
+  /// в Supabase уходит фоном. Когда сервер ответит — временная запись
+  /// подменяется на настоящую (с реальным id). При ошибке — запись исчезает
+  /// из списка и в `error` появляется причина.
   Future<String?> create({
     required String title,
     required bool isNegative,
@@ -112,21 +120,43 @@ class HabitsModel extends ChangeNotifier {
     }
 
     error = null;
+
+    final tempId = 'temp-${DateTime.now().microsecondsSinceEpoch}';
+    final optimisticHabit = Habit(
+      id: tempId,
+      title: normalizedTitle,
+      isNegative: isNegative,
+      createdAt: DateTime.now(),
+    );
+
+    items = [...items, optimisticHabit];
     notifyListeners();
 
+    unawaited(_createOnServer(
+      tempId: tempId,
+      uid: uid,
+      title: normalizedTitle,
+      isNegative: isNegative,
+    ));
+
+    return null;
+  }
+
+  Future<void> _createOnServer({
+    required String tempId,
+    required String uid,
+    required String title,
+    required bool isNegative,
+  }) async {
     try {
-      final encryptedPayload = await _encryptHabitPayload(
-        title: normalizedTitle,
-      );
+      final encryptedPayload = await _encryptHabitPayload(title: title);
 
       final inserted = await _sb
           .from('habits')
           .insert({
             'user_id': uid,
-
             // Technical fallback. Real title is stored in encrypted_payload.
             'title': '[encrypted]',
-
             'is_negative': isNegative,
             'encrypted_payload': encryptedPayload,
             'encryption_version': 1,
@@ -138,12 +168,17 @@ class HabitsModel extends ChangeNotifier {
       final decryptedRow = await _decryptHabitRow(row);
       final habit = Habit.fromMap(decryptedRow);
 
-      items = [...items, habit];
-      notifyListeners();
-
-      return null;
+      final idx = items.indexWhere((x) => x.id == tempId);
+      if (idx != -1) {
+        final next = [...items];
+        next[idx] = habit;
+        items = next;
+        notifyListeners();
+      }
     } catch (e) {
-      return 'Не удалось создать привычку: $e';
+      items = items.where((x) => x.id != tempId).toList();
+      error = 'Не удалось создать привычку: $e';
+      notifyListeners();
     }
   }
 
@@ -163,19 +198,46 @@ class HabitsModel extends ChangeNotifier {
     }
 
     error = null;
+
+    final idx = items.indexWhere((x) => x.id == id);
+    if (idx == -1) return 'Привычка не найдена';
+
+    final previous = items[idx];
+    final optimistic = previous.copyWith(
+      title: normalizedTitle,
+      isNegative: isNegative,
+    );
+
+    final next = [...items];
+    next[idx] = optimistic;
+    items = next;
     notifyListeners();
 
+    unawaited(_updateOnServer(
+      id: id,
+      uid: uid,
+      previous: previous,
+      title: normalizedTitle,
+      isNegative: isNegative,
+    ));
+
+    return null;
+  }
+
+  Future<void> _updateOnServer({
+    required String id,
+    required String uid,
+    required Habit previous,
+    required String title,
+    required bool isNegative,
+  }) async {
     try {
-      final encryptedPayload = await _encryptHabitPayload(
-        title: normalizedTitle,
-      );
+      final encryptedPayload = await _encryptHabitPayload(title: title);
 
       final updated = await _sb
           .from('habits')
           .update({
-            // Technical fallback. Real title is stored in encrypted_payload.
             'title': '[encrypted]',
-
             'is_negative': isNegative,
             'encrypted_payload': encryptedPayload,
             'encryption_version': 1,
@@ -190,20 +252,21 @@ class HabitsModel extends ChangeNotifier {
       final habit = Habit.fromMap(decryptedRow);
 
       final idx = items.indexWhere((x) => x.id == id);
-
-      if (idx >= 0) {
+      if (idx != -1) {
         final next = [...items];
         next[idx] = habit;
         items = next;
-      } else {
-        items = [...items, habit];
+        notifyListeners();
       }
-
-      notifyListeners();
-
-      return null;
     } catch (e) {
-      return 'Не удалось обновить привычку: $e';
+      final idx = items.indexWhere((x) => x.id == id);
+      if (idx != -1) {
+        final next = [...items];
+        next[idx] = previous;
+        items = next;
+      }
+      error = 'Не удалось обновить привычку: $e';
+      notifyListeners();
     }
   }
 
@@ -213,17 +276,34 @@ class HabitsModel extends ChangeNotifier {
     if (uid == null) return 'Not authenticated';
 
     error = null;
+
+    final idx = items.indexWhere((x) => x.id == id);
+    if (idx == -1) return null;
+
+    final previous = items[idx];
+    items = items.where((x) => x.id != id).toList();
     notifyListeners();
 
+    unawaited(_deleteOnServer(id: id, uid: uid, previous: previous, index: idx));
+
+    return null;
+  }
+
+  Future<void> _deleteOnServer({
+    required String id,
+    required String uid,
+    required Habit previous,
+    required int index,
+  }) async {
     try {
       await _sb.from('habits').delete().eq('id', id).eq('user_id', uid);
-
-      items = items.where((x) => x.id != id).toList();
-      notifyListeners();
-
-      return null;
     } catch (e) {
-      return 'Не удалось удалить привычку: $e';
+      final next = [...items];
+      final insertAt = index.clamp(0, next.length);
+      next.insert(insertAt, previous);
+      items = next;
+      error = 'Не удалось удалить привычку: $e';
+      notifyListeners();
     }
   }
 }

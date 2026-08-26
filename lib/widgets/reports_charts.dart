@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'nest/nest_glass_colors.dart';
 
 List<PieChartSectionData> buildPieSectionsInt(
   BuildContext context,
@@ -160,7 +161,7 @@ class _NestChartBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final c = NestGlassColors.of(context);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -169,14 +170,14 @@ class _NestChartBadge extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.72),
+            color: c.cardFill.withOpacity(0.72),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
-            boxShadow: const [
+            border: Border.all(color: c.border),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x1A2B5B7A),
+                color: c.shadow,
                 blurRadius: 18,
-                offset: Offset(0, 10),
+                offset: const Offset(0, 10),
               ),
             ],
           ),
@@ -186,7 +187,7 @@ class _NestChartBadge extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
+              color: c.text,
               letterSpacing: 0.1,
             ),
           ),

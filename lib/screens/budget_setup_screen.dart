@@ -10,6 +10,7 @@ import 'package:nest_app/widgets/add_jar_dialog.dart';
 import 'package:nest_app/widgets/empty_state.dart';
 import 'package:nest_app/widgets/limit_sheet.dart';
 import 'package:nest_app/widgets/nest/nest_background.dart';
+import 'package:nest_app/widgets/nest/nest_page_header.dart';
 import 'package:nest_app/controllers/theme_controller.dart';
 
 
@@ -466,7 +467,7 @@ class _SetupViewState extends State<_SetupView> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                 sliver: SliverToBoxAdapter(
-                  child: _SetupHeader(
+                  child: NestPageHeader(
                     title: l.budgetSetupTitle,
                     subtitle: _BudgetSetupText.of(context).setupSubtitle,
                     onBack: _goBack,
@@ -605,79 +606,6 @@ class _BudgetSetupText {
                   : _tr
                       ? 'Limit ayarlamak için kategoriye dokun.'
                       : 'Tap a category to set a limit.';
-}
-
-class _SetupHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final VoidCallback onBack;
-
-  const _SetupHeader({
-    required this.title,
-    required this.subtitle,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = _BudgetColors.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [c.surface, c.card]),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: c.border),
-        boxShadow: [
-          BoxShadow(
-            color: c.primaryDark.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _RoundIconButton(
-            icon: Icons.chevron_left_rounded,
-            onTap: onBack,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'PlayfairDisplay',
-                    color: c.primaryDark,
-                    fontSize: 22,
-                    height: 1.05,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: c.muted,
-                    fontSize: 11,
-                    height: 1.2,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _LadnaSection extends StatelessWidget {
@@ -1014,35 +942,6 @@ class _EmptySetupBox extends StatelessWidget {
           fontSize: 12,
           height: 1.3,
           fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _RoundIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _RoundIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = _BudgetColors.of(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: c.card.withOpacity(0.82),
-            shape: BoxShape.circle,
-            border: Border.all(color: c.border),
-          ),
-          child: Icon(icon, color: c.text, size: 25),
         ),
       ),
     );

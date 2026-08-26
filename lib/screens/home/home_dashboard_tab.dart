@@ -14,6 +14,7 @@ import '../../services/home_ai_insight_service.dart';
 import '../../services/onboarding_tour_service.dart';
 import '../day_goals_screen.dart';
 import '../../widgets/nest/nest_section_title.dart';
+import '../../widgets/nest/nest_page_header.dart';
 
 
 // (dark-mode helpers removed — colors now resolved via Theme.of(context), see below)
@@ -440,10 +441,13 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
         children: [
           KeyedSubtree(
             key: _homeHeaderTourKey,
-            child: _HomeHeader(
+            child: NestPageHeader(
               title: _homeTitle(),
-              date: _dateLabel(),
-              onProfileTap: () => context.read<HomeModel>().select(3),
+              subtitle: _dateLabel(),
+              leading: _HomeIconBox(),
+              trailing: _ProfileAvatarButton(
+                onTap: () => context.read<HomeModel>().select(3),
+              ),
             ),
           ),
           const SizedBox(height: 18),
@@ -562,108 +566,45 @@ class _HomeDashboardBodyState extends State<_HomeDashboardBody>
   }
 }
 
-
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({
-    required this.title,
-    required this.date,
-    required this.onProfileTap,
-  });
-
-  final String title;
-  final String date;
-  final VoidCallback onProfileTap;
-
-  static Color _dark(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38));
-  static Color _muted(BuildContext context) => (Theme.of(context).brightness == Brightness.dark ? const Color(0x4DFFFFFF) : const Color(0xFF9090A8));
-  static Color get _primary => const Color(0xFF6B54C0);
+class _HomeIconBox extends StatelessWidget {
+  const _HomeIconBox();
 
   @override
   Widget build(BuildContext context) {
+    const primary = Color(0xFF6B54C0);
     return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      width: 48,
+      height: 48,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            (Theme.of(context).brightness == Brightness.dark ? const Color(0x1F6B54C0) : const Color(0xFFF0EEF8)),
-            (Theme.of(context).brightness == Brightness.dark ? const Color(0x1F6B54C0) : const Color(0xFFE6E2F4)),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _primary.withOpacity((Theme.of(context).brightness == Brightness.dark) ? .25 : .15), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity((Theme.of(context).brightness == Brightness.dark) ? 0.40 : 0.035),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _primary.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.home_rounded, size: 24, color: Color(0xFF6B54C0)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'PlayfairDisplay',
-                    fontSize: 22,
-                    height: 1.05,
-                    fontWeight: FontWeight.w700,
-                    color: _dark(context),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  date,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.0,
-                    fontWeight: FontWeight.w600,
-                    color: _muted(context),
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: onProfileTap,
-            child: Container(
-              width: 43,
-              height: 43,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _primary.withOpacity(0.16),
-                shape: BoxShape.circle,
-                border: Border.all(color: _primary.withOpacity(0.25), width: 1.5),
-              ),
-              child: const Icon(Icons.person_rounded, size: 22, color: Color(0xFF6B54C0)),
-            ),
-          ),
-        ],
+      child: const Icon(Icons.home_rounded, size: 24, color: primary),
+    );
+  }
+}
+
+class _ProfileAvatarButton extends StatelessWidget {
+  const _ProfileAvatarButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const primary = Color(0xFF6B54C0);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 43,
+        height: 43,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: primary.withOpacity(0.16),
+          shape: BoxShape.circle,
+          border: Border.all(color: primary.withOpacity(0.25), width: 1.5),
+        ),
+        child: const Icon(Icons.person_rounded, size: 22, color: primary),
       ),
     );
   }
@@ -793,12 +734,11 @@ class _FocusCard extends StatelessWidget {
                         'tr': 'Henüz bir şey yok',
                       }),
                 style: const TextStyle(
-                  fontFamily: 'PlayfairDisplay',
                   fontSize: 23,
                   height: 1.08,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   color: Color(0xFFFAF6EE),
-                  letterSpacing: -0.6,
+                  letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1275,7 +1215,7 @@ class _MiniGrid extends StatelessWidget {
         moodEmoji: moodEmoji,
         label: _pick(context, const {'ru': 'Настроение', 'en': 'Mood', 'de': 'Stimmung', 'fr': 'Humeur', 'es': 'Ánimo', 'tr': 'Ruh hali'}),
         value: moodValue,
-        valueIsSerif: false,
+        emphasized: false,
         subtitle: _pick(context, const {'ru': 'сегодня', 'en': 'today', 'de': 'heute', 'fr': 'aujourd’hui', 'es': 'hoy', 'tr': 'bugün'}),
       ),
       _MiniCard(
@@ -1333,7 +1273,7 @@ class _MiniCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.subtitle,
-    this.valueIsSerif = true,
+    this.emphasized = true,
     this.moodEmoji,
   });
 
@@ -1341,7 +1281,7 @@ class _MiniCard extends StatelessWidget {
   final String label;
   final String value;
   final String subtitle;
-  final bool valueIsSerif;
+  final bool emphasized;
   /// Real mood emoji chosen by the user for a logged entry. When present it is
   /// shown instead of [icon] since it reflects the user's own data, not a
   /// decorative placeholder.
@@ -1384,8 +1324,7 @@ class _MiniCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: valueIsSerif ? 'PlayfairDisplay' : null,
-              fontSize: valueIsSerif ? 20 : 14,
+              fontSize: emphasized ? 20 : 14,
               height: 1,
               fontWeight: FontWeight.w900,
               color: (isDark ? const Color(0xFFF0EEFF) : const Color(0xFF160E38)),

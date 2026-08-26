@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "497719485787",
+    "project_id": "ladna-9c163",
+    "storage_bucket": "ladna-9c163.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:497719485787:android:f52ba1d785fd2a89d3267e",
+        "android_client_info": {
+          "package_name": "com.example.vita_platform"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWyEXAmfH1ARgDR5q_Vo8So1SLKm6XvOM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

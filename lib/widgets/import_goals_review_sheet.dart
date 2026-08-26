@@ -5,6 +5,7 @@ import 'nest/nest_sheet.dart';
 import 'nest/nest_card.dart';
 import 'nest/nest_pill.dart';
 import 'nest/nest_section_title.dart';
+import 'nest/nest_glass_colors.dart';
 
 class ParsedGoalDraft {
   final String title;
@@ -150,21 +151,22 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final c = NestGlassColors.of(context);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final selected = _checked.where((e) => e).length;
 
     final inputTheme = theme.inputDecorationTheme.copyWith(
       filled: true,
-      fillColor: const Color(0xFFEFF7FF).withOpacity(0.85),
-      labelStyle: const TextStyle(color: Color(0xFF2E4B5A)),
-      hintStyle: const TextStyle(color: Color(0x992E4B5A)),
+      fillColor: c.tint.withOpacity(0.85),
+      labelStyle: TextStyle(color: c.text),
+      hintStyle: TextStyle(color: c.text.withOpacity(0.6)),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFBBD9F7)),
+        borderSide: BorderSide(color: c.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xFFBBD9F7)),
+        borderSide: BorderSide(color: c.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
@@ -215,7 +217,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w900,
                             height: 1.05,
-                            color: const Color(0xFF2E4B5A),
+                            color: c.text,
                           ),
                         ),
                       ),
@@ -235,7 +237,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                   Text(
                     l.importGoalsReviewSubtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF2E4B5A).withOpacity(0.75),
+                      color: c.text.withOpacity(0.75),
                       height: 1.25,
                     ),
                   ),
@@ -251,7 +253,7 @@ class _ImportGoalsReviewSheetState extends State<ImportGoalsReviewSheet> {
                             l.importGoalsReviewSelectAll,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
-                              color: const Color(0xFF2E4B5A),
+                              color: c.text,
                             ),
                           ),
                         ),
@@ -463,9 +465,10 @@ class _SoftButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final c = NestGlassColors.of(context);
     final isPrimary = kind == _SoftButtonKind.primary;
 
-    final bg = isPrimary ? null : Colors.white.withOpacity(0.70);
+    final bg = isPrimary ? null : c.cardFill;
 
     final gradient = isPrimary
         ? LinearGradient(
@@ -489,7 +492,7 @@ class _SoftButton extends StatelessWidget {
           border: Border.all(
             color: isPrimary
                 ? Colors.white.withOpacity(0.10)
-                : const Color(0xFFD6E6F5),
+                : c.border,
           ),
           boxShadow: const [
             BoxShadow(
@@ -504,7 +507,7 @@ class _SoftButton extends StatelessWidget {
             label,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w900,
-              color: isPrimary ? Colors.white : const Color(0xFF2E4B5A),
+              color: isPrimary ? Colors.white : c.text,
             ),
           ),
         ),

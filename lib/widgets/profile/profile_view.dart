@@ -1,11 +1,12 @@
 // lib/screens/profile/profile_view.dart
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,6 +18,8 @@ import '../../models/ladna_space.dart';
 import '../../models/space_invite.dart';
 import '../../models/space_member.dart';
 import '../../models/profile_model.dart';
+import '../../services/notification_service.dart';
+import '../../services/notification_preferences.dart';
 import '../../widgets/nest/nest_background.dart';
 import '../../widgets/nest/nest_sheet.dart';
 import 'profile_ui_helpers.dart';
@@ -263,9 +266,11 @@ class _SettingsPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _SectionLabel(t.notifications),
-          const _NotificationSettingsCard(),
-          const SizedBox(height: 16),
+          if (!kIsWeb) ...[
+            _SectionLabel(t.notifications),
+            const _NativeNotificationSettingsCard(),
+            const SizedBox(height: 16),
+          ],
           _SectionLabel(t.app),
           _SettingsCard(
             rows: [
@@ -422,24 +427,29 @@ class _SettingsPage extends StatelessWidget {
   }
 }
 
-class _NotificationSettingsCard extends StatefulWidget {
-  const _NotificationSettingsCard();
+/// Карточка настроек уведомлений для iOS/Android (через
+/// NotificationService/NotificationPreferences). На web не рендерится —
+/// flutter_local_notifications не поддерживает web, а рабочей замены под
+/// браузерные push-уведомления пока нет (старая web-карточка убрана).
+///
+/// Дизайн: почти вся логика "что означает включение/выключение" уже живёт
+/// в NotificationService (он сам проверяет NotificationPreferences перед
+/// планированием) — эта карточка только читает/пишет NotificationPreferences
+/// и после каждого изменения вызывает соответствующую sync-функцию из
+/// main.dart, чтобы эффект был заметен сразу, а не при следующем открытии
+/// экрана целей/настроения/привычек.
+class _NativeNotificationSettingsCard extends StatefulWidget {
+  const _NativeNotificationSettingsCard();
 
   @override
-  State<_NotificationSettingsCard> createState() => _NotificationSettingsCardState();
+  State<_NativeNotificationSettingsCard> createState() =>
+      _NativeNotificationSettingsCardState();
 }
 
-class _NotificationSettingsCardState extends State<_NotificationSettingsCard> {
-  static const _kPermissionAsked = 'ladna_webnotif_permission_asked';
-  static const _kEveningEnabled = 'vita_webnotif_evening_enabled';
-  static const _kHour = 'vita_webnotif_evening_hour';
-  static const _kMinute = 'vita_webnotif_evening_minute';
-
+class _NativeNotificationSettingsCardState
+    extends State<_NativeNotificationSettingsCard> {
   bool _loading = true;
-  bool _permissionRequested = false;
-  bool _eveningEnabled = false;
-  int _hour = 21;
-  int _minute = 30;
+  bool _osPermissionGranted = false;
 
   @override
   void initState() {
@@ -448,123 +458,202 @@ class _NotificationSettingsCardState extends State<_NotificationSettingsCard> {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+    await NotificationPreferences.instance.ensureLoaded();
+    final granted = await NotificationService.instance.hasPermission();
     if (!mounted) return;
     setState(() {
-      _permissionRequested = prefs.getBool(_kPermissionAsked) ?? false;
-      _eveningEnabled = prefs.getBool(_kEveningEnabled) ?? false;
-      _hour = prefs.getInt(_kHour) ?? 21;
-      _minute = prefs.getInt(_kMinute) ?? 30;
+      _osPermissionGranted = granted;
       _loading = false;
     });
-    await _apply();
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kPermissionAsked, _permissionRequested);
-    await prefs.setBool(_kEveningEnabled, _eveningEnabled);
-    await prefs.setInt(_kHour, _hour);
-    await prefs.setInt(_kMinute, _minute);
-  }
+  String _formatTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-  String get _time => '${_hour.toString().padLeft(2, '0')}:${_minute.toString().padLeft(2, '0')}';
-
-  Future<void> _apply() async {
-    if (!_eveningEnabled || !webNotifs.isSupported) {
-      webNotifs.cancel('evening_checkin');
-      return;
+  Future<void> _openSystemSettings() async {
+    // app-settings: работает на iOS и открывает системный экран настроек
+    // именно этого приложения (единственный способ включить разрешение
+    // обратно после того, как пользователь один раз отклонил системный
+    // диалог — iOS больше не показывает его программно).
+    final uri = Uri.parse('app-settings:');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
     }
-
-    final t = _LadnaText.of(context);
-    webNotifs.scheduleDaily(
-      key: 'evening_checkin',
-      hour: _hour,
-      minute: _minute,
-      title: t.eveningCheckIn,
-      body: t.eveningCheckInBody,
-    );
   }
 
-  Future<void> _requestPermission(bool value) async {
-    final t = _LadnaText.of(context);
-    if (!webNotifs.isSupported) {
-      _snack(context, t.notificationsUnsupported);
-      return;
-    }
-
-    if (value) {
-      final ok = await webNotifs.requestPermission();
+  Future<void> _toggleMaster(bool value) async {
+    if (value && !_osPermissionGranted) {
+      final granted = await NotificationService.instance.requestPermission();
       if (!mounted) return;
-      setState(() => _permissionRequested = ok);
-      await _save();
-      _snack(context, ok ? t.notificationsEnabled : t.notificationsDenied);
-    } else {
-      setState(() {
-        _permissionRequested = false;
-        _eveningEnabled = false;
-      });
-      await _save();
-      await _apply();
+      if (!granted) {
+        // Скорее всего уже был отклонён раньше — iOS больше не покажет
+        // системный диалог программно, единственный путь — Настройки.
+        final t = _LadnaText.of(context);
+        _snack(context, t.notificationsDenied);
+        setState(() => _osPermissionGranted = false);
+        return;
+      }
+      setState(() => _osPermissionGranted = true);
     }
+
+    await NotificationPreferences.instance.setMasterEnabled(value);
+    if (!mounted) return;
+    setState(() {});
+    unawaited(resyncAllReminders());
   }
 
-  Future<void> _toggleEvening(bool value) async {
-    if (value && !_permissionRequested) {
-      await _requestPermission(true);
-      if (!mounted || !_permissionRequested) return;
-    }
-    setState(() => _eveningEnabled = value);
-    await _save();
-    await _apply();
+  Future<void> _toggleGoals(bool value) async {
+    await NotificationPreferences.instance.setGoalsEnabled(value);
+    if (!mounted) return;
+    setState(() {});
+    unawaited(syncGoalReminders(DateTime.now()));
   }
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
+  Future<void> _pickGoalsMinutes() async {
+    final t = _LadnaText.of(context);
+    final current = NotificationPreferences.instance.goalsMinutesBefore;
+    final selected = await showModalBottomSheet<int>(
       context: context,
-      initialTime: TimeOfDay(hour: _hour, minute: _minute),
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _MinutesBeforeSheet(
+        title: t.notificationsMinutesPickerTitle,
+        current: current,
+      ),
     );
+    if (selected == null) return;
+    await NotificationPreferences.instance.setGoalsMinutesBefore(selected);
+    if (!mounted) return;
+    setState(() {});
+    unawaited(syncGoalReminders(DateTime.now()));
+  }
+
+  Future<void> _toggleReflection(bool value) async {
+    await NotificationPreferences.instance.setReflectionEnabled(value);
+    if (!mounted) return;
+    setState(() {});
+    unawaited(syncEveningReflectionReminder());
+  }
+
+  Future<void> _pickReflectionTime() async {
+    final current = NotificationPreferences.instance.reflectionTime;
+    final picked = await showTimePicker(context: context, initialTime: current);
     if (picked == null) return;
-    setState(() {
-      _hour = picked.hour;
-      _minute = picked.minute;
-    });
-    await _save();
-    await _apply();
+    await NotificationPreferences.instance.setReflectionTime(picked);
+    if (!mounted) return;
+    setState(() {});
+    unawaited(syncEveningReflectionReminder());
+  }
+
+  Future<void> _toggleHabits(bool value) async {
+    await NotificationPreferences.instance.setHabitsEnabled(value);
+    if (!mounted) return;
+    setState(() {});
+    unawaited(syncHabitsReminder(DateTime.now()));
+  }
+
+  Future<void> _pickHabitsTime() async {
+    final current = NotificationPreferences.instance.habitsTime;
+    final picked = await showTimePicker(context: context, initialTime: current);
+    if (picked == null) return;
+    await NotificationPreferences.instance.setHabitsTime(picked);
+    if (!mounted) return;
+    setState(() {});
+    unawaited(syncHabitsReminder(DateTime.now()));
   }
 
   @override
   Widget build(BuildContext context) {
     final t = _LadnaText.of(context);
+    final prefs = NotificationPreferences.instance;
 
     if (_loading) {
-      return const _SettingsCard(
-        rows: [
-          _LoadingSettingsRow(),
-        ],
-      );
+      return const _SettingsCard(rows: [_LoadingSettingsRow()]);
     }
+
+    final masterOn = _osPermissionGranted && prefs.masterEnabled;
 
     return _SettingsCard(
       rows: [
         _SwitchSettingsRow(
           icon: Icons.notifications_none_rounded,
           iconBg: const Color(0x1A16B8A8),
-          title: t.allowNotifications,
-          subtitle: t.notificationsSubtitle,
-          value: _permissionRequested,
-          onChanged: _requestPermission,
+          title: t.notifications,
+          subtitle: !_osPermissionGranted
+              ? t.notificationsSystemDisabledHint
+              : (masterOn ? t.notificationsMasterSubtitleOn : t.notificationsMasterSubtitleOff),
+          value: masterOn,
+          onChanged: _toggleMaster,
+          onTap: !_osPermissionGranted ? _openSystemSettings : null,
         ),
-        _SwitchSettingsRow(
-          icon: Icons.nightlight_round,
-          iconBg: _LadnaColors.primarySoft,
-          title: t.eveningCheckIn,
-          subtitle: t.everyDayAt(_time),
-          value: _eveningEnabled,
-          onChanged: _toggleEvening,
-          onTap: _pickTime,
-        ),
+        if (masterOn) ...[
+          _SwitchSettingsRow(
+            icon: Icons.flag_outlined,
+            iconBg: _LadnaColors.primarySoft,
+            title: t.notificationsGoalsTitle,
+            subtitle: t.notificationsGoalsSubtitle(prefs.goalsMinutesBefore),
+            value: prefs.goalsEnabled,
+            onChanged: _toggleGoals,
+            onTap: _pickGoalsMinutes,
+          ),
+          _SwitchSettingsRow(
+            icon: Icons.nightlight_round,
+            iconBg: const Color(0x1A825ABE),
+            title: t.notificationsReflectionTitle,
+            subtitle: t.everyDayAt(_formatTime(prefs.reflectionTime)),
+            value: prefs.reflectionEnabled,
+            onChanged: _toggleReflection,
+            onTap: _pickReflectionTime,
+          ),
+          _SwitchSettingsRow(
+            icon: Icons.check_circle_outline_rounded,
+            iconBg: const Color(0x1A3B6FD4),
+            title: t.notificationsHabitsTitle,
+            subtitle: t.everyDayAt(_formatTime(prefs.habitsTime)),
+            value: prefs.habitsEnabled,
+            onChanged: _toggleHabits,
+            onTap: _pickHabitsTime,
+          ),
+        ],
       ],
+    );
+  }
+}
+
+/// Простая шторка выбора "за сколько минут напоминать" — фиксированный
+/// набор вариантов вместо произвольного числового ввода, ради простоты.
+class _MinutesBeforeSheet extends StatelessWidget {
+  const _MinutesBeforeSheet({required this.title, required this.current});
+
+  final String title;
+  final int current;
+
+  static const _options = [5, 10, 15, 30, 60];
+
+  @override
+  Widget build(BuildContext context) {
+    return NestSheet(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: _ladnaRowTitle(context)),
+            const SizedBox(height: 8),
+            for (final minutes in _options)
+              RadioListTile<int>(
+                contentPadding: EdgeInsets.zero,
+                title: Text('$minutes мин'),
+                value: minutes,
+                groupValue: current,
+                activeColor: _LadnaColors.primary,
+                onChanged: (v) => Navigator.of(context).pop(v),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -947,10 +1036,10 @@ class _LifeBalanceWheel extends StatelessWidget {
                         Text(
                           '${total.round()}%',
                           style: TextStyle(
-                            fontFamily: 'PlayfairDisplay',
                             fontSize: 32,
                             height: 1,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                             color: total.round() == 100 ? _LadnaColors.lime : _ladnaText(context),
                           ),
                         ),
@@ -3206,6 +3295,15 @@ class _LadnaText {
   String get notificationsUnsupported => pick({'ru': 'Уведомления в этой среде не поддерживаются.', 'en': 'Notifications are not supported here.'});
   String get notificationsEnabled => pick({'ru': 'Уведомления разрешены.', 'en': 'Notifications enabled.'});
   String get notificationsDenied => pick({'ru': 'Разрешение на уведомления не получено.', 'en': 'Notification permission was not granted.'});
+  String get notificationsMasterSubtitleOn => pick({'ru': 'Включены', 'en': 'Enabled', 'de': 'Aktiviert', 'fr': 'Activées', 'es': 'Activadas', 'tr': 'Etkin'});
+  String get notificationsMasterSubtitleOff => pick({'ru': 'Выключены', 'en': 'Disabled', 'de': 'Deaktiviert', 'fr': 'Désactivées', 'es': 'Desactivadas', 'tr': 'Kapalı'});
+  String get notificationsSystemDisabledHint => pick({'ru': 'Отключены в системных настройках iOS', 'en': 'Disabled in iOS system settings', 'de': 'In den iOS-Systemeinstellungen deaktiviert', 'fr': 'Désactivées dans les réglages iOS', 'es': 'Desactivadas en los ajustes del sistema iOS', 'tr': 'iOS sistem ayarlarında kapalı'});
+  String get openSystemSettings => pick({'ru': 'Открыть настройки iOS', 'en': 'Open iOS Settings', 'de': 'iOS-Einstellungen öffnen', 'fr': 'Ouvrir les réglages iOS', 'es': 'Abrir ajustes de iOS', 'tr': 'iOS Ayarlarını Aç'});
+  String get notificationsGoalsTitle => pick({'ru': 'Напоминания о целях', 'en': 'Goal reminders', 'de': 'Zielerinnerungen', 'fr': 'Rappels d\'objectifs', 'es': 'Recordatorios de metas', 'tr': 'Hedef hatırlatmaları'});
+  String notificationsGoalsSubtitle(int minutes) => pick({'ru': 'За $minutes мин до начала', 'en': '$minutes min before start', 'de': '$minutes Min. vorher', 'fr': '$minutes min avant le début', 'es': '$minutes min antes', 'tr': 'Başlamadan $minutes dk önce'});
+  String get notificationsReflectionTitle => pick({'ru': 'Вечерняя рефлексия', 'en': 'Evening reflection', 'de': 'Abendreflexion', 'fr': 'Réflexion du soir', 'es': 'Reflexión nocturna', 'tr': 'Akşam yansıması'});
+  String get notificationsHabitsTitle => pick({'ru': 'Напоминания о привычках', 'en': 'Habit reminders', 'de': 'Gewohnheitserinnerungen', 'fr': 'Rappels d\'habitudes', 'es': 'Recordatorios de hábitos', 'tr': 'Alışkanlık hatırlatmaları'});
+  String get notificationsMinutesPickerTitle => pick({'ru': 'За сколько минут напоминать', 'en': 'How many minutes before', 'de': 'Wie viele Minuten vorher', 'fr': 'Combien de minutes avant', 'es': 'Cuántos minutos antes', 'tr': 'Kaç dakika önce'});
   String get app => pick({'ru': 'Приложение', 'en': 'App', 'de': 'App', 'fr': 'Application', 'es': 'Aplicación', 'tr': 'Uygulama'});
   String get language => pick({'ru': 'Язык', 'en': 'Language', 'de': 'Sprache', 'fr': 'Langue', 'es': 'Idioma', 'tr': 'Dil'});
   String get system => pick({'ru': 'Системный', 'en': 'System', 'de': 'System', 'fr': 'Système', 'es': 'Sistema', 'tr': 'Sistem'});

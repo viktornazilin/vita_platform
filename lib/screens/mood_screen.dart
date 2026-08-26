@@ -10,6 +10,7 @@ import '../models/home_model.dart';
 import '../widgets/nest/nest_background.dart';
 import '../widgets/nest/nest_card.dart';
 import '../widgets/nest/nest_section_title.dart';
+import '../widgets/nest/nest_page_header.dart';
 import '../widgets/home/health_tracker_card.dart';
 import '../widgets/home/hobby_tracker_card.dart';
 import '../widgets/mood/mental_week_card.dart';
@@ -336,7 +337,7 @@ class _PersonalViewState extends State<_PersonalView> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: _LadnaHeader(
+                child: NestPageHeader(
                   title: _t(
                     context,
                     ru: 'Личное',
@@ -902,72 +903,6 @@ class _MoodHistoryRow extends StatelessWidget {
   }
 }
 
-class _LadnaHeader extends StatelessWidget {
-  final String title;
-  final VoidCallback onBack;
-
-  const _LadnaHeader({
-    required this.title,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_ladnaAdaptive(context, const Color(0xFFF5F3FA), const Color(0xFF100C1E)), _ladnaAdaptive(context, const Color(0xFFE2DDEF), const Color(0x1F6B54C0))],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _ladnaAdaptive(context, const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(_ladnaDarkMode(context) ? 0.30 : 0.045),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          InkWell(
-            onTap: onBack,
-            borderRadius: BorderRadius.circular(999),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: _ladnaAdaptive(context, const Color(0xFFEAE6F5), const Color(0xFF1C1630)),
-                shape: BoxShape.circle,
-                border: Border.all(color: _ladnaAdaptive(context, const Color(0xFFE0DCF0), const Color(0x2E6B54C0))),
-              ),
-              child: const Icon(
-                Icons.chevron_left_rounded,
-                color: Color(0xFF555268),
-              ),
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontFamily: 'PlayfairDisplay',
-                fontSize: 22,
-                height: 1.05,
-                fontWeight: FontWeight.w700,
-                color: _ladnaAdaptive(context, const Color(0xFF160E38), const Color(0xFFF0EEFF)),
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _LadnaTabs extends StatelessWidget {
   final int selectedIndex;
   final List<String> labels;
@@ -1101,4 +1036,3 @@ class _MoodBubble extends StatelessWidget {
     );
   }
 }
-

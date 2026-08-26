@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -243,14 +245,116 @@ class ProfileModel extends ChangeNotifier {
     }
   }
 
+  /// Раньше: await update -> await load() (полная перезагрузка профиля) —
+  /// каждое изменение (имя, возраст, язык и т.д.) занимало ~секунду видимой
+  /// задержки.
+  /// Теперь: значения полей меняются локально сразу же, notifyListeners()
+  /// вызывается мгновенно, а запрос в Supabase уходит в фоне. Если сервер
+  /// вернёт ошибку — значения откатываются к прежним и выставляется `error`.
   Future<String?> savePatch(Map<String, dynamic> patch) async {
+    final previous = _applyPatchLocally(patch);
+    notifyListeners();
+
+    unawaited(_savePatchOnServer(patch: patch, previous: previous));
+    return null;
+  }
+
+  Future<void> _savePatchOnServer({
+    required Map<String, dynamic> patch,
+    required Map<String, dynamic> previous,
+  }) async {
     try {
       await _sb.from('users').update(patch).eq('id', _uid);
-      await load();
-      return null;
     } catch (e) {
-      return 'Не удалось сохранить изменения: $e';
+      _applyPatchLocally(previous);
+      error = 'Не удалось сохранить изменения: $e';
+      notifyListeners();
     }
+  }
+
+  /// Применяет патч к соответствующим локальным полям и возвращает мапу с
+  /// прежними значениями (для отката при ошибке).
+  Map<String, dynamic> _applyPatchLocally(Map<String, dynamic> patch) {
+    final previous = <String, dynamic>{};
+
+    for (final key in patch.keys) {
+      switch (key) {
+        case 'name':
+          previous['name'] = name;
+          name = patch['name'] as String?;
+          break;
+        case 'age':
+          previous['age'] = age;
+          age = patch['age'] as int?;
+          break;
+        case 'archetype':
+          previous['archetype'] = archetype;
+          archetype = patch['archetype'] as String?;
+          break;
+        case 'has_seen_intro':
+          previous['has_seen_intro'] = hasSeenIntro;
+          hasSeenIntro = (patch['has_seen_intro'] as bool?) ?? hasSeenIntro;
+          break;
+        case 'sleep':
+          previous['sleep'] = sleep;
+          sleep = patch['sleep'] as String?;
+          break;
+        case 'activity':
+          previous['activity'] = activity;
+          activity = patch['activity'] as String?;
+          break;
+        case 'energy':
+          previous['energy'] = energy;
+          energy = patch['energy'] as int?;
+          break;
+        case 'stress':
+          previous['stress'] = stress;
+          stress = patch['stress'] as String?;
+          break;
+        case 'finance_satisfaction':
+          previous['finance_satisfaction'] = financeSatisfaction;
+          financeSatisfaction = patch['finance_satisfaction'] as int?;
+          break;
+        case 'has_completed_questionnaire':
+          previous['has_completed_questionnaire'] = hasCompletedQuestionnaire;
+          hasCompletedQuestionnaire =
+              (patch['has_completed_questionnaire'] as bool?) ??
+                  hasCompletedQuestionnaire;
+          break;
+        case 'life_blocks':
+          previous['life_blocks'] = lifeBlocks;
+          lifeBlocks = _normalizeLifeBlocks(patch['life_blocks']);
+          break;
+        case 'priorities':
+          previous['priorities'] = priorities;
+          priorities = ((patch['priorities'] as List?) ?? [])
+              .map((e) => '$e')
+              .toList();
+          break;
+        case 'target_hours':
+          previous['target_hours'] = targetHours;
+          targetHours = (patch['target_hours'] as num?)?.toDouble() ?? targetHours;
+          break;
+        case 'preferred_language':
+          previous['preferred_language'] = preferredLanguage;
+          preferredLanguage = patch['preferred_language'] as String?;
+          break;
+        case 'dreams_by_block':
+          previous['dreams_by_block'] = dreamsByBlock;
+          dreamsByBlock = _jsonToStringMap(patch['dreams_by_block']);
+          break;
+        case 'goals_by_block':
+          previous['goals_by_block'] = goalsByBlock;
+          goalsByBlock = _jsonToStringMap(patch['goals_by_block']);
+          break;
+        default:
+          // Неизвестный ключ патча — просто отправится на сервер как есть,
+          // без локального отражения (нет соответствующего поля в модели).
+          break;
+      }
+    }
+
+    return previous;
   }
 
   Future<String?> setName(String? v) => savePatch({'name': v});
@@ -289,6 +393,10 @@ class ProfileModel extends ChangeNotifier {
 
   bool deletingAccount = false;
 
+  // Удаление аккаунта — необратимое и критичное действие, поэтому здесь
+  // намеренно оставлен блокирующий спиннер (deletingAccount), а не
+  // optimistic update: пользователь должен видеть, что операция реально
+  // идёт, а не решить, что можно закрыть экран раньше времени.
   Future<String?> deleteAccount() async {
     if (deletingAccount) return null;
     deletingAccount = true;

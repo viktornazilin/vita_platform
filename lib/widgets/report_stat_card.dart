@@ -1,5 +1,6 @@
 // lib/widgets/report_stat_card.dart
 import 'package:flutter/material.dart';
+import 'package:nest_app/controllers/theme_controller.dart';
 
 class ReportStatCard extends StatelessWidget {
   final String title;
@@ -13,24 +14,25 @@ class ReportStatCard extends StatelessWidget {
     required this.icon,
   });
 
-  static const _surface = Color(0xFFFAFAFE);
-  static const _border = Color(0xFFE0DCF0);
-  static const _primary = Color(0xFF6B54C0);
-  static const _dark = Color(0xFF160E38);
-  static const _muted = Color(0xFF9090A8);
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? ThemeController.kLadnaCardDark : ThemeController.kLadnaCardLight;
+    final border = isDark ? ThemeController.kLadnaBorderDark : ThemeController.kLadnaBorderLight;
+    final dark = isDark ? ThemeController.kLadnaTextDark : ThemeController.kLadnaTextLight;
+    final muted = isDark ? const Color(0x99FFFFFF) : ThemeController.kLadnaMuted;
+    const primary = ThemeController.kLadnaPrimary;
+
     return Container(
       width: 200,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _surface,
+        color: surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1812).withOpacity(.07),
+            color: Colors.black.withOpacity(isDark ? 0.24 : 0.07),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -42,11 +44,11 @@ class ReportStatCard extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: _primary.withOpacity(.12),
+              color: primary.withOpacity(.12),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _primary.withOpacity(.18)),
+              border: Border.all(color: primary.withOpacity(.18)),
             ),
-            child: Icon(icon, color: _primary, size: 20),
+            child: const Icon(Icons.insights_rounded, color: primary, size: 20),
           ),
           const SizedBox(width: 11),
           Expanded(
@@ -58,13 +60,12 @@ class ReportStatCard extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'PlayfairDisplay',
-                    fontFamilyFallback: ['Playfair Display', 'Georgia'],
+                  style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: _dark,
+                    fontWeight: FontWeight.w800,
+                    color: dark,
                     height: 1,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -73,9 +74,9 @@ class ReportStatCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: _muted,
+                    color: muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

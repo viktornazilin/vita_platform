@@ -1,5 +1,6 @@
 // lib/widgets/report_legend.dart
 import 'package:flutter/material.dart';
+import 'package:nest_app/controllers/theme_controller.dart';
 
 class ReportLegend extends StatelessWidget {
   final List<MapEntry<String, num>> entries;
@@ -17,6 +18,12 @@ class ReportLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? ThemeController.kLadnaCardDark : ThemeController.kLadnaCardLight;
+    final border = isDark ? ThemeController.kLadnaBorderDark : ThemeController.kLadnaBorderLight;
+    final text = isDark ? ThemeController.kLadnaTextDark : ThemeController.kLadnaText;
+    final muted = isDark ? const Color(0x99FFFFFF) : ThemeController.kLadnaMuted;
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -28,9 +35,9 @@ class ReportLegend extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAFAFE),
+            color: surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE0DCF0)),
+            border: Border.all(color: border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -39,12 +46,12 @@ class ReportLegend extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 e.key,
-                style: const TextStyle(fontSize: 11, color: Color(0xFF555268), fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 11, color: text, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 7),
               Text(
                 '${valueFormatter(e.value)} · ${pct.toStringAsFixed(0)}%',
-                style: const TextStyle(fontSize: 11, color: Color(0xFF9090A8)),
+                style: TextStyle(fontSize: 11, color: muted),
               ),
             ],
           ),

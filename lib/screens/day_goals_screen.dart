@@ -1,4 +1,5 @@
 // lib/screens/day_goals_screen.dart
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -12,13 +13,17 @@ import '../models/goal.dart';
 import '../models/day_goals_model.dart';
 import '../models/ladna_space.dart';
 import '../services/onboarding_tour_service.dart';
+import '../services/notification_service.dart';
+import '../services/push_notifications_service.dart';
 import '../widgets/add_day_goal_sheet.dart';
 import '../widgets/edit_goal_sheet.dart';
 import '../widgets/import_journal.dart';
 import '../widgets/day_google_calendar_sync_sheet.dart';
 import '../widgets/recurring_goal_sheet.dart' as recurring;
 import '../widgets/nest/nest_background.dart';
+import '../widgets/nest/nest_page_header.dart';
 import '../controllers/theme_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// запуск: flutter run -d chrome --dart-define=VISION_API_KEY=xxxxx
 const String _kVisionApiKey = String.fromEnvironment(
@@ -234,7 +239,11 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
           assignedTo: res.assignedTo,
         );
 
-        await vm.load();
+        // createGoal уже оптимистичен и сам тихо синхронизируется с сервером
+        // в фоне — раньше здесь стоял `await vm.load()`, который делал
+        // повторный сетевой запрос сразу же и мог откатить только что
+        // добавленную цель старыми данными (та же гонка, что чинили в
+        // _toggleComplete и в expenses_screen.dart). Больше не нужен.
 
         if (!mounted) return;
         await Future.delayed(const Duration(milliseconds: 120));
@@ -250,6 +259,56 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
         _snack(l.dayGoalsAddFailed(e.toString()));
       }
     });
+
+    // Показываем один раз за всё время — после того, как человек создал
+    // цель со временем начала, самый естественный момент объяснить, зачем
+    // нужны уведомления (а не абстрактно при первом запуске приложения).
+    unawaited(_maybeShowNotificationSoftAsk());
+  }
+
+  static const _notifSoftAskShownKey = 'notif_soft_ask_shown_v1';
+
+  /// Показывает свой экран "зачем нам уведомления" перед системным диалогом
+  /// iOS — если сразу дёрнуть системный запрос, отклоняют почти всегда, а
+  /// второй раз iOS программно не спросит (только через Настройки). Не
+  /// показываем повторно, если уже показывали хоть раз (независимо от
+  /// ответа) или если разрешение уже выдано.
+  Future<void> _maybeShowNotificationSoftAsk() async {
+    if (!mounted) return;
+    try {
+      if (await NotificationService.instance.hasPermission()) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(_notifSoftAskShownKey) == true) return;
+      await prefs.setBool(_notifSoftAskShownKey, true);
+
+      if (!mounted) return;
+      final wantsEnable = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const _LadnaSheet(
+          child: _NotificationSoftAskSheet(),
+        ),
+      );
+
+      if (wantsEnable == true) {
+        await NotificationService.instance.requestPermission();
+        // На iOS локальные и push-уведомления делят одно системное
+        // разрешение, но регистрация в APNs/FCM (получение device-токена)
+        // — отдельный шаг, который NotificationService (flutter_local_notifications)
+        // не выполняет. Без этого вызова push для активности в пространствах
+        // никогда не заработает — токен просто не появится.
+        if (!kIsWeb) {
+          await PushNotificationsService.instance.requestPermissionAndRegister();
+        }
+      }
+    } catch (_) {
+      // Ненавязчивый экран — любой сбой (например, SharedPreferences
+      // недоступен в приватном режиме браузера на web) тихо игнорируем,
+      // не мешая основному потоку добавления цели.
+    }
   }
 
   Future<void> _openRecurring() async {
@@ -463,15 +522,18 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
 
   Future<void> _toggleComplete(Goal g) async {
     final vm = context.read<DayGoalsModel>();
-    await _withBusy(() async {
-      try {
-        await vm.toggleComplete(g);
-        await vm.load();
-      } catch (e) {
-        final l = AppLocalizations.of(context)!;
-        _snack(l.dayGoalsToggleFailed(e.toString()));
-      }
-    });
+    try {
+      // toggleComplete already updates local state immediately and saves
+      // to the backend in the background (optimistic UI). Calling
+      // vm.load() right after used to re-fetch from the server before that
+      // background save had landed, overwriting the fresh local state with
+      // stale data — that's why the drag only "took" every second time.
+      await vm.toggleComplete(g);
+    } catch (e) {
+      if (!mounted) return;
+      final l = AppLocalizations.of(context)!;
+      _snack(l.dayGoalsToggleFailed(e.toString()));
+    }
   }
 
   Future<void> _openGoogleCalendarSync() async {
@@ -551,8 +613,9 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
                           ),
                           sliver: SliverList(
                             delegate: SliverChildListDelegate([
-                              _TopBar(
-                                date: vm.date,
+                              NestPageHeader(
+                                title: _dgPick(context, ru: 'Задачи на день', en: 'Daily tasks', de: 'Tagesaufgaben', fr: 'Tâches du jour', es: 'Tareas del día', tr: 'Günlük görevler'),
+                                subtitle: _formatHeaderDate(context, vm.date),
                                 onBack: () => Navigator.maybePop(context),
                               ),
                               const SizedBox(height: 16),
@@ -869,86 +932,6 @@ class _LadnaCard extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  final DateTime date;
-  final VoidCallback onBack;
-
-  const _TopBar({
-    required this.date,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _IconGlassButton(
-          icon: Icons.chevron_left_rounded,
-          onTap: onBack,
-        ),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _formatHeaderDate(context, date),
-                style: TextStyle(
-                  color: _LadnaColors.muted(context),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _dgPick(context, ru: 'Задачи на день', en: 'Daily tasks', de: 'Tagesaufgaben', fr: 'Tâches du jour', es: 'Tareas del día', tr: 'Günlük görevler'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: _LadnaColors.text(context),
-                  fontFamily: 'PlayfairDisplay',
-                  fontSize: 22,
-                  height: 1.05,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _IconGlassButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _IconGlassButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: _LadnaColors.softWhite(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _LadnaColors.stroke(context)),
-            boxShadow: _ladnaShadow(context),
-          ),
-          child: Icon(icon, color: _LadnaColors.text(context), size: 28),
-        ),
-      ),
-    );
-  }
-}
 
 class _HeroSummaryCard extends StatelessWidget {
   final int totalGoals;
@@ -1374,8 +1357,7 @@ class _DaySectionCard extends StatelessWidget {
                           color: _LadnaColors.text(context),
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          fontFamily: 'PlayfairDisplay',
-                          letterSpacing: -0.4,
+                          letterSpacing: -0.2,
                         ),
                       ),
                     ),
@@ -1652,6 +1634,9 @@ class _TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Fixed height: every card in a lane is exactly the same size,
+      // no matter how long the title or how many meta pills there are.
+      height: 260,
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
       decoration: BoxDecoration(
         color: done ? null : (_LadnaColors._dark(context) ? const Color(0xFF241C3B) : _LadnaColors.cardWhite(context)),
@@ -1672,102 +1657,80 @@ class _TaskCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      // ClipRect + OverflowBox: if a card's content is ever taller than the
+      // fixed height (e.g. an unusually long title plus many meta pills),
+      // it's clipped instead of throwing a layout overflow error, so the
+      // card size stays perfectly consistent no matter the content.
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minHeight: 0,
+          maxHeight: double.infinity,
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Text(
-                  goal.title,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: _LadnaColors.text(context),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
-                    letterSpacing: -0.3,
-                    decoration: done ? TextDecoration.lineThrough : null,
-                  ),
+              Text(
+                goal.title,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                style: TextStyle(
+                  color: _LadnaColors.text(context),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  height: 1.15,
+                  letterSpacing: -0.3,
+                  decoration: done ? TextDecoration.lineThrough : null,
                 ),
               ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: onToggle,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: done ? const Color(0xFF34C78A) : Colors.transparent,
-                    border: Border.all(
-                      color: done ? const Color(0xFF34C78A) : const Color(0xFFB8B0CF),
-                      width: 2,
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (goal.spaceId != null)
+                    _MetaPill(text: spaceLabels[goal.spaceId!] ?? _dgPick(context, ru: '👥 Пространство', en: '👥 Space', de: '👥 Bereich', fr: '👥 Espace', es: '👥 Espacio', tr: '👥 Alan')),
+                  _MetaPill(text: '🕥 ${_formatGoalTime(goal.startTime)}'),
+                  _MetaPill(text: '⏱ ${_formatHours(context, goal.hours)}'),
+                  if (goal.description.trim().isNotEmpty)
+                    _MetaPill(text: '✦ ${goal.description.trim()}'),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _SpherePill(lifeBlock: goal.lifeBlock, done: done),
+                  if (done)
+                    Text(
+                      _dgPick(context, ru: 'Выполнено', en: 'Completed', de: 'Erledigt', fr: 'Terminé', es: 'Completado', tr: 'Tamamlandı'),
+                      style: TextStyle(
+                        color: Color(0xFF34A475),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    )
+                  else
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _SmallActionButton(icon: Icons.edit_rounded, onTap: onEdit),
+                        const SizedBox(width: 6),
+                        _SmallActionButton(
+                          icon: Icons.delete_outline_rounded,
+                          onTap: onDelete,
+                          danger: true,
+                        ),
+                      ],
                     ),
-                    boxShadow: done
-                        ? const [
-                            BoxShadow(
-                              color: Colors.white,
-                              spreadRadius: -6,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: done
-                      ? Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                      : null,
-                ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (goal.spaceId != null)
-                _MetaPill(text: spaceLabels[goal.spaceId!] ?? _dgPick(context, ru: '👥 Пространство', en: '👥 Space', de: '👥 Bereich', fr: '👥 Espace', es: '👥 Espacio', tr: '👥 Alan')),
-              _MetaPill(text: '🕥 ${_formatGoalTime(goal.startTime)}'),
-              _MetaPill(text: '⏱ ${_formatHours(context, goal.hours)}'),
-              if (goal.description.trim().isNotEmpty)
-                _MetaPill(text: '✦ ${goal.description.trim()}'),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _SpherePill(lifeBlock: goal.lifeBlock, done: done),
-              if (done)
-                Text(
-                  _dgPick(context, ru: 'Выполнено', en: 'Completed', de: 'Erledigt', fr: 'Terminé', es: 'Completado', tr: 'Tamamlandı'),
-                  style: TextStyle(
-                    color: Color(0xFF34A475),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                )
-              else
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _SmallActionButton(icon: Icons.edit_rounded, onTap: onEdit),
-                    const SizedBox(width: 6),
-                    _SmallActionButton(
-                      icon: Icons.delete_outline_rounded,
-                      onTap: onDelete,
-                      danger: true,
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1916,6 +1879,134 @@ class _LadnaSheet extends StatelessWidget {
           ),
           child: child,
         ),
+      ),
+    );
+  }
+}
+
+class _NotificationSoftAskSheet extends StatelessWidget {
+  const _NotificationSoftAskSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(22, 14, 22, bottom + 22),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _LadnaColors.stroke(context),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: _LadnaColors.purpleSoft(context),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              Icons.notifications_active_rounded,
+              color: _LadnaColors.purple(context),
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _dgPick(
+              context,
+              ru: 'Не пропусти ни одной цели',
+              en: 'Never miss a goal',
+              de: 'Verpasse kein Ziel',
+              fr: 'Ne rate aucun objectif',
+              es: 'No te pierdas ninguna meta',
+              tr: 'Hiçbir hedefi kaçırma',
+            ),
+            style: TextStyle(
+              color: _LadnaColors.text(context),
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _dgPick(
+              context,
+              ru: 'Ladna напомнит о цели за 15 минут до начала — прямо как будильник, только для дел.',
+              en: 'Ladna will remind you 15 minutes before a goal starts — like an alarm, but for your tasks.',
+              de: 'Ladna erinnert dich 15 Minuten vor Beginn eines Ziels — wie ein Wecker, nur für Aufgaben.',
+              fr: 'Ladna te rappellera 15 minutes avant le début d\'un objectif — comme une alarme, mais pour tes tâches.',
+              es: 'Ladna te avisará 15 minutos antes de que empiece una meta — como una alarma, pero para tus tareas.',
+              tr: 'Ladna, bir hedef başlamadan 15 dakika önce sana hatırlatacak — bir alarm gibi ama görevlerin için.',
+            ),
+            style: TextStyle(
+              color: _LadnaColors.muted(context),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _LadnaColors.purple(context),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                _dgPick(
+                  context,
+                  ru: 'Включить напоминания',
+                  en: 'Enable reminders',
+                  de: 'Erinnerungen aktivieren',
+                  fr: 'Activer les rappels',
+                  es: 'Activar recordatorios',
+                  tr: 'Hatırlatıcıları etkinleştir',
+                ),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                _dgPick(
+                  context,
+                  ru: 'Не сейчас',
+                  en: 'Not now',
+                  de: 'Nicht jetzt',
+                  fr: 'Pas maintenant',
+                  es: 'Ahora no',
+                  tr: 'Şimdi değil',
+                ),
+                style: TextStyle(
+                  color: _LadnaColors.muted(context),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

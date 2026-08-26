@@ -9,6 +9,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/ai/ai_insight.dart';
 import 'ai_insight_card.dart';
+import 'package:nest_app/widgets/nest/nest_glass_colors.dart';
 
 class AiInsightsSheet extends StatefulWidget {
   const AiInsightsSheet({super.key});
@@ -355,6 +356,7 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final cs = Theme.of(context).colorScheme;
     final t9n = AppLocalizations.of(context);
 
@@ -392,7 +394,7 @@ class _AiInsightsSheetState extends State<AiInsightsSheet> {
                               style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.w900,
-                                    color: const Color(0xFF2E4B5A),
+                                    color: c.text,
                                   ),
                             ),
                             const Spacer(),
@@ -638,15 +640,16 @@ class _NestSheetSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.75),
+            color: c.cardFill,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
+            border: Border.all(color: c.border),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x1A2B5B7A),
@@ -665,11 +668,12 @@ class _NestSheetSurface extends StatelessWidget {
 class _Handle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     return Container(
       width: 42,
       height: 5,
       decoration: BoxDecoration(
-        color: const Color(0xFF2E4B5A).withOpacity(0.18),
+        color: c.text.withOpacity(0.18),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -689,6 +693,7 @@ class _PeriodPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final cs = Theme.of(context).colorScheme;
 
     return InkWell(
@@ -697,9 +702,9 @@ class _PeriodPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4FAFF),
+          color: c.tint,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFFD6E6F5)),
+          border: Border.all(color: c.border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -710,14 +715,14 @@ class _PeriodPill extends StatelessWidget {
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF2E4B5A),
+                color: c.text,
               ),
             ),
             const SizedBox(width: 6),
             Icon(
               Icons.expand_more_rounded,
               size: 18,
-              color: const Color(0xFF2E4B5A).withOpacity(0.7),
+              color: c.text.withOpacity(0.7),
             ),
           ],
         ),
@@ -739,6 +744,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final icon = confirmed ? Icons.refresh_rounded : Icons.play_arrow_rounded;
 
     return InkWell(
@@ -749,8 +755,8 @@ class _ActionButton extends StatelessWidget {
         height: 46,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFFF4FAFF),
-          border: Border.all(color: const Color(0xFFD6E6F5)),
+          color: c.tint,
+          border: Border.all(color: c.border),
         ),
         child: Center(
           child: loading
@@ -759,7 +765,7 @@ class _ActionButton extends StatelessWidget {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Icon(icon, size: 20, color: const Color(0xFF3AA8E6)),
+              : Icon(icon, size: 20, color: c.accent),
         ),
       ),
     );
@@ -798,6 +804,7 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
@@ -810,7 +817,7 @@ class _InfoPill extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFF2E4B5A),
+          color: c.text,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -833,14 +840,15 @@ class _EmptyHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final tt = Theme.of(context).textTheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4FAFF),
+        color: c.tint,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD6E6F5)),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -848,7 +856,7 @@ class _EmptyHint extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.auto_awesome_rounded, color: Color(0xFF3AA8E6)),
+              Icon(Icons.auto_awesome_rounded, color: c.accent),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -858,7 +866,7 @@ class _EmptyHint extends StatelessWidget {
                       title,
                       style: tt.titleSmall?.copyWith(
                         fontWeight: FontWeight.w900,
-                        color: const Color(0xFF2E4B5A),
+                        color: c.text,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -866,7 +874,7 @@ class _EmptyHint extends StatelessWidget {
                       subtitle,
                       style: tt.bodyMedium?.copyWith(
                         height: 1.25,
-                        color: const Color(0xFF2E4B5A).withOpacity(0.70),
+                        color: c.text.withOpacity(0.70),
                       ),
                     ),
                   ],
@@ -897,6 +905,7 @@ class _PeriodPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = NestGlassColors.of(context);
     final t9n = AppLocalizations.of(context);
 
     Widget item(String value, String label, IconData icon) {
@@ -907,25 +916,25 @@ class _PeriodPickerSheet extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF3AA8E6).withOpacity(0.10) : null,
+            color: selected ? c.accent.withOpacity(0.10) : null,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
+            border: Border.all(color: c.border),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: const Color(0xFF3AA8E6)),
+              Icon(icon, size: 18, color: c.accent),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF2E4B5A),
+                    color: c.text,
                   ),
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_rounded, color: Color(0xFF3AA8E6)),
+                Icon(Icons.check_rounded, color: c.accent),
             ],
           ),
         ),
@@ -938,9 +947,9 @@ class _PeriodPickerSheet extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.85),
+            color: c.cardFill,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: const Color(0xFFD6E6F5)),
+            border: Border.all(color: c.border),
           ),
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
           child: Column(
@@ -950,7 +959,7 @@ class _PeriodPickerSheet extends StatelessWidget {
                 width: 42,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2E4B5A).withOpacity(0.18),
+                  color: c.text.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),

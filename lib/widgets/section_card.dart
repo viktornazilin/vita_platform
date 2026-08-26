@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'nest/nest_blur_card.dart';
+import 'nest/nest_glass_colors.dart';
 
 class SectionCard extends StatelessWidget {
   final String title;
@@ -17,6 +18,7 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final c = NestGlassColors.of(context);
 
     return NestBlurCard(
       radius: 26,
@@ -28,14 +30,14 @@ class SectionCard extends StatelessWidget {
             title,
             style: tt.titleMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              color: const Color(0xFF2E4B5A),
+              color: c.text,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
             style: tt.bodySmall?.copyWith(
-              color: const Color(0xFF2E4B5A).withOpacity(0.65),
+              color: c.text.withOpacity(0.65),
               height: 1.2,
             ),
           ),
