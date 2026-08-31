@@ -33,6 +33,12 @@ dependencies:
   flutter_timezone: ^3.0.1
   firebase_core: ^3.8.0
   firebase_messaging: ^15.1.6
+
+  # ✅ Sign in with Apple (нативный флоу) — заменяет старый веб-OAuth редирект
+  sign_in_with_apple: ^6.1.0
+  crypto: ^3.0.5
+  # ✅ authScreenLaunchMode для Google OAuth (чтобы сессия сама закрывалась)
+  url_launcher: ^6.3.1
   
   # ✅ i18n / l10n
   flutter_localizations:
