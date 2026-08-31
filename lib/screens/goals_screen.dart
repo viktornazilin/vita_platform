@@ -1,6 +1,9 @@
 // lib/screens/goals_screen.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../main.dart';
 import '../models/goal.dart';
@@ -431,14 +434,14 @@ class _GoalsViewState extends State<_GoalsView> {
 
 
   Future<void> _deleteUserGoal(UserGoal goal) async {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: _LadnaColors.surface(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(text.deleteGoal, style: _LadnaText.cardTitle(context).copyWith(fontSize: 18)),
-        content: Text(text.deleteGoalQuestion, style: _LadnaText.bodySmall(context)),
+        title: Text(text.goalsScreenDeleteGoal, style: _LadnaText.cardTitle(context).copyWith(fontSize: 18)),
+        content: Text(text.goalsScreenDeleteGoalQuestion, style: _LadnaText.bodySmall(context)),
         actionsPadding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
         actions: [
           TextButton(
@@ -469,7 +472,7 @@ class _GoalsViewState extends State<_GoalsView> {
 
   @override
   Widget build(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     int? observedHomeIndex;
@@ -503,7 +506,7 @@ class _GoalsViewState extends State<_GoalsView> {
                     sliver: SliverList(
                       delegate: SliverChildListDelegate.fixed([
                         NestPageHeader(
-                          title: text.goalsAndTasks,
+                          title: text.goalsScreenGoalsAndTasks,
                           subtitle: _periodTitle(context),
                           onBack: _handleBack,
                         ),
@@ -513,8 +516,8 @@ class _GoalsViewState extends State<_GoalsView> {
                           child: _Segmented<_MainTab>(
                             value: _tab,
                             items: [
-                              _SegmentItem(_MainTab.tasks, text.tasks),
-                              _SegmentItem(_MainTab.goals, text.goals),
+                              _SegmentItem(_MainTab.tasks, text.goalsScreenTasks),
+                              _SegmentItem(_MainTab.goals, text.navGoals),
                             ],
                             onChanged: (v) => setState(() => _tab = v),
                           ),
@@ -537,7 +540,7 @@ class _GoalsViewState extends State<_GoalsView> {
               child: KeyedSubtree(
                 key: _addTourKey,
                 child: _Fab(
-                  label: text.add,
+                  label: text.goalsScreenAdd,
                   onTap: _tab == _MainTab.tasks ? () => _openAddTask(_anchor) : _openAddUserGoal,
                 ),
               ),
@@ -557,7 +560,7 @@ class _GoalsViewState extends State<_GoalsView> {
   }
 
   List<Widget> _buildTasks(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
 
     return [
       Row(
@@ -566,10 +569,10 @@ class _GoalsViewState extends State<_GoalsView> {
             child: _Segmented<_TaskView>(
               value: _taskView,
               items: [
-                _SegmentItem(_TaskView.dashboard, text.dashboard),
-                _SegmentItem(_TaskView.week, text.week),
-                _SegmentItem(_TaskView.month, text.month),
-                _SegmentItem(_TaskView.calendar, text.calendar),
+                _SegmentItem(_TaskView.dashboard, text.goalsScreenDashboard),
+                _SegmentItem(_TaskView.week, text.goalsScreenWeek),
+                _SegmentItem(_TaskView.month, text.goalsScreenMonth),
+                _SegmentItem(_TaskView.calendar, text.goalsScreenCalendar),
               ],
               dense: true,
               onChanged: _setTaskView,
@@ -610,7 +613,7 @@ class _GoalsViewState extends State<_GoalsView> {
   }
 
   List<Widget> _buildTasksDashboard(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final today = DateUtils.dateOnly(DateTime.now());
     final totalGoals = _weekGoals.values.expand((x) => x).toList();
     final done = totalGoals.where((g) => g.isCompleted).length;
@@ -621,14 +624,14 @@ class _GoalsViewState extends State<_GoalsView> {
       KeyedSubtree(
         key: _summaryTourKey,
         child: _WeekSummaryCard(
-          title: text.weekSummary,
+          title: text.goalsScreenWeekSummary,
           value: '${hours.toStringAsFixed(1)} / ${targetHours.toStringAsFixed(0)} ${text.hoursShort}',
-          subtitle: text.completedTasks(done, totalGoals.length),
+          subtitle: text.goalsScreenCompletedTasks(done, totalGoals.length),
           progress: targetHours == 0 ? 0.0 : (hours / targetHours).clamp(0.0, 1.0).toDouble(),
         ),
       ),
       const SizedBox(height: 14),
-      _SectionLabel(text.thisWeek),
+      _SectionLabel(text.goalsScreenThisWeek),
       if (_loadingWeek)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 32),
@@ -653,11 +656,11 @@ class _GoalsViewState extends State<_GoalsView> {
   }
 
   List<Widget> _buildTasksWeek(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final today = DateUtils.dateOnly(DateTime.now());
 
     return [
-      _SectionLabel(text.weekView),
+      _SectionLabel(text.goalsScreenWeekView),
       if (_loadingWeek)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 32),
@@ -679,7 +682,7 @@ class _GoalsViewState extends State<_GoalsView> {
   }
 
   List<Widget> _buildTasksMonth(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final goals = _monthGoals.values.expand((x) => x).toList();
     final done = goals.where((g) => g.isCompleted).length;
     final hours = goals.where((g) => g.isCompleted).fold<double>(0, (s, g) => s + g.spentHours);
@@ -689,11 +692,11 @@ class _GoalsViewState extends State<_GoalsView> {
       _WeekSummaryCard(
         title: MaterialLocalizations.of(context).formatMonthYear(_monthStart),
         value: '${hours.toStringAsFixed(1)} / ${monthTarget.toStringAsFixed(0)} ${text.hoursShort}',
-        subtitle: text.completedTasks(done, goals.length),
+        subtitle: text.goalsScreenCompletedTasks(done, goals.length),
         progress: monthTarget <= 0 ? 0 : (hours / monthTarget).clamp(0.0, 1.0).toDouble(),
       ),
       const SizedBox(height: 14),
-      _SectionLabel(text.monthView),
+      _SectionLabel(text.goalsScreenMonthView),
       if (_loadingMonth)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 32),
@@ -709,10 +712,10 @@ class _GoalsViewState extends State<_GoalsView> {
   }
 
   List<Widget> _buildTasksCalendar(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
 
     return [
-      _SectionLabel('${text.calendar} · ${MaterialLocalizations.of(context).formatMonthYear(_monthStart)}'),
+      _SectionLabel('${text.goalsScreenCalendar} · ${MaterialLocalizations.of(context).formatMonthYear(_monthStart)}'),
       if (_loadingMonth)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 32),
@@ -729,7 +732,7 @@ class _GoalsViewState extends State<_GoalsView> {
   }
 
   List<Widget> _buildGoals(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final model = context.watch<UserGoalsModel>();
     final items = model.items.where((g) {
       if (_horizon == null) return true;
@@ -745,10 +748,10 @@ class _GoalsViewState extends State<_GoalsView> {
       _Segmented<GoalHorizon?>(
         value: _horizon,
         items: [
-          _SegmentItem<GoalHorizon?>(null, text.all),
-          _SegmentItem<GoalHorizon?>(GoalHorizon.tactical, text.upToOneMonth),
-          _SegmentItem<GoalHorizon?>(GoalHorizon.mid, text.upToSixMonths),
-          _SegmentItem<GoalHorizon?>(GoalHorizon.long, text.yearPlus),
+          _SegmentItem<GoalHorizon?>(null, text.goalsScreenAll),
+          _SegmentItem<GoalHorizon?>(GoalHorizon.tactical, text.goalsScreenUpToOneMonth),
+          _SegmentItem<GoalHorizon?>(GoalHorizon.mid, text.goalsScreenUpToSixMonths),
+          _SegmentItem<GoalHorizon?>(GoalHorizon.long, text.goalsScreenYearPlus),
         ],
         dense: true,
         onChanged: (v) => setState(() => _horizon = v),
@@ -764,8 +767,8 @@ class _GoalsViewState extends State<_GoalsView> {
         const SizedBox(height: 12),
         if (items.isEmpty)
           _EmptyCard(
-            title: text.noGoalsYet,
-            subtitle: text.noGoalsYetSub,
+            title: text.goalsScreenNoGoalsYet,
+            subtitle: text.goalsScreenNoGoalsYetSub,
           )
         else
           ...groupedByBlock.entries.expand((entry) {
@@ -891,7 +894,7 @@ class _TaskSpaceFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
 
     return SizedBox(
       height: 36,
@@ -900,13 +903,13 @@ class _TaskSpaceFilterBar extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         children: [
           _TaskSpaceFilterChip(
-            label: text.all,
+            label: text.goalsScreenAll,
             selected: !personalOnly && selectedSpaceId == null,
             onTap: onAll,
           ),
           const SizedBox(width: 8),
           _TaskSpaceFilterChip(
-            label: text.personalTasks,
+            label: text.goalsScreenPersonalTasks,
             selected: personalOnly,
             onTap: onPersonal,
           ),
@@ -1052,7 +1055,7 @@ class _DayRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = MaterialLocalizations.of(context);
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final progress = targetHours <= 0 ? 0.0 : (hours / targetHours).clamp(0.0, 1.0).toDouble();
     final weekday = _weekdayShort(context, date).toUpperCase();
 
@@ -1079,7 +1082,7 @@ class _DayRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isToday ? '$weekday · ${text.todayShort}' : weekday,
+                      isToday ? '$weekday · ${text.goalsScreenTodayShort}' : weekday,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1139,7 +1142,7 @@ class _DayTasksCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final done = goals.where((g) => g.isCompleted).length;
     final hours = goals.where((g) => g.isCompleted).fold<double>(0, (sum, g) => sum + g.spentHours);
 
@@ -1180,8 +1183,8 @@ class _DayTasksCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         goals.isEmpty
-                            ? text.noTasks
-                            : '$done/${goals.length} ${text.completed} · ${hours.toStringAsFixed(1)} ${text.hoursShort}',
+                            ? text.goalsScreenNoTasks
+                            : '$done/${goals.length} ${text.goalsScreenCompleted} · ${hours.toStringAsFixed(1)} ${text.hoursShort}',
                         style: _LadnaText.caption(context),
                       ),
                     ],
@@ -1415,7 +1418,7 @@ class _CalendarGrid extends StatelessWidget {
 
 class _SphereGoalsCard extends StatelessWidget {
   final List<UserGoal> goals;
-  final _GoalsText text;
+  final AppLocalizations text;
 
   const _SphereGoalsCard({required this.goals, required this.text});
 
@@ -1438,14 +1441,14 @@ class _SphereGoalsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(text.bySpheres, style: _LadnaText.cardTitle(context))),
+              Expanded(child: Text(text.goalsScreenBySpheres, style: _LadnaText.cardTitle(context))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: _LadnaColors.card(context),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(text.hide, style: _LadnaText.caption(context)),
+                child: Text(text.goalsScreenHide, style: _LadnaText.caption(context)),
               ),
             ],
           ),
@@ -1464,7 +1467,7 @@ class _SphereGoalsCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(color: _LadnaColors.card(context), borderRadius: BorderRadius.circular(20)),
-                    child: Text(text.goalsCount(entry.value.length), style: _LadnaText.micro(context)),
+                    child: Text(text.goalsScreenGoalsCount(entry.value.length), style: _LadnaText.micro(context)),
                   ),
                 ],
               ),
@@ -1492,7 +1495,7 @@ class _UserGoalTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _blockColor(context, goal.lifeBlock);
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final progress = goal.isCompleted ? 1.0 : _fakeProgress(goal);
 
     return GestureDetector(
@@ -1577,7 +1580,7 @@ class _UserGoalTile extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Text(text.progress, style: _LadnaText.caption(context)),
+                Text(text.goalsScreenProgress, style: _LadnaText.caption(context)),
                 const Spacer(),
                 Text('${(progress * 100).round()}%', style: _LadnaText.caption(context).copyWith(fontWeight: FontWeight.w700)),
               ],
@@ -1688,7 +1691,7 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final blocks = _availableLifeBlocks;
 
     return _Sheet(
@@ -1697,13 +1700,13 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
         children: [
           _SheetHandle(),
           const SizedBox(height: 16),
-          Text(widget.initial == null ? text.newGoal : text.editGoal, style: _LadnaText.sheetTitle(context).copyWith(fontSize: 22)),
+          Text(widget.initial == null ? text.goalsScreenNewGoal : text.goalsScreenEditGoal, style: _LadnaText.sheetTitle(context).copyWith(fontSize: 22)),
           const SizedBox(height: 16),
-          _Input(controller: _title, label: text.title),
+          _Input(controller: _title, label: text.goalsScreenTitle),
           const SizedBox(height: 10),
-          _Input(controller: _description, label: text.description, maxLines: 3),
+          _Input(controller: _description, label: text.goalsScreenDescription, maxLines: 3),
           const SizedBox(height: 14),
-          Text(text.sphere, style: _LadnaText.microUpper(context)),
+          Text(text.goalsScreenSphere, style: _LadnaText.microUpper(context)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -1719,14 +1722,14 @@ class _UserGoalEditorSheetState extends State<_UserGoalEditorSheet> {
             }).toList(),
           ),
           const SizedBox(height: 14),
-          Text(text.horizon, style: _LadnaText.microUpper(context)),
+          Text(text.goalsScreenHorizon, style: _LadnaText.microUpper(context)),
           const SizedBox(height: 8),
           _Segmented<GoalHorizon>(
             value: _horizon,
             items: [
-              _SegmentItem(GoalHorizon.tactical, text.upToOneMonth),
-              _SegmentItem(GoalHorizon.mid, text.upToSixMonths),
-              _SegmentItem(GoalHorizon.long, text.yearPlus),
+              _SegmentItem(GoalHorizon.tactical, text.goalsScreenUpToOneMonth),
+              _SegmentItem(GoalHorizon.mid, text.goalsScreenUpToSixMonths),
+              _SegmentItem(GoalHorizon.long, text.goalsScreenYearPlus),
             ],
             dense: true,
             onChanged: (v) => setState(() => _horizon = v),
@@ -1759,7 +1762,7 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = _GoalsText.of(context);
+    final text = AppLocalizations.of(context)!;
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Container(
@@ -1774,10 +1777,10 @@ class _BottomNav extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _NavItem(icon: Icons.home_rounded, label: text.home, active: active == _BottomItem.home, onTap: () => Navigator.maybePop(context)),
-          _NavItem(icon: Icons.track_changes_rounded, label: text.goals, active: active == _BottomItem.goals, onTap: () {}),
-          _CenterMenu(label: text.menu),
-          _NavItem(icon: Icons.favorite_rounded, label: text.personal, active: active == _BottomItem.personal, onTap: () {}),
-          _NavItem(icon: Icons.bar_chart_rounded, label: text.reports, active: active == _BottomItem.reports, onTap: () {}),
+          _NavItem(icon: Icons.track_changes_rounded, label: text.navGoals, active: active == _BottomItem.goals, onTap: () {}),
+          _CenterMenu(label: text.navMenu),
+          _NavItem(icon: Icons.favorite_rounded, label: text.navPersonal, active: active == _BottomItem.personal, onTap: () {}),
+          _NavItem(icon: Icons.bar_chart_rounded, label: text.navReports, active: active == _BottomItem.reports, onTap: () {}),
         ],
       ),
     );
@@ -2067,24 +2070,11 @@ class _Input extends StatelessWidget {
       );
 }
 
+// Раньше здесь были ручные массивы сокращённых дней недели по языкам — то
+// же самое умеет пакет intl "из коробки", точнее и без дублирования данных.
 String _weekdayShort(BuildContext context, DateTime date) {
-  final l = Localizations.localeOf(context).languageCode;
-  const ru = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-  const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const de = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-  const fr = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-  const es = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const tr = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-
-  final map = {
-    'ru': ru,
-    'en': en,
-    'de': de,
-    'fr': fr,
-    'es': es,
-    'tr': tr,
-  };
-  return (map[l] ?? en)[date.weekday - 1];
+  final locale = Localizations.localeOf(context).languageCode;
+  return DateFormat.E(locale).format(date);
 }
 
 String _normalizeLifeBlock(String value) {
@@ -2195,46 +2185,46 @@ String _normalizeLifeBlock(String value) {
 }
 
 String _lifeBlockLabel(BuildContext context, String key) {
-  final text = _GoalsText.of(context);
+  final text = AppLocalizations.of(context)!;
   switch (_normalizeLifeBlock(key)) {
     case 'health':
-      return text.health;
+      return text.lifeBlockHealth;
     case 'career':
-      return text.career;
+      return text.lifeBlockCareer;
     case 'family':
-      return text.family;
+      return text.lifeBlockFamily;
     case 'finance':
     case 'finances':
-      return text.finance;
+      return text.lifeBlockFinance;
     case 'education':
-      return text.education;
+      return text.lifeBlockEducation;
     case 'hobbies':
-      return text.hobbies;
+      return text.lifeBlockHobbies;
     case 'relationships':
-      return text.relationships;
+      return text.lifeBlockRelations;
     case 'spirituality':
-      return text.spirituality;
+      return text.lifeBlockSpirituality;
     case 'self':
-      return text.selfDevelopment;
+      return text.lifeBlockSelf;
     case 'travel':
-      return text.travel;
+      return text.lifeBlockTravel;
     case 'home':
-      return text.homeBlock;
+      return text.lifeBlockHome;
     case 'general':
-      return text.general;
+      return text.lifeBlockGeneral;
     default:
-      return key.isEmpty ? text.general : key;
+      return key.isEmpty ? text.lifeBlockGeneral : key;
   }
 }
 
-String _horizonLabel(_GoalsText text, GoalHorizon horizon) {
+String _horizonLabel(AppLocalizations text, GoalHorizon horizon) {
   switch (horizon) {
     case GoalHorizon.tactical:
-      return text.upToOneMonth;
+      return text.goalsScreenUpToOneMonth;
     case GoalHorizon.mid:
-      return text.upToSixMonths;
+      return text.goalsScreenUpToSixMonths;
     case GoalHorizon.long:
-      return text.yearPlus;
+      return text.goalsScreenYearPlus;
   }
 }
 
@@ -2377,86 +2367,4 @@ class _LadnaText {
     color: _LadnaColors.muted(context),
     letterSpacing: 1.1,
   );
-}
-
-class _GoalsText {
-  final String code;
-  const _GoalsText(this.code);
-
-  static _GoalsText of(BuildContext context) =>
-      _GoalsText(Localizations.localeOf(context).languageCode);
-
-  String pick(Map<String, String> values) => values[code] ?? values['en'] ?? values.values.first;
-
-  String get goalsAndTasks => pick({'ru':'Цели и задачи','en':'Goals & Tasks','de':'Ziele & Aufgaben','fr':'Objectifs et tâches','es':'Metas y tareas','tr':'Hedefler ve görevler'});
-  String get tasks => pick({'ru':'Задачи','en':'Tasks','de':'Aufgaben','fr':'Tâches','es':'Tareas','tr':'Görevler'});
-  String get goals => pick({'ru':'Цели','en':'Goals','de':'Ziele','fr':'Objectifs','es':'Metas','tr':'Hedefler'});
-  String get dashboard => pick({'ru':'Дашборд','en':'Dashboard','de':'Dashboard','fr':'Tableau','es':'Panel','tr':'Panel'});
-  String get week => pick({'ru':'Неделя','en':'Week','de':'Woche','fr':'Semaine','es':'Semana','tr':'Hafta'});
-  String get month => pick({'ru':'Месяц','en':'Month','de':'Monat','fr':'Mois','es':'Mes','tr':'Ay'});
-  String get calendar => pick({'ru':'Календарь','en':'Calendar','de':'Kalender','fr':'Calendrier','es':'Calendario','tr':'Takvim'});
-  String get weekView => pick({'ru':'Неделя','en':'Week view','de':'Wochenansicht','fr':'Vue semaine','es':'Vista semanal','tr':'Hafta görünümü'});
-  String get monthView => pick({'ru':'Дни месяца','en':'Month days','de':'Monatstage','fr':'Jours du mois','es':'Días del mes','tr':'Ay günleri'});
-  String get noTasks => pick({'ru':'Нет задач','en':'No tasks','de':'Keine Aufgaben','fr':'Aucune tâche','es':'Sin tareas','tr':'Görev yok'});
-  String get completed => pick({'ru':'выполнено','en':'completed','de':'erledigt','fr':'terminé','es':'completado','tr':'tamamlandı'});
-  String get weekSummary => pick({'ru':'Итог недели','en':'Week summary','de':'Wochenbilanz','fr':'Bilan de la semaine','es':'Resumen semanal','tr':'Hafta özeti'});
-  String get hoursShort => pick({'ru':'ч','en':'h','de':'Std.','fr':'h','es':'h','tr':'s'});
-  String get thisWeek => pick({'ru':'Эта неделя','en':'This week','de':'Diese Woche','fr':'Cette semaine','es':'Esta semana','tr':'Bu hafta'});
-  String get todayShort => pick({'ru':'сег','en':'today','de':'heute','fr':'auj.','es':'hoy','tr':'bugün'});
-  String get all => pick({'ru':'Все','en':'All','de':'Alle','fr':'Tous','es':'Todo','tr':'Tümü'});
-  String get personalTasks => pick({'ru':'Личные','en':'Personal','de':'Persönlich','fr':'Personnel','es':'Personal','tr':'Kişisel'});
-  String get upToOneMonth => pick({'ru':'До 1 мес','en':'Up to 1 mo','de':'Bis 1 Mon.','fr':'Jusq. 1 mois','es':'Hasta 1 mes','tr':'1 aya kadar'});
-  String get upToSixMonths => pick({'ru':'До 6 мес','en':'Up to 6 mo','de':'Bis 6 Mon.','fr':'Jusq. 6 mois','es':'Hasta 6 meses','tr':'6 aya kadar'});
-  String get yearPlus => pick({'ru':'На год+','en':'Year+','de':'1 Jahr+','fr':'1 an+','es':'Año+','tr':'1 yıl+'});
-  String get bySpheres => pick({'ru':'По сферам','en':'By spheres','de':'Nach Bereichen','fr':'Par domaines','es':'Por áreas','tr':'Alanlara göre'});
-  String get hide => pick({'ru':'','en':'','de':'','fr':'','es':'','tr':''});
-  String get progress => pick({'ru':'Прогресс','en':'Progress','de':'Fortschritt','fr':'Progrès','es':'Progreso','tr':'İlerleme'});
-  String get add => pick({'ru':'Добавить','en':'Add','de':'Hinzufügen','fr':'Ajouter','es':'Añadir','tr':'Ekle'});
-  String get home => pick({'ru':'Главная','en':'Home','de':'Start','fr':'Accueil','es':'Inicio','tr':'Ana'});
-  String get menu => pick({'ru':'Меню','en':'Menu','de':'Menü','fr':'Menu','es':'Menú','tr':'Menü'});
-  String get personal => pick({'ru':'Личное','en':'Personal','de':'Persönlich','fr':'Personnel','es':'Personal','tr':'Kişisel'});
-  String get reports => pick({'ru':'Отчёты','en':'Reports','de':'Berichte','fr':'Rapports','es':'Informes','tr':'Raporlar'});
-  String get health => pick({'ru':'Здоровье','en':'Health','de':'Gesundheit','fr':'Santé','es':'Salud','tr':'Sağlık'});
-  String get career => pick({'ru':'Карьера','en':'Career','de':'Karriere','fr':'Carrière','es':'Carrera','tr':'Kariyer'});
-  String get family => pick({'ru':'Дом и быт','en':'Household','de':'Haushalt','fr':'Foyer','es':'Hogar','tr':'Ev ve yaşam'});
-  String get finance => pick({'ru':'Финансы','en':'Finance','de':'Finanzen','fr':'Finance','es':'Finanzas','tr':'Finans'});
-  String get education => pick({'ru':'Образование','en':'Education','de':'Bildung','fr':'Éducation','es':'Educación','tr':'Eğitim'});
-  String get hobbies => pick({'ru':'Хобби','en':'Hobbies','de':'Hobbys','fr':'Loisirs','es':'Aficiones','tr':'Hobiler'});
-  String get relationships => pick({'ru':'Отношения','en':'Relationships','de':'Beziehungen','fr':'Relations','es':'Relaciones','tr':'İlişkiler'});
-  String get spirituality => pick({'ru':'Духовность','en':'Spirituality','de':'Spiritualität','fr':'Spiritualité','es':'Espiritualidad','tr':'Maneviyat'});
-  String get selfDevelopment => pick({'ru':'Саморазвитие','en':'Self-development','de':'Selbstentwicklung','fr':'Développement personnel','es':'Desarrollo personal','tr':'Kişisel gelişim'});
-  String get travel => pick({'ru':'Путешествия','en':'Travel','de':'Reisen','fr':'Voyages','es':'Viajes','tr':'Seyahat'});
-  String get homeBlock => pick({'ru':'Дом','en':'Home','de':'Zuhause','fr':'Maison','es':'Hogar','tr':'Ev'});
-  String get general => pick({'ru':'Общее','en':'General','de':'Allgemein','fr':'Général','es':'General','tr':'Genel'});
-  String get noGoalsYet => pick({'ru':'Целей пока нет','en':'No goals yet','de':'Noch keine Ziele','fr':'Aucun objectif','es':'Sin metas todavía','tr':'Henüz hedef yok'});
-  String get noGoalsYetSub => pick({'ru':'Добавь первую цель через кнопку ниже.','en':'Add your first goal with the button below.','de':'Füge unten dein erstes Ziel hinzu.','fr':'Ajoute ton premier objectif avec le bouton ci-dessous.','es':'Añade tu primera meta con el botón inferior.','tr':'Aşağıdaki düğmeyle ilk hedefini ekle.'});
-  String get newGoal => pick({'ru':'Новая цель','en':'New goal','de':'Neues Ziel','fr':'Nouvel objectif','es':'Nueva meta','tr':'Yeni hedef'});
-  String get editGoal => pick({'ru':'Редактировать цель','en':'Edit goal','de':'Ziel bearbeiten','fr':'Modifier l’objectif','es':'Editar meta','tr':'Hedefi düzenle'});
-  String get title => pick({'ru':'Название','en':'Title','de':'Titel','fr':'Titre','es':'Título','tr':'Başlık'});
-  String get description => pick({'ru':'Описание','en':'Description','de':'Beschreibung','fr':'Description','es':'Descripción','tr':'Açıklama'});
-  String get sphere => pick({'ru':'Сфера','en':'Sphere','de':'Bereich','fr':'Domaine','es':'Área','tr':'Alan'});
-  String get horizon => pick({'ru':'Горизонт','en':'Horizon','de':'Horizont','fr':'Horizon','es':'Horizonte','tr':'Ufuk'});
-  String get save => pick({'ru':'Сохранить','en':'Save','de':'Speichern','fr':'Enregistrer','es':'Guardar','tr':'Kaydet'});
-  String get deleteGoal => pick({'ru':'Удалить цель','en':'Delete goal','de':'Ziel löschen','fr':'Supprimer l’objectif','es':'Eliminar meta','tr':'Hedefi sil'});
-  String get deleteGoalQuestion => pick({'ru':'Эта цель будет удалена. Связанные ежедневные задачи останутся без связи с большой целью.','en':'This goal will be deleted. Related daily tasks will stay, but without a big-goal link.','de':'Dieses Ziel wird gelöscht. Verknüpfte Tagesaufgaben bleiben ohne Ziel-Verknüpfung erhalten.','fr':'Cet objectif sera supprimé. Les tâches quotidiennes liées resteront sans lien avec un grand objectif.','es':'Esta meta se eliminará. Las tareas diarias relacionadas quedarán sin vínculo con una meta grande.','tr':'Bu hedef silinecek. İlgili günlük görevler kalır, ancak büyük hedef bağlantısı olmadan.'});
-  String get cancel => pick({'ru':'Отмена','en':'Cancel','de':'Abbrechen','fr':'Annuler','es':'Cancelar','tr':'İptal'});
-  String get delete => pick({'ru':'Удалить','en':'Delete','de':'Löschen','fr':'Supprimer','es':'Eliminar','tr':'Sil'});
-
-  String completedTasks(int done, int total) => pick({
-    'ru':'$done задач выполнено из $total',
-    'en':'$done tasks completed out of $total',
-    'de':'$done von $total Aufgaben erledigt',
-    'fr':'$done tâches terminées sur $total',
-    'es':'$done tareas completadas de $total',
-    'tr':'$total görevden $done tamamlandı',
-  });
-
-  String goalsCount(int n) => pick({
-    'ru':'$n цели',
-    'en':'$n goals',
-    'de':'$n Ziele',
-    'fr':'$n objectifs',
-    'es':'$n metas',
-    'tr':'$n hedef',
-  });
 }

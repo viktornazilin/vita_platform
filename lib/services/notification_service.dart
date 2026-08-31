@@ -188,7 +188,23 @@ class NotificationService {
     final now = DateTime.now();
     if (fireAt.isBefore(now)) return;
 
-    final tzFireAt = tz.TZDateTime.from(fireAt, tz.local);
+    // TZDateTime.from() сохраняет АБСОЛЮТНЫЙ момент времени и просто
+    // переименовывает его в нужный часовой пояс. Это ломается, если исходный
+    // DateTime был создан как "наивное" время (например, Goal.startTime
+    // хранится через DateTime.utc(...), где числа часов/минут на самом деле
+    // означают локальное время пользователя, а не настоящий UTC) — тогда
+    // результат сдвигается на разницу поясов. Строим TZDateTime напрямую из
+    // календарных полей (год/месяц/день/час/минута) — так они трактуются
+    // как локальное время в tz.local без какого-либо пересчёта инстанта.
+    final tzFireAt = tz.TZDateTime(
+      tz.local,
+      fireAt.year,
+      fireAt.month,
+      fireAt.day,
+      fireAt.hour,
+      fireAt.minute,
+      fireAt.second,
+    );
     final id = goalNotificationId(goalId);
 
     await _plugin.zonedSchedule(
@@ -292,7 +308,23 @@ class NotificationService {
         day.year, day.month, day.day, effectiveTime.hour, effectiveTime.minute);
     if (fireAt.isBefore(DateTime.now())) return;
 
-    final tzFireAt = tz.TZDateTime.from(fireAt, tz.local);
+    // TZDateTime.from() сохраняет АБСОЛЮТНЫЙ момент времени и просто
+    // переименовывает его в нужный часовой пояс. Это ломается, если исходный
+    // DateTime был создан как "наивное" время (например, Goal.startTime
+    // хранится через DateTime.utc(...), где числа часов/минут на самом деле
+    // означают локальное время пользователя, а не настоящий UTC) — тогда
+    // результат сдвигается на разницу поясов. Строим TZDateTime напрямую из
+    // календарных полей (год/месяц/день/час/минута) — так они трактуются
+    // как локальное время в tz.local без какого-либо пересчёта инстанта.
+    final tzFireAt = tz.TZDateTime(
+      tz.local,
+      fireAt.year,
+      fireAt.month,
+      fireAt.day,
+      fireAt.hour,
+      fireAt.minute,
+      fireAt.second,
+    );
 
     await _plugin.zonedSchedule(
       eveningReflectionNotificationId,
@@ -361,7 +393,23 @@ class NotificationService {
         day.year, day.month, day.day, effectiveTime.hour, effectiveTime.minute);
     if (fireAt.isBefore(DateTime.now())) return;
 
-    final tzFireAt = tz.TZDateTime.from(fireAt, tz.local);
+    // TZDateTime.from() сохраняет АБСОЛЮТНЫЙ момент времени и просто
+    // переименовывает его в нужный часовой пояс. Это ломается, если исходный
+    // DateTime был создан как "наивное" время (например, Goal.startTime
+    // хранится через DateTime.utc(...), где числа часов/минут на самом деле
+    // означают локальное время пользователя, а не настоящий UTC) — тогда
+    // результат сдвигается на разницу поясов. Строим TZDateTime напрямую из
+    // календарных полей (год/месяц/день/час/минута) — так они трактуются
+    // как локальное время в tz.local без какого-либо пересчёта инстанта.
+    final tzFireAt = tz.TZDateTime(
+      tz.local,
+      fireAt.year,
+      fireAt.month,
+      fireAt.day,
+      fireAt.hour,
+      fireAt.minute,
+      fireAt.second,
+    );
     final body = pendingCount == 1
         ? 'Осталась 1 невыполненная привычка сегодня'
         : 'Осталось невыполненных привычек сегодня: $pendingCount';
@@ -416,7 +464,23 @@ class NotificationService {
         DateTime(day.year, day.month, day.day, time.hour, time.minute);
     if (fireAt.isBefore(DateTime.now())) return;
 
-    final tzFireAt = tz.TZDateTime.from(fireAt, tz.local);
+    // TZDateTime.from() сохраняет АБСОЛЮТНЫЙ момент времени и просто
+    // переименовывает его в нужный часовой пояс. Это ломается, если исходный
+    // DateTime был создан как "наивное" время (например, Goal.startTime
+    // хранится через DateTime.utc(...), где числа часов/минут на самом деле
+    // означают локальное время пользователя, а не настоящий UTC) — тогда
+    // результат сдвигается на разницу поясов. Строим TZDateTime напрямую из
+    // календарных полей (год/месяц/день/час/минута) — так они трактуются
+    // как локальное время в tz.local без какого-либо пересчёта инстанта.
+    final tzFireAt = tz.TZDateTime(
+      tz.local,
+      fireAt.year,
+      fireAt.month,
+      fireAt.day,
+      fireAt.hour,
+      fireAt.minute,
+      fireAt.second,
+    );
     final id = habitNotificationId(habitId);
 
     await _plugin.zonedSchedule(

@@ -10,6 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:nest_app/l10n/app_localizations.dart';
+
 import '../../controllers/locale_controller.dart';
 import '../../main.dart';
 import '../../models/habits_model.dart';
@@ -46,7 +48,7 @@ String _formatLadnaDate(BuildContext context, DateTime date) {
 }
 
 String _spaceValidityLabel(BuildContext context, LadnaSpace space) {
-  final t = _LadnaText.of(context);
+  final t = AppLocalizations.of(context)!;
   final validUntil = space.validUntil;
   if (validUntil == null) return t.spaceNoDeadline;
   return t.spaceValidUntil(_formatLadnaDate(context, validUntil));
@@ -118,7 +120,7 @@ class _ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<ProfileModel>();
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final name = (model.name?.trim().isNotEmpty == true) ? model.name!.trim() : t.profileFallbackName;
     final email = (model.email?.trim().isNotEmpty == true)
         ? model.email!.trim()
@@ -196,7 +198,7 @@ class _ProfilePage extends StatelessWidget {
   }
 
   Future<void> _editName(BuildContext context, ProfileModel model) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final value = await ProfileUi.promptText(
       context,
       title: t.name,
@@ -210,7 +212,7 @@ class _ProfilePage extends StatelessWidget {
   }
 
   Future<void> _editAge(BuildContext context, ProfileModel model) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final value = await ProfileUi.promptInt(
       context,
       title: t.age,
@@ -224,7 +226,7 @@ class _ProfilePage extends StatelessWidget {
   }
 
   Future<void> _editLifeBlocks(BuildContext context, ProfileModel model) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final value = await ProfileUi.selectLifeBlocksDialog(
       context,
       title: t.lifeSpheres,
@@ -244,7 +246,7 @@ class _SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<ProfileModel>();
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return _LadnaScreen(
       child: Column(
@@ -314,7 +316,7 @@ class _SettingsPage extends StatelessWidget {
   }
 
   Future<void> _editTargetHours(BuildContext context, ProfileModel model) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final value = await ProfileUi.promptDouble(
       context,
       title: t.targetHoursTitle,
@@ -330,7 +332,7 @@ class _SettingsPage extends StatelessWidget {
   }
 
   String _languageLabel(BuildContext context, ProfileModel model) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final code = model.preferredLanguage;
     if (code == null || code.isEmpty) return t.system;
     return switch (code) {
@@ -344,7 +346,7 @@ class _SettingsPage extends StatelessWidget {
   }
 
   Future<void> _openLanguageSheet(BuildContext context, ProfileModel model) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final localeCtl = context.read<LocaleController>();
     final options = <({String label, Locale? locale})>[
       (label: t.system, locale: null),
@@ -392,7 +394,7 @@ class _SettingsPage extends StatelessWidget {
   }
 
   Future<void> _confirmSignOut(BuildContext context) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final ok = await _confirmSheet(
       context,
       title: t.signOut,
@@ -412,7 +414,7 @@ class _SettingsPage extends StatelessWidget {
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context, ProfileModel model) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final ok = await _confirmSheet(
       context,
       title: t.deleteAccount,
@@ -488,7 +490,7 @@ class _NativeNotificationSettingsCardState
       if (!granted) {
         // Скорее всего уже был отклонён раньше — iOS больше не покажет
         // системный диалог программно, единственный путь — Настройки.
-        final t = _LadnaText.of(context);
+        final t = AppLocalizations.of(context)!;
         _snack(context, t.notificationsDenied);
         setState(() => _osPermissionGranted = false);
         return;
@@ -510,7 +512,7 @@ class _NativeNotificationSettingsCardState
   }
 
   Future<void> _pickGoalsMinutes() async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final current = NotificationPreferences.instance.goalsMinutesBefore;
     final selected = await showModalBottomSheet<int>(
       context: context,
@@ -565,7 +567,7 @@ class _NativeNotificationSettingsCardState
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final prefs = NotificationPreferences.instance;
 
     if (_loading) {
@@ -820,7 +822,7 @@ class _LifeBalanceCardState extends State<_LifeBalanceCard> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final t = _LadnaText.of(ctx);
+        final t = AppLocalizations.of(ctx)!;
         return NestSheet(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -900,7 +902,7 @@ class _LifeBalanceCardState extends State<_LifeBalanceCard> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final entries = _values.entries.toList();
 
     return _BaseCard(
@@ -982,7 +984,7 @@ class _LifeBalanceWheel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final total = values.values.fold<double>(0, (sum, v) => sum + v);
     final entries = values.entries.toList();
 
@@ -1241,7 +1243,7 @@ class _HabitsPreviewCard extends StatelessWidget {
   const _HabitsPreviewCard();
 
   Future<(String title, bool isNegative)?> _openHabitEditor(BuildContext context, {dynamic existing}) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final titleCtrl = TextEditingController(text: existing == null ? '' : (existing.title ?? '').toString());
     var isNegative = existing == null ? false : ((existing.isNegative as bool?) ?? false);
 
@@ -1313,7 +1315,7 @@ class _HabitsPreviewCard extends StatelessWidget {
   }
 
   Future<bool> _confirmDelete(BuildContext context, dynamic habit) async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final ok = await showModalBottomSheet<bool>(
       context: context,
       useSafeArea: true,
@@ -1367,7 +1369,7 @@ class _HabitsPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final habits = context.watch<HabitsModel>();
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return _BaseCard(
       padding: const EdgeInsets.all(14),
@@ -1458,7 +1460,7 @@ class _SpacesProfileCardState extends State<_SpacesProfileCard> {
         _invites = (results[1] as List<SpaceInvite>);
       });
     } catch (e) {
-      if (mounted) _snack(context, '${_LadnaText.of(context).spacesLoadFailed}: $e');
+      if (mounted) _snack(context, '${AppLocalizations.of(context)!.spacesLoadFailed}: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1490,9 +1492,9 @@ class _SpacesProfileCardState extends State<_SpacesProfileCard> {
     try {
       await dbRepo.acceptSpaceInvite(invite.id);
       await _load();
-      if (mounted) _snack(context, _LadnaText.of(context).spaceInviteAccepted);
+      if (mounted) _snack(context, AppLocalizations.of(context)!.spaceInviteAccepted);
     } catch (e) {
-      if (mounted) _snack(context, '${_LadnaText.of(context).spaceInviteAcceptFailed}: $e');
+      if (mounted) _snack(context, '${AppLocalizations.of(context)!.spaceInviteAcceptFailed}: $e');
     }
   }
 
@@ -1501,13 +1503,13 @@ class _SpacesProfileCardState extends State<_SpacesProfileCard> {
       await dbRepo.declineSpaceInvite(invite.id);
       await _load();
     } catch (e) {
-      if (mounted) _snack(context, '${_LadnaText.of(context).spaceInviteDeclineFailed}: $e');
+      if (mounted) _snack(context, '${AppLocalizations.of(context)!.spaceInviteDeclineFailed}: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return _BaseCard(
       padding: const EdgeInsets.all(14),
@@ -1565,7 +1567,7 @@ class _SpacesEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1609,7 +1611,7 @@ class _SpaceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final description = (space.description ?? '').trim();
     final validity = _spaceValidityLabel(context, space);
     final subtitle = description.isEmpty ? validity : '$description · $validity';
@@ -1659,7 +1661,7 @@ class _SpaceInviteRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final space = invite.space;
 
     return Container(
@@ -1744,7 +1746,7 @@ class _SpaceDetailsSheetState extends State<_SpaceDetailsSheet> {
       if (!mounted) return;
       setState(() => _members = members);
     } catch (e) {
-      if (mounted) _snack(context, '${_LadnaText.of(context).spaceMembersLoadFailed}: $e');
+      if (mounted) _snack(context, '${AppLocalizations.of(context)!.spaceMembersLoadFailed}: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1773,7 +1775,7 @@ class _SpaceDetailsSheetState extends State<_SpaceDetailsSheet> {
   }
 
   Future<void> _deleteOrLeave() async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final ok = await _confirmSheet(
       context,
       title: _isOwner ? t.deleteSpace : t.leaveSpace,
@@ -1800,7 +1802,7 @@ class _SpaceDetailsSheetState extends State<_SpaceDetailsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return NestSheet(
       child: Padding(
@@ -1895,7 +1897,7 @@ class _SpaceMemberRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final currentUid = Supabase.instance.client.auth.currentUser?.id;
     final isCurrentUser = currentUid != null && currentUid == member.userId;
     final title = isCurrentUser
@@ -1981,7 +1983,7 @@ class _SpaceEditorSheetState extends State<_SpaceEditorSheet> {
   }
 
   Future<void> _save() async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
       _snack(context, t.spaceNameRequired);
@@ -2019,7 +2021,7 @@ class _SpaceEditorSheetState extends State<_SpaceEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final isEdit = widget.space != null;
     final validUntil = _validUntil;
     final validityText = validUntil == null
@@ -2171,7 +2173,7 @@ class _SpaceInviteSheetState extends State<_SpaceInviteSheet> {
   }
 
   Future<void> _send() async {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final email = _emailCtrl.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       _snack(context, t.enterValidEmail);
@@ -2194,7 +2196,7 @@ class _SpaceInviteSheetState extends State<_SpaceInviteSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return NestSheet(
       child: Padding(
@@ -2281,7 +2283,7 @@ String _shortUserId(String id) {
 }
 
 String _spaceRoleLabel(BuildContext context, String role) {
-  final t = _LadnaText.of(context);
+  final t = AppLocalizations.of(context)!;
   switch (role) {
     case 'owner':
       return t.spaceRoleOwner;
@@ -2313,7 +2315,7 @@ class _HabitManageRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -2439,7 +2441,7 @@ class _ProfileHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -2727,7 +2729,7 @@ class _HabitPreviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -2916,7 +2918,7 @@ class _LegalDocumentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     final items = <({String title, String url})>[
       (title: 'Privacy Policy', url: 'https://nest-landing-lemon.vercel.app/privacy'),
       (title: 'Datenschutzerklärung', url: 'https://nest-landing-lemon.vercel.app/privacy'),
@@ -2957,7 +2959,7 @@ class _LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -2987,7 +2989,7 @@ class _DangerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _LadnaText.of(context);
+    final t = AppLocalizations.of(context)!;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -3089,7 +3091,7 @@ Future<bool?> _confirmSheet(
   required String confirmLabel,
   bool destructive = false,
 }) {
-  final t = _LadnaText.of(context);
+  final t = AppLocalizations.of(context)!;
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -3134,7 +3136,7 @@ Future<bool?> _confirmSheet(
 }
 
 Future<void> _exportData(BuildContext context) async {
-  final t = _LadnaText.of(context);
+  final t = AppLocalizations.of(context)!;
   final client = Supabase.instance.client;
   final user = client.auth.currentUser;
   if (user == null) {
@@ -3191,9 +3193,9 @@ Future<void> _openUrl(BuildContext context, String url) async {
   final uri = Uri.parse(url);
   try {
     final ok = await launchUrl(uri, mode: LaunchMode.platformDefault, webOnlyWindowName: '_blank');
-    if (!ok && context.mounted) _snack(context, _LadnaText.of(context).openLinkFailed);
+    if (!ok && context.mounted) _snack(context, AppLocalizations.of(context)!.openLinkFailed);
   } catch (_) {
-    if (context.mounted) _snack(context, _LadnaText.of(context).openLinkFailed);
+    if (context.mounted) _snack(context, AppLocalizations.of(context)!.openLinkFailed);
   }
 }
 
@@ -3255,215 +3257,3 @@ class _LadnaTextStyle {
   static const bodyMuted = TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _LadnaColors.text);
 }
 
-class _LadnaText {
-  _LadnaText(this.lang);
-  final String lang;
-
-  static _LadnaText of(BuildContext context) => _LadnaText(Localizations.localeOf(context).languageCode.toLowerCase());
-
-  String pick(Map<String, String> values) => values[lang] ?? values['en'] ?? values['ru'] ?? values.values.first;
-
-  String get profile => pick({'ru': 'Профиль', 'en': 'Profile', 'de': 'Profil', 'fr': 'Profil', 'es': 'Perfil', 'tr': 'Profil'});
-  String get settings => pick({'ru': 'Настройки', 'en': 'Settings', 'de': 'Einstellungen', 'fr': 'Réglages', 'es': 'Ajustes', 'tr': 'Ayarlar'});
-  String get profileFallbackName => pick({'ru': 'Пользователь', 'en': 'User', 'de': 'Nutzer', 'fr': 'Utilisateur', 'es': 'Usuario', 'tr': 'Kullanıcı'});
-  String get profileNoEmail => pick({'ru': 'Email не указан', 'en': 'No email', 'de': 'Keine E-Mail', 'fr': 'Aucun e-mail', 'es': 'Sin email', 'tr': 'E-posta yok'});
-  String get personalData => pick({'ru': 'Личные данные', 'en': 'Personal data', 'de': 'Persönliche Daten', 'fr': 'Données personnelles', 'es': 'Datos personales', 'tr': 'Kişisel bilgiler'});
-  String get name => pick({'ru': 'Имя', 'en': 'Name', 'de': 'Name', 'fr': 'Nom', 'es': 'Nombre', 'tr': 'Ad'});
-  String get enterName => pick({'ru': 'Введите имя', 'en': 'Enter name', 'de': 'Name eingeben', 'fr': 'Saisir le nom', 'es': 'Introduce el nombre', 'tr': 'Ad gir'});
-  String get age => pick({'ru': 'Возраст', 'en': 'Age', 'de': 'Alter', 'fr': 'Âge', 'es': 'Edad', 'tr': 'Yaş'});
-  String get enterAge => pick({'ru': 'Введите возраст', 'en': 'Enter age', 'de': 'Alter eingeben', 'fr': 'Saisir l’âge', 'es': 'Introduce la edad', 'tr': 'Yaş gir'});
-  String get notSpecified => pick({'ru': 'Не указан', 'en': 'Not specified', 'de': 'Nicht angegeben', 'fr': 'Non indiqué', 'es': 'No indicado', 'tr': 'Belirtilmedi'});
-  String get lifeSpheres => pick({'ru': 'Сферы жизни', 'en': 'Life spheres', 'de': 'Lebensbereiche', 'fr': 'Domaines de vie', 'es': 'Áreas de vida', 'tr': 'Yaşam alanları'});
-  String get mySpheres => pick({'ru': 'Мои сферы', 'en': 'My spheres', 'de': 'Meine Bereiche', 'fr': 'Mes domaines', 'es': 'Mis áreas', 'tr': 'Alanlarım'});
-  String get edit => pick({'ru': 'Редактировать', 'en': 'Edit', 'de': 'Bearbeiten', 'fr': 'Modifier', 'es': 'Editar', 'tr': 'Düzenle'});
-  String get habits => pick({'ru': 'Привычки', 'en': 'Habits', 'de': 'Gewohnheiten', 'fr': 'Habitudes', 'es': 'Hábitos', 'tr': 'Alışkanlıklar'});
-  String get myHabits => pick({'ru': 'Мои привычки', 'en': 'My habits', 'de': 'Meine Gewohnheiten', 'fr': 'Mes habitudes', 'es': 'Mis hábitos', 'tr': 'Alışkanlıklarım'});
-  String get noHabitsYet => pick({'ru': 'Привычек пока нет', 'en': 'No habits yet', 'de': 'Noch keine Gewohnheiten', 'fr': 'Aucune habitude', 'es': 'Aún no hay hábitos', 'tr': 'Henüz alışkanlık yok'});
-  String get addHabitHint => pick({'ru': 'Добавление привычек оставлено в текущем редакторе привычек.', 'en': 'Habit creation remains in the current habit editor.'});
-  String daysCount(int n) => pick({'ru': '$n дней', 'en': '$n days', 'de': '$n Tage', 'fr': '$n jours', 'es': '$n días', 'tr': '$n gün'});
-  String get focus => pick({'ru': 'Фокус', 'en': 'Focus', 'de': 'Fokus', 'fr': 'Focus', 'es': 'Foco', 'tr': 'Odak'});
-  String get targetHoursTitle => pick({'ru': 'Норма часов в день', 'en': 'Daily target hours', 'de': 'Tägliche Zielstunden', 'fr': 'Heures cibles par jour', 'es': 'Horas objetivo al día', 'tr': 'Günlük hedef saat'});
-  String get targetHoursSubtitle => pick({'ru': 'Используется для расчёта прогресса', 'en': 'Used to calculate progress', 'de': 'Wird zur Fortschrittsberechnung genutzt', 'fr': 'Utilisé pour calculer le progrès', 'es': 'Se usa para calcular el progreso', 'tr': 'İlerleme hesabında kullanılır'});
-  String get targetHoursField => pick({'ru': 'Часы в день', 'en': 'Hours per day', 'de': 'Stunden pro Tag', 'fr': 'Heures par jour', 'es': 'Horas por día', 'tr': 'Günde saat'});
-  String get hoursShort => pick({'ru': 'ч', 'en': 'h', 'de': 'Std.', 'fr': 'h', 'es': 'h', 'tr': 'sa'});
-  String get notifications => pick({'ru': 'Уведомления', 'en': 'Notifications', 'de': 'Benachrichtigungen', 'fr': 'Notifications', 'es': 'Notificaciones', 'tr': 'Bildirimler'});
-  String get allowNotifications => pick({'ru': 'Разрешить уведомления', 'en': 'Allow notifications', 'de': 'Benachrichtigungen erlauben', 'fr': 'Autoriser les notifications', 'es': 'Permitir notificaciones', 'tr': 'Bildirimlere izin ver'});
-  String get notificationsSubtitle => pick({'ru': 'Работает только пока вкладка открыта', 'en': 'Works while the tab is open', 'de': 'Funktioniert solange der Tab geöffnet ist', 'fr': 'Fonctionne tant que l’onglet est ouvert', 'es': 'Funciona mientras la pestaña está abierta', 'tr': 'Sekme açıkken çalışır'});
-  String get eveningCheckIn => pick({'ru': 'Вечерний чек-ин', 'en': 'Evening check-in', 'de': 'Abend-Check-in', 'fr': 'Check-in du soir', 'es': 'Check-in nocturno', 'tr': 'Akşam kontrolü'});
-  String get eveningCheckInBody => pick({'ru': 'Отметь настроение и заверши день спокойно.', 'en': 'Log your mood and close the day calmly.'});
-  String everyDayAt(String time) => pick({'ru': 'Каждый день в $time', 'en': 'Every day at $time', 'de': 'Jeden Tag um $time', 'fr': 'Tous les jours à $time', 'es': 'Cada día a las $time', 'tr': 'Her gün $time'});
-  String get notificationsUnsupported => pick({'ru': 'Уведомления в этой среде не поддерживаются.', 'en': 'Notifications are not supported here.'});
-  String get notificationsEnabled => pick({'ru': 'Уведомления разрешены.', 'en': 'Notifications enabled.'});
-  String get notificationsDenied => pick({'ru': 'Разрешение на уведомления не получено.', 'en': 'Notification permission was not granted.'});
-  String get notificationsMasterSubtitleOn => pick({'ru': 'Включены', 'en': 'Enabled', 'de': 'Aktiviert', 'fr': 'Activées', 'es': 'Activadas', 'tr': 'Etkin'});
-  String get notificationsMasterSubtitleOff => pick({'ru': 'Выключены', 'en': 'Disabled', 'de': 'Deaktiviert', 'fr': 'Désactivées', 'es': 'Desactivadas', 'tr': 'Kapalı'});
-  String get notificationsSystemDisabledHint => pick({'ru': 'Отключены в системных настройках iOS', 'en': 'Disabled in iOS system settings', 'de': 'In den iOS-Systemeinstellungen deaktiviert', 'fr': 'Désactivées dans les réglages iOS', 'es': 'Desactivadas en los ajustes del sistema iOS', 'tr': 'iOS sistem ayarlarında kapalı'});
-  String get openSystemSettings => pick({'ru': 'Открыть настройки iOS', 'en': 'Open iOS Settings', 'de': 'iOS-Einstellungen öffnen', 'fr': 'Ouvrir les réglages iOS', 'es': 'Abrir ajustes de iOS', 'tr': 'iOS Ayarlarını Aç'});
-  String get notificationsGoalsTitle => pick({'ru': 'Напоминания о целях', 'en': 'Goal reminders', 'de': 'Zielerinnerungen', 'fr': 'Rappels d\'objectifs', 'es': 'Recordatorios de metas', 'tr': 'Hedef hatırlatmaları'});
-  String notificationsGoalsSubtitle(int minutes) => pick({'ru': 'За $minutes мин до начала', 'en': '$minutes min before start', 'de': '$minutes Min. vorher', 'fr': '$minutes min avant le début', 'es': '$minutes min antes', 'tr': 'Başlamadan $minutes dk önce'});
-  String get notificationsReflectionTitle => pick({'ru': 'Вечерняя рефлексия', 'en': 'Evening reflection', 'de': 'Abendreflexion', 'fr': 'Réflexion du soir', 'es': 'Reflexión nocturna', 'tr': 'Akşam yansıması'});
-  String get notificationsHabitsTitle => pick({'ru': 'Напоминания о привычках', 'en': 'Habit reminders', 'de': 'Gewohnheitserinnerungen', 'fr': 'Rappels d\'habitudes', 'es': 'Recordatorios de hábitos', 'tr': 'Alışkanlık hatırlatmaları'});
-  String get notificationsMinutesPickerTitle => pick({'ru': 'За сколько минут напоминать', 'en': 'How many minutes before', 'de': 'Wie viele Minuten vorher', 'fr': 'Combien de minutes avant', 'es': 'Cuántos minutos antes', 'tr': 'Kaç dakika önce'});
-  String get app => pick({'ru': 'Приложение', 'en': 'App', 'de': 'App', 'fr': 'Application', 'es': 'Aplicación', 'tr': 'Uygulama'});
-  String get language => pick({'ru': 'Язык', 'en': 'Language', 'de': 'Sprache', 'fr': 'Langue', 'es': 'Idioma', 'tr': 'Dil'});
-  String get system => pick({'ru': 'Системный', 'en': 'System', 'de': 'System', 'fr': 'Système', 'es': 'Sistema', 'tr': 'Sistem'});
-  String get googleCalendarSubtitle => pick({'ru': 'Экспорт целей в календарь', 'en': 'Export goals to calendar', 'de': 'Ziele in den Kalender exportieren', 'fr': 'Exporter les objectifs vers le calendrier', 'es': 'Exportar objetivos al calendario', 'tr': 'Hedefleri takvime aktar'});
-  String get googleCalendarMovedHint => pick({'ru': 'Google Calendar теперь находится в настройках профиля.', 'en': 'Google Calendar is now in profile settings.'});
-  String get exportData => pick({'ru': 'Экспортировать данные', 'en': 'Export data', 'de': 'Daten exportieren', 'fr': 'Exporter les données', 'es': 'Exportar datos', 'tr': 'Verileri dışa aktar'});
-  String get exportDataSubtitle => pick({'ru': 'JSON-экспорт всего аккаунта', 'en': 'JSON export of your account', 'de': 'JSON-Export deines Kontos', 'fr': 'Export JSON du compte', 'es': 'Exportación JSON de la cuenta', 'tr': 'Hesabın JSON çıktısı'});
-  String get exportCopied => pick({'ru': 'Экспорт скопирован в буфер обмена.', 'en': 'Export copied to clipboard.'});
-  String get exportFailed => pick({'ru': 'Не удалось экспортировать данные', 'en': 'Could not export data'});
-  String get notSignedIn => pick({'ru': 'Пользователь не авторизован.', 'en': 'User is not signed in.'});
-  String get legalDocuments => pick({'ru': 'Правовые документы', 'en': 'Legal documents', 'de': 'Rechtliche Dokumente', 'fr': 'Documents juridiques', 'es': 'Documentos legales', 'tr': 'Yasal belgeler'});
-  String get openLinkFailed => pick({'ru': 'Не удалось открыть ссылку.', 'en': 'Could not open the link.'});
-  String get signOut => pick({'ru': 'Выйти из аккаунта', 'en': 'Sign out', 'de': 'Abmelden', 'fr': 'Se déconnecter', 'es': 'Cerrar sesión', 'tr': 'Çıkış yap'});
-  String get signOutConfirm => pick({'ru': 'Ты точно хочешь выйти из аккаунта?', 'en': 'Are you sure you want to sign out?'});
-  String get deleteAccount => pick({'ru': 'Удалить аккаунт', 'en': 'Delete account', 'de': 'Konto löschen', 'fr': 'Supprimer le compte', 'es': 'Eliminar cuenta', 'tr': 'Hesabı sil'});
-  String get deleteAccountSubtitle => pick({'ru': 'Все данные будут удалены безвозвратно', 'en': 'All data will be permanently deleted'});
-  String get deleteAccountConfirm => pick({'ru': 'Это действие нельзя отменить. Все данные аккаунта будут удалены безвозвратно.', 'en': 'This cannot be undone. All account data will be permanently deleted.'});
-  String get cancel => pick({'ru': 'Отмена', 'en': 'Cancel', 'de': 'Abbrechen', 'fr': 'Annuler', 'es': 'Cancelar', 'tr': 'İptal'});
-  String get desiredBalance => pick({'ru': 'Колесо жизни', 'en': 'Life wheel', 'de': 'Lebensrad', 'fr': 'Roue de vie', 'es': 'Rueda de vida', 'tr': 'Yaşam çarkı'});
-  String get desiredBalanceHint => pick({
-        'ru': 'Настрой колесо жизни по выбранным сферам. Общая сумма не может быть больше 100%.',
-        'en': 'Set up your life wheel for the selected areas. Total cannot exceed 100%.',
-        'de': 'Richte dein Lebensrad für die ausgewählten Bereiche ein. Die Summe darf 100 % nicht überschreiten.',
-        'fr': 'Configure ta roue de vie selon les domaines choisis. Le total ne peut pas dépasser 100 %.',
-        'es': 'Configura tu rueda de vida por áreas seleccionadas. El total no puede superar el 100 %.',
-        'tr': 'Seçili alanlara göre yaşam çarkını ayarla. Toplam %100’ü geçemez.',
-      });
-  String get lifeWheelTapHint => pick({
-        'ru': 'Нажми на сектор или сферу ниже, чтобы задать точный процент.',
-        'en': 'Tap a segment or an area below to set an exact percentage.',
-        'de': 'Tippe auf ein Segment oder einen Bereich unten, um den genauen Prozentwert festzulegen.',
-        'fr': 'Touche un segment ou un domaine ci-dessous pour définir un pourcentage exact.',
-        'es': 'Toca un segmento o un área abajo para definir un porcentaje exacto.',
-        'tr': 'Kesin yüzdeyi belirlemek için bir segmente veya aşağıdaki alana dokun.',
-      });
-  String get outOfHundredPercent => pick({
-        'ru': 'из 100%',
-        'en': 'of 100%',
-        'de': 'von 100 %',
-        'fr': 'sur 100 %',
-        'es': 'de 100 %',
-        'tr': '%100 üzerinden',
-      });
-  String get percent => pick({
-        'ru': 'Процент',
-        'en': 'Percentage',
-        'de': 'Prozent',
-        'fr': 'Pourcentage',
-        'es': 'Porcentaje',
-        'tr': 'Yüzde',
-      });
-  String lifeWheelPercentLimit(int maxAllowed) => pick({
-        'ru': 'Можно указать от 0 до $maxAllowed%. Общая сумма баланса не может превышать 100%.',
-        'en': 'You can enter 0 to $maxAllowed%. The total balance cannot exceed 100%.',
-        'de': 'Du kannst 0 bis $maxAllowed % eingeben. Die Gesamtsumme darf 100 % nicht überschreiten.',
-        'fr': 'Tu peux saisir de 0 à $maxAllowed %. Le total ne peut pas dépasser 100 %.',
-        'es': 'Puedes indicar de 0 a $maxAllowed %. El total no puede superar el 100 %.',
-        'tr': '0 ile $maxAllowed% arasında değer girebilirsin. Toplam denge %100’ü geçemez.',
-      });
-  String get save => pick({'ru': 'Сохранить', 'en': 'Save', 'de': 'Speichern', 'fr': 'Enregistrer', 'es': 'Guardar', 'tr': 'Kaydet'});
-  String get saving => pick({'ru': 'Сохранение…', 'en': 'Saving…', 'de': 'Speichern…', 'fr': 'Enregistrement…', 'es': 'Guardando…', 'tr': 'Kaydediliyor…'});
-  String get newHabit => pick({'ru': 'Новая привычка', 'en': 'New habit', 'de': 'Neue Gewohnheit', 'fr': 'Nouvelle habitude', 'es': 'Nuevo hábito', 'tr': 'Yeni alışkanlık'});
-  String get editHabit => pick({'ru': 'Редактировать привычку', 'en': 'Edit habit', 'de': 'Gewohnheit bearbeiten', 'fr': 'Modifier l’habitude', 'es': 'Editar hábito', 'tr': 'Alışkanlığı düzenle'});
-  String get habitName => pick({'ru': 'Название привычки', 'en': 'Habit name', 'de': 'Name der Gewohnheit', 'fr': 'Nom de l’habitude', 'es': 'Nombre del hábito', 'tr': 'Alışkanlık adı'});
-  String get negativeHabit => pick({'ru': 'Анти-привычка', 'en': 'Negative habit', 'de': 'Negative Gewohnheit', 'fr': 'Habitude négative', 'es': 'Hábito negativo', 'tr': 'Negatif alışkanlık'});
-  String get deleteHabit => pick({'ru': 'Удалить привычку?', 'en': 'Delete habit?', 'de': 'Gewohnheit löschen?', 'fr': 'Supprimer l’habitude ?', 'es': '¿Eliminar hábito?', 'tr': 'Alışkanlık silinsin mi?'});
-  String deleteHabitQuestion(String title) => pick({'ru': 'Привычка "$title" будет удалена.', 'en': 'Habit "$title" will be deleted.', 'de': 'Die Gewohnheit "$title" wird gelöscht.', 'fr': 'L’habitude "$title" sera supprimée.', 'es': 'El hábito "$title" se eliminará.', 'tr': '"$title" alışkanlığı silinecek.'});
-  String get delete => pick({'ru': 'Удалить', 'en': 'Delete', 'de': 'Löschen', 'fr': 'Supprimer', 'es': 'Eliminar', 'tr': 'Sil'});
-  String get spaces => pick({'ru': 'Пространства', 'en': 'Spaces', 'de': 'Bereiche', 'fr': 'Espaces', 'es': 'Espacios', 'tr': 'Alanlar'});
-  String get space => pick({'ru': 'Пространство', 'en': 'Space', 'de': 'Bereich', 'fr': 'Espace', 'es': 'Espacio', 'tr': 'Alan'});
-  String get mySpaces => pick({'ru': 'Мои пространства', 'en': 'My spaces', 'de': 'Meine Bereiche', 'fr': 'Mes espaces', 'es': 'Mis espacios', 'tr': 'Alanlarım'});
-  String get spacesHint => pick({
-        'ru': 'Создавай общие пространства для дома, семьи, поездок и проектов.',
-        'en': 'Create shared spaces for home, family, trips, and projects.',
-        'de': 'Erstelle gemeinsame Bereiche für Zuhause, Familie, Reisen und Projekte.',
-        'fr': 'Crée des espaces partagés pour la maison, la famille, les voyages et les projets.',
-        'es': 'Crea espacios compartidos para casa, familia, viajes y proyectos.',
-        'tr': 'Ev, aile, seyahat ve projeler için ortak alanlar oluştur.',
-      });
-  String get noSpacesYet => pick({'ru': 'Пространств пока нет', 'en': 'No spaces yet', 'de': 'Noch keine Bereiche', 'fr': 'Aucun espace', 'es': 'Aún no hay espacios', 'tr': 'Henüz alan yok'});
-  String get noSpacesHint => pick({
-        'ru': 'Создай первое пространство и пригласи туда других пользователей.',
-        'en': 'Create your first space and invite other users.',
-        'de': 'Erstelle deinen ersten Bereich und lade andere Nutzer ein.',
-        'fr': 'Crée ton premier espace et invite d’autres utilisateurs.',
-        'es': 'Crea tu primer espacio e invita a otros usuarios.',
-        'tr': 'İlk alanını oluştur ve diğer kullanıcıları davet et.',
-      });
-  String get createSpace => pick({'ru': 'Создать пространство', 'en': 'Create space', 'de': 'Bereich erstellen', 'fr': 'Créer un espace', 'es': 'Crear espacio', 'tr': 'Alan oluştur'});
-  String get editSpace => pick({'ru': 'Редактировать пространство', 'en': 'Edit space', 'de': 'Bereich bearbeiten', 'fr': 'Modifier l’espace', 'es': 'Editar espacio', 'tr': 'Alanı düzenle'});
-  String get deleteSpace => pick({'ru': 'Удалить пространство', 'en': 'Delete space', 'de': 'Bereich löschen', 'fr': 'Supprimer l’espace', 'es': 'Eliminar espacio', 'tr': 'Alanı sil'});
-  String get leaveSpace => pick({'ru': 'Покинуть пространство', 'en': 'Leave space', 'de': 'Bereich verlassen', 'fr': 'Quitter l’espace', 'es': 'Salir del espacio', 'tr': 'Alandan ayrıl'});
-  String get deleteSpaceConfirm => pick({
-        'ru': 'Пространство и связанные с ним общие данные будут удалены. Это действие нельзя отменить.',
-        'en': 'This space and its shared data will be deleted. This cannot be undone.',
-        'de': 'Dieser Bereich und die gemeinsamen Daten werden gelöscht. Das kann nicht rückgängig gemacht werden.',
-        'fr': 'Cet espace et ses données partagées seront supprimés. Cette action est irréversible.',
-        'es': 'Este espacio y sus datos compartidos se eliminarán. Esta acción no se puede deshacer.',
-        'tr': 'Bu alan ve paylaşılan verileri silinecek. Bu işlem geri alınamaz.',
-      });
-  String get leaveSpaceConfirm => pick({
-        'ru': 'Ты больше не будешь видеть задачи и данные этого пространства.',
-        'en': 'You will no longer see tasks and data from this space.',
-        'de': 'Du wirst Aufgaben und Daten aus diesem Bereich nicht mehr sehen.',
-        'fr': 'Tu ne verras plus les tâches et données de cet espace.',
-        'es': 'Ya no verás tareas ni datos de este espacio.',
-        'tr': 'Bu alandaki görevleri ve verileri artık görmeyeceksin.',
-      });
-  String get spaceName => pick({'ru': 'Название пространства', 'en': 'Space name', 'de': 'Name des Bereichs', 'fr': 'Nom de l’espace', 'es': 'Nombre del espacio', 'tr': 'Alan adı'});
-  String get spaceNameRequired => pick({'ru': 'Введите название пространства', 'en': 'Enter a space name', 'de': 'Gib einen Namen ein', 'fr': 'Saisis un nom', 'es': 'Introduce un nombre', 'tr': 'Bir alan adı gir'});
-  String get spaceDescription => pick({'ru': 'Описание', 'en': 'Description', 'de': 'Beschreibung', 'fr': 'Description', 'es': 'Descripción', 'tr': 'Açıklama'});
-  String get spaceIcon => pick({'ru': 'Иконка', 'en': 'Icon', 'de': 'Icon', 'fr': 'Icône', 'es': 'Icono', 'tr': 'Simge'});
-  String get spaceColor => pick({'ru': 'Цвет HEX', 'en': 'HEX color', 'de': 'HEX-Farbe', 'fr': 'Couleur HEX', 'es': 'Color HEX', 'tr': 'HEX renk'});
-  String get spaceValidity => pick({'ru': 'Срок действия', 'en': 'Validity', 'de': 'Gültigkeit', 'fr': 'Validité', 'es': 'Validez', 'tr': 'Geçerlilik'});
-  String get noDeadline => pick({'ru': 'Бессрочно', 'en': 'No deadline', 'de': 'Unbefristet', 'fr': 'Sans limite', 'es': 'Sin fecha límite', 'tr': 'Süresiz'});
-  String get spaceNoDeadline => pick({'ru': 'Бессрочное пространство', 'en': 'No expiration date', 'de': 'Unbefristeter Bereich', 'fr': 'Espace sans expiration', 'es': 'Espacio sin vencimiento', 'tr': 'Süresiz alan'});
-  String get setDeadline => pick({'ru': 'Задать срок', 'en': 'Set date', 'de': 'Datum setzen', 'fr': 'Définir la date', 'es': 'Fijar fecha', 'tr': 'Tarih belirle'});
-  String get changeDeadline => pick({'ru': 'Изменить срок', 'en': 'Change date', 'de': 'Datum ändern', 'fr': 'Modifier la date', 'es': 'Cambiar fecha', 'tr': 'Tarihi değiştir'});
-  String spaceValidUntil(String date) => pick({'ru': 'Действует до $date', 'en': 'Valid until $date', 'de': 'Gültig bis $date', 'fr': 'Valide jusqu’au $date', 'es': 'Válido hasta $date', 'tr': '$date tarihine kadar geçerli'});
-  String get spaceValidityHint => pick({
-        'ru': 'После этой даты пространство останется в базе, но исчезнет с экранов и из выбора задач.',
-        'en': 'After this date, the space stays in the database but disappears from screens and task selection.',
-        'de': 'Nach diesem Datum bleibt der Bereich in der Datenbank, wird aber auf den Screens und in der Aufgabenauswahl ausgeblendet.',
-        'fr': 'Après cette date, l’espace reste en base mais disparaît des écrans et du choix des tâches.',
-        'es': 'Después de esta fecha, el espacio queda en la base, pero desaparece de las pantallas y de la selección de tareas.',
-        'tr': 'Bu tarihten sonra alan veritabanında kalır, ancak ekranlardan ve görev seçiminden kaybolur.',
-      });
-  String get spaceTapToManage => pick({'ru': 'Нажми, чтобы управлять участниками', 'en': 'Tap to manage members', 'de': 'Tippen, um Mitglieder zu verwalten', 'fr': 'Toucher pour gérer les membres', 'es': 'Toca para gestionar miembros', 'tr': 'Üyeleri yönetmek için dokun'});
-  String get spaceManageSubtitle => pick({'ru': 'Участники и приглашения', 'en': 'Members and invites', 'de': 'Mitglieder und Einladungen', 'fr': 'Membres et invitations', 'es': 'Miembros e invitaciones', 'tr': 'Üyeler ve davetler'});
-  String get members => pick({'ru': 'Участники', 'en': 'Members', 'de': 'Mitglieder', 'fr': 'Membres', 'es': 'Miembros', 'tr': 'Üyeler'});
-  String get noMembersYet => pick({'ru': 'Участников пока нет', 'en': 'No members yet', 'de': 'Noch keine Mitglieder', 'fr': 'Aucun membre', 'es': 'Aún no hay miembros', 'tr': 'Henüz üye yok'});
-  String get inviteMember => pick({'ru': 'Пригласить', 'en': 'Invite', 'de': 'Einladen', 'fr': 'Inviter', 'es': 'Invitar', 'tr': 'Davet et'});
-  String inviteMemberHint(String spaceName) => pick({
-        'ru': 'Приглашение будет отправлено в пространство «$spaceName».',
-        'en': 'The invite will be sent for “$spaceName”.',
-        'de': 'Die Einladung wird für „$spaceName“ gesendet.',
-        'fr': 'L’invitation sera envoyée pour « $spaceName ».',
-        'es': 'La invitación se enviará para “$spaceName”.',
-        'tr': 'Davet “$spaceName” alanı için gönderilecek.',
-      });
-  String get email => pick({'ru': 'Email', 'en': 'Email', 'de': 'E-Mail', 'fr': 'E-mail', 'es': 'Email', 'tr': 'E-posta'});
-  String get sendInvite => pick({'ru': 'Отправить', 'en': 'Send', 'de': 'Senden', 'fr': 'Envoyer', 'es': 'Enviar', 'tr': 'Gönder'});
-  String get enterValidEmail => pick({'ru': 'Введите корректный email', 'en': 'Enter a valid email', 'de': 'Gib eine gültige E-Mail ein', 'fr': 'Saisis un e-mail valide', 'es': 'Introduce un email válido', 'tr': 'Geçerli bir e-posta gir'});
-  String get incomingInvites => pick({'ru': 'Входящие приглашения', 'en': 'Incoming invites', 'de': 'Eingehende Einladungen', 'fr': 'Invitations reçues', 'es': 'Invitaciones recibidas', 'tr': 'Gelen davetler'});
-  String get spaceInviteSubtitle => pick({'ru': 'Вас пригласили в общее пространство', 'en': 'You were invited to a shared space', 'de': 'Du wurdest in einen gemeinsamen Bereich eingeladen', 'fr': 'Tu as été invité dans un espace partagé', 'es': 'Te invitaron a un espacio compartido', 'tr': 'Ortak bir alana davet edildin'});
-  String get acceptInvite => pick({'ru': 'Принять', 'en': 'Accept', 'de': 'Annehmen', 'fr': 'Accepter', 'es': 'Aceptar', 'tr': 'Kabul et'});
-  String get declineInvite => pick({'ru': 'Отклонить', 'en': 'Decline', 'de': 'Ablehnen', 'fr': 'Refuser', 'es': 'Rechazar', 'tr': 'Reddet'});
-  String get spaceInviteAccepted => pick({'ru': 'Приглашение принято.', 'en': 'Invite accepted.', 'de': 'Einladung angenommen.', 'fr': 'Invitation acceptée.', 'es': 'Invitación aceptada.', 'tr': 'Davet kabul edildi.'});
-  String get spaceInviteSent => pick({'ru': 'Приглашение отправлено.', 'en': 'Invite sent.', 'de': 'Einladung gesendet.', 'fr': 'Invitation envoyée.', 'es': 'Invitación enviada.', 'tr': 'Davet gönderildi.'});
-  String get you => pick({'ru': 'Вы', 'en': 'You', 'de': 'Du', 'fr': 'Toi', 'es': 'Tú', 'tr': 'Sen'});
-  String get spaceRoleOwner => pick({'ru': 'Владелец', 'en': 'Owner', 'de': 'Eigentümer', 'fr': 'Propriétaire', 'es': 'Propietario', 'tr': 'Sahip'});
-  String get spaceRoleAdmin => pick({'ru': 'Администратор', 'en': 'Admin', 'de': 'Admin', 'fr': 'Admin', 'es': 'Admin', 'tr': 'Yönetici'});
-  String get spaceRoleMember => pick({'ru': 'Участник', 'en': 'Member', 'de': 'Mitglied', 'fr': 'Membre', 'es': 'Miembro', 'tr': 'Üye'});
-  String get spaceRoleViewer => pick({'ru': 'Только просмотр', 'en': 'Viewer', 'de': 'Nur Ansicht', 'fr': 'Lecture seule', 'es': 'Solo lectura', 'tr': 'Sadece görüntüleme'});
-  String get spacesLoadFailed => pick({'ru': 'Не удалось загрузить пространства', 'en': 'Could not load spaces'});
-  String get spaceMembersLoadFailed => pick({'ru': 'Не удалось загрузить участников', 'en': 'Could not load members'});
-  String get spaceSaveFailed => pick({'ru': 'Не удалось сохранить пространство', 'en': 'Could not save space'});
-  String get spaceActionFailed => pick({'ru': 'Не удалось выполнить действие', 'en': 'Could not complete the action'});
-  String get spaceInviteSendFailed => pick({'ru': 'Не удалось отправить приглашение', 'en': 'Could not send invite'});
-  String get spaceInviteAcceptFailed => pick({'ru': 'Не удалось принять приглашение', 'en': 'Could not accept invite'});
-  String get spaceInviteDeclineFailed => pick({'ru': 'Не удалось отклонить приглашение', 'en': 'Could not decline invite'});
-  String get noData => pick({'ru': 'Нет данных', 'en': 'No data', 'de': 'Keine Daten', 'fr': 'Aucune donnée', 'es': 'Sin datos', 'tr': 'Veri yok'});
-}

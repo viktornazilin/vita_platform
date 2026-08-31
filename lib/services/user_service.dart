@@ -1,8 +1,12 @@
 // lib/services/user_service.dart
 import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 
 class UserService {
   static final UserService _instance = UserService._internal();
@@ -196,12 +200,32 @@ class UserService {
       OAuthProvider.google,
       redirectTo: redirect,
       queryParams: const {'access_type': 'offline', 'prompt': 'consent'},
+      // Без этого на iOS открывался внешний Safari вместо встроенной сессии
+      // авторизации — внешний Safari не умеет сам закрыться после того, как
+      // редирект на vitaplatform://auth-callback уже создал сессию, поэтому
+      // экран Google оставался висеть, хотя вход по факту уже прошёл.
+      // inAppWebView запускает ASWebAuthenticationSession, которая сама
+      // закрывается сразу после перехвата редиректа.
+      authScreenLaunchMode:
+          kIsWeb ? LaunchMode.platformDefault : LaunchMode.inAppWebView,
     );
     // После редиректа слушай onAuthStateChange в UI и дерни refreshCurrentUser().
   }
 
-  /// ✅ Вход/регистрация через Apple ID (iOS requirement, если есть другие social logins)
-  /// consent-флаги также применим после signedIn.
+  /// ✅ Вход/регистрация через Apple ID.
+  ///
+  /// Раньше здесь был тот же _client.auth.signInWithOAuth(...), что и у
+  /// Google — универсальный веб-OAuth редирект через браузер. Для Apple на
+  /// iOS это не настоящий системный диалог, а отдельный флоу, требующий
+  /// заведённого в Apple Developer Services ID (веб-идентификатора, ОТДЕЛЬНО
+  /// от bundle ID приложения) с правильным Return URL, плюс приватного ключа
+  /// в настройках Apple-провайдера в Supabase. Похоже, этого не было
+  /// настроено — отсюда и молчаливый сбой при нажатии кнопки.
+  ///
+  /// Теперь — нативный флоу через системный диалог Apple
+  /// (ASAuthorizationController), а Supabase просто проверяет уже готовый
+  /// identity token. Это то, что реально рекомендует сам Supabase для
+  /// нативных iOS-приложений, и не требует Services ID вообще.
   Future<void> signInWithApple({
     bool termsAccepted = false,
     bool analyticsAccepted = false,
@@ -213,11 +237,53 @@ class UserService {
       marketingAccepted: marketingAccepted,
     );
 
-    final redirect = kIsWeb ? null : _mobileRedirect;
-    await _client.auth.signInWithOAuth(
-      OAuthProvider.apple,
-      redirectTo: redirect,
+    if (kIsWeb) {
+      // На web нативного системного диалога Apple нет — остаёмся на прежнем
+      // OAuth-редирект флоу (там Services ID действительно нужен и это
+      // ожидаемо, раз уж web в принципе работает через браузер).
+      await _client.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: null,
+        authScreenLaunchMode: LaunchMode.platformDefault,
+      );
+      return;
+    }
+
+    final rawNonce = _generateNonce();
+    final hashedNonce = _sha256ofString(rawNonce);
+
+    final credential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: hashedNonce,
     );
+
+    final idToken = credential.identityToken;
+    if (idToken == null) {
+      throw Exception('Apple ID не вернул токен авторизации');
+    }
+
+    await _client.auth.signInWithIdToken(
+      provider: OAuthProvider.apple,
+      idToken: idToken,
+      nonce: rawNonce,
+    );
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
   Future<void> logout() async {

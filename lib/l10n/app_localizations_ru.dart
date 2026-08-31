@@ -3769,4 +3769,1036 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get profileGdprExportNoteEncrypted =>
       'Зашифрованные поля encrypted_payload экспортируются в том виде, в котором они сохранены. Расшифровка зависит от реализации шифрования в приложении и активной пользовательской сессии.';
+
+  @override
+  String get profile => 'Профиль';
+
+  @override
+  String get settings => 'Настройки';
+
+  @override
+  String get profileFallbackName => 'Пользователь';
+
+  @override
+  String get profileNoEmail => 'Email не указан';
+
+  @override
+  String get personalData => 'Личные данные';
+
+  @override
+  String get name => 'Имя';
+
+  @override
+  String get enterName => 'Введите имя';
+
+  @override
+  String get age => 'Возраст';
+
+  @override
+  String get enterAge => 'Введите возраст';
+
+  @override
+  String get notSpecified => 'Не указан';
+
+  @override
+  String get lifeSpheres => 'Сферы жизни';
+
+  @override
+  String get mySpheres => 'Мои сферы';
+
+  @override
+  String get edit => 'Редактировать';
+
+  @override
+  String get habits => 'Привычки';
+
+  @override
+  String get myHabits => 'Мои привычки';
+
+  @override
+  String get noHabitsYet => 'Привычек пока нет';
+
+  @override
+  String get addHabitHint =>
+      'Добавление привычек оставлено в текущем редакторе привычек.';
+
+  @override
+  String daysCount(int n) {
+    return '$n дней';
+  }
+
+  @override
+  String get focus => 'Фокус';
+
+  @override
+  String get targetHoursTitle => 'Норма часов в день';
+
+  @override
+  String get targetHoursSubtitle => 'Используется для расчёта прогресса';
+
+  @override
+  String get targetHoursField => 'Часы в день';
+
+  @override
+  String get hoursShort => 'ч';
+
+  @override
+  String get notifications => 'Уведомления';
+
+  @override
+  String get allowNotifications => 'Разрешить уведомления';
+
+  @override
+  String get notificationsSubtitle => 'Работает только пока вкладка открыта';
+
+  @override
+  String get eveningCheckIn => 'Вечерний чек-ин';
+
+  @override
+  String get eveningCheckInBody => 'Отметь настроение и заверши день спокойно.';
+
+  @override
+  String everyDayAt(String time) {
+    return 'Каждый день в $time';
+  }
+
+  @override
+  String get notificationsUnsupported =>
+      'Уведомления в этой среде не поддерживаются.';
+
+  @override
+  String get notificationsEnabled => 'Уведомления разрешены.';
+
+  @override
+  String get notificationsDenied => 'Разрешение на уведомления не получено.';
+
+  @override
+  String get notificationsMasterSubtitleOn => 'Включены';
+
+  @override
+  String get notificationsMasterSubtitleOff => 'Выключены';
+
+  @override
+  String get notificationsSystemDisabledHint =>
+      'Отключены в системных настройках iOS';
+
+  @override
+  String get openSystemSettings => 'Открыть настройки iOS';
+
+  @override
+  String get notificationsGoalsTitle => 'Напоминания о целях';
+
+  @override
+  String notificationsGoalsSubtitle(int minutes) {
+    return 'За $minutes мин до начала';
+  }
+
+  @override
+  String get notificationsReflectionTitle => 'Вечерняя рефлексия';
+
+  @override
+  String get notificationsHabitsTitle => 'Напоминания о привычках';
+
+  @override
+  String get notificationsMinutesPickerTitle => 'За сколько минут напоминать';
+
+  @override
+  String get app => 'Приложение';
+
+  @override
+  String get language => 'Язык';
+
+  @override
+  String get system => 'Системный';
+
+  @override
+  String get googleCalendarSubtitle => 'Экспорт целей в календарь';
+
+  @override
+  String get googleCalendarMovedHint =>
+      'Google Calendar теперь находится в настройках профиля.';
+
+  @override
+  String get exportData => 'Экспортировать данные';
+
+  @override
+  String get exportDataSubtitle => 'JSON-экспорт всего аккаунта';
+
+  @override
+  String get exportCopied => 'Экспорт скопирован в буфер обмена.';
+
+  @override
+  String get exportFailed => 'Не удалось экспортировать данные';
+
+  @override
+  String get notSignedIn => 'Пользователь не авторизован.';
+
+  @override
+  String get legalDocuments => 'Правовые документы';
+
+  @override
+  String get openLinkFailed => 'Не удалось открыть ссылку.';
+
+  @override
+  String get signOut => 'Выйти из аккаунта';
+
+  @override
+  String get signOutConfirm => 'Ты точно хочешь выйти из аккаунта?';
+
+  @override
+  String get deleteAccount => 'Удалить аккаунт';
+
+  @override
+  String get deleteAccountSubtitle => 'Все данные будут удалены безвозвратно';
+
+  @override
+  String get deleteAccountConfirm =>
+      'Это действие нельзя отменить. Все данные аккаунта будут удалены безвозвратно.';
+
+  @override
+  String get cancel => 'Отмена';
+
+  @override
+  String get desiredBalance => 'Колесо жизни';
+
+  @override
+  String get desiredBalanceHint =>
+      'Настрой колесо жизни по выбранным сферам. Общая сумма не может быть больше 100%.';
+
+  @override
+  String get lifeWheelTapHint =>
+      'Нажми на сектор или сферу ниже, чтобы задать точный процент.';
+
+  @override
+  String get outOfHundredPercent => 'из 100%';
+
+  @override
+  String get percent => 'Процент';
+
+  @override
+  String lifeWheelPercentLimit(int maxAllowed) {
+    return 'Можно указать от 0 до $maxAllowed%. Общая сумма баланса не может превышать 100%.';
+  }
+
+  @override
+  String get save => 'Сохранить';
+
+  @override
+  String get saving => 'Сохранение…';
+
+  @override
+  String get newHabit => 'Новая привычка';
+
+  @override
+  String get editHabit => 'Редактировать привычку';
+
+  @override
+  String get habitName => 'Название привычки';
+
+  @override
+  String get negativeHabit => 'Анти-привычка';
+
+  @override
+  String get deleteHabit => 'Удалить привычку?';
+
+  @override
+  String deleteHabitQuestion(String title) {
+    return 'Привычка \"$title\" будет удалена.';
+  }
+
+  @override
+  String get delete => 'Удалить';
+
+  @override
+  String get spaces => 'Пространства';
+
+  @override
+  String get space => 'Пространство';
+
+  @override
+  String get mySpaces => 'Мои пространства';
+
+  @override
+  String get spacesHint =>
+      'Создавай общие пространства для дома, семьи, поездок и проектов.';
+
+  @override
+  String get noSpacesYet => 'Пространств пока нет';
+
+  @override
+  String get noSpacesHint =>
+      'Создай первое пространство и пригласи туда других пользователей.';
+
+  @override
+  String get createSpace => 'Создать пространство';
+
+  @override
+  String get editSpace => 'Редактировать пространство';
+
+  @override
+  String get deleteSpace => 'Удалить пространство';
+
+  @override
+  String get leaveSpace => 'Покинуть пространство';
+
+  @override
+  String get deleteSpaceConfirm =>
+      'Пространство и связанные с ним общие данные будут удалены. Это действие нельзя отменить.';
+
+  @override
+  String get leaveSpaceConfirm =>
+      'Ты больше не будешь видеть задачи и данные этого пространства.';
+
+  @override
+  String get spaceName => 'Название пространства';
+
+  @override
+  String get spaceNameRequired => 'Введите название пространства';
+
+  @override
+  String get spaceDescription => 'Описание';
+
+  @override
+  String get spaceIcon => 'Иконка';
+
+  @override
+  String get spaceColor => 'Цвет HEX';
+
+  @override
+  String get spaceValidity => 'Срок действия';
+
+  @override
+  String get noDeadline => 'Бессрочно';
+
+  @override
+  String get spaceNoDeadline => 'Бессрочное пространство';
+
+  @override
+  String get setDeadline => 'Задать срок';
+
+  @override
+  String get changeDeadline => 'Изменить срок';
+
+  @override
+  String spaceValidUntil(String date) {
+    return 'Действует до $date';
+  }
+
+  @override
+  String get spaceValidityHint =>
+      'После этой даты пространство останется в базе, но исчезнет с экранов и из выбора задач.';
+
+  @override
+  String get spaceTapToManage => 'Нажми, чтобы управлять участниками';
+
+  @override
+  String get spaceManageSubtitle => 'Участники и приглашения';
+
+  @override
+  String get members => 'Участники';
+
+  @override
+  String get noMembersYet => 'Участников пока нет';
+
+  @override
+  String get inviteMember => 'Пригласить';
+
+  @override
+  String inviteMemberHint(String spaceName) {
+    return 'Приглашение будет отправлено в пространство «$spaceName».';
+  }
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get sendInvite => 'Отправить';
+
+  @override
+  String get enterValidEmail => 'Введите корректный email';
+
+  @override
+  String get incomingInvites => 'Входящие приглашения';
+
+  @override
+  String get spaceInviteSubtitle => 'Вас пригласили в общее пространство';
+
+  @override
+  String get acceptInvite => 'Принять';
+
+  @override
+  String get declineInvite => 'Отклонить';
+
+  @override
+  String get spaceInviteAccepted => 'Приглашение принято.';
+
+  @override
+  String get spaceInviteSent => 'Приглашение отправлено.';
+
+  @override
+  String get you => 'Вы';
+
+  @override
+  String get spaceRoleOwner => 'Владелец';
+
+  @override
+  String get spaceRoleAdmin => 'Администратор';
+
+  @override
+  String get spaceRoleMember => 'Участник';
+
+  @override
+  String get spaceRoleViewer => 'Только просмотр';
+
+  @override
+  String get spacesLoadFailed => 'Не удалось загрузить пространства';
+
+  @override
+  String get spaceMembersLoadFailed => 'Не удалось загрузить участников';
+
+  @override
+  String get spaceSaveFailed => 'Не удалось сохранить пространство';
+
+  @override
+  String get spaceActionFailed => 'Не удалось выполнить действие';
+
+  @override
+  String get spaceInviteSendFailed => 'Не удалось отправить приглашение';
+
+  @override
+  String get spaceInviteAcceptFailed => 'Не удалось принять приглашение';
+
+  @override
+  String get spaceInviteDeclineFailed => 'Не удалось отклонить приглашение';
+
+  @override
+  String get noData => 'Нет данных';
+
+  @override
+  String get dayGoalsHeaderTitle => 'Задачи на день';
+
+  @override
+  String get dayGoalsAllHiddenHint =>
+      'Все видимые задачи скрыты. Отключи фильтр «Скрыть выполненные».';
+
+  @override
+  String get dayGoalsEmptyHint =>
+      'На этот день пока нет задач. Добавь первую задачу через кнопку ниже.';
+
+  @override
+  String get dayGoalsStatTotal => 'Всего';
+
+  @override
+  String get dayGoalsStatDone => 'Готово';
+
+  @override
+  String get dayGoalsStatLeft => 'Осталось';
+
+  @override
+  String dayGoalsHoursLeftLabel(String hours) {
+    return 'Осталось часов: $hours';
+  }
+
+  @override
+  String get dayGoalsFilterAll => 'Все';
+
+  @override
+  String get dayGoalsFilterPersonal => 'Личные';
+
+  @override
+  String get dayGoalsFilterAllSpheres => 'Все сферы';
+
+  @override
+  String dayGoalsLaneLeftBadge(int count) {
+    return 'Ост. $count';
+  }
+
+  @override
+  String dayGoalsLaneDoneBadge(int count) {
+    return 'Гот. $count';
+  }
+
+  @override
+  String get dayGoalsLaneInProgress => '⚡ В работе';
+
+  @override
+  String get dayGoalsLaneInProgressEmpty =>
+      'Здесь появятся активные задачи этого блока';
+
+  @override
+  String get dayGoalsLaneDoneTitle => '✅ Готово';
+
+  @override
+  String get dayGoalsLaneDoneEmpty =>
+      'Здесь будут завершённые задачи после фокуса-блока';
+
+  @override
+  String get dayGoalsSpaceMetaLabel => '👥 Пространство';
+
+  @override
+  String get dayGoalsCompletedLabel => 'Выполнено';
+
+  @override
+  String get dayGoalsNotifSoftAskTitle => 'Не пропусти ни одной цели';
+
+  @override
+  String get dayGoalsNotifSoftAskBody =>
+      'Ladna напомнит о цели за 15 минут до начала — прямо как будильник, только для дел.';
+
+  @override
+  String get dayGoalsNotifSoftAskEnable => 'Включить напоминания';
+
+  @override
+  String get dayGoalsNotifSoftAskDismiss => 'Не сейчас';
+
+  @override
+  String get dayGoalsPeriodMorning => 'Утро';
+
+  @override
+  String get dayGoalsPeriodDay => 'День';
+
+  @override
+  String get dayGoalsPeriodEvening => 'Вечер';
+
+  @override
+  String get dayGoalsSphereLifePersonal => 'Личное';
+
+  @override
+  String get dayGoalsSphereTravel => 'Путешествия';
+
+  @override
+  String get dayGoalsSphereHome => 'Дом';
+
+  @override
+  String dayGoalsMinutesShort(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String get registerErrNameMin2 => 'Имя должно содержать минимум 2 символа.';
+
+  @override
+  String launcherPlanHours(String hours) {
+    return 'План: $hours ч';
+  }
+
+  @override
+  String get launcherGoalsAndTasks => 'Цели и задачи';
+
+  @override
+  String get launcherPersonal => 'Личное';
+
+  @override
+  String get launcherReportsTab => 'Отчёты';
+
+  @override
+  String get launcherBudget => 'Бюджет';
+
+  @override
+  String get launcherQuickActions => 'Быстрые действия';
+
+  @override
+  String get launcherBulkAdd => 'Массовое добавление';
+
+  @override
+  String get launcherBulkAddSubtitle => 'Расходы + Задачи + Настроение';
+
+  @override
+  String get launcherAiWeeklyPlan => 'AI-план на неделю';
+
+  @override
+  String get launcherAiWeeklyPlanSubtitle => 'Анализ целей и прогресса';
+
+  @override
+  String get launcherAiInsights => 'AI-инсайты';
+
+  @override
+  String get launcherNavAndActions => 'Навигация и действия';
+
+  @override
+  String get navMenu => 'Меню';
+
+  @override
+  String get navPersonal => 'Личное';
+
+  @override
+  String get lifeBlocksSetupTitle => 'Что будем отслеживать?';
+
+  @override
+  String get lifeBlocksSetupSubtitle =>
+      'Выбери сферы жизни. Ladna будет строить главную страницу, цели и отчёты вокруг них.';
+
+  @override
+  String get lifeBlocksSetupContinue => 'Продолжить';
+
+  @override
+  String get lifeBlocksSetupHint => 'Минимум 1 сфера';
+
+  @override
+  String get goalsScreenGoalsAndTasks => 'Цели и задачи';
+
+  @override
+  String get goalsScreenTasks => 'Задачи';
+
+  @override
+  String get goalsScreenDashboard => 'Дашборд';
+
+  @override
+  String get goalsScreenWeek => 'Неделя';
+
+  @override
+  String get goalsScreenMonth => 'Месяц';
+
+  @override
+  String get goalsScreenCalendar => 'Календарь';
+
+  @override
+  String get goalsScreenWeekView => 'Неделя';
+
+  @override
+  String get goalsScreenMonthView => 'Дни месяца';
+
+  @override
+  String get goalsScreenNoTasks => 'Нет задач';
+
+  @override
+  String get goalsScreenCompleted => 'выполнено';
+
+  @override
+  String get goalsScreenWeekSummary => 'Итог недели';
+
+  @override
+  String get goalsScreenThisWeek => 'Эта неделя';
+
+  @override
+  String get goalsScreenTodayShort => 'сег';
+
+  @override
+  String get goalsScreenAll => 'Все';
+
+  @override
+  String get goalsScreenPersonalTasks => 'Личные';
+
+  @override
+  String get goalsScreenUpToOneMonth => 'До 1 мес';
+
+  @override
+  String get goalsScreenUpToSixMonths => 'До 6 мес';
+
+  @override
+  String get goalsScreenYearPlus => 'На год+';
+
+  @override
+  String get goalsScreenBySpheres => 'По сферам';
+
+  @override
+  String get goalsScreenHide => '';
+
+  @override
+  String get goalsScreenProgress => 'Прогресс';
+
+  @override
+  String get goalsScreenAdd => 'Добавить';
+
+  @override
+  String get goalsScreenNoGoalsYet => 'Целей пока нет';
+
+  @override
+  String get goalsScreenNoGoalsYetSub =>
+      'Добавь первую цель через кнопку ниже.';
+
+  @override
+  String get goalsScreenNewGoal => 'Новая цель';
+
+  @override
+  String get goalsScreenEditGoal => 'Редактировать цель';
+
+  @override
+  String get goalsScreenTitle => 'Название';
+
+  @override
+  String get goalsScreenDescription => 'Описание';
+
+  @override
+  String get goalsScreenSphere => 'Сфера';
+
+  @override
+  String get goalsScreenHorizon => 'Горизонт';
+
+  @override
+  String get goalsScreenDeleteGoal => 'Удалить цель';
+
+  @override
+  String get goalsScreenDeleteGoalQuestion =>
+      'Эта цель будет удалена. Связанные ежедневные задачи останутся без связи с большой целью.';
+
+  @override
+  String goalsScreenCompletedTasks(int done, int total) {
+    return '$done задач выполнено из $total';
+  }
+
+  @override
+  String goalsScreenGoalsCount(int n) {
+    return '$n цели';
+  }
+
+  @override
+  String get moodScore1 => 'Очень тяжело';
+
+  @override
+  String get moodScore2 => 'Сложно';
+
+  @override
+  String get moodScore3 => 'Нейтрально';
+
+  @override
+  String get moodScore4 => 'Хорошо';
+
+  @override
+  String get moodScore5 => 'Отлично';
+
+  @override
+  String get moodScaleHint =>
+      'Шкала настроения: 1 — очень тяжело, 3 — нейтрально, 5 — отлично.';
+
+  @override
+  String get moodHowAreYouTitle => 'Как ты сегодня?';
+
+  @override
+  String get moodWhatInfluencedLabel => 'Что повлияло на настроение?';
+
+  @override
+  String get moodRecentEntriesTitle => 'Последние записи';
+
+  @override
+  String get moodNoEntriesHint =>
+      'Пока нет записей. Отметь настроение сегодня.';
+
+  @override
+  String get moodTodayLabel => 'Сегодня';
+
+  @override
+  String get moodSelectedDayLabel => 'Выбранный день';
+
+  @override
+  String get reportsScreenReports => 'Отчёты';
+
+  @override
+  String get reportsScreenDayShort => 'День';
+
+  @override
+  String get reportsScreenWeekShort => 'Нед';
+
+  @override
+  String get reportsScreenMonthShort => 'Мес';
+
+  @override
+  String get reportsScreenSummary => 'Сводка';
+
+  @override
+  String get reportsScreenProgress => 'Прогресс';
+
+  @override
+  String get reportsScreenMood => 'Настроение';
+
+  @override
+  String get reportsScreenTasksDone => 'Задач выполнено';
+
+  @override
+  String get reportsScreenFocusHours => 'Фокус-часов';
+
+  @override
+  String get reportsScreenOutOf => 'из';
+
+  @override
+  String get reportsScreenPeriodAverage => 'Среднее за период';
+
+  @override
+  String get reportsScreenMoodAverage => 'Среднее настроение';
+
+  @override
+  String get reportsScreenOutOfFiveAverage => 'из 5 в среднем';
+
+  @override
+  String get reportsScreenOutOfFive => 'из 5 баллов';
+
+  @override
+  String get reportsScreenHowMoodScoreWorks => 'Как считается настроение';
+
+  @override
+  String get reportsScreenMoodScoreExplanation =>
+      'Пользователь выбирает одно из 5 настроений. Каждой иконке соответствует балл: 1 — очень тяжело, 2 — сложно, 3 — нейтрально, 4 — хорошо, 5 — отлично. В отчётах показывается среднее значение за выбранный период.';
+
+  @override
+  String get reportsScreenMoodVeryLow => 'Очень тяжело';
+
+  @override
+  String get reportsScreenMoodLow => 'Сложно';
+
+  @override
+  String get reportsScreenMoodNeutral => 'Нейтрально';
+
+  @override
+  String get reportsScreenMoodGood => 'Хорошо';
+
+  @override
+  String get reportsScreenMoodGreat => 'Отлично';
+
+  @override
+  String get reportsScreenPeriodEfficiency => 'Эффективность периода';
+
+  @override
+  String get reportsScreenPlan => 'План';
+
+  @override
+  String get reportsScreenFact => 'Факт';
+
+  @override
+  String get reportsScreenTimeBySphere => 'Время по сферам';
+
+  @override
+  String get reportsScreenTopProductiveDays => 'Топ-3 продуктивных дня';
+
+  @override
+  String get reportsScreenAiObservation => 'AI-наблюдение';
+
+  @override
+  String get reportsScreenPeriodStatistics => 'Статистика периода';
+
+  @override
+  String get reportsScreenExtendedAiObservationSchedule =>
+      'Это твоя статистика за период. Расширенное AI-наблюдение обновится в воскресенье.';
+
+  @override
+  String get reportsScreenAiLoading => 'Готовлю персональное наблюдение…';
+
+  @override
+  String get reportsScreenAiUnavailable =>
+      'AI-наблюдение пока недоступно. Проверь подключение к функции или попробуй обновить позже.';
+
+  @override
+  String get reportsScreenInsight => 'Инсайт';
+
+  @override
+  String get reportsScreenPattern => 'Паттерн';
+
+  @override
+  String get reportsScreenPeriodTasks => 'Задачи периода';
+
+  @override
+  String get reportsScreenDone => 'выполнено';
+
+  @override
+  String get reportsScreenPeriodProgress => 'Прогресс периода';
+
+  @override
+  String get reportsScreenTempoBelowNorm => 'Темп ниже нормы';
+
+  @override
+  String get reportsScreenTempoGood => 'Темп в норме';
+
+  @override
+  String get reportsScreenDetails => 'Детали';
+
+  @override
+  String get reportsScreenAvgTimePerTask => 'Среднее время / задачу';
+
+  @override
+  String get reportsScreenDoneOnTime => 'Выполнено в срок';
+
+  @override
+  String get reportsScreenMoved => 'Перенесено';
+
+  @override
+  String get reportsScreenCompleted => 'Выполнено';
+
+  @override
+  String get reportsScreenForThisPeriod => 'за этот период';
+
+  @override
+  String get reportsScreenBestStreak => 'Лучший страйк';
+
+  @override
+  String get reportsScreenDaysInARow => 'дней подряд';
+
+  @override
+  String get reportsScreenByHabits => 'По привычкам';
+
+  @override
+  String get reportsScreenStreaksFourWeeks => 'Страйки за 4 недели';
+
+  @override
+  String get reportsScreenFourWeeksAgo => '4 нед. назад';
+
+  @override
+  String get reportsScreenMissed => 'пропуск';
+
+  @override
+  String get reportsScreenToday => 'сегодня';
+
+  @override
+  String get reportsScreenBestDay => 'Лучший день';
+
+  @override
+  String get reportsScreenWeekDynamics => 'Динамика недели';
+
+  @override
+  String get reportsScreenByDays => 'По дням';
+
+  @override
+  String get reportsScreenOnTime => 'В срок';
+
+  @override
+  String get reportsScreenTasks => 'Задачи';
+
+  @override
+  String get reportsScreenHours => 'Часы';
+
+  @override
+  String get reportsScreenCurrentPeriodShort => 'эта';
+
+  @override
+  String get reportsScreenPreviousPeriodShort => 'прош.';
+
+  @override
+  String get reportsScreenCorrelations => 'Корреляции';
+
+  @override
+  String get reportsScreenStreaks => 'Страйки';
+
+  @override
+  String get reportsScreenWeakLink => 'Слабое звено';
+
+  @override
+  String get reportsScreenNoDataYet => 'Пока недостаточно данных';
+
+  @override
+  String get reportsScreenPulse => 'ПУЛЬС';
+
+  @override
+  String get reportsScreenMonthEfficiency => 'Эффективность месяца';
+
+  @override
+  String get reportsScreenFactVsDesiredBalance =>
+      'Факт против желаемого баланса';
+
+  @override
+  String get reportsScreenBalancePlanFactHint =>
+      'План — тонкая метка, факт — заполненная полоса.';
+
+  @override
+  String get reportsScreenBalanceEmptyHint =>
+      'Задай желаемый баланс сфер в профиле — здесь появится сравнение факта с планом.';
+
+  @override
+  String get reportsScreenPlanLegend => 'план';
+
+  @override
+  String get reportsScreenFactLegend => 'факт';
+
+  @override
+  String get reportsScreenOverageLegend => 'перебор';
+
+  @override
+  String get reportsScreenSleepSevenPlus => 'Сон 7+ часов';
+
+  @override
+  String get reportsScreenHabitCompletion => 'Выполнение привычек';
+
+  @override
+  String get reportsScreenWeekStart => 'Пн–Вт';
+
+  @override
+  String get reportsScreenMoreStableThanWeekend => 'Стабильнее конца недели';
+
+  @override
+  String get reportsScreenHighLoad => 'Высокая нагрузка';
+
+  @override
+  String get reportsScreenTaskImpact => 'Влияние задач';
+
+  @override
+  String get reportsScreenDaysWithHabits => 'Дни с привычками';
+
+  @override
+  String get reportsScreenMoodHigher => 'Настроение выше';
+
+  @override
+  String get reportsScreenOpenTasks => 'Незакрытые задачи';
+
+  @override
+  String get reportsScreenMoodImpact => 'Влияние на настроение';
+
+  @override
+  String get reportsScreenExpensesAboveNorm => 'Расходы выше нормы';
+
+  @override
+  String get reportsScreenNextDayMood => 'Настроение следующего дня';
+
+  @override
+  String get reportsScreenComparisonTitleDay => 'Этот день vs прошлый';
+
+  @override
+  String get reportsScreenComparisonTitleWeek => 'Эта неделя vs прошлая';
+
+  @override
+  String get reportsScreenComparisonTitleMonth => 'Этот месяц vs прошлый';
+
+  @override
+  String reportsScreenBestDaySubtitle(int tasks, String hours) {
+    return '$tasks задач · $hours ч фокуса';
+  }
+
+  @override
+  String reportsScreenMonthEfficiencySubtitle(
+    int completed,
+    String outOf,
+    int total,
+    int daysLeft,
+  ) {
+    return '$completed задач $outOf $total · осталось $daysLeft дней';
+  }
+
+  @override
+  String reportsScreenWeakLinkRecommendation(String label, int pct) {
+    return '$label — $pct% за период. Привяжи к самой простой привычке.';
+  }
+
+  @override
+  String get reportsScreenSummaryInsight =>
+      'Ты продуктивнее во вторник и среду. Перенеси самые важные задачи на начало недели.';
+
+  @override
+  String get reportsScreenProgressInsight =>
+      'Задачи по одной сфере откладываются чаще других. Попробуй закрепить для них отдельный утренний блок.';
+
+  @override
+  String get reportsScreenHabitsInsight =>
+      'В дни, когда выполнены привычки, продуктивность обычно выше. Начинай день с самой простой привычки.';
+
+  @override
+  String get reportsScreenMoodInsight =>
+      'Настроение выше в дни с выполненными привычками. Сохраняй маленький ритуал утром.';
+
+  @override
+  String get budgetCategoryNameLabel => 'Название';
+
+  @override
+  String get navGoals => 'Цели';
+
+  @override
+  String get navMood => 'Настроение';
+
+  @override
+  String get navProfile => 'Профиль';
+
+  @override
+  String get navReports => 'Отчёты';
+
+  @override
+  String get navExpenses => 'Расходы';
+
+  @override
+  String get goalsDeleteConfirmBodyShort =>
+      'Будет удалено без возможности восстановления.';
 }

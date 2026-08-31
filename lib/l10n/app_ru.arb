@@ -1774,38 +1774,488 @@
   "launcherDayGoals": "Цели",
   "launcherPlannedHoursDescription": "План: {hours} ч",
   "@launcherPlannedHoursDescription": {
-  "placeholders": {
-    "hours": {}
-  }
-},
-"profileGdprSection": "Конфиденциальность и GDPR",
-"profileGdprExportTitle": "Экспортировать мои данные",
-"profileGdprExportSubtitle": "Создаёт JSON-экспорт всех данных приложения, связанных с твоим аккаунтом.",
-"profileGdprNotSignedInToast": "Ты не вошёл в аккаунт. Экспорт данных невозможен.",
-"profileGdprDialogTitle": "GDPR-экспорт данных создан",
-"profileGdprDialogFileName": "Имя файла: {fileName}",
-"@profileGdprDialogFileName": {
-  "placeholders": {
-    "fileName": {
-      "type": "String"
+    "placeholders": {
+      "hours": {}
     }
-  }
-},
-"profileGdprDialogBody": "Экспорт создан в формате JSON и скопирован в буфер обмена.\n\nТеперь ты можешь вставить содержимое в файл с расширением .json.",
-"profileGdprDialogPreviewLabel": "Предпросмотр:",
-"profileGdprCopyButton": "Копировать",
-"profileGdprDoneButton": "Готово",
-"profileGdprCopiedAgainToast": "Экспорт данных снова скопирован в буфер обмена.",
-"profileGdprCreatedToast": "GDPR-экспорт данных создан и скопирован.",
-"profileGdprFailedToast": "Не удалось экспортировать данные: {error}",
-"@profileGdprFailedToast": {
-  "placeholders": {
-    "error": {
-      "type": "String"
+  },
+  "profileGdprSection": "Конфиденциальность и GDPR",
+  "profileGdprExportTitle": "Экспортировать мои данные",
+  "profileGdprExportSubtitle": "Создаёт JSON-экспорт всех данных приложения, связанных с твоим аккаунтом.",
+  "profileGdprNotSignedInToast": "Ты не вошёл в аккаунт. Экспорт данных невозможен.",
+  "profileGdprDialogTitle": "GDPR-экспорт данных создан",
+  "profileGdprDialogFileName": "Имя файла: {fileName}",
+  "@profileGdprDialogFileName": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
     }
-  }
-},
-"profileGdprExportNoteAccount": "Этот экспорт содержит аутентифицированный аккаунт пользователя, профиль из public.users, все пользовательские таблицы приложения и справочные таблицы, необходимые для понимания экспортированных ответов.",
-"profileGdprExportNoteRls": "Экспорт ограничен правилами Supabase Row Level Security. Таблицы, которые не существуют или недоступны для чтения, возвращаются с записью _export_warning.",
-"profileGdprExportNoteEncrypted": "Зашифрованные поля encrypted_payload экспортируются в том виде, в котором они сохранены. Расшифровка зависит от реализации шифрования в приложении и активной пользовательской сессии."
+  },
+  "profileGdprDialogBody": "Экспорт создан в формате JSON и скопирован в буфер обмена.\n\nТеперь ты можешь вставить содержимое в файл с расширением .json.",
+  "profileGdprDialogPreviewLabel": "Предпросмотр:",
+  "profileGdprCopyButton": "Копировать",
+  "profileGdprDoneButton": "Готово",
+  "profileGdprCopiedAgainToast": "Экспорт данных снова скопирован в буфер обмена.",
+  "profileGdprCreatedToast": "GDPR-экспорт данных создан и скопирован.",
+  "profileGdprFailedToast": "Не удалось экспортировать данные: {error}",
+  "@profileGdprFailedToast": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "profileGdprExportNoteAccount": "Этот экспорт содержит аутентифицированный аккаунт пользователя, профиль из public.users, все пользовательские таблицы приложения и справочные таблицы, необходимые для понимания экспортированных ответов.",
+  "profileGdprExportNoteRls": "Экспорт ограничен правилами Supabase Row Level Security. Таблицы, которые не существуют или недоступны для чтения, возвращаются с записью _export_warning.",
+  "profileGdprExportNoteEncrypted": "Зашифрованные поля encrypted_payload экспортируются в том виде, в котором они сохранены. Расшифровка зависит от реализации шифрования в приложении и активной пользовательской сессии.",
+  "profile": "Профиль",
+  "settings": "Настройки",
+  "profileFallbackName": "Пользователь",
+  "profileNoEmail": "Email не указан",
+  "personalData": "Личные данные",
+  "name": "Имя",
+  "enterName": "Введите имя",
+  "age": "Возраст",
+  "enterAge": "Введите возраст",
+  "notSpecified": "Не указан",
+  "lifeSpheres": "Сферы жизни",
+  "mySpheres": "Мои сферы",
+  "edit": "Редактировать",
+  "habits": "Привычки",
+  "myHabits": "Мои привычки",
+  "noHabitsYet": "Привычек пока нет",
+  "addHabitHint": "Добавление привычек оставлено в текущем редакторе привычек.",
+  "daysCount": "{n} дней",
+  "@daysCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "focus": "Фокус",
+  "targetHoursTitle": "Норма часов в день",
+  "targetHoursSubtitle": "Используется для расчёта прогресса",
+  "targetHoursField": "Часы в день",
+  "hoursShort": "ч",
+  "notifications": "Уведомления",
+  "allowNotifications": "Разрешить уведомления",
+  "notificationsSubtitle": "Работает только пока вкладка открыта",
+  "eveningCheckIn": "Вечерний чек-ин",
+  "eveningCheckInBody": "Отметь настроение и заверши день спокойно.",
+  "everyDayAt": "Каждый день в {time}",
+  "@everyDayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsUnsupported": "Уведомления в этой среде не поддерживаются.",
+  "notificationsEnabled": "Уведомления разрешены.",
+  "notificationsDenied": "Разрешение на уведомления не получено.",
+  "notificationsMasterSubtitleOn": "Включены",
+  "notificationsMasterSubtitleOff": "Выключены",
+  "notificationsSystemDisabledHint": "Отключены в системных настройках iOS",
+  "openSystemSettings": "Открыть настройки iOS",
+  "notificationsGoalsTitle": "Напоминания о целях",
+  "notificationsGoalsSubtitle": "За {minutes} мин до начала",
+  "@notificationsGoalsSubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsReflectionTitle": "Вечерняя рефлексия",
+  "notificationsHabitsTitle": "Напоминания о привычках",
+  "notificationsMinutesPickerTitle": "За сколько минут напоминать",
+  "app": "Приложение",
+  "language": "Язык",
+  "system": "Системный",
+  "googleCalendarSubtitle": "Экспорт целей в календарь",
+  "googleCalendarMovedHint": "Google Calendar теперь находится в настройках профиля.",
+  "exportData": "Экспортировать данные",
+  "exportDataSubtitle": "JSON-экспорт всего аккаунта",
+  "exportCopied": "Экспорт скопирован в буфер обмена.",
+  "exportFailed": "Не удалось экспортировать данные",
+  "notSignedIn": "Пользователь не авторизован.",
+  "legalDocuments": "Правовые документы",
+  "openLinkFailed": "Не удалось открыть ссылку.",
+  "signOut": "Выйти из аккаунта",
+  "signOutConfirm": "Ты точно хочешь выйти из аккаунта?",
+  "deleteAccount": "Удалить аккаунт",
+  "deleteAccountSubtitle": "Все данные будут удалены безвозвратно",
+  "deleteAccountConfirm": "Это действие нельзя отменить. Все данные аккаунта будут удалены безвозвратно.",
+  "cancel": "Отмена",
+  "desiredBalance": "Колесо жизни",
+  "desiredBalanceHint": "Настрой колесо жизни по выбранным сферам. Общая сумма не может быть больше 100%.",
+  "lifeWheelTapHint": "Нажми на сектор или сферу ниже, чтобы задать точный процент.",
+  "outOfHundredPercent": "из 100%",
+  "percent": "Процент",
+  "lifeWheelPercentLimit": "Можно указать от 0 до {maxAllowed}%. Общая сумма баланса не может превышать 100%.",
+  "@lifeWheelPercentLimit": {
+    "placeholders": {
+      "maxAllowed": {
+        "type": "int"
+      }
+    }
+  },
+  "save": "Сохранить",
+  "saving": "Сохранение…",
+  "newHabit": "Новая привычка",
+  "editHabit": "Редактировать привычку",
+  "habitName": "Название привычки",
+  "negativeHabit": "Анти-привычка",
+  "deleteHabit": "Удалить привычку?",
+  "deleteHabitQuestion": "Привычка \"{title}\" будет удалена.",
+  "@deleteHabitQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Удалить",
+  "spaces": "Пространства",
+  "space": "Пространство",
+  "mySpaces": "Мои пространства",
+  "spacesHint": "Создавай общие пространства для дома, семьи, поездок и проектов.",
+  "noSpacesYet": "Пространств пока нет",
+  "noSpacesHint": "Создай первое пространство и пригласи туда других пользователей.",
+  "createSpace": "Создать пространство",
+  "editSpace": "Редактировать пространство",
+  "deleteSpace": "Удалить пространство",
+  "leaveSpace": "Покинуть пространство",
+  "deleteSpaceConfirm": "Пространство и связанные с ним общие данные будут удалены. Это действие нельзя отменить.",
+  "leaveSpaceConfirm": "Ты больше не будешь видеть задачи и данные этого пространства.",
+  "spaceName": "Название пространства",
+  "spaceNameRequired": "Введите название пространства",
+  "spaceDescription": "Описание",
+  "spaceIcon": "Иконка",
+  "spaceColor": "Цвет HEX",
+  "spaceValidity": "Срок действия",
+  "noDeadline": "Бессрочно",
+  "spaceNoDeadline": "Бессрочное пространство",
+  "setDeadline": "Задать срок",
+  "changeDeadline": "Изменить срок",
+  "spaceValidUntil": "Действует до {date}",
+  "@spaceValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spaceValidityHint": "После этой даты пространство останется в базе, но исчезнет с экранов и из выбора задач.",
+  "spaceTapToManage": "Нажми, чтобы управлять участниками",
+  "spaceManageSubtitle": "Участники и приглашения",
+  "members": "Участники",
+  "noMembersYet": "Участников пока нет",
+  "inviteMember": "Пригласить",
+  "inviteMemberHint": "Приглашение будет отправлено в пространство «{spaceName}».",
+  "@inviteMemberHint": {
+    "placeholders": {
+      "spaceName": {
+        "type": "String"
+      }
+    }
+  },
+  "email": "Email",
+  "sendInvite": "Отправить",
+  "enterValidEmail": "Введите корректный email",
+  "incomingInvites": "Входящие приглашения",
+  "spaceInviteSubtitle": "Вас пригласили в общее пространство",
+  "acceptInvite": "Принять",
+  "declineInvite": "Отклонить",
+  "spaceInviteAccepted": "Приглашение принято.",
+  "spaceInviteSent": "Приглашение отправлено.",
+  "you": "Вы",
+  "spaceRoleOwner": "Владелец",
+  "spaceRoleAdmin": "Администратор",
+  "spaceRoleMember": "Участник",
+  "spaceRoleViewer": "Только просмотр",
+  "spacesLoadFailed": "Не удалось загрузить пространства",
+  "spaceMembersLoadFailed": "Не удалось загрузить участников",
+  "spaceSaveFailed": "Не удалось сохранить пространство",
+  "spaceActionFailed": "Не удалось выполнить действие",
+  "spaceInviteSendFailed": "Не удалось отправить приглашение",
+  "spaceInviteAcceptFailed": "Не удалось принять приглашение",
+  "spaceInviteDeclineFailed": "Не удалось отклонить приглашение",
+  "noData": "Нет данных",
+  "dayGoalsHeaderTitle": "Задачи на день",
+  "dayGoalsAllHiddenHint": "Все видимые задачи скрыты. Отключи фильтр «Скрыть выполненные».",
+  "dayGoalsEmptyHint": "На этот день пока нет задач. Добавь первую задачу через кнопку ниже.",
+  "dayGoalsStatTotal": "Всего",
+  "dayGoalsStatDone": "Готово",
+  "dayGoalsStatLeft": "Осталось",
+  "dayGoalsHoursLeftLabel": "Осталось часов: {hours}",
+  "@dayGoalsHoursLeftLabel": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "dayGoalsFilterAll": "Все",
+  "dayGoalsFilterPersonal": "Личные",
+  "dayGoalsFilterAllSpheres": "Все сферы",
+  "dayGoalsLaneLeftBadge": "Ост. {count}",
+  "@dayGoalsLaneLeftBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneDoneBadge": "Гот. {count}",
+  "@dayGoalsLaneDoneBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneInProgress": "⚡ В работе",
+  "dayGoalsLaneInProgressEmpty": "Здесь появятся активные задачи этого блока",
+  "dayGoalsLaneDoneTitle": "✅ Готово",
+  "dayGoalsLaneDoneEmpty": "Здесь будут завершённые задачи после фокуса-блока",
+  "dayGoalsSpaceMetaLabel": "👥 Пространство",
+  "dayGoalsCompletedLabel": "Выполнено",
+  "dayGoalsNotifSoftAskTitle": "Не пропусти ни одной цели",
+  "dayGoalsNotifSoftAskBody": "Ladna напомнит о цели за 15 минут до начала — прямо как будильник, только для дел.",
+  "dayGoalsNotifSoftAskEnable": "Включить напоминания",
+  "dayGoalsNotifSoftAskDismiss": "Не сейчас",
+  "dayGoalsPeriodMorning": "Утро",
+  "dayGoalsPeriodDay": "День",
+  "dayGoalsPeriodEvening": "Вечер",
+  "dayGoalsSphereLifePersonal": "Личное",
+  "dayGoalsSphereTravel": "Путешествия",
+  "dayGoalsSphereHome": "Дом",
+  "dayGoalsMinutesShort": "{minutes} мин",
+  "@dayGoalsMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "registerErrNameMin2": "Имя должно содержать минимум 2 символа.",
+  "launcherPlanHours": "План: {hours} ч",
+  "@launcherPlanHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "launcherGoalsAndTasks": "Цели и задачи",
+  "launcherPersonal": "Личное",
+  "launcherReportsTab": "Отчёты",
+  "launcherBudget": "Бюджет",
+  "launcherQuickActions": "Быстрые действия",
+  "launcherBulkAdd": "Массовое добавление",
+  "launcherBulkAddSubtitle": "Расходы + Задачи + Настроение",
+  "launcherAiWeeklyPlan": "AI-план на неделю",
+  "launcherAiWeeklyPlanSubtitle": "Анализ целей и прогресса",
+  "launcherAiInsights": "AI-инсайты",
+  "launcherNavAndActions": "Навигация и действия",
+  "navMenu": "Меню",
+  "navPersonal": "Личное",
+  "lifeBlocksSetupTitle": "Что будем отслеживать?",
+  "lifeBlocksSetupSubtitle": "Выбери сферы жизни. Ladna будет строить главную страницу, цели и отчёты вокруг них.",
+  "lifeBlocksSetupContinue": "Продолжить",
+  "lifeBlocksSetupHint": "Минимум 1 сфера",
+  "goalsScreenGoalsAndTasks": "Цели и задачи",
+  "goalsScreenTasks": "Задачи",
+  "goalsScreenDashboard": "Дашборд",
+  "goalsScreenWeek": "Неделя",
+  "goalsScreenMonth": "Месяц",
+  "goalsScreenCalendar": "Календарь",
+  "goalsScreenWeekView": "Неделя",
+  "goalsScreenMonthView": "Дни месяца",
+  "goalsScreenNoTasks": "Нет задач",
+  "goalsScreenCompleted": "выполнено",
+  "goalsScreenWeekSummary": "Итог недели",
+  "goalsScreenThisWeek": "Эта неделя",
+  "goalsScreenTodayShort": "сег",
+  "goalsScreenAll": "Все",
+  "goalsScreenPersonalTasks": "Личные",
+  "goalsScreenUpToOneMonth": "До 1 мес",
+  "goalsScreenUpToSixMonths": "До 6 мес",
+  "goalsScreenYearPlus": "На год+",
+  "goalsScreenBySpheres": "По сферам",
+  "goalsScreenHide": "",
+  "goalsScreenProgress": "Прогресс",
+  "goalsScreenAdd": "Добавить",
+  "goalsScreenNoGoalsYet": "Целей пока нет",
+  "goalsScreenNoGoalsYetSub": "Добавь первую цель через кнопку ниже.",
+  "goalsScreenNewGoal": "Новая цель",
+  "goalsScreenEditGoal": "Редактировать цель",
+  "goalsScreenTitle": "Название",
+  "goalsScreenDescription": "Описание",
+  "goalsScreenSphere": "Сфера",
+  "goalsScreenHorizon": "Горизонт",
+  "goalsScreenDeleteGoal": "Удалить цель",
+  "goalsScreenDeleteGoalQuestion": "Эта цель будет удалена. Связанные ежедневные задачи останутся без связи с большой целью.",
+  "goalsScreenCompletedTasks": "{done} задач выполнено из {total}",
+  "@goalsScreenCompletedTasks": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "goalsScreenGoalsCount": "{n} цели",
+  "@goalsScreenGoalsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "moodScore1": "Очень тяжело",
+  "moodScore2": "Сложно",
+  "moodScore3": "Нейтрально",
+  "moodScore4": "Хорошо",
+  "moodScore5": "Отлично",
+  "moodScaleHint": "Шкала настроения: 1 — очень тяжело, 3 — нейтрально, 5 — отлично.",
+  "moodHowAreYouTitle": "Как ты сегодня?",
+  "moodWhatInfluencedLabel": "Что повлияло на настроение?",
+  "moodRecentEntriesTitle": "Последние записи",
+  "moodNoEntriesHint": "Пока нет записей. Отметь настроение сегодня.",
+  "moodTodayLabel": "Сегодня",
+  "moodSelectedDayLabel": "Выбранный день",
+  "reportsScreenReports": "Отчёты",
+  "reportsScreenDayShort": "День",
+  "reportsScreenWeekShort": "Нед",
+  "reportsScreenMonthShort": "Мес",
+  "reportsScreenSummary": "Сводка",
+  "reportsScreenProgress": "Прогресс",
+  "reportsScreenMood": "Настроение",
+  "reportsScreenTasksDone": "Задач выполнено",
+  "reportsScreenFocusHours": "Фокус-часов",
+  "reportsScreenOutOf": "из",
+  "reportsScreenPeriodAverage": "Среднее за период",
+  "reportsScreenMoodAverage": "Среднее настроение",
+  "reportsScreenOutOfFiveAverage": "из 5 в среднем",
+  "reportsScreenOutOfFive": "из 5 баллов",
+  "reportsScreenHowMoodScoreWorks": "Как считается настроение",
+  "reportsScreenMoodScoreExplanation": "Пользователь выбирает одно из 5 настроений. Каждой иконке соответствует балл: 1 — очень тяжело, 2 — сложно, 3 — нейтрально, 4 — хорошо, 5 — отлично. В отчётах показывается среднее значение за выбранный период.",
+  "reportsScreenMoodVeryLow": "Очень тяжело",
+  "reportsScreenMoodLow": "Сложно",
+  "reportsScreenMoodNeutral": "Нейтрально",
+  "reportsScreenMoodGood": "Хорошо",
+  "reportsScreenMoodGreat": "Отлично",
+  "reportsScreenPeriodEfficiency": "Эффективность периода",
+  "reportsScreenPlan": "План",
+  "reportsScreenFact": "Факт",
+  "reportsScreenTimeBySphere": "Время по сферам",
+  "reportsScreenTopProductiveDays": "Топ-3 продуктивных дня",
+  "reportsScreenAiObservation": "AI-наблюдение",
+  "reportsScreenPeriodStatistics": "Статистика периода",
+  "reportsScreenExtendedAiObservationSchedule": "Это твоя статистика за период. Расширенное AI-наблюдение обновится в воскресенье.",
+  "reportsScreenAiLoading": "Готовлю персональное наблюдение…",
+  "reportsScreenAiUnavailable": "AI-наблюдение пока недоступно. Проверь подключение к функции или попробуй обновить позже.",
+  "reportsScreenInsight": "Инсайт",
+  "reportsScreenPattern": "Паттерн",
+  "reportsScreenPeriodTasks": "Задачи периода",
+  "reportsScreenDone": "выполнено",
+  "reportsScreenPeriodProgress": "Прогресс периода",
+  "reportsScreenTempoBelowNorm": "Темп ниже нормы",
+  "reportsScreenTempoGood": "Темп в норме",
+  "reportsScreenDetails": "Детали",
+  "reportsScreenAvgTimePerTask": "Среднее время / задачу",
+  "reportsScreenDoneOnTime": "Выполнено в срок",
+  "reportsScreenMoved": "Перенесено",
+  "reportsScreenCompleted": "Выполнено",
+  "reportsScreenForThisPeriod": "за этот период",
+  "reportsScreenBestStreak": "Лучший страйк",
+  "reportsScreenDaysInARow": "дней подряд",
+  "reportsScreenByHabits": "По привычкам",
+  "reportsScreenStreaksFourWeeks": "Страйки за 4 недели",
+  "reportsScreenFourWeeksAgo": "4 нед. назад",
+  "reportsScreenMissed": "пропуск",
+  "reportsScreenToday": "сегодня",
+  "reportsScreenBestDay": "Лучший день",
+  "reportsScreenWeekDynamics": "Динамика недели",
+  "reportsScreenByDays": "По дням",
+  "reportsScreenOnTime": "В срок",
+  "reportsScreenTasks": "Задачи",
+  "reportsScreenHours": "Часы",
+  "reportsScreenCurrentPeriodShort": "эта",
+  "reportsScreenPreviousPeriodShort": "прош.",
+  "reportsScreenCorrelations": "Корреляции",
+  "reportsScreenStreaks": "Страйки",
+  "reportsScreenWeakLink": "Слабое звено",
+  "reportsScreenNoDataYet": "Пока недостаточно данных",
+  "reportsScreenPulse": "ПУЛЬС",
+  "reportsScreenMonthEfficiency": "Эффективность месяца",
+  "reportsScreenFactVsDesiredBalance": "Факт против желаемого баланса",
+  "reportsScreenBalancePlanFactHint": "План — тонкая метка, факт — заполненная полоса.",
+  "reportsScreenBalanceEmptyHint": "Задай желаемый баланс сфер в профиле — здесь появится сравнение факта с планом.",
+  "reportsScreenPlanLegend": "план",
+  "reportsScreenFactLegend": "факт",
+  "reportsScreenOverageLegend": "перебор",
+  "reportsScreenSleepSevenPlus": "Сон 7+ часов",
+  "reportsScreenHabitCompletion": "Выполнение привычек",
+  "reportsScreenWeekStart": "Пн–Вт",
+  "reportsScreenMoreStableThanWeekend": "Стабильнее конца недели",
+  "reportsScreenHighLoad": "Высокая нагрузка",
+  "reportsScreenTaskImpact": "Влияние задач",
+  "reportsScreenDaysWithHabits": "Дни с привычками",
+  "reportsScreenMoodHigher": "Настроение выше",
+  "reportsScreenOpenTasks": "Незакрытые задачи",
+  "reportsScreenMoodImpact": "Влияние на настроение",
+  "reportsScreenExpensesAboveNorm": "Расходы выше нормы",
+  "reportsScreenNextDayMood": "Настроение следующего дня",
+  "reportsScreenComparisonTitleDay": "Этот день vs прошлый",
+  "reportsScreenComparisonTitleWeek": "Эта неделя vs прошлая",
+  "reportsScreenComparisonTitleMonth": "Этот месяц vs прошлый",
+  "reportsScreenBestDaySubtitle": "{tasks} задач · {hours} ч фокуса",
+  "@reportsScreenBestDaySubtitle": {
+    "placeholders": {
+      "tasks": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsScreenMonthEfficiencySubtitle": "{completed} задач {outOf} {total} · осталось {daysLeft} дней",
+  "@reportsScreenMonthEfficiencySubtitle": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "outOf": {
+        "type": "String"
+      },
+      "total": {
+        "type": "int"
+      },
+      "daysLeft": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenWeakLinkRecommendation": "{label} — {pct}% за период. Привяжи к самой простой привычке.",
+  "@reportsScreenWeakLinkRecommendation": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenSummaryInsight": "Ты продуктивнее во вторник и среду. Перенеси самые важные задачи на начало недели.",
+  "reportsScreenProgressInsight": "Задачи по одной сфере откладываются чаще других. Попробуй закрепить для них отдельный утренний блок.",
+  "reportsScreenHabitsInsight": "В дни, когда выполнены привычки, продуктивность обычно выше. Начинай день с самой простой привычки.",
+  "reportsScreenMoodInsight": "Настроение выше в дни с выполненными привычками. Сохраняй маленький ритуал утром."
 }

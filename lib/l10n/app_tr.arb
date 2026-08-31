@@ -1775,38 +1775,488 @@
   "launcherDayGoals": "Hedefler",
   "launcherPlannedHoursDescription": "Plan: {hours} sa",
   "@launcherPlannedHoursDescription": {
-  "placeholders": {
-    "hours": {}
-  }
-},
-"profileGdprSection": "Gizlilik ve GDPR",
-"profileGdprExportTitle": "Verilerimi dışa aktar",
-"profileGdprExportSubtitle": "Hesabına bağlı tüm uygulama verilerinin JSON dışa aktarımını oluşturur.",
-"profileGdprNotSignedInToast": "Oturum açmadın. Veri dışa aktarımı mümkün değil.",
-"profileGdprDialogTitle": "GDPR veri dışa aktarımı oluşturuldu",
-"profileGdprDialogFileName": "Dosya adı: {fileName}",
-"@profileGdprDialogFileName": {
-  "placeholders": {
-    "fileName": {
-      "type": "String"
+    "placeholders": {
+      "hours": {}
     }
-  }
-},
-"profileGdprDialogBody": "Dışa aktarım JSON olarak oluşturuldu ve panoya kopyalandı.\n\nİçeriği artık .json uzantılı bir dosyaya yapıştırabilirsin.",
-"profileGdprDialogPreviewLabel": "Önizleme:",
-"profileGdprCopyButton": "Kopyala",
-"profileGdprDoneButton": "Tamam",
-"profileGdprCopiedAgainToast": "Veri dışa aktarımı tekrar panoya kopyalandı.",
-"profileGdprCreatedToast": "GDPR veri dışa aktarımı oluşturuldu ve kopyalandı.",
-"profileGdprFailedToast": "Veri dışa aktarımı başarısız oldu: {error}",
-"@profileGdprFailedToast": {
-  "placeholders": {
-    "error": {
-      "type": "String"
+  },
+  "profileGdprSection": "Gizlilik ve GDPR",
+  "profileGdprExportTitle": "Verilerimi dışa aktar",
+  "profileGdprExportSubtitle": "Hesabına bağlı tüm uygulama verilerinin JSON dışa aktarımını oluşturur.",
+  "profileGdprNotSignedInToast": "Oturum açmadın. Veri dışa aktarımı mümkün değil.",
+  "profileGdprDialogTitle": "GDPR veri dışa aktarımı oluşturuldu",
+  "profileGdprDialogFileName": "Dosya adı: {fileName}",
+  "@profileGdprDialogFileName": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
     }
-  }
-},
-"profileGdprExportNoteAccount": "Bu dışa aktarım; kimliği doğrulanmış kullanıcı hesabını, public.users profil kaydını, kullanıcıya bağlı tüm uygulama tablolarını ve dışa aktarılan yanıtları anlamak için gerekli referans tablolarını içerir.",
-"profileGdprExportNoteRls": "Dışa aktarım Supabase Row Level Security ile sınırlıdır. Var olmayan veya okunamayan tablolar _export_warning girdisiyle döndürülür.",
-"profileGdprExportNoteEncrypted": "Şifrelenmiş payload alanları saklandıkları şekilde dışa aktarılır. Şifre çözme, uygulamanın şifreleme uygulamasına ve aktif kullanıcı oturumuna bağlıdır."
+  },
+  "profileGdprDialogBody": "Dışa aktarım JSON olarak oluşturuldu ve panoya kopyalandı.\n\nİçeriği artık .json uzantılı bir dosyaya yapıştırabilirsin.",
+  "profileGdprDialogPreviewLabel": "Önizleme:",
+  "profileGdprCopyButton": "Kopyala",
+  "profileGdprDoneButton": "Tamam",
+  "profileGdprCopiedAgainToast": "Veri dışa aktarımı tekrar panoya kopyalandı.",
+  "profileGdprCreatedToast": "GDPR veri dışa aktarımı oluşturuldu ve kopyalandı.",
+  "profileGdprFailedToast": "Veri dışa aktarımı başarısız oldu: {error}",
+  "@profileGdprFailedToast": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "profileGdprExportNoteAccount": "Bu dışa aktarım; kimliği doğrulanmış kullanıcı hesabını, public.users profil kaydını, kullanıcıya bağlı tüm uygulama tablolarını ve dışa aktarılan yanıtları anlamak için gerekli referans tablolarını içerir.",
+  "profileGdprExportNoteRls": "Dışa aktarım Supabase Row Level Security ile sınırlıdır. Var olmayan veya okunamayan tablolar _export_warning girdisiyle döndürülür.",
+  "profileGdprExportNoteEncrypted": "Şifrelenmiş payload alanları saklandıkları şekilde dışa aktarılır. Şifre çözme, uygulamanın şifreleme uygulamasına ve aktif kullanıcı oturumuna bağlıdır.",
+  "profile": "Profil",
+  "settings": "Ayarlar",
+  "profileFallbackName": "Kullanıcı",
+  "profileNoEmail": "E-posta yok",
+  "personalData": "Kişisel bilgiler",
+  "name": "Ad",
+  "enterName": "Ad gir",
+  "age": "Yaş",
+  "enterAge": "Yaş gir",
+  "notSpecified": "Belirtilmedi",
+  "lifeSpheres": "Yaşam alanları",
+  "mySpheres": "Alanlarım",
+  "edit": "Düzenle",
+  "habits": "Alışkanlıklar",
+  "myHabits": "Alışkanlıklarım",
+  "noHabitsYet": "Henüz alışkanlık yok",
+  "addHabitHint": "Habit creation remains in the current habit editor.",
+  "daysCount": "{n} gün",
+  "@daysCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "focus": "Odak",
+  "targetHoursTitle": "Günlük hedef saat",
+  "targetHoursSubtitle": "İlerleme hesabında kullanılır",
+  "targetHoursField": "Günde saat",
+  "hoursShort": "sa",
+  "notifications": "Bildirimler",
+  "allowNotifications": "Bildirimlere izin ver",
+  "notificationsSubtitle": "Sekme açıkken çalışır",
+  "eveningCheckIn": "Akşam kontrolü",
+  "eveningCheckInBody": "Log your mood and close the day calmly.",
+  "everyDayAt": "Her gün {time}",
+  "@everyDayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsUnsupported": "Notifications are not supported here.",
+  "notificationsEnabled": "Notifications enabled.",
+  "notificationsDenied": "Notification permission was not granted.",
+  "notificationsMasterSubtitleOn": "Etkin",
+  "notificationsMasterSubtitleOff": "Kapalı",
+  "notificationsSystemDisabledHint": "iOS sistem ayarlarında kapalı",
+  "openSystemSettings": "iOS Ayarlarını Aç",
+  "notificationsGoalsTitle": "Hedef hatırlatmaları",
+  "notificationsGoalsSubtitle": "Başlamadan {minutes} dk önce",
+  "@notificationsGoalsSubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsReflectionTitle": "Akşam yansıması",
+  "notificationsHabitsTitle": "Alışkanlık hatırlatmaları",
+  "notificationsMinutesPickerTitle": "Kaç dakika önce",
+  "app": "Uygulama",
+  "language": "Dil",
+  "system": "Sistem",
+  "googleCalendarSubtitle": "Hedefleri takvime aktar",
+  "googleCalendarMovedHint": "Google Calendar is now in profile settings.",
+  "exportData": "Verileri dışa aktar",
+  "exportDataSubtitle": "Hesabın JSON çıktısı",
+  "exportCopied": "Export copied to clipboard.",
+  "exportFailed": "Could not export data",
+  "notSignedIn": "User is not signed in.",
+  "legalDocuments": "Yasal belgeler",
+  "openLinkFailed": "Could not open the link.",
+  "signOut": "Çıkış yap",
+  "signOutConfirm": "Are you sure you want to sign out?",
+  "deleteAccount": "Hesabı sil",
+  "deleteAccountSubtitle": "All data will be permanently deleted",
+  "deleteAccountConfirm": "This cannot be undone. All account data will be permanently deleted.",
+  "cancel": "İptal",
+  "desiredBalance": "Yaşam çarkı",
+  "desiredBalanceHint": "Seçili alanlara göre yaşam çarkını ayarla. Toplam %100’ü geçemez.",
+  "lifeWheelTapHint": "Kesin yüzdeyi belirlemek için bir segmente veya aşağıdaki alana dokun.",
+  "outOfHundredPercent": "%100 üzerinden",
+  "percent": "Yüzde",
+  "lifeWheelPercentLimit": "0 ile {maxAllowed}% arasında değer girebilirsin. Toplam denge %100’ü geçemez.",
+  "@lifeWheelPercentLimit": {
+    "placeholders": {
+      "maxAllowed": {
+        "type": "int"
+      }
+    }
+  },
+  "save": "Kaydet",
+  "saving": "Kaydediliyor…",
+  "newHabit": "Yeni alışkanlık",
+  "editHabit": "Alışkanlığı düzenle",
+  "habitName": "Alışkanlık adı",
+  "negativeHabit": "Negatif alışkanlık",
+  "deleteHabit": "Alışkanlık silinsin mi?",
+  "deleteHabitQuestion": "\"{title}\" alışkanlığı silinecek.",
+  "@deleteHabitQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Sil",
+  "spaces": "Alanlar",
+  "space": "Alan",
+  "mySpaces": "Alanlarım",
+  "spacesHint": "Ev, aile, seyahat ve projeler için ortak alanlar oluştur.",
+  "noSpacesYet": "Henüz alan yok",
+  "noSpacesHint": "İlk alanını oluştur ve diğer kullanıcıları davet et.",
+  "createSpace": "Alan oluştur",
+  "editSpace": "Alanı düzenle",
+  "deleteSpace": "Alanı sil",
+  "leaveSpace": "Alandan ayrıl",
+  "deleteSpaceConfirm": "Bu alan ve paylaşılan verileri silinecek. Bu işlem geri alınamaz.",
+  "leaveSpaceConfirm": "Bu alandaki görevleri ve verileri artık görmeyeceksin.",
+  "spaceName": "Alan adı",
+  "spaceNameRequired": "Bir alan adı gir",
+  "spaceDescription": "Açıklama",
+  "spaceIcon": "Simge",
+  "spaceColor": "HEX renk",
+  "spaceValidity": "Geçerlilik",
+  "noDeadline": "Süresiz",
+  "spaceNoDeadline": "Süresiz alan",
+  "setDeadline": "Tarih belirle",
+  "changeDeadline": "Tarihi değiştir",
+  "spaceValidUntil": "{date} tarihine kadar geçerli",
+  "@spaceValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spaceValidityHint": "Bu tarihten sonra alan veritabanında kalır, ancak ekranlardan ve görev seçiminden kaybolur.",
+  "spaceTapToManage": "Üyeleri yönetmek için dokun",
+  "spaceManageSubtitle": "Üyeler ve davetler",
+  "members": "Üyeler",
+  "noMembersYet": "Henüz üye yok",
+  "inviteMember": "Davet et",
+  "inviteMemberHint": "Davet “{spaceName}” alanı için gönderilecek.",
+  "@inviteMemberHint": {
+    "placeholders": {
+      "spaceName": {
+        "type": "String"
+      }
+    }
+  },
+  "email": "E-posta",
+  "sendInvite": "Gönder",
+  "enterValidEmail": "Geçerli bir e-posta gir",
+  "incomingInvites": "Gelen davetler",
+  "spaceInviteSubtitle": "Ortak bir alana davet edildin",
+  "acceptInvite": "Kabul et",
+  "declineInvite": "Reddet",
+  "spaceInviteAccepted": "Davet kabul edildi.",
+  "spaceInviteSent": "Davet gönderildi.",
+  "you": "Sen",
+  "spaceRoleOwner": "Sahip",
+  "spaceRoleAdmin": "Yönetici",
+  "spaceRoleMember": "Üye",
+  "spaceRoleViewer": "Sadece görüntüleme",
+  "spacesLoadFailed": "Could not load spaces",
+  "spaceMembersLoadFailed": "Could not load members",
+  "spaceSaveFailed": "Could not save space",
+  "spaceActionFailed": "Could not complete the action",
+  "spaceInviteSendFailed": "Could not send invite",
+  "spaceInviteAcceptFailed": "Could not accept invite",
+  "spaceInviteDeclineFailed": "Could not decline invite",
+  "noData": "Veri yok",
+  "dayGoalsHeaderTitle": "Günlük görevler",
+  "dayGoalsAllHiddenHint": "Görünen görevler gizli. “Tamamlananları gizle” seçeneğini kapat.",
+  "dayGoalsEmptyHint": "Bugün için henüz görev yok. Aşağıdaki düğmeyle ilk görevi ekle.",
+  "dayGoalsStatTotal": "Toplam",
+  "dayGoalsStatDone": "Bitti",
+  "dayGoalsStatLeft": "Kalan",
+  "dayGoalsHoursLeftLabel": "Kalan saat: {hours}",
+  "@dayGoalsHoursLeftLabel": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "dayGoalsFilterAll": "Tümü",
+  "dayGoalsFilterPersonal": "Kişisel",
+  "dayGoalsFilterAllSpheres": "Tüm alanlar",
+  "dayGoalsLaneLeftBadge": "Kalan {count}",
+  "@dayGoalsLaneLeftBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneDoneBadge": "Bitti {count}",
+  "@dayGoalsLaneDoneBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneInProgress": "⚡ Devam ediyor",
+  "dayGoalsLaneInProgressEmpty": "Bu bloğun aktif görevleri burada görünecek",
+  "dayGoalsLaneDoneTitle": "✅ Bitti",
+  "dayGoalsLaneDoneEmpty": "Odak bloğundan sonra tamamlanan görevler burada görünecek",
+  "dayGoalsSpaceMetaLabel": "👥 Alan",
+  "dayGoalsCompletedLabel": "Tamamlandı",
+  "dayGoalsNotifSoftAskTitle": "Hiçbir hedefi kaçırma",
+  "dayGoalsNotifSoftAskBody": "Ladna, bir hedef başlamadan 15 dakika önce sana hatırlatacak — bir alarm gibi ama görevlerin için.",
+  "dayGoalsNotifSoftAskEnable": "Hatırlatıcıları etkinleştir",
+  "dayGoalsNotifSoftAskDismiss": "Şimdi değil",
+  "dayGoalsPeriodMorning": "Sabah",
+  "dayGoalsPeriodDay": "Gün",
+  "dayGoalsPeriodEvening": "Akşam",
+  "dayGoalsSphereLifePersonal": "Kişisel",
+  "dayGoalsSphereTravel": "Seyahat",
+  "dayGoalsSphereHome": "Ev",
+  "dayGoalsMinutesShort": "{minutes} dk",
+  "@dayGoalsMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "registerErrNameMin2": "Ad en az 2 karakter olmalı.",
+  "launcherPlanHours": "Plan: {hours} sa",
+  "@launcherPlanHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "launcherGoalsAndTasks": "Hedefler ve görevler",
+  "launcherPersonal": "Kişisel",
+  "launcherReportsTab": "Raporlar",
+  "launcherBudget": "Bütçe",
+  "launcherQuickActions": "Hızlı işlemler",
+  "launcherBulkAdd": "Toplu ekleme",
+  "launcherBulkAddSubtitle": "Gider + görev + ruh hali",
+  "launcherAiWeeklyPlan": "AI haftalık plan",
+  "launcherAiWeeklyPlanSubtitle": "Hedef ve ilerleme analizi",
+  "launcherAiInsights": "AI içgörüleri",
+  "launcherNavAndActions": "Gezinme ve işlemler",
+  "navMenu": "Menü",
+  "navPersonal": "Kişisel",
+  "lifeBlocksSetupTitle": "Neyi takip edelim?",
+  "lifeBlocksSetupSubtitle": "Yaşam alanlarını seç. Ladna ana ekranı, hedefleri ve raporları buna göre düzenler.",
+  "lifeBlocksSetupContinue": "Devam et",
+  "lifeBlocksSetupHint": "En az 1 alan seç",
+  "goalsScreenGoalsAndTasks": "Hedefler ve görevler",
+  "goalsScreenTasks": "Görevler",
+  "goalsScreenDashboard": "Panel",
+  "goalsScreenWeek": "Hafta",
+  "goalsScreenMonth": "Ay",
+  "goalsScreenCalendar": "Takvim",
+  "goalsScreenWeekView": "Hafta görünümü",
+  "goalsScreenMonthView": "Ay günleri",
+  "goalsScreenNoTasks": "Görev yok",
+  "goalsScreenCompleted": "tamamlandı",
+  "goalsScreenWeekSummary": "Hafta özeti",
+  "goalsScreenThisWeek": "Bu hafta",
+  "goalsScreenTodayShort": "bugün",
+  "goalsScreenAll": "Tümü",
+  "goalsScreenPersonalTasks": "Kişisel",
+  "goalsScreenUpToOneMonth": "1 aya kadar",
+  "goalsScreenUpToSixMonths": "6 aya kadar",
+  "goalsScreenYearPlus": "1 yıl+",
+  "goalsScreenBySpheres": "Alanlara göre",
+  "goalsScreenHide": "",
+  "goalsScreenProgress": "İlerleme",
+  "goalsScreenAdd": "Ekle",
+  "goalsScreenNoGoalsYet": "Henüz hedef yok",
+  "goalsScreenNoGoalsYetSub": "Aşağıdaki düğmeyle ilk hedefini ekle.",
+  "goalsScreenNewGoal": "Yeni hedef",
+  "goalsScreenEditGoal": "Hedefi düzenle",
+  "goalsScreenTitle": "Başlık",
+  "goalsScreenDescription": "Açıklama",
+  "goalsScreenSphere": "Alan",
+  "goalsScreenHorizon": "Ufuk",
+  "goalsScreenDeleteGoal": "Hedefi sil",
+  "goalsScreenDeleteGoalQuestion": "Bu hedef silinecek. İlgili günlük görevler kalır, ancak büyük hedef bağlantısı olmadan.",
+  "goalsScreenCompletedTasks": "{total} görevden {done} tamamlandı",
+  "@goalsScreenCompletedTasks": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "goalsScreenGoalsCount": "{n} hedef",
+  "@goalsScreenGoalsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "moodScore1": "Çok düşük",
+  "moodScore2": "Düşük",
+  "moodScore3": "Nötr",
+  "moodScore4": "İyi",
+  "moodScore5": "Harika",
+  "moodScaleHint": "Ruh hali ölçeği: 1 çok düşük, 3 nötr, 5 harika.",
+  "moodHowAreYouTitle": "Bugün nasılsın?",
+  "moodWhatInfluencedLabel": "Ruh halini ne etkiledi?",
+  "moodRecentEntriesTitle": "Son kayıtlar",
+  "moodNoEntriesHint": "Henüz kayıt yok.",
+  "moodTodayLabel": "Bugün",
+  "moodSelectedDayLabel": "Seçili gün",
+  "reportsScreenReports": "Raporlar",
+  "reportsScreenDayShort": "Gün",
+  "reportsScreenWeekShort": "Hafta",
+  "reportsScreenMonthShort": "Ay",
+  "reportsScreenSummary": "Özet",
+  "reportsScreenProgress": "İlerleme",
+  "reportsScreenMood": "Ruh hali",
+  "reportsScreenTasksDone": "Tasks done",
+  "reportsScreenFocusHours": "Focus hours",
+  "reportsScreenOutOf": "/",
+  "reportsScreenPeriodAverage": "Period average",
+  "reportsScreenMoodAverage": "Ortalama ruh hali",
+  "reportsScreenOutOfFiveAverage": "out of 5 average",
+  "reportsScreenOutOfFive": "out of 5",
+  "reportsScreenHowMoodScoreWorks": "Ruh hali nasıl hesaplanır",
+  "reportsScreenMoodScoreExplanation": "Kullanıcı 5 ruh halinden birini seçer. Her ikonun puanı vardır: 1 çok düşük, 2 düşük, 3 nötr, 4 iyi, 5 harika. Raporlar seçilen dönem ortalamasını gösterir.",
+  "reportsScreenMoodVeryLow": "Çok düşük",
+  "reportsScreenMoodLow": "Düşük",
+  "reportsScreenMoodNeutral": "Nötr",
+  "reportsScreenMoodGood": "İyi",
+  "reportsScreenMoodGreat": "Harika",
+  "reportsScreenPeriodEfficiency": "Period efficiency",
+  "reportsScreenPlan": "Plan",
+  "reportsScreenFact": "Actual",
+  "reportsScreenTimeBySphere": "Time by spheres",
+  "reportsScreenTopProductiveDays": "Top 3 productive days",
+  "reportsScreenAiObservation": "AI observation",
+  "reportsScreenPeriodStatistics": "Dönem istatistikleri",
+  "reportsScreenExtendedAiObservationSchedule": "Bu, dönem istatistiklerin. Genişletilmiş AI gözlemi pazar günü güncellenecek.",
+  "reportsScreenAiLoading": "Kişisel gözlem hazırlanıyor…",
+  "reportsScreenAiUnavailable": "AI gözlemi şu anda kullanılamıyor. Fonksiyon bağlantısını kontrol et veya daha sonra tekrar dene.",
+  "reportsScreenInsight": "Insight",
+  "reportsScreenPattern": "Pattern",
+  "reportsScreenPeriodTasks": "Period tasks",
+  "reportsScreenDone": "done",
+  "reportsScreenPeriodProgress": "Period progress",
+  "reportsScreenTempoBelowNorm": "Pace below target",
+  "reportsScreenTempoGood": "Pace is on track",
+  "reportsScreenDetails": "Details",
+  "reportsScreenAvgTimePerTask": "Avg. time / task",
+  "reportsScreenDoneOnTime": "Done on time",
+  "reportsScreenMoved": "Moved",
+  "reportsScreenCompleted": "Completed",
+  "reportsScreenForThisPeriod": "for this period",
+  "reportsScreenBestStreak": "Best streak",
+  "reportsScreenDaysInARow": "days in a row",
+  "reportsScreenByHabits": "By habits",
+  "reportsScreenStreaksFourWeeks": "Streaks over 4 weeks",
+  "reportsScreenFourWeeksAgo": "4 weeks ago",
+  "reportsScreenMissed": "missed",
+  "reportsScreenToday": "today",
+  "reportsScreenBestDay": "Best day",
+  "reportsScreenWeekDynamics": "Week dynamics",
+  "reportsScreenByDays": "By days",
+  "reportsScreenOnTime": "Zamanında",
+  "reportsScreenTasks": "Görevler",
+  "reportsScreenHours": "Saat",
+  "reportsScreenCurrentPeriodShort": "bu",
+  "reportsScreenPreviousPeriodShort": "önceki",
+  "reportsScreenCorrelations": "Korelasyonlar",
+  "reportsScreenStreaks": "Seriler",
+  "reportsScreenWeakLink": "Zayıf halka",
+  "reportsScreenNoDataYet": "Not enough data yet",
+  "reportsScreenPulse": "NABIZ",
+  "reportsScreenMonthEfficiency": "Ay verimliliği",
+  "reportsScreenFactVsDesiredBalance": "Gerçek vs istenen denge",
+  "reportsScreenBalancePlanFactHint": "Plan ince işaret, gerçek dolu çubuktur.",
+  "reportsScreenBalanceEmptyHint": "Profilde istediğin yaşam dengesini belirle — gerçek ve plan karşılaştırması burada görünecek.",
+  "reportsScreenPlanLegend": "plan",
+  "reportsScreenFactLegend": "gerçek",
+  "reportsScreenOverageLegend": "fazla",
+  "reportsScreenSleepSevenPlus": "7+ saat uyku",
+  "reportsScreenHabitCompletion": "Alışkanlık tamamlama",
+  "reportsScreenWeekStart": "Pzt–Sal",
+  "reportsScreenMoreStableThanWeekend": "Hafta sonundan daha stabil",
+  "reportsScreenHighLoad": "Yüksek yoğunluk",
+  "reportsScreenTaskImpact": "Görev etkisi",
+  "reportsScreenDaysWithHabits": "Alışkanlıklı günler",
+  "reportsScreenMoodHigher": "Ruh hali daha yüksek",
+  "reportsScreenOpenTasks": "Açık görevler",
+  "reportsScreenMoodImpact": "Ruh hali etkisi",
+  "reportsScreenExpensesAboveNorm": "Norm üstü harcamalar",
+  "reportsScreenNextDayMood": "Ertesi gün ruh hali",
+  "reportsScreenComparisonTitleDay": "Bu gün vs önceki gün",
+  "reportsScreenComparisonTitleWeek": "Bu hafta vs geçen hafta",
+  "reportsScreenComparisonTitleMonth": "Bu ay vs geçen ay",
+  "reportsScreenBestDaySubtitle": "{tasks} görev · {hours} s odak",
+  "@reportsScreenBestDaySubtitle": {
+    "placeholders": {
+      "tasks": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsScreenMonthEfficiencySubtitle": "{completed} görev {outOf} {total} · {daysLeft} gün kaldı",
+  "@reportsScreenMonthEfficiencySubtitle": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "outOf": {
+        "type": "String"
+      },
+      "total": {
+        "type": "int"
+      },
+      "daysLeft": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenWeakLinkRecommendation": "{label} — dönem için %{pct}. Bunu en kolay alışkanlığına bağla.",
+  "@reportsScreenWeakLinkRecommendation": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenSummaryInsight": "You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.",
+  "reportsScreenProgressInsight": "One sphere is postponed more often than others. Try reserving a separate morning block for it.",
+  "reportsScreenHabitsInsight": "On days when habits are completed, productivity is usually higher. Start with the easiest habit.",
+  "reportsScreenMoodInsight": "Mood is higher on days with completed habits. Keep a small morning ritual."
 }

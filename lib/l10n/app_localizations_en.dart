@@ -3762,4 +3762,1032 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileGdprExportNoteEncrypted =>
       'Encrypted payload fields are exported as stored. Decryption depends on the app encryption implementation and the active user session.';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get profileFallbackName => 'User';
+
+  @override
+  String get profileNoEmail => 'No email';
+
+  @override
+  String get personalData => 'Personal data';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get enterName => 'Enter name';
+
+  @override
+  String get age => 'Age';
+
+  @override
+  String get enterAge => 'Enter age';
+
+  @override
+  String get notSpecified => 'Not specified';
+
+  @override
+  String get lifeSpheres => 'Life spheres';
+
+  @override
+  String get mySpheres => 'My spheres';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get habits => 'Habits';
+
+  @override
+  String get myHabits => 'My habits';
+
+  @override
+  String get noHabitsYet => 'No habits yet';
+
+  @override
+  String get addHabitHint =>
+      'Habit creation remains in the current habit editor.';
+
+  @override
+  String daysCount(int n) {
+    return '$n days';
+  }
+
+  @override
+  String get focus => 'Focus';
+
+  @override
+  String get targetHoursTitle => 'Daily target hours';
+
+  @override
+  String get targetHoursSubtitle => 'Used to calculate progress';
+
+  @override
+  String get targetHoursField => 'Hours per day';
+
+  @override
+  String get hoursShort => 'h';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get allowNotifications => 'Allow notifications';
+
+  @override
+  String get notificationsSubtitle => 'Works while the tab is open';
+
+  @override
+  String get eveningCheckIn => 'Evening check-in';
+
+  @override
+  String get eveningCheckInBody => 'Log your mood and close the day calmly.';
+
+  @override
+  String everyDayAt(String time) {
+    return 'Every day at $time';
+  }
+
+  @override
+  String get notificationsUnsupported =>
+      'Notifications are not supported here.';
+
+  @override
+  String get notificationsEnabled => 'Notifications enabled.';
+
+  @override
+  String get notificationsDenied => 'Notification permission was not granted.';
+
+  @override
+  String get notificationsMasterSubtitleOn => 'Enabled';
+
+  @override
+  String get notificationsMasterSubtitleOff => 'Disabled';
+
+  @override
+  String get notificationsSystemDisabledHint =>
+      'Disabled in iOS system settings';
+
+  @override
+  String get openSystemSettings => 'Open iOS Settings';
+
+  @override
+  String get notificationsGoalsTitle => 'Goal reminders';
+
+  @override
+  String notificationsGoalsSubtitle(int minutes) {
+    return '$minutes min before start';
+  }
+
+  @override
+  String get notificationsReflectionTitle => 'Evening reflection';
+
+  @override
+  String get notificationsHabitsTitle => 'Habit reminders';
+
+  @override
+  String get notificationsMinutesPickerTitle => 'How many minutes before';
+
+  @override
+  String get app => 'App';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get system => 'System';
+
+  @override
+  String get googleCalendarSubtitle => 'Export goals to calendar';
+
+  @override
+  String get googleCalendarMovedHint =>
+      'Google Calendar is now in profile settings.';
+
+  @override
+  String get exportData => 'Export data';
+
+  @override
+  String get exportDataSubtitle => 'JSON export of your account';
+
+  @override
+  String get exportCopied => 'Export copied to clipboard.';
+
+  @override
+  String get exportFailed => 'Could not export data';
+
+  @override
+  String get notSignedIn => 'User is not signed in.';
+
+  @override
+  String get legalDocuments => 'Legal documents';
+
+  @override
+  String get openLinkFailed => 'Could not open the link.';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String get signOutConfirm => 'Are you sure you want to sign out?';
+
+  @override
+  String get deleteAccount => 'Delete account';
+
+  @override
+  String get deleteAccountSubtitle => 'All data will be permanently deleted';
+
+  @override
+  String get deleteAccountConfirm =>
+      'This cannot be undone. All account data will be permanently deleted.';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get desiredBalance => 'Life wheel';
+
+  @override
+  String get desiredBalanceHint =>
+      'Set up your life wheel for the selected areas. Total cannot exceed 100%.';
+
+  @override
+  String get lifeWheelTapHint =>
+      'Tap a segment or an area below to set an exact percentage.';
+
+  @override
+  String get outOfHundredPercent => 'of 100%';
+
+  @override
+  String get percent => 'Percentage';
+
+  @override
+  String lifeWheelPercentLimit(int maxAllowed) {
+    return 'You can enter 0 to $maxAllowed%. The total balance cannot exceed 100%.';
+  }
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get saving => 'Saving…';
+
+  @override
+  String get newHabit => 'New habit';
+
+  @override
+  String get editHabit => 'Edit habit';
+
+  @override
+  String get habitName => 'Habit name';
+
+  @override
+  String get negativeHabit => 'Negative habit';
+
+  @override
+  String get deleteHabit => 'Delete habit?';
+
+  @override
+  String deleteHabitQuestion(String title) {
+    return 'Habit \"$title\" will be deleted.';
+  }
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get spaces => 'Spaces';
+
+  @override
+  String get space => 'Space';
+
+  @override
+  String get mySpaces => 'My spaces';
+
+  @override
+  String get spacesHint =>
+      'Create shared spaces for home, family, trips, and projects.';
+
+  @override
+  String get noSpacesYet => 'No spaces yet';
+
+  @override
+  String get noSpacesHint => 'Create your first space and invite other users.';
+
+  @override
+  String get createSpace => 'Create space';
+
+  @override
+  String get editSpace => 'Edit space';
+
+  @override
+  String get deleteSpace => 'Delete space';
+
+  @override
+  String get leaveSpace => 'Leave space';
+
+  @override
+  String get deleteSpaceConfirm =>
+      'This space and its shared data will be deleted. This cannot be undone.';
+
+  @override
+  String get leaveSpaceConfirm =>
+      'You will no longer see tasks and data from this space.';
+
+  @override
+  String get spaceName => 'Space name';
+
+  @override
+  String get spaceNameRequired => 'Enter a space name';
+
+  @override
+  String get spaceDescription => 'Description';
+
+  @override
+  String get spaceIcon => 'Icon';
+
+  @override
+  String get spaceColor => 'HEX color';
+
+  @override
+  String get spaceValidity => 'Validity';
+
+  @override
+  String get noDeadline => 'No deadline';
+
+  @override
+  String get spaceNoDeadline => 'No expiration date';
+
+  @override
+  String get setDeadline => 'Set date';
+
+  @override
+  String get changeDeadline => 'Change date';
+
+  @override
+  String spaceValidUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String get spaceValidityHint =>
+      'After this date, the space stays in the database but disappears from screens and task selection.';
+
+  @override
+  String get spaceTapToManage => 'Tap to manage members';
+
+  @override
+  String get spaceManageSubtitle => 'Members and invites';
+
+  @override
+  String get members => 'Members';
+
+  @override
+  String get noMembersYet => 'No members yet';
+
+  @override
+  String get inviteMember => 'Invite';
+
+  @override
+  String inviteMemberHint(String spaceName) {
+    return 'The invite will be sent for “$spaceName”.';
+  }
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get sendInvite => 'Send';
+
+  @override
+  String get enterValidEmail => 'Enter a valid email';
+
+  @override
+  String get incomingInvites => 'Incoming invites';
+
+  @override
+  String get spaceInviteSubtitle => 'You were invited to a shared space';
+
+  @override
+  String get acceptInvite => 'Accept';
+
+  @override
+  String get declineInvite => 'Decline';
+
+  @override
+  String get spaceInviteAccepted => 'Invite accepted.';
+
+  @override
+  String get spaceInviteSent => 'Invite sent.';
+
+  @override
+  String get you => 'You';
+
+  @override
+  String get spaceRoleOwner => 'Owner';
+
+  @override
+  String get spaceRoleAdmin => 'Admin';
+
+  @override
+  String get spaceRoleMember => 'Member';
+
+  @override
+  String get spaceRoleViewer => 'Viewer';
+
+  @override
+  String get spacesLoadFailed => 'Could not load spaces';
+
+  @override
+  String get spaceMembersLoadFailed => 'Could not load members';
+
+  @override
+  String get spaceSaveFailed => 'Could not save space';
+
+  @override
+  String get spaceActionFailed => 'Could not complete the action';
+
+  @override
+  String get spaceInviteSendFailed => 'Could not send invite';
+
+  @override
+  String get spaceInviteAcceptFailed => 'Could not accept invite';
+
+  @override
+  String get spaceInviteDeclineFailed => 'Could not decline invite';
+
+  @override
+  String get noData => 'No data';
+
+  @override
+  String get dayGoalsHeaderTitle => 'Daily tasks';
+
+  @override
+  String get dayGoalsAllHiddenHint =>
+      'All visible tasks are hidden. Turn off “Hide completed”.';
+
+  @override
+  String get dayGoalsEmptyHint =>
+      'No tasks for this day yet. Add the first task with the button below.';
+
+  @override
+  String get dayGoalsStatTotal => 'Total';
+
+  @override
+  String get dayGoalsStatDone => 'Done';
+
+  @override
+  String get dayGoalsStatLeft => 'Left';
+
+  @override
+  String dayGoalsHoursLeftLabel(String hours) {
+    return 'Hours left: $hours';
+  }
+
+  @override
+  String get dayGoalsFilterAll => 'All';
+
+  @override
+  String get dayGoalsFilterPersonal => 'Personal';
+
+  @override
+  String get dayGoalsFilterAllSpheres => 'All areas';
+
+  @override
+  String dayGoalsLaneLeftBadge(int count) {
+    return 'Left $count';
+  }
+
+  @override
+  String dayGoalsLaneDoneBadge(int count) {
+    return 'Done $count';
+  }
+
+  @override
+  String get dayGoalsLaneInProgress => '⚡ In progress';
+
+  @override
+  String get dayGoalsLaneInProgressEmpty =>
+      'Active tasks for this block will appear here';
+
+  @override
+  String get dayGoalsLaneDoneTitle => '✅ Done';
+
+  @override
+  String get dayGoalsLaneDoneEmpty =>
+      'Completed tasks will appear here after a focus block';
+
+  @override
+  String get dayGoalsSpaceMetaLabel => '👥 Space';
+
+  @override
+  String get dayGoalsCompletedLabel => 'Completed';
+
+  @override
+  String get dayGoalsNotifSoftAskTitle => 'Never miss a goal';
+
+  @override
+  String get dayGoalsNotifSoftAskBody =>
+      'Ladna will remind you 15 minutes before a goal starts — like an alarm, but for your tasks.';
+
+  @override
+  String get dayGoalsNotifSoftAskEnable => 'Enable reminders';
+
+  @override
+  String get dayGoalsNotifSoftAskDismiss => 'Not now';
+
+  @override
+  String get dayGoalsPeriodMorning => 'Morning';
+
+  @override
+  String get dayGoalsPeriodDay => 'Day';
+
+  @override
+  String get dayGoalsPeriodEvening => 'Evening';
+
+  @override
+  String get dayGoalsSphereLifePersonal => 'Personal';
+
+  @override
+  String get dayGoalsSphereTravel => 'Travel';
+
+  @override
+  String get dayGoalsSphereHome => 'Home';
+
+  @override
+  String dayGoalsMinutesShort(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get registerErrNameMin2 => 'Name must be at least 2 characters.';
+
+  @override
+  String launcherPlanHours(String hours) {
+    return 'Plan: $hours h';
+  }
+
+  @override
+  String get launcherGoalsAndTasks => 'Goals & tasks';
+
+  @override
+  String get launcherPersonal => 'Personal';
+
+  @override
+  String get launcherReportsTab => 'Reports';
+
+  @override
+  String get launcherBudget => 'Budget';
+
+  @override
+  String get launcherQuickActions => 'Quick actions';
+
+  @override
+  String get launcherBulkAdd => 'Bulk add';
+
+  @override
+  String get launcherBulkAddSubtitle => 'Expenses + Tasks + Mood';
+
+  @override
+  String get launcherAiWeeklyPlan => 'AI weekly plan';
+
+  @override
+  String get launcherAiWeeklyPlanSubtitle => 'Goals and progress analysis';
+
+  @override
+  String get launcherAiInsights => 'AI insights';
+
+  @override
+  String get launcherNavAndActions => 'Navigation and actions';
+
+  @override
+  String get navMenu => 'Menu';
+
+  @override
+  String get navPersonal => 'Personal';
+
+  @override
+  String get lifeBlocksSetupTitle => 'What should we track?';
+
+  @override
+  String get lifeBlocksSetupSubtitle =>
+      'Choose life areas. Ladna will build your home screen, goals and reports around them.';
+
+  @override
+  String get lifeBlocksSetupContinue => 'Continue';
+
+  @override
+  String get lifeBlocksSetupHint => 'Choose at least 1 area';
+
+  @override
+  String get goalsScreenGoalsAndTasks => 'Goals & Tasks';
+
+  @override
+  String get goalsScreenTasks => 'Tasks';
+
+  @override
+  String get goalsScreenDashboard => 'Dashboard';
+
+  @override
+  String get goalsScreenWeek => 'Week';
+
+  @override
+  String get goalsScreenMonth => 'Month';
+
+  @override
+  String get goalsScreenCalendar => 'Calendar';
+
+  @override
+  String get goalsScreenWeekView => 'Week view';
+
+  @override
+  String get goalsScreenMonthView => 'Month days';
+
+  @override
+  String get goalsScreenNoTasks => 'No tasks';
+
+  @override
+  String get goalsScreenCompleted => 'completed';
+
+  @override
+  String get goalsScreenWeekSummary => 'Week summary';
+
+  @override
+  String get goalsScreenThisWeek => 'This week';
+
+  @override
+  String get goalsScreenTodayShort => 'today';
+
+  @override
+  String get goalsScreenAll => 'All';
+
+  @override
+  String get goalsScreenPersonalTasks => 'Personal';
+
+  @override
+  String get goalsScreenUpToOneMonth => 'Up to 1 mo';
+
+  @override
+  String get goalsScreenUpToSixMonths => 'Up to 6 mo';
+
+  @override
+  String get goalsScreenYearPlus => 'Year+';
+
+  @override
+  String get goalsScreenBySpheres => 'By spheres';
+
+  @override
+  String get goalsScreenHide => '';
+
+  @override
+  String get goalsScreenProgress => 'Progress';
+
+  @override
+  String get goalsScreenAdd => 'Add';
+
+  @override
+  String get goalsScreenNoGoalsYet => 'No goals yet';
+
+  @override
+  String get goalsScreenNoGoalsYetSub =>
+      'Add your first goal with the button below.';
+
+  @override
+  String get goalsScreenNewGoal => 'New goal';
+
+  @override
+  String get goalsScreenEditGoal => 'Edit goal';
+
+  @override
+  String get goalsScreenTitle => 'Title';
+
+  @override
+  String get goalsScreenDescription => 'Description';
+
+  @override
+  String get goalsScreenSphere => 'Sphere';
+
+  @override
+  String get goalsScreenHorizon => 'Horizon';
+
+  @override
+  String get goalsScreenDeleteGoal => 'Delete goal';
+
+  @override
+  String get goalsScreenDeleteGoalQuestion =>
+      'This goal will be deleted. Related daily tasks will stay, but without a big-goal link.';
+
+  @override
+  String goalsScreenCompletedTasks(int done, int total) {
+    return '$done tasks completed out of $total';
+  }
+
+  @override
+  String goalsScreenGoalsCount(int n) {
+    return '$n goals';
+  }
+
+  @override
+  String get moodScore1 => 'Very low';
+
+  @override
+  String get moodScore2 => 'Low';
+
+  @override
+  String get moodScore3 => 'Neutral';
+
+  @override
+  String get moodScore4 => 'Good';
+
+  @override
+  String get moodScore5 => 'Great';
+
+  @override
+  String get moodScaleHint =>
+      'Mood scale: 1 means very low, 3 neutral, 5 great.';
+
+  @override
+  String get moodHowAreYouTitle => 'How are you today?';
+
+  @override
+  String get moodWhatInfluencedLabel => 'What affected your mood?';
+
+  @override
+  String get moodRecentEntriesTitle => 'Recent entries';
+
+  @override
+  String get moodNoEntriesHint => 'No entries yet. Save today’s mood.';
+
+  @override
+  String get moodTodayLabel => 'Today';
+
+  @override
+  String get moodSelectedDayLabel => 'Selected day';
+
+  @override
+  String get reportsScreenReports => 'Reports';
+
+  @override
+  String get reportsScreenDayShort => 'Day';
+
+  @override
+  String get reportsScreenWeekShort => 'Week';
+
+  @override
+  String get reportsScreenMonthShort => 'Month';
+
+  @override
+  String get reportsScreenSummary => 'Summary';
+
+  @override
+  String get reportsScreenProgress => 'Progress';
+
+  @override
+  String get reportsScreenMood => 'Mood';
+
+  @override
+  String get reportsScreenTasksDone => 'Tasks done';
+
+  @override
+  String get reportsScreenFocusHours => 'Focus hours';
+
+  @override
+  String get reportsScreenOutOf => 'of';
+
+  @override
+  String get reportsScreenPeriodAverage => 'Period average';
+
+  @override
+  String get reportsScreenMoodAverage => 'Average mood';
+
+  @override
+  String get reportsScreenOutOfFiveAverage => 'out of 5 average';
+
+  @override
+  String get reportsScreenOutOfFive => 'out of 5';
+
+  @override
+  String get reportsScreenHowMoodScoreWorks => 'How mood is calculated';
+
+  @override
+  String get reportsScreenMoodScoreExplanation =>
+      'The user chooses one of 5 moods. Each icon has a score: 1 very low, 2 low, 3 neutral, 4 good, 5 great. Reports show the average for the selected period.';
+
+  @override
+  String get reportsScreenMoodVeryLow => 'Very low';
+
+  @override
+  String get reportsScreenMoodLow => 'Low';
+
+  @override
+  String get reportsScreenMoodNeutral => 'Neutral';
+
+  @override
+  String get reportsScreenMoodGood => 'Good';
+
+  @override
+  String get reportsScreenMoodGreat => 'Great';
+
+  @override
+  String get reportsScreenPeriodEfficiency => 'Period efficiency';
+
+  @override
+  String get reportsScreenPlan => 'Plan';
+
+  @override
+  String get reportsScreenFact => 'Actual';
+
+  @override
+  String get reportsScreenTimeBySphere => 'Time by spheres';
+
+  @override
+  String get reportsScreenTopProductiveDays => 'Top 3 productive days';
+
+  @override
+  String get reportsScreenAiObservation => 'AI observation';
+
+  @override
+  String get reportsScreenPeriodStatistics => 'Period statistics';
+
+  @override
+  String get reportsScreenExtendedAiObservationSchedule =>
+      'This is your statistics for the period. The extended AI observation will update on Sunday.';
+
+  @override
+  String get reportsScreenAiLoading => 'Preparing your personal observation…';
+
+  @override
+  String get reportsScreenAiUnavailable =>
+      'AI observation is currently unavailable. Check the function connection or try again later.';
+
+  @override
+  String get reportsScreenInsight => 'Insight';
+
+  @override
+  String get reportsScreenPattern => 'Pattern';
+
+  @override
+  String get reportsScreenPeriodTasks => 'Period tasks';
+
+  @override
+  String get reportsScreenDone => 'done';
+
+  @override
+  String get reportsScreenPeriodProgress => 'Period progress';
+
+  @override
+  String get reportsScreenTempoBelowNorm => 'Pace below target';
+
+  @override
+  String get reportsScreenTempoGood => 'Pace is on track';
+
+  @override
+  String get reportsScreenDetails => 'Details';
+
+  @override
+  String get reportsScreenAvgTimePerTask => 'Avg. time / task';
+
+  @override
+  String get reportsScreenDoneOnTime => 'Done on time';
+
+  @override
+  String get reportsScreenMoved => 'Moved';
+
+  @override
+  String get reportsScreenCompleted => 'Completed';
+
+  @override
+  String get reportsScreenForThisPeriod => 'for this period';
+
+  @override
+  String get reportsScreenBestStreak => 'Best streak';
+
+  @override
+  String get reportsScreenDaysInARow => 'days in a row';
+
+  @override
+  String get reportsScreenByHabits => 'By habits';
+
+  @override
+  String get reportsScreenStreaksFourWeeks => 'Streaks over 4 weeks';
+
+  @override
+  String get reportsScreenFourWeeksAgo => '4 weeks ago';
+
+  @override
+  String get reportsScreenMissed => 'missed';
+
+  @override
+  String get reportsScreenToday => 'today';
+
+  @override
+  String get reportsScreenBestDay => 'Best day';
+
+  @override
+  String get reportsScreenWeekDynamics => 'Week dynamics';
+
+  @override
+  String get reportsScreenByDays => 'By days';
+
+  @override
+  String get reportsScreenOnTime => 'On time';
+
+  @override
+  String get reportsScreenTasks => 'Tasks';
+
+  @override
+  String get reportsScreenHours => 'Hours';
+
+  @override
+  String get reportsScreenCurrentPeriodShort => 'this';
+
+  @override
+  String get reportsScreenPreviousPeriodShort => 'prev.';
+
+  @override
+  String get reportsScreenCorrelations => 'Correlations';
+
+  @override
+  String get reportsScreenStreaks => 'Streaks';
+
+  @override
+  String get reportsScreenWeakLink => 'Weak link';
+
+  @override
+  String get reportsScreenNoDataYet => 'Not enough data yet';
+
+  @override
+  String get reportsScreenPulse => 'PULSE';
+
+  @override
+  String get reportsScreenMonthEfficiency => 'Month efficiency';
+
+  @override
+  String get reportsScreenFactVsDesiredBalance => 'Actual vs desired balance';
+
+  @override
+  String get reportsScreenBalancePlanFactHint =>
+      'Plan is the thin marker; actual is the filled bar.';
+
+  @override
+  String get reportsScreenBalanceEmptyHint =>
+      'Set your desired life balance in Profile — the actual vs plan comparison will appear here.';
+
+  @override
+  String get reportsScreenPlanLegend => 'plan';
+
+  @override
+  String get reportsScreenFactLegend => 'actual';
+
+  @override
+  String get reportsScreenOverageLegend => 'overage';
+
+  @override
+  String get reportsScreenSleepSevenPlus => 'Sleep 7+ hours';
+
+  @override
+  String get reportsScreenHabitCompletion => 'Habit completion';
+
+  @override
+  String get reportsScreenWeekStart => 'Mon–Tue';
+
+  @override
+  String get reportsScreenMoreStableThanWeekend => 'More stable than week end';
+
+  @override
+  String get reportsScreenHighLoad => 'High load';
+
+  @override
+  String get reportsScreenTaskImpact => 'Task impact';
+
+  @override
+  String get reportsScreenDaysWithHabits => 'Days with habits';
+
+  @override
+  String get reportsScreenMoodHigher => 'Mood is higher';
+
+  @override
+  String get reportsScreenOpenTasks => 'Open tasks';
+
+  @override
+  String get reportsScreenMoodImpact => 'Mood impact';
+
+  @override
+  String get reportsScreenExpensesAboveNorm => 'Expenses above norm';
+
+  @override
+  String get reportsScreenNextDayMood => 'Next-day mood';
+
+  @override
+  String get reportsScreenComparisonTitleDay => 'This day vs previous day';
+
+  @override
+  String get reportsScreenComparisonTitleWeek => 'This week vs last week';
+
+  @override
+  String get reportsScreenComparisonTitleMonth => 'This month vs last month';
+
+  @override
+  String reportsScreenBestDaySubtitle(int tasks, String hours) {
+    return '$tasks tasks · $hours h focus';
+  }
+
+  @override
+  String reportsScreenMonthEfficiencySubtitle(
+    int completed,
+    String outOf,
+    int total,
+    int daysLeft,
+  ) {
+    return '$completed tasks $outOf $total · $daysLeft days left';
+  }
+
+  @override
+  String reportsScreenWeakLinkRecommendation(String label, int pct) {
+    return '$label — $pct% for the period. Attach it to your easiest habit.';
+  }
+
+  @override
+  String get reportsScreenSummaryInsight =>
+      'You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.';
+
+  @override
+  String get reportsScreenProgressInsight =>
+      'One sphere is postponed more often than others. Try reserving a separate morning block for it.';
+
+  @override
+  String get reportsScreenHabitsInsight =>
+      'On days when habits are completed, productivity is usually higher. Start with the easiest habit.';
+
+  @override
+  String get reportsScreenMoodInsight =>
+      'Mood is higher on days with completed habits. Keep a small morning ritual.';
+
+  @override
+  String get budgetCategoryNameLabel => 'Name';
+
+  @override
+  String get navGoals => 'Goals';
+
+  @override
+  String get navMood => 'Mood';
+
+  @override
+  String get navProfile => 'Profile';
+
+  @override
+  String get navReports => 'Reports';
+
+  @override
+  String get navExpenses => 'Expenses';
+
+  @override
+  String get goalsDeleteConfirmBodyShort => 'This will be permanently deleted.';
 }

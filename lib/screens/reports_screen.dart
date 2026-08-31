@@ -9,7 +9,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/goal.dart';
 import '../models/home_model.dart';
@@ -90,7 +93,7 @@ class _ReportsViewState extends State<_ReportsView> {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<ReportsModel>();
-    final t = _ReportsText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: _LadnaColors.surface(context),
@@ -112,7 +115,7 @@ class _ReportsViewState extends State<_ReportsView> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
                     children: [
-                      NestPageHeader(title: t.reports, onBack: () => _goToHome(context)),
+                      NestPageHeader(title: t.reportsScreenReports, onBack: () => _goToHome(context)),
                       const SizedBox(height: 14),
                       KeyedSubtree(
                         key: _periodTourKey,
@@ -158,7 +161,7 @@ class _ReportsViewState extends State<_ReportsView> {
 
 class _SummaryTab extends StatelessWidget {
   final ReportsModel model;
-  final _ReportsText t;
+  final AppLocalizations t;
   final GlobalKey chartKey;
 
   const _SummaryTab({
@@ -195,7 +198,7 @@ class _SummaryTab extends StatelessWidget {
             pulse: pulse,
             verdict: _pulseVerdict(pulse, t),
             taskPct: taskPct,
-            taskSub: '$completed ${t.outOf} $total',
+            taskSub: '$completed ${t.reportsScreenOutOf} $total',
             habitPct: habitPct,
             moodValue: avgMood,
             focusHours: model.totalHours,
@@ -207,27 +210,27 @@ class _SummaryTab extends StatelessWidget {
         _MetricGrid(
           children: [
             _MetricCard(
-              title: t.tasksDone,
+              title: t.reportsScreenTasksDone,
               value: '$taskPct%',
-              subtitle: '$completed ${t.outOf} $total',
+              subtitle: '$completed ${t.reportsScreenOutOf} $total',
               highlight: taskPct >= 80,
             ),
             _MetricCard(
               title: t.habits,
               value: '$habitPct%',
-              subtitle: t.periodAverage,
+              subtitle: t.reportsScreenPeriodAverage,
               highlight: habitPct >= 80,
             ),
             _MetricCard(
-              title: t.mood,
+              title: t.reportsScreenMood,
               value: avgMood == null ? '—' : avgMood.toStringAsFixed(1),
-              subtitle: t.outOfFiveAverage,
+              subtitle: t.reportsScreenOutOfFiveAverage,
               highlight: avgMood != null && avgMood >= 4,
             ),
             _MetricCard(
-              title: t.focusHours,
+              title: t.reportsScreenFocusHours,
               value: _fmt(model.totalHours),
-              subtitle: '${t.fact} · ${t.hoursShort}',
+              subtitle: '${t.reportsScreenFact} · ${t.hoursShort}',
             ),
           ],
         ),
@@ -242,17 +245,17 @@ class _SummaryTab extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 12),
-        _SectionLabel(t.timeBySphere),
+        _SectionLabel(t.reportsScreenTimeBySphere),
         _SpherePlanCard(
           data: sphereData,
           desiredBalance: model.desiredLifeBalance,
-          emptyText: t.noDataYet,
+          emptyText: t.reportsScreenNoDataYet,
           t: t,
         ),
         const SizedBox(height: 12),
         _AiCard(
-          label: t.aiObservation,
-          title: t.insight,
+          label: t.reportsScreenAiObservation,
+          title: t.reportsScreenInsight,
           reportTab: 'summary',
         ),
       ],
@@ -262,7 +265,7 @@ class _SummaryTab extends StatelessWidget {
 
 class _ProgressTab extends StatelessWidget {
   final ReportsModel model;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _ProgressTab({required this.model, required this.t});
 
@@ -280,24 +283,24 @@ class _ProgressTab extends StatelessWidget {
         _MetricGrid(
           children: [
             _MetricCard(
-              title: t.periodTasks,
+              title: t.reportsScreenPeriodTasks,
               value: '$completed / $total',
-              subtitle: t.done,
+              subtitle: t.reportsScreenDone,
               highlight: completed > 0,
             ),
             _MetricCard(
-              title: t.focusHours,
+              title: t.reportsScreenFocusHours,
               value: _fmt(model.totalHours),
-              subtitle: '${t.outOf} ${_fmt(model.plannedHours)} ${t.hoursShort}',
+              subtitle: '${t.reportsScreenOutOf} ${_fmt(model.plannedHours)} ${t.hoursShort}',
             ),
           ],
         ),
         const SizedBox(height: 12),
         _ProgressCard(
-          title: t.periodProgress,
+          title: t.reportsScreenPeriodProgress,
           value: '${(model.efficiency * 100).round()}%',
           progress: model.efficiency,
-          subtitle: '${_fmt(model.totalHours)} ${t.hoursShort} ${t.outOf} ${_fmt(model.plannedHours)} ${t.hoursShort}',
+          subtitle: '${_fmt(model.totalHours)} ${t.hoursShort} ${t.reportsScreenOutOf} ${_fmt(model.plannedHours)} ${t.hoursShort}',
         ),
         const SizedBox(height: 12),
         _PeriodComparisonCard(
@@ -311,9 +314,9 @@ class _ProgressTab extends StatelessWidget {
         ],
         const SizedBox(height: 12),
         _ExtraCard(
-          title: t.topProductiveDays,
+          title: t.reportsScreenTopProductiveDays,
           child: topDays.isEmpty
-              ? _EmptyText(t.noDataYet)
+              ? _EmptyText(t.reportsScreenNoDataYet)
               : Column(
                   children: topDays.map((e) {
                     final maxValue = topDays.map((d) => d.completed).fold<int>(0, math.max);
@@ -327,8 +330,8 @@ class _ProgressTab extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _AiCard(
-          label: t.aiObservation,
-          title: t.pattern,
+          label: t.reportsScreenAiObservation,
+          title: t.reportsScreenPattern,
           reportTab: 'progress',
         ),
       ],
@@ -338,7 +341,7 @@ class _ProgressTab extends StatelessWidget {
 
 class _HabitsTab extends StatelessWidget {
   final ReportsModel model;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _HabitsTab({required this.model, required this.t});
 
@@ -355,15 +358,15 @@ class _HabitsTab extends StatelessWidget {
         _MetricGrid(
           children: [
             _MetricCard(
-              title: t.completed,
+              title: t.reportsScreenCompleted,
               value: '$pct%',
-              subtitle: t.forThisPeriod,
+              subtitle: t.reportsScreenForThisPeriod,
               highlight: pct >= 70,
             ),
             _MetricCard(
-              title: t.bestStreak,
+              title: t.reportsScreenBestStreak,
               value: streak,
-              subtitle: t.daysInARow,
+              subtitle: t.reportsScreenDaysInARow,
             ),
           ],
         ),
@@ -373,17 +376,17 @@ class _HabitsTab extends StatelessWidget {
         _WeakLinkCard(entries: byBlock, t: t),
         const SizedBox(height: 12),
         _CorrelationCard(
-          title: t.correlations,
+          title: t.reportsScreenCorrelations,
           rows: [
-            _CorrelationRowData(t.sleepSevenPlus, t.habitCompletion, '+${(pct / 10).toStringAsFixed(1)}%'),
-            _CorrelationRowData(t.weekStart, t.moreStableThanWeekend, pct >= 50 ? '+12%' : '—'),
-            _CorrelationRowData(t.highLoad, t.taskImpact, pct >= 50 ? '−8%' : '—'),
+            _CorrelationRowData(t.reportsScreenSleepSevenPlus, t.reportsScreenHabitCompletion, '+${(pct / 10).toStringAsFixed(1)}%'),
+            _CorrelationRowData(t.reportsScreenWeekStart, t.reportsScreenMoreStableThanWeekend, pct >= 50 ? '+12%' : '—'),
+            _CorrelationRowData(t.reportsScreenHighLoad, t.reportsScreenTaskImpact, pct >= 50 ? '−8%' : '—'),
           ],
         ),
         const SizedBox(height: 12),
         _AiCard(
-          label: t.aiObservation,
-          title: t.pattern,
+          label: t.reportsScreenAiObservation,
+          title: t.reportsScreenPattern,
           reportTab: 'habits',
         ),
       ],
@@ -393,7 +396,7 @@ class _HabitsTab extends StatelessWidget {
 
 class _MoodTab extends StatelessWidget {
   final ReportsModel model;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _MoodTab({required this.model, required this.t});
 
@@ -412,16 +415,16 @@ class _MoodTab extends StatelessWidget {
         _MetricGrid(
           children: [
             _MetricCard(
-              title: t.moodAverage,
+              title: t.reportsScreenMoodAverage,
               value: avg == null ? '—' : avg.toStringAsFixed(1),
-              subtitle: t.outOfFive,
+              subtitle: t.reportsScreenOutOfFive,
               highlight: avg != null && avg >= 4,
             ),
             _MetricCard(
-              title: t.bestDay,
+              title: t.reportsScreenBestDay,
               value: best == null ? '—' : _weekdayShort(best.date, t),
               subtitle: best == null
-                  ? t.noDataYet
+                  ? t.reportsScreenNoDataYet
                   : '${_moodLabel(_moodScore(best.emoji), t)} · ${_moodScore(best.emoji)}/5',
             ),
           ],
@@ -432,17 +435,17 @@ class _MoodTab extends StatelessWidget {
         _MoodDaysCard(moods: moods, t: t),
         const SizedBox(height: 12),
         _CorrelationCard(
-          title: t.correlations,
+          title: t.reportsScreenCorrelations,
           rows: [
-            _CorrelationRowData(t.daysWithHabits, t.moodHigher, avg == null ? '—' : '+${(avg - 3).clamp(0, 2).toStringAsFixed(1)}'),
-            _CorrelationRowData(t.openTasks, t.moodImpact, avg == null ? '—' : '−0.3'),
-            _CorrelationRowData(t.expensesAboveNorm, t.nextDayMood, '—'),
+            _CorrelationRowData(t.reportsScreenDaysWithHabits, t.reportsScreenMoodHigher, avg == null ? '—' : '+${(avg - 3).clamp(0, 2).toStringAsFixed(1)}'),
+            _CorrelationRowData(t.reportsScreenOpenTasks, t.reportsScreenMoodImpact, avg == null ? '—' : '−0.3'),
+            _CorrelationRowData(t.reportsScreenExpensesAboveNorm, t.reportsScreenNextDayMood, '—'),
           ],
         ),
         const SizedBox(height: 12),
         _AiCard(
-          label: t.aiObservation,
-          title: t.pattern,
+          label: t.reportsScreenAiObservation,
+          title: t.reportsScreenPattern,
           reportTab: 'mood',
         ),
       ],
@@ -459,7 +462,7 @@ class _PulseCard extends StatelessWidget {
   final double? moodValue;
   final double focusHours;
   final List<double> bars;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _PulseCard({
     required this.pulse,
@@ -529,7 +532,7 @@ class _PulseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                t.pulse,
+                t.reportsScreenPulse,
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -583,10 +586,10 @@ class _PulseCard extends StatelessWidget {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _PulseMiniStat(label: t.tasksDone, value: '$taskPct%', sub: taskSub),
-                  _PulseMiniStat(label: t.habits, value: '$habitPct%', sub: t.periodAverage),
-                  _PulseMiniStat(label: t.mood, value: moodValue == null ? '—' : moodValue!.toStringAsFixed(1), sub: '/5'),
-                  _PulseMiniStat(label: t.focusHours, value: _fmt(focusHours), sub: t.hoursShort),
+                  _PulseMiniStat(label: t.reportsScreenTasksDone, value: '$taskPct%', sub: taskSub),
+                  _PulseMiniStat(label: t.habits, value: '$habitPct%', sub: t.reportsScreenPeriodAverage),
+                  _PulseMiniStat(label: t.reportsScreenMood, value: moodValue == null ? '—' : moodValue!.toStringAsFixed(1), sub: '/5'),
+                  _PulseMiniStat(label: t.reportsScreenFocusHours, value: _fmt(focusHours), sub: t.hoursShort),
                 ],
               ),
               const SizedBox(height: 16),
@@ -692,7 +695,7 @@ class _MonthEfficiencyCard extends StatelessWidget {
   final int total;
   final double progress;
   final DateTime anchor;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _MonthEfficiencyCard({required this.completed, required this.total, required this.progress, required this.anchor, required this.t});
 
@@ -707,14 +710,14 @@ class _MonthEfficiencyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(t.monthEfficiency, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context)))),
+              Expanded(child: Text(t.reportsScreenMonthEfficiency, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context)))),
               Text('${(progress * 100).round()}%', style: const TextStyle(fontSize: 22, color: _LadnaColors.primary, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
             ],
           ),
           const SizedBox(height: 10),
           _ProgressBar(value: progress, height: 6),
           const SizedBox(height: 7),
-          Text(t.monthEfficiencySubtitle(completed, total, daysLeft), style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
+          Text(t.reportsScreenMonthEfficiencySubtitle(completed, t.reportsScreenOutOf, total, daysLeft), style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
         ],
       ),
     );
@@ -725,7 +728,7 @@ class _SpherePlanCard extends StatelessWidget {
   final Map<String, double> data;
   final Map<String, double> desiredBalance;
   final String emptyText;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _SpherePlanCard({required this.data, required this.desiredBalance, required this.emptyText, required this.t});
 
@@ -740,12 +743,12 @@ class _SpherePlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.factVsDesiredBalance, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
+          Text(t.reportsScreenFactVsDesiredBalance, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
           const SizedBox(height: 3),
-          Text(t.balancePlanFactHint, style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
+          Text(t.reportsScreenBalancePlanFactHint, style: TextStyle(fontSize: 11, color: _LadnaColors.muted(context))),
           const SizedBox(height: 12),
           if (desiredEntries.isEmpty)
-            _EmptyText(t.balanceEmptyHint)
+            _EmptyText(t.reportsScreenBalanceEmptyHint)
           else ...[
                 ...desiredEntries.map((e) {
                   final blockKey = _normalizeLifeBlockKey(e.key);
@@ -769,11 +772,11 @@ class _SpherePlanCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _LegendItem(color: _LadnaColors.card(context), text: t.planLegend),
+                    _LegendItem(color: _LadnaColors.card(context), text: t.reportsScreenPlanLegend),
                     const SizedBox(width: 12),
-                    _LegendItem(color: _LadnaColors.primary, text: t.factLegend),
+                    _LegendItem(color: _LadnaColors.primary, text: t.reportsScreenFactLegend),
                     const SizedBox(width: 12),
-                    _LegendItem(color: _LadnaColors.lime, text: t.overageLegend),
+                    _LegendItem(color: _LadnaColors.lime, text: t.reportsScreenOverageLegend),
                   ],
                 ),
           ],
@@ -897,7 +900,7 @@ class _PeriodSnapshot {
 class _PeriodComparisonCard extends StatelessWidget {
   final _PeriodComparisonData data;
   final ReportPeriod period;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _PeriodComparisonCard({
     required this.data,
@@ -915,7 +918,7 @@ class _PeriodComparisonCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            t.comparisonTitle(period),
+            _comparisonTitle(t, period),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
@@ -932,9 +935,9 @@ class _PeriodComparisonCard extends StatelessWidget {
           const SizedBox(height: 9),
           Row(
             children: [
-              _LegendDot(color: _LadnaColors.primary, text: t.currentPeriodShort),
+              _LegendDot(color: _LadnaColors.primary, text: t.reportsScreenCurrentPeriodShort),
               const SizedBox(width: 14),
-              _LegendDot(color: _LadnaColors.card(context), text: t.previousPeriodShort),
+              _LegendDot(color: _LadnaColors.card(context), text: t.reportsScreenPreviousPeriodShort),
             ],
           ),
         ],
@@ -945,7 +948,7 @@ class _PeriodComparisonCard extends StatelessWidget {
 
 class _ComparisonMetricRow extends StatelessWidget {
   final _ComparisonMetricData row;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _ComparisonMetricRow({required this.row, required this.t});
 
@@ -980,7 +983,7 @@ class _ComparisonMetricRow extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '${row.currentText} ${t.currentPeriodShort}',
+                    '${row.currentText} ${t.reportsScreenCurrentPeriodShort}',
                     style: TextStyle(
                       fontSize: 10.5,
                       color: _LadnaColors.dark(context),
@@ -989,7 +992,7 @@ class _ComparisonMetricRow extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    '${row.previousText} ${t.previousPeriodShort}',
+                    '${row.previousText} ${t.reportsScreenPreviousPeriodShort}',
                     style: TextStyle(
                       fontSize: 10.5,
                       color: _LadnaColors.muted(context),
@@ -1062,7 +1065,7 @@ _PeriodComparisonData _buildPeriodComparison(ReportsModel model) {
   return _PeriodComparisonData(
     rows: [
       _ComparisonMetricData(
-        label: _ReportsText(const Locale('en')).tasks, // replaced in build
+        label: 'Tasks', // replaced in build
         currentText: '${current.taskPct.round()}%',
         previousText: '${previous.taskPct.round()}%',
         deltaText: _fmtSignedPercent(taskDelta),
@@ -1071,16 +1074,16 @@ _PeriodComparisonData _buildPeriodComparison(ReportsModel model) {
         positive: taskDelta >= 0,
       ),
       _ComparisonMetricData(
-        label: _ReportsText(const Locale('en')).hours, // replaced in build
-        currentText: '${_fmt(current.hours)} ${_ReportsText(const Locale('en')).hoursShort}',
-        previousText: '${_fmt(previous.hours)} ${_ReportsText(const Locale('en')).hoursShort}',
+        label: 'Hours', // replaced in build
+        currentText: '${_fmt(current.hours)} h', // replaced in build
+        previousText: '${_fmt(previous.hours)} h', // replaced in build
         deltaText: _fmtSignedNumber(hourDelta),
         currentProgress: current.hours / maxHours,
         previousProgress: previous.hours / maxHours,
         positive: hourDelta >= 0,
       ),
       _ComparisonMetricData(
-        label: _ReportsText(const Locale('en')).onTime, // replaced in build
+        label: 'On time', // replaced in build
         currentText: '${current.onTimePct.round()}%',
         previousText: '${previous.onTimePct.round()}%',
         deltaText: _fmtSignedPercent(onTimeDelta),
@@ -1092,12 +1095,12 @@ _PeriodComparisonData _buildPeriodComparison(ReportsModel model) {
   );
 }
 
-_PeriodComparisonData _localizedComparisonData(_PeriodComparisonData data, _ReportsText t) {
+_PeriodComparisonData _localizedComparisonData(_PeriodComparisonData data, AppLocalizations t) {
   if (data.rows.length != 3) return data;
   return _PeriodComparisonData(
     rows: [
       _ComparisonMetricData(
-        label: t.tasks,
+        label: t.reportsScreenTasks,
         currentText: data.rows[0].currentText,
         previousText: data.rows[0].previousText,
         deltaText: data.rows[0].deltaText,
@@ -1106,7 +1109,7 @@ _PeriodComparisonData _localizedComparisonData(_PeriodComparisonData data, _Repo
         positive: data.rows[0].positive,
       ),
       _ComparisonMetricData(
-        label: t.hours,
+        label: t.reportsScreenHours,
         currentText: data.rows[1].currentText.replaceAll('h', t.hoursShort),
         previousText: data.rows[1].previousText.replaceAll('h', t.hoursShort),
         deltaText: data.rows[1].deltaText,
@@ -1115,7 +1118,7 @@ _PeriodComparisonData _localizedComparisonData(_PeriodComparisonData data, _Repo
         positive: data.rows[1].positive,
       ),
       _ComparisonMetricData(
-        label: t.onTime,
+        label: t.reportsScreenOnTime,
         currentText: data.rows[2].currentText,
         previousText: data.rows[2].previousText,
         deltaText: data.rows[2].deltaText,
@@ -1196,7 +1199,7 @@ class _BestDayInfo {
 
 class _BestDayCard extends StatelessWidget {
   final _BestDayInfo day;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _BestDayCard({required this.day, required this.t});
 
@@ -1222,9 +1225,9 @@ class _BestDayCard extends StatelessWidget {
               children: [
                 Text(_weekdayShort(day.date, t).toUpperCase(), style: TextStyle(fontSize: 10, letterSpacing: .6, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.50))),
                 const SizedBox(height: 3),
-                Text(t.bestDay, style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w800)),
+                Text(t.reportsScreenBestDay, style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
-                Text(t.bestDaySubtitle(day.completed, _fmt(day.hours)), style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.55), fontWeight: FontWeight.w600)),
+                Text(t.reportsScreenBestDaySubtitle(day.completed, _fmt(day.hours)), style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.55), fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -1234,7 +1237,7 @@ class _BestDayCard extends StatelessWidget {
             child: Column(
               children: [
                 Text('${day.completed}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF3A3800), height: 1)),
-                Text(t.done, style: const TextStyle(fontSize: 9, color: Color(0xFF3A3800), fontWeight: FontWeight.w800)),
+                Text(t.reportsScreenDone, style: const TextStyle(fontSize: 9, color: Color(0xFF3A3800), fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -1246,7 +1249,7 @@ class _BestDayCard extends StatelessWidget {
 
 class _StreaksCard extends StatelessWidget {
   final List<Goal> goals;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _StreaksCard({required this.goals, required this.t});
 
@@ -1258,10 +1261,10 @@ class _StreaksCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.streaks, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
+          Text(t.reportsScreenStreaks, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
           const SizedBox(height: 12),
           if (blocks.isEmpty)
-            _EmptyText(t.noDataYet)
+            _EmptyText(t.reportsScreenNoDataYet)
           else
             Column(
               children: blocks.map((e) {
@@ -1307,7 +1310,7 @@ class _StreaksCard extends StatelessWidget {
 
 class _WeakLinkCard extends StatelessWidget {
   final Map<String, (int, int)> entries;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _WeakLinkCard({required this.entries, required this.t});
 
@@ -1320,7 +1323,7 @@ class _WeakLinkCard extends StatelessWidget {
             final bp = b.value.$2 == 0 ? 1.0 : b.value.$1 / b.value.$2;
             return ap <= bp ? a : b;
           });
-    final label = weakest == null ? t.noDataYet : _blockLabel(weakest.key, t);
+    final label = weakest == null ? t.reportsScreenNoDataYet : _blockLabel(weakest.key, t);
     final pct = weakest == null || weakest.value.$2 == 0 ? 0 : ((weakest.value.$1 / weakest.value.$2) * 100).round();
 
     return Container(
@@ -1340,9 +1343,9 @@ class _WeakLinkCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(t.weakLink, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _LadnaColors.dark(context))),
+                Text(t.reportsScreenWeakLink, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _LadnaColors.dark(context))),
                 const SizedBox(height: 6),
-                Text(t.weakLinkRecommendation(label, pct), style: TextStyle(fontSize: 12, height: 1.5, color: _LadnaColors.mid(context))),
+                Text(t.reportsScreenWeakLinkRecommendation(label, pct), style: TextStyle(fontSize: 12, height: 1.5, color: _LadnaColors.mid(context))),
               ],
             ),
           ),
@@ -1405,7 +1408,7 @@ class _CorrelationCard extends StatelessWidget {
 
 class _MoodDaysCard extends StatelessWidget {
   final List<Mood> moods;
-  final _ReportsText t;
+  final AppLocalizations t;
   const _MoodDaysCard({required this.moods, required this.t});
 
   @override
@@ -1415,10 +1418,10 @@ class _MoodDaysCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.byDays, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
+          Text(t.reportsScreenByDays, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _LadnaColors.dark(context))),
           const SizedBox(height: 11),
           if (moods.isEmpty)
-            _EmptyText(t.noDataYet)
+            _EmptyText(t.reportsScreenNoDataYet)
           else
             Column(
               children: moods.take(7).map((m) {
@@ -1455,7 +1458,7 @@ void _goToHome(BuildContext context) {
 
 class _PeriodRow extends StatelessWidget {
   final ReportsModel model;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _PeriodRow({required this.model, required this.t});
 
@@ -1466,9 +1469,9 @@ class _PeriodRow extends StatelessWidget {
         _SegmentedPill<ReportPeriod>(
           value: model.period,
           values: [
-            (ReportPeriod.day, t.dayShort),
-            (ReportPeriod.week, t.weekShort),
-            (ReportPeriod.month, t.monthShort),
+            (ReportPeriod.day, t.reportsScreenDayShort),
+            (ReportPeriod.week, t.reportsScreenWeekShort),
+            (ReportPeriod.month, t.reportsScreenMonthShort),
           ],
           onChanged: context.read<ReportsModel>().setPeriod,
         ),
@@ -1507,7 +1510,7 @@ class _PeriodRow extends StatelessWidget {
 
 class _ReportTabs extends StatelessWidget {
   final _ReportTab value;
-  final _ReportsText t;
+  final AppLocalizations t;
   final ValueChanged<_ReportTab> onChanged;
 
   const _ReportTabs({
@@ -1521,10 +1524,10 @@ class _ReportTabs extends StatelessWidget {
     return _SegmentedPill<_ReportTab>(
       value: value,
       values: [
-        (_ReportTab.summary, t.summary),
-        (_ReportTab.progress, t.progress),
+        (_ReportTab.summary, t.reportsScreenSummary),
+        (_ReportTab.progress, t.reportsScreenProgress),
         (_ReportTab.habits, t.habits),
-        (_ReportTab.mood, t.mood),
+        (_ReportTab.mood, t.reportsScreenMood),
       ],
       onChanged: onChanged,
       compact: true,
@@ -1708,7 +1711,7 @@ class _SphereCard extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 9),
                     child: _SphereRow(
-                      label: _blockLabel(e.key, _ReportsText.of(context)),
+                      label: _blockLabel(e.key, AppLocalizations.of(context)!),
                       progress: pct,
                       percentText: '${(pct * 100).round()}%',
                       color: _blockColor(context, e.key),
@@ -1802,12 +1805,12 @@ class _AiCardState extends State<_AiCard> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _ReportsText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     if (!_shouldFetchReportsAiInsight()) {
       final model = context.watch<ReportsModel>();
       return _buildInsightContainer(
-        label: t.periodStatistics,
+        label: t.reportsScreenPeriodStatistics,
         title: widget.title,
         text: _buildLocalReportsStatisticsText(model, t, widget.reportTab),
         isLoading: false,
@@ -1823,10 +1826,10 @@ class _AiCardState extends State<_AiCard> {
         final hasError = snapshot.hasError;
         final insight = snapshot.data?.insight.trim();
         final text = isLoading
-            ? t.aiLoading
+            ? t.reportsScreenAiLoading
             : hasError
-                ? t.aiUnavailable
-                : (insight == null || insight.isEmpty ? t.aiUnavailable : insight);
+                ? t.reportsScreenAiUnavailable
+                : (insight == null || insight.isEmpty ? t.reportsScreenAiUnavailable : insight);
 
         return _buildInsightContainer(
           label: widget.label,
@@ -1848,7 +1851,7 @@ class _AiCardState extends State<_AiCard> {
     required bool hasError,
     required VoidCallback? onRetry,
   }) {
-    final t = _ReportsText.of(context);
+    final t = AppLocalizations.of(context)!;
 
     return Container(
       decoration: BoxDecoration(
@@ -1945,7 +1948,7 @@ class _AiCardState extends State<_AiCard> {
   }
 }
 
-String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, String reportTab) {
+String _buildLocalReportsStatisticsText(ReportsModel model, AppLocalizations t, String reportTab) {
   final goals = model.goalsInRange.toList();
   final completed = goals.where((g) => g.isCompleted).length;
   final total = goals.length;
@@ -1954,11 +1957,11 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
   final avgMood = _avgMood(model.moodsInRange.toList());
   final focusHours = _fmt(model.totalHours);
   final plannedHours = _fmt(model.plannedHours);
-  final suffix = t.extendedAiObservationSchedule;
+  final suffix = t.reportsScreenExtendedAiObservationSchedule;
 
   if (reportTab == 'progress') {
     if (total == 0) {
-      return t.pick(
+      return _pickByLocale(t, 
         'За выбранный период задач пока нет. Добавь несколько задач, чтобы отчёт по прогрессу стал точнее. $suffix',
         'There are no tasks in the selected period yet. Add a few tasks to make the progress report more useful. $suffix',
         de: 'Für den gewählten Zeitraum gibt es noch keine Aufgaben. Füge ein paar Aufgaben hinzu, damit der Fortschrittsbericht nützlicher wird. $suffix',
@@ -1967,7 +1970,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
         tr: 'Seçilen dönemde henüz görev yok. İlerleme raporunu daha faydalı hale getirmek için birkaç görev ekle. $suffix',
       );
     }
-    return t.pick(
+    return _pickByLocale(t, 
       'За период выполнено $completed из $total задач ($completionPct%). Фокус-время: $focusHours из $plannedHours ${t.hoursShort}. $suffix',
       'For this period, $completed of $total tasks are done ($completionPct%). Focus time: $focusHours of $plannedHours ${t.hoursShort}. $suffix',
       de: 'In diesem Zeitraum sind $completed von $total Aufgaben erledigt ($completionPct%). Fokuszeit: $focusHours von $plannedHours ${t.hoursShort}. $suffix',
@@ -1979,7 +1982,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
 
   if (reportTab == 'habits') {
     if (total == 0) {
-      return t.pick(
+      return _pickByLocale(t, 
         'По привычкам пока недостаточно данных. Отмечай повторяющиеся действия несколько дней подряд, и здесь появится более полезная статистика. $suffix',
         'There is not enough habit data yet. Track repeated actions for a few days, and this card will become more useful. $suffix',
         de: 'Für Gewohnheiten gibt es noch nicht genug Daten. Markiere wiederkehrende Aktionen ein paar Tage lang, dann wird diese Karte nützlicher. $suffix',
@@ -1988,7 +1991,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
         tr: 'Alışkanlıklar için henüz yeterli veri yok. Birkaç gün tekrar eden eylemleri takip et, bu kart daha faydalı olur. $suffix',
       );
     }
-    return t.pick(
+    return _pickByLocale(t, 
       'Среднее выполнение привычек за период — $habitsPct%. Регулярность важнее идеального дня: выбери самый лёгкий следующий шаг. $suffix',
       'Average habit completion for this period is $habitsPct%. Consistency matters more than a perfect day: choose the easiest next step. $suffix',
       de: 'Die durchschnittliche Gewohnheitserfüllung in diesem Zeitraum liegt bei $habitsPct%. Regelmäßigkeit ist wichtiger als ein perfekter Tag: Wähle den einfachsten nächsten Schritt. $suffix',
@@ -2000,7 +2003,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
 
   if (reportTab == 'mood') {
     if (avgMood == null) {
-      return t.pick(
+      return _pickByLocale(t, 
         'За выбранный период настроение ещё не отмечалось. Добавь одну отметку сегодня, чтобы динамика стала видимой. $suffix',
         'No mood has been logged for the selected period yet. Add one check-in today to make the trend visible. $suffix',
         de: 'Für den gewählten Zeitraum wurde noch keine Stimmung erfasst. Füge heute einen Check-in hinzu, damit der Trend sichtbar wird. $suffix',
@@ -2009,7 +2012,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
         tr: 'Seçilen dönem için henüz ruh hali kaydı yok. Eğilimi görünür yapmak için bugün bir kayıt ekle. $suffix',
       );
     }
-    return t.pick(
+    return _pickByLocale(t, 
       'Среднее настроение за период — ${avgMood.toStringAsFixed(1)} из 5. Сравни его с днями, где были выполнены задачи и привычки. $suffix',
       'Average mood for this period is ${avgMood.toStringAsFixed(1)} out of 5. Compare it with days when tasks and habits were completed. $suffix',
       de: 'Die durchschnittliche Stimmung in diesem Zeitraum liegt bei ${avgMood.toStringAsFixed(1)} von 5. Vergleiche sie mit Tagen, an denen Aufgaben und Gewohnheiten erledigt wurden. $suffix',
@@ -2020,7 +2023,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
   }
 
   if (total == 0 && avgMood == null) {
-    return t.pick(
+    return _pickByLocale(t, 
       'За выбранный период пока мало данных. Добавь задачу, отметь привычку или настроение — отчёт станет полезнее. $suffix',
       'There is little data for the selected period yet. Add a task, habit, or mood check-in to make the report more useful. $suffix',
       de: 'Für den gewählten Zeitraum gibt es noch wenig Daten. Füge eine Aufgabe, Gewohnheit oder Stimmung hinzu, damit der Bericht nützlicher wird. $suffix',
@@ -2030,7 +2033,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
     );
   }
 
-  return t.pick(
+  return _pickByLocale(t, 
     'За период выполнено $completed из $total задач ($completionPct%), фокус-время — $focusHours ${t.hoursShort}, привычки — $habitsPct%. $suffix',
     'For this period, $completed of $total tasks are done ($completionPct%), focus time is $focusHours ${t.hoursShort}, habits are at $habitsPct%. $suffix',
     de: 'In diesem Zeitraum sind $completed von $total Aufgaben erledigt ($completionPct%), Fokuszeit: $focusHours ${t.hoursShort}, Gewohnheiten: $habitsPct%. $suffix',
@@ -2042,7 +2045,7 @@ String _buildLocalReportsStatisticsText(ReportsModel model, _ReportsText t, Stri
 
 class _MoodChartCard extends StatelessWidget {
   final List<Mood> moods;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _MoodChartCard({required this.moods, required this.t});
 
@@ -2056,7 +2059,7 @@ class _MoodChartCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            t.weekDynamics,
+            t.reportsScreenWeekDynamics,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -2067,7 +2070,7 @@ class _MoodChartCard extends StatelessWidget {
           SizedBox(
             height: 78,
             child: last7.isEmpty
-                ? Center(child: _EmptyText(t.noDataYet))
+                ? Center(child: _EmptyText(t.reportsScreenNoDataYet))
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: last7.map((m) {
@@ -2118,7 +2121,7 @@ class _MoodChartCard extends StatelessWidget {
 
 class _Heatmap extends StatelessWidget {
   final List<Goal> goals;
-  final _ReportsText t;
+  final AppLocalizations t;
 
   const _Heatmap({required this.goals, required this.t});
 
@@ -2127,7 +2130,7 @@ class _Heatmap extends StatelessWidget {
     final blocks = _completionByBlock(goals);
     final entries = blocks.entries.take(3).toList();
 
-    if (entries.isEmpty) return _EmptyText(t.noDataYet);
+    if (entries.isEmpty) return _EmptyText(t.reportsScreenNoDataYet);
 
     return Column(
       children: [
@@ -2183,19 +2186,19 @@ class _Heatmap extends StatelessWidget {
         Row(
           children: [
             Text(
-              t.fourWeeksAgo,
+              t.reportsScreenFourWeeksAgo,
               style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context)),
             ),
             const Spacer(),
             Container(width: 10, height: 10, decoration: BoxDecoration(color: _LadnaColors.card(context), borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 5),
-            Text(t.missed, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
+            Text(t.reportsScreenMissed, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
             const SizedBox(width: 12),
             Container(width: 10, height: 10, decoration: BoxDecoration(color: _LadnaColors.primary, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 5),
-            Text(t.done, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
+            Text(t.reportsScreenDone, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
             const Spacer(),
-            Text(t.today, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
+            Text(t.reportsScreenToday, style: TextStyle(fontSize: 10, color: _LadnaColors.muted(context))),
           ],
         ),
       ],
@@ -2609,27 +2612,27 @@ String _fmt(double value) {
   return value.toStringAsFixed(1);
 }
 
-String _formatRange(ReportsModel model, _ReportsText t) {
+String _formatRange(ReportsModel model, AppLocalizations t) {
   final r = model.range;
   switch (model.period) {
     case ReportPeriod.day:
-      return '${r.start.day} ${t.monthName(r.start.month)}';
+      return '${r.start.day} ${_monthName(t, r.start.month)}';
     case ReportPeriod.week:
       final end = r.end.subtract(const Duration(days: 1));
-      return '${r.start.day}–${end.day} ${t.monthName(end.month)}';
+      return '${r.start.day}–${end.day} ${_monthName(t, end.month)}';
     case ReportPeriod.month:
-      return '${t.monthName(model.anchor.month)} ${model.anchor.year}';
+      return '${_monthName(t, model.anchor.month)} ${model.anchor.year}';
   }
 }
 
 String _shortDate(DateTime d) => '${d.day}.${d.month}';
 
 
-String _pulseVerdict(int pulse, _ReportsText t) {
-  if (pulse >= 80) return t.pick('Отличная неделя', 'Great week', de: 'Starke Woche', fr: 'Très bonne semaine', es: 'Gran semana', tr: 'Harika hafta');
-  if (pulse >= 60) return t.pick('Хорошая неделя', 'Good week', de: 'Gute Woche', fr: 'Bonne semaine', es: 'Buena semana', tr: 'İyi hafta');
-  if (pulse >= 40) return t.pick('Средняя неделя', 'Average week', de: 'Mittlere Woche', fr: 'Semaine moyenne', es: 'Semana media', tr: 'Ortalama hafta');
-  return t.pick('Тяжёлая неделя', 'Hard week', de: 'Schwere Woche', fr: 'Semaine difficile', es: 'Semana difícil', tr: 'Zor hafta');
+String _pulseVerdict(int pulse, AppLocalizations t) {
+  if (pulse >= 80) return _pickByLocale(t, 'Отличная неделя', 'Great week', de: 'Starke Woche', fr: 'Très bonne semaine', es: 'Gran semana', tr: 'Harika hafta');
+  if (pulse >= 60) return _pickByLocale(t, 'Хорошая неделя', 'Good week', de: 'Gute Woche', fr: 'Bonne semaine', es: 'Buena semana', tr: 'İyi hafta');
+  if (pulse >= 40) return _pickByLocale(t, 'Средняя неделя', 'Average week', de: 'Mittlere Woche', fr: 'Semaine moyenne', es: 'Semana media', tr: 'Ortalama hafta');
+  return _pickByLocale(t, 'Тяжёлая неделя', 'Hard week', de: 'Schwere Woche', fr: 'Semaine difficile', es: 'Semana difícil', tr: 'Zor hafta');
 }
 
 List<double> _pulseBarsForGoals(List<Goal> goals, ReportPeriod period) {
@@ -2718,9 +2721,61 @@ List<_BestDayInfo> _topDaysByCompleted(List<Goal> goals, {int limit = 3}) {
   return result.take(limit).toList();
 }
 
-String _weekdayShort(DateTime date, _ReportsText t) {
-  final idx = date.weekday - 1;
-  return t.weekdays[idx.clamp(0, 6)];
+// Раньше — ручные массивы дней недели по языкам; DateFormat из intl умеет
+// то же самое точнее, используя t.localeName вместо кастомных списков.
+String _weekdayShort(DateTime date, AppLocalizations t) {
+  return DateFormat.E(t.localeName).format(date);
+}
+
+// Аналогично для названий месяцев — вместо ручных списков по 5 языкам.
+String _monthName(AppLocalizations t, int month) {
+  final date = DateTime(2000, month.clamp(1, 12), 1);
+  return DateFormat.MMM(t.localeName).format(date);
+}
+
+// Раньше — метод _ReportsText.comparisonTitle со switch внутри самого
+// класса переводов; вынесен как обычная функция, раз AppLocalizations
+// (сгенерированный класс) нельзя дополнить собственными методами.
+String _comparisonTitle(AppLocalizations t, ReportPeriod period) {
+  switch (period) {
+    case ReportPeriod.day:
+      return t.reportsScreenComparisonTitleDay;
+    case ReportPeriod.week:
+      return t.reportsScreenComparisonTitleWeek;
+    case ReportPeriod.month:
+      return t.reportsScreenComparisonTitleMonth;
+  }
+}
+
+/// Хелпер для мест, где текст собирается из большого числа локальных
+/// переменных через интерполяцию (сводка отчёта, вердикт пульса) — заводить
+/// под каждую такую строку отдельный параметризованный ключ в .arb с 6-9
+/// плейсхолдерами того не стоит. AppLocalizations не даёт прямого доступа к
+/// текущему Locale, но t.localeName достаточно для того же переключения,
+/// что раньше делал _ReportsText.pick.
+String _pickByLocale(
+  AppLocalizations t,
+  String ru,
+  String en, {
+  String? de,
+  String? fr,
+  String? es,
+  String? tr,
+}) {
+  switch (t.localeName.split('_').first) {
+    case 'ru':
+      return ru;
+    case 'de':
+      return de ?? en;
+    case 'fr':
+      return fr ?? en;
+    case 'es':
+      return es ?? en;
+    case 'tr':
+      return tr ?? en;
+    default:
+      return en;
+  }
 }
 
 int _moodScore(String emoji) {
@@ -2732,18 +2787,18 @@ int _moodScore(String emoji) {
   return 3;
 }
 
-String _moodLabel(int score, _ReportsText t) {
+String _moodLabel(int score, AppLocalizations t) {
   switch (score) {
     case 1:
-      return t.moodVeryLow;
+      return t.reportsScreenMoodVeryLow;
     case 2:
-      return t.moodLow;
+      return t.reportsScreenMoodLow;
     case 3:
-      return t.moodNeutral;
+      return t.reportsScreenMoodNeutral;
     case 4:
-      return t.moodGood;
+      return t.reportsScreenMoodGood;
     default:
-      return t.moodGreat;
+      return t.reportsScreenMoodGreat;
   }
 }
 
@@ -2801,226 +2856,22 @@ Color _blockColor(BuildContext context, String block) {
   return _LadnaColors.mid(context);
 }
 
-String _blockLabel(String block, _ReportsText t) {
+String _blockLabel(String block, AppLocalizations t) {
   final key = block.toLowerCase();
-  if (key.contains('career')) return t.career;
-  if (key.contains('finance')) return t.finance;
-  if (key.contains('education')) return t.education;
-  if (key.contains('family')) return t.family;
-  if (key.contains('health')) return t.health;
-  if (key.contains('hobb')) return t.hobbies;
-  if (key.contains('кар')) return t.career;
-  if (key.contains('фин')) return t.finance;
-  if (key.contains('образ')) return t.education;
-  if (key.contains('сем')) return t.family;
-  if (key.contains('зд')) return t.health;
-  return t.general;
+  if (key.contains('career')) return t.lifeBlockCareer;
+  if (key.contains('finance')) return t.lifeBlockFinance;
+  if (key.contains('education')) return t.lifeBlockEducation;
+  if (key.contains('family')) return t.lifeBlockFamily;
+  if (key.contains('health')) return t.lifeBlockHealth;
+  if (key.contains('hobb')) return t.lifeBlockHobbies;
+  if (key.contains('кар')) return t.lifeBlockCareer;
+  if (key.contains('фин')) return t.lifeBlockFinance;
+  if (key.contains('образ')) return t.lifeBlockEducation;
+  if (key.contains('сем')) return t.lifeBlockFamily;
+  if (key.contains('зд')) return t.lifeBlockHealth;
+  return t.lifeBlockGeneral;
 }
 
 // -----------------------------------------------------------------------------
 // Local text without ARB getters, so this file does not break localization builds.
 // -----------------------------------------------------------------------------
-
-class _ReportsText {
-  final Locale locale;
-
-  const _ReportsText(this.locale);
-
-  static _ReportsText of(BuildContext context) => _ReportsText(Localizations.localeOf(context));
-
-  bool get _ru => locale.languageCode == 'ru';
-  bool get _de => locale.languageCode == 'de';
-  bool get _fr => locale.languageCode == 'fr';
-  bool get _es => locale.languageCode == 'es';
-  bool get _tr => locale.languageCode == 'tr';
-
-  String pick(String ru, String en, {String? de, String? fr, String? es, String? tr}) {
-    if (_ru) return ru;
-    if (_de) return de ?? en;
-    if (_fr) return fr ?? en;
-    if (_es) return es ?? en;
-    if (_tr) return tr ?? en;
-    return en;
-  }
-
-  String get reports => pick('Отчёты', 'Reports', de: 'Berichte', fr: 'Rapports', es: 'Informes', tr: 'Raporlar');
-  String get dayShort => pick('День', 'Day', de: 'Tag', fr: 'Jour', es: 'Día', tr: 'Gün');
-  String get weekShort => pick('Нед', 'Week', de: 'Woche', fr: 'Sem.', es: 'Sem.', tr: 'Hafta');
-  String get monthShort => pick('Мес', 'Month', de: 'Monat', fr: 'Mois', es: 'Mes', tr: 'Ay');
-  String get summary => pick('Сводка', 'Summary', de: 'Übersicht', fr: 'Résumé', es: 'Resumen', tr: 'Özet');
-  String get progress => pick('Прогресс', 'Progress', de: 'Fortschritt', fr: 'Progrès', es: 'Progreso', tr: 'İlerleme');
-  String get habits => pick('Привычки', 'Habits', de: 'Gewohnheiten', fr: 'Habitudes', es: 'Hábitos', tr: 'Alışkanlıklar');
-  String get mood => pick('Настроение', 'Mood', de: 'Stimmung', fr: 'Humeur', es: 'Ánimo', tr: 'Ruh hali');
-  String get tasksDone => pick('Задач выполнено', 'Tasks done', de: 'Erledigte Aufgaben');
-  String get focusHours => pick('Фокус-часов', 'Focus hours', de: 'Fokusstunden');
-  String get outOf => pick('из', 'of', de: 'von', fr: 'sur', es: 'de', tr: '/');
-  String get hoursShort => pick('ч', 'h', de: 'Std.', fr: 'h', es: 'h', tr: 's');
-  String get periodAverage => pick('Среднее за период', 'Period average');
-  String get moodAverage => pick('Среднее настроение', 'Average mood', de: 'Durchschnittliche Stimmung', fr: 'Humeur moyenne', es: 'Ánimo medio', tr: 'Ortalama ruh hali');
-  String get outOfFiveAverage => pick('из 5 в среднем', 'out of 5 average');
-  String get outOfFive => pick('из 5 баллов', 'out of 5');
-  String get howMoodScoreWorks => pick('Как считается настроение', 'How mood is calculated', de: 'So wird die Stimmung berechnet', fr: 'Comment l’humeur est calculée', es: 'Cómo se calcula el ánimo', tr: 'Ruh hali nasıl hesaplanır');
-  String get moodScoreExplanation => pick('Пользователь выбирает одно из 5 настроений. Каждой иконке соответствует балл: 1 — очень тяжело, 2 — сложно, 3 — нейтрально, 4 — хорошо, 5 — отлично. В отчётах показывается среднее значение за выбранный период.', 'The user chooses one of 5 moods. Each icon has a score: 1 very low, 2 low, 3 neutral, 4 good, 5 great. Reports show the average for the selected period.', de: 'Der Nutzer wählt eine von 5 Stimmungen. Jede hat einen Wert: 1 sehr niedrig, 2 niedrig, 3 neutral, 4 gut, 5 sehr gut. Berichte zeigen den Durchschnitt für den gewählten Zeitraum.', fr: 'L’utilisateur choisit une des 5 humeurs. Chaque icône a une note : 1 très bas, 2 bas, 3 neutre, 4 bien, 5 très bien. Les rapports affichent la moyenne de la période.', es: 'El usuario elige uno de 5 ánimos. Cada icono tiene una puntuación: 1 muy bajo, 2 bajo, 3 neutral, 4 bien, 5 muy bien. Los informes muestran la media del periodo elegido.', tr: 'Kullanıcı 5 ruh halinden birini seçer. Her ikonun puanı vardır: 1 çok düşük, 2 düşük, 3 nötr, 4 iyi, 5 harika. Raporlar seçilen dönem ortalamasını gösterir.');
-  String get moodVeryLow => pick('Очень тяжело', 'Very low', de: 'Sehr niedrig', fr: 'Très bas', es: 'Muy bajo', tr: 'Çok düşük');
-  String get moodLow => pick('Сложно', 'Low', de: 'Niedrig', fr: 'Bas', es: 'Bajo', tr: 'Düşük');
-  String get moodNeutral => pick('Нейтрально', 'Neutral', de: 'Neutral', fr: 'Neutre', es: 'Neutral', tr: 'Nötr');
-  String get moodGood => pick('Хорошо', 'Good', de: 'Gut', fr: 'Bien', es: 'Bien', tr: 'İyi');
-  String get moodGreat => pick('Отлично', 'Great', de: 'Sehr gut', fr: 'Très bien', es: 'Muy bien', tr: 'Harika');
-  String get periodEfficiency => pick('Эффективность периода', 'Period efficiency');
-  String get plan => pick('План', 'Plan', de: 'Plan');
-  String get fact => pick('Факт', 'Actual', de: 'Ist');
-  String get timeBySphere => pick('Время по сферам', 'Time by spheres');
-  String get topProductiveDays => pick('Топ-3 продуктивных дня', 'Top 3 productive days');
-  String get aiObservation => pick('AI-наблюдение', 'AI observation');
-  String get periodStatistics => pick('Статистика периода', 'Period statistics', de: 'Periodenstatistik', fr: 'Statistiques de période', es: 'Estadísticas del periodo', tr: 'Dönem istatistikleri');
-  String get extendedAiObservationSchedule => pick(
-        'Это твоя статистика за период. Расширенное AI-наблюдение обновится в воскресенье.',
-        'This is your statistics for the period. The extended AI observation will update on Sunday.',
-        de: 'Das ist deine Statistik für den Zeitraum. Die erweiterte AI-Beobachtung wird am Sonntag aktualisiert.',
-        fr: 'Ce sont tes statistiques pour la période. L’observation IA étendue sera mise à jour dimanche.',
-        es: 'Estas son tus estadísticas del periodo. La observación de IA ampliada se actualizará el domingo.',
-        tr: 'Bu, dönem istatistiklerin. Genişletilmiş AI gözlemi pazar günü güncellenecek.',
-      );
-  String get aiLoading => pick('Готовлю персональное наблюдение…', 'Preparing your personal observation…', de: 'Persönliche Beobachtung wird vorbereitet…', fr: 'Préparation de l’observation personnalisée…', es: 'Preparando una observación personalizada…', tr: 'Kişisel gözlem hazırlanıyor…');
-  String get aiUnavailable => pick('AI-наблюдение пока недоступно. Проверь подключение к функции или попробуй обновить позже.', 'AI observation is currently unavailable. Check the function connection or try again later.', de: 'AI-Beobachtung ist derzeit nicht verfügbar. Prüfe die Funktionsverbindung oder versuche es später erneut.', fr: 'L’observation IA est momentanément indisponible. Vérifie la fonction ou réessaie plus tard.', es: 'La observación de IA no está disponible ahora. Revisa la función o inténtalo más tarde.', tr: 'AI gözlemi şu anda kullanılamıyor. Fonksiyon bağlantısını kontrol et veya daha sonra tekrar dene.');
-  String get commonRetry => pick('Повторить', 'Retry', de: 'Erneut versuchen', fr: 'Réessayer', es: 'Reintentar', tr: 'Tekrar dene');
-  String get insight => pick('Инсайт', 'Insight');
-  String get pattern => pick('Паттерн', 'Pattern');
-  String get periodTasks => pick('Задачи периода', 'Period tasks');
-  String get done => pick('выполнено', 'done', de: 'erledigt');
-  String get periodProgress => pick('Прогресс периода', 'Period progress');
-  String get tempoBelowNorm => pick('Темп ниже нормы', 'Pace below target');
-  String get tempoGood => pick('Темп в норме', 'Pace is on track');
-  String get details => pick('Детали', 'Details');
-  String get avgTimePerTask => pick('Среднее время / задачу', 'Avg. time / task');
-  String get doneOnTime => pick('Выполнено в срок', 'Done on time');
-  String get moved => pick('Перенесено', 'Moved');
-  String get completed => pick('Выполнено', 'Completed');
-  String get forThisPeriod => pick('за этот период', 'for this period');
-  String get bestStreak => pick('Лучший страйк', 'Best streak');
-  String get daysInARow => pick('дней подряд', 'days in a row');
-  String get byHabits => pick('По привычкам', 'By habits');
-  String get streaksFourWeeks => pick('Страйки за 4 недели', 'Streaks over 4 weeks');
-  String get fourWeeksAgo => pick('4 нед. назад', '4 weeks ago');
-  String get missed => pick('пропуск', 'missed');
-  String get today => pick('сегодня', 'today');
-  String get bestDay => pick('Лучший день', 'Best day');
-  String get weekDynamics => pick('Динамика недели', 'Week dynamics');
-  String get byDays => pick('По дням', 'By days');
-  String get onTime => pick('В срок', 'On time', de: 'Pünktlich', fr: 'À temps', es: 'A tiempo', tr: 'Zamanında');
-  String get tasks => pick('Задачи', 'Tasks', de: 'Aufgaben', fr: 'Tâches', es: 'Tareas', tr: 'Görevler');
-  String get hours => pick('Часы', 'Hours', de: 'Stunden', fr: 'Heures', es: 'Horas', tr: 'Saat');
-  String get currentPeriodShort => pick('эта', 'this', de: 'aktuell', fr: 'actuel', es: 'actual', tr: 'bu');
-  String get previousPeriodShort => pick('прош.', 'prev.', de: 'vorher', fr: 'préc.', es: 'ant.', tr: 'önceki');
-  String comparisonTitle(ReportPeriod period) {
-    switch (period) {
-      case ReportPeriod.day:
-        return pick('Этот день vs прошлый', 'This day vs previous day', de: 'Dieser Tag vs. vorheriger Tag', fr: 'Ce jour vs précédent', es: 'Este día vs anterior', tr: 'Bu gün vs önceki gün');
-      case ReportPeriod.week:
-        return pick('Эта неделя vs прошлая', 'This week vs last week', de: 'Diese Woche vs. letzte Woche', fr: 'Cette semaine vs précédente', es: 'Esta semana vs anterior', tr: 'Bu hafta vs geçen hafta');
-      case ReportPeriod.month:
-        return pick('Этот месяц vs прошлый', 'This month vs last month', de: 'Dieser Monat vs. letzter Monat', fr: 'Ce mois vs précédent', es: 'Este mes vs anterior', tr: 'Bu ay vs geçen ay');
-    }
-  }
-  String bestDaySubtitle(int tasks, String hours) => pick(
-        '$tasks задач · $hours ч фокуса',
-        '$tasks tasks · $hours h focus',
-        de: '$tasks Aufgaben · $hours Std. Fokus',
-        fr: '$tasks tâches · $hours h de focus',
-        es: '$tasks tareas · $hours h de foco',
-        tr: '$tasks görev · $hours s odak',
-      );
-  String get correlations => pick('Корреляции', 'Correlations', de: 'Korrelationen', fr: 'Corrélations', es: 'Correlaciones', tr: 'Korelasyonlar');
-  String get streaks => pick('Страйки', 'Streaks', de: 'Serien', fr: 'Séries', es: 'Rachas', tr: 'Seriler');
-  String get weakLink => pick('Слабое звено', 'Weak link', de: 'Schwachstelle', fr: 'Point faible', es: 'Punto débil', tr: 'Zayıf halka');
-  String get noDataYet => pick('Пока недостаточно данных', 'Not enough data yet');
-  String get pulse => pick('ПУЛЬС', 'PULSE', de: 'PULS', fr: 'POULS', es: 'PULSO', tr: 'NABIZ');
-  String get monthEfficiency => pick('Эффективность месяца', 'Month efficiency', de: 'Monatseffizienz', fr: 'Efficacité du mois', es: 'Eficiencia del mes', tr: 'Ay verimliliği');
-  String monthEfficiencySubtitle(int completed, int total, int daysLeft) => pick(
-        '$completed задач ${outOf} $total · осталось $daysLeft дней',
-        '$completed tasks ${outOf} $total · $daysLeft days left',
-        de: '$completed Aufgaben ${outOf} $total · $daysLeft Tage übrig',
-        fr: '$completed tâches ${outOf} $total · $daysLeft jours restants',
-        es: '$completed tareas ${outOf} $total · quedan $daysLeft días',
-        tr: '$completed görev ${outOf} $total · $daysLeft gün kaldı',
-      );
-  String get factVsDesiredBalance => pick('Факт против желаемого баланса', 'Actual vs desired balance', de: 'Ist vs. Wunschbalance', fr: 'Réel vs équilibre souhaité', es: 'Real vs equilibrio deseado', tr: 'Gerçek vs istenen denge');
-  String get balancePlanFactHint => pick('План — тонкая метка, факт — заполненная полоса.', 'Plan is the thin marker; actual is the filled bar.', de: 'Plan ist die dünne Markierung, Ist ist die gefüllte Leiste.', fr: 'Le plan est le marqueur fin, le réel est la barre remplie.', es: 'El plan es la marca fina; lo real es la barra rellena.', tr: 'Plan ince işaret, gerçek dolu çubuktur.');
-  String get balanceEmptyHint => pick('Задай желаемый баланс сфер в профиле — здесь появится сравнение факта с планом.', 'Set your desired life balance in Profile — the actual vs plan comparison will appear here.', de: 'Lege deine Wunschbalance im Profil fest — hier erscheint der Vergleich von Ist und Plan.', fr: 'Définis ton équilibre souhaité dans le profil — la comparaison réel vs plan apparaîtra ici.', es: 'Define tu equilibrio deseado en el perfil — aquí aparecerá la comparación entre real y plan.', tr: 'Profilde istediğin yaşam dengesini belirle — gerçek ve plan karşılaştırması burada görünecek.');
-  String get planLegend => pick('план', 'plan', de: 'Plan', fr: 'plan', es: 'plan', tr: 'plan');
-  String get factLegend => pick('факт', 'actual', de: 'Ist', fr: 'réel', es: 'real', tr: 'gerçek');
-  String get overageLegend => pick('перебор', 'overage', de: 'Überschuss', fr: 'excès', es: 'exceso', tr: 'fazla');
-  String get sleepSevenPlus => pick('Сон 7+ часов', 'Sleep 7+ hours', de: 'Schlaf 7+ Std.', fr: 'Sommeil 7 h+', es: 'Sueño 7+ h', tr: '7+ saat uyku');
-  String get habitCompletion => pick('Выполнение привычек', 'Habit completion', de: 'Gewohnheiten erledigt', fr: 'Habitudes réalisées', es: 'Hábitos completados', tr: 'Alışkanlık tamamlama');
-  String get weekStart => pick('Пн–Вт', 'Mon–Tue', de: 'Mo–Di', fr: 'lun–mar', es: 'lun–mar', tr: 'Pzt–Sal');
-  String get moreStableThanWeekend => pick('Стабильнее конца недели', 'More stable than week end', de: 'Stabiler als das Wochenende', fr: 'Plus stable que la fin de semaine', es: 'Más estable que el fin de semana', tr: 'Hafta sonundan daha stabil');
-  String get highLoad => pick('Высокая нагрузка', 'High load', de: 'Hohe Auslastung', fr: 'Charge élevée', es: 'Alta carga', tr: 'Yüksek yoğunluk');
-  String get taskImpact => pick('Влияние задач', 'Task impact', de: 'Einfluss der Aufgaben', fr: 'Impact des tâches', es: 'Impacto de tareas', tr: 'Görev etkisi');
-  String get daysWithHabits => pick('Дни с привычками', 'Days with habits', de: 'Tage mit Gewohnheiten', fr: 'Jours avec habitudes', es: 'Días con hábitos', tr: 'Alışkanlıklı günler');
-  String get moodHigher => pick('Настроение выше', 'Mood is higher', de: 'Stimmung ist höher', fr: 'Humeur plus élevée', es: 'Ánimo más alto', tr: 'Ruh hali daha yüksek');
-  String get openTasks => pick('Незакрытые задачи', 'Open tasks', de: 'Offene Aufgaben', fr: 'Tâches ouvertes', es: 'Tareas abiertas', tr: 'Açık görevler');
-  String get moodImpact => pick('Влияние на настроение', 'Mood impact', de: 'Einfluss auf Stimmung', fr: 'Impact sur l’humeur', es: 'Impacto en el ánimo', tr: 'Ruh hali etkisi');
-  String get expensesAboveNorm => pick('Расходы выше нормы', 'Expenses above norm', de: 'Ausgaben über Norm', fr: 'Dépenses au-dessus de la norme', es: 'Gastos por encima de la norma', tr: 'Norm üstü harcamalar');
-  String get nextDayMood => pick('Настроение следующего дня', 'Next-day mood', de: 'Stimmung am nächsten Tag', fr: 'Humeur du lendemain', es: 'Ánimo del día siguiente', tr: 'Ertesi gün ruh hali');
-  String weakLinkRecommendation(String label, int pct) => pick(
-        '$label — $pct% за период. Привяжи к самой простой привычке.',
-        '$label — $pct% for the period. Attach it to your easiest habit.',
-        de: '$label — $pct% im Zeitraum. Verknüpfe es mit deiner einfachsten Gewohnheit.',
-        fr: '$label — $pct% sur la période. Associe-la à ton habitude la plus simple.',
-        es: '$label — $pct% en el periodo. Vincúlalo con tu hábito más fácil.',
-        tr: '$label — dönem için %$pct. Bunu en kolay alışkanlığına bağla.',
-      );
-
-  String get summaryInsight => pick(
-        'Ты продуктивнее во вторник и среду. Перенеси самые важные задачи на начало недели.',
-        'You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.',
-      );
-  String get progressInsight => pick(
-        'Задачи по одной сфере откладываются чаще других. Попробуй закрепить для них отдельный утренний блок.',
-        'One sphere is postponed more often than others. Try reserving a separate morning block for it.',
-      );
-  String get habitsInsight => pick(
-        'В дни, когда выполнены привычки, продуктивность обычно выше. Начинай день с самой простой привычки.',
-        'On days when habits are completed, productivity is usually higher. Start with the easiest habit.',
-      );
-  String get moodInsight => pick(
-        'Настроение выше в дни с выполненными привычками. Сохраняй маленький ритуал утром.',
-        'Mood is higher on days with completed habits. Keep a small morning ritual.',
-      );
-
-  String get career => pick('Карьера', 'Career');
-  String get finance => pick('Финансы', 'Finance');
-  String get education => pick('Образование', 'Education');
-  String get family => pick('Семья', 'Family');
-  String get health => pick('Здоровье', 'Health');
-  String get hobbies => pick('Хобби', 'Hobbies');
-  String get general => pick('Общее', 'General');
-
-  List<String> get weekdays => _ru
-      ? const ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-      : _de
-          ? const ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-          : _fr
-              ? const ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di']
-              : _es
-                  ? const ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
-                  : _tr
-                      ? const ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz']
-                      : const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  String monthName(int month) {
-    final ru = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-    final en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final de = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
-    final fr = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    final es = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
-    final tr = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-    final i = (month - 1).clamp(0, 11);
-    if (_ru) return ru[i];
-    if (_de) return de[i];
-    if (_fr) return fr[i];
-    if (_es) return es[i];
-    if (_tr) return tr[i];
-    return en[i];
-  }
-}

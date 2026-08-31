@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../../models/home_model.dart';
 import '../expenses_screen.dart';
@@ -119,121 +122,25 @@ class _HomeViewState extends State<_HomeView> {
     await userService.markEpicIntroSeen();
   }
 
-  String _menuLabel(BuildContext context) => _pick(context, const {
-        'ru': 'Меню',
-        'en': 'Menu',
-        'de': 'Menü',
-        'fr': 'Menu',
-        'es': 'Menú',
-        'tr': 'Menü',
-      });
+  String _menuLabel(BuildContext context) => AppLocalizations.of(context)!.navMenu;
 
-  String _personalLabel(BuildContext context) => _pick(context, const {
-        'ru': 'Личное',
-        'en': 'Personal',
-        'de': 'Persönlich',
-        'fr': 'Personnel',
-        'es': 'Personal',
-        'tr': 'Kişisel',
-      });
+  String _personalLabel(BuildContext context) => AppLocalizations.of(context)!.navPersonal;
 
-  String _homeLabel(BuildContext context) => _pick(context, const {
-        'ru': 'Главная',
-        'en': 'Home',
-        'de': 'Home',
-        'fr': 'Accueil',
-        'es': 'Inicio',
-        'tr': 'Ana sayfa',
-      });
+  String _homeLabel(BuildContext context) => AppLocalizations.of(context)!.home;
 
-  String _goalsLabel(BuildContext context) => _pick(context, const {
-        'ru': 'Цели',
-        'en': 'Goals',
-        'de': 'Ziele',
-        'fr': 'Objectifs',
-        'es': 'Metas',
-        'tr': 'Hedefler',
-      });
+  String _goalsLabel(BuildContext context) => AppLocalizations.of(context)!.navGoals;
 
-  String _reportsLabel(BuildContext context) => _pick(context, const {
-        'ru': 'Отчёты',
-        'en': 'Reports',
-        'de': 'Berichte',
-        'fr': 'Rapports',
-        'es': 'Informes',
-        'tr': 'Raporlar',
-      });
+  String _reportsLabel(BuildContext context) => AppLocalizations.of(context)!.navReports;
 
-  String _mainTitle(BuildContext context) => _pick(context, const {
-        'ru': 'Главная',
-        'en': 'Home',
-        'de': 'Home',
-        'fr': 'Accueil',
-        'es': 'Inicio',
-        'tr': 'Ana sayfa',
-      });
+  String _mainTitle(BuildContext context) => AppLocalizations.of(context)!.home;
 
+  // Раньше здесь были ручные массивы дней недели/месяцев по языкам — то же,
+  // что делает пакет intl "из коробки", и делает точнее (учитывает падежи,
+  // особенности локали и т.д. лучше самодельных списков).
   String _dateLabel(BuildContext context) {
     final now = DateTime.now();
-    final code = Localizations.localeOf(context).languageCode.toLowerCase();
-    final weekdays = switch (code) {
-      'ru' => ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'],
-      'de' => ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
-      'fr' => ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'],
-      'es' => ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'],
-      'tr' => ['pzt', 'sal', 'çar', 'per', 'cum', 'cmt', 'paz'],
-      _ => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    };
-    final months = switch (code) {
-      'ru' => [
-          'января',
-          'февраля',
-          'марта',
-          'апреля',
-          'мая',
-          'июня',
-          'июля',
-          'августа',
-          'сентября',
-          'октября',
-          'ноября',
-          'декабря'
-        ],
-      'de' => [
-          'Jan.',
-          'Feb.',
-          'März',
-          'Apr.',
-          'Mai',
-          'Juni',
-          'Juli',
-          'Aug.',
-          'Sept.',
-          'Okt.',
-          'Nov.',
-          'Dez.'
-        ],
-      _ => [
-          'Jan',
-          'Feb',
-          'Mar',
-          'Apr',
-          'May',
-          'Jun',
-          'Jul',
-          'Aug',
-          'Sep',
-          'Oct',
-          'Nov',
-          'Dec'
-        ],
-    };
-    return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
-  }
-
-  static String _pick(BuildContext context, Map<String, String> values) {
-    final code = Localizations.localeOf(context).languageCode.toLowerCase();
-    return values[code] ?? values['en'] ?? values.values.first;
+    final locale = Localizations.localeOf(context).languageCode;
+    return DateFormat('EEE, d MMMM', locale).format(now);
   }
 
   void _openMenu(BuildContext context, HomeModel model) {
@@ -322,100 +229,37 @@ class _LifeBlocksSetupSheetState extends State<_LifeBlocksSetupSheet> {
     _LifeBlockOption('hobbies', '🎨'),
   ];
 
-  String _t(BuildContext context, Map<String, String> values) {
-    final code = Localizations.localeOf(context).languageCode.toLowerCase();
-    return values[code] ?? values['en'] ?? values.values.first;
-  }
+  String _title(BuildContext context) => AppLocalizations.of(context)!.lifeBlocksSetupTitle;
 
-  String _title(BuildContext context) => _t(context, const {
-        'ru': 'Что будем отслеживать?',
-        'en': 'What should we track?',
-        'de': 'Was möchtest du verfolgen?',
-        'fr': 'Que veux-tu suivre ?',
-        'es': '¿Qué quieres seguir?',
-        'tr': 'Neyi takip edelim?',
-      });
+  String _subtitle(BuildContext context) => AppLocalizations.of(context)!.lifeBlocksSetupSubtitle;
 
-  String _subtitle(BuildContext context) => _t(context, const {
-        'ru': 'Выбери сферы жизни. Ladna будет строить главную страницу, цели и отчёты вокруг них.',
-        'en': 'Choose life areas. Ladna will build your home screen, goals and reports around them.',
-        'de': 'Wähle Lebensbereiche. Ladna richtet Startseite, Ziele und Berichte danach aus.',
-        'fr': 'Choisis tes domaines de vie. Ladna adaptera l’accueil, les objectifs et les rapports.',
-        'es': 'Elige áreas de vida. Ladna adaptará el inicio, los objetivos y los informes.',
-        'tr': 'Yaşam alanlarını seç. Ladna ana ekranı, hedefleri ve raporları buna göre düzenler.',
-      });
+  String _button(BuildContext context) => AppLocalizations.of(context)!.lifeBlocksSetupContinue;
 
-  String _button(BuildContext context) => _t(context, const {
-        'ru': 'Продолжить',
-        'en': 'Continue',
-        'de': 'Weiter',
-        'fr': 'Continuer',
-        'es': 'Continuar',
-        'tr': 'Devam et',
-      });
+  String _hint(BuildContext context) => AppLocalizations.of(context)!.lifeBlocksSetupHint;
 
-  String _hint(BuildContext context) => _t(context, const {
-        'ru': 'Минимум 1 сфера',
-        'en': 'Choose at least 1 area',
-        'de': 'Wähle mindestens 1 Bereich',
-        'fr': 'Choisis au moins 1 domaine',
-        'es': 'Elige al menos 1 área',
-        'tr': 'En az 1 alan seç',
-      });
-
+  // Конечный, известный набор сфер жизни — все 6 уже переведены в .arb под
+  // остальным приложением (lifeBlockXxx), просто диспетчеризуем по ключу
+  // вместо того чтобы дублировать переводы здесь ещё раз.
   String _label(BuildContext context, String key) {
-    final labels = <String, Map<String, String>>{
-      'health': {
-        'ru': 'Здоровье',
-        'en': 'Health',
-        'de': 'Gesundheit',
-        'fr': 'Santé',
-        'es': 'Salud',
-        'tr': 'Sağlık',
-      },
-      'career': {
-        'ru': 'Карьера',
-        'en': 'Career',
-        'de': 'Karriere',
-        'fr': 'Carrière',
-        'es': 'Carrera',
-        'tr': 'Kariyer',
-      },
-      'family': {
-        'ru': 'Семья',
-        'en': 'Family',
-        'de': 'Familie',
-        'fr': 'Famille',
-        'es': 'Familia',
-        'tr': 'Aile',
-      },
-      'finance': {
-        'ru': 'Финансы',
-        'en': 'Finance',
-        'de': 'Finanzen',
-        'fr': 'Finances',
-        'es': 'Finanzas',
-        'tr': 'Finans',
-      },
-      'education': {
-        'ru': 'Обучение',
-        'en': 'Education',
-        'de': 'Bildung',
-        'fr': 'Éducation',
-        'es': 'Educación',
-        'tr': 'Eğitim',
-      },
-      'hobbies': {
-        'ru': 'Хобби',
-        'en': 'Hobbies',
-        'de': 'Hobbys',
-        'fr': 'Loisirs',
-        'es': 'Aficiones',
-        'tr': 'Hobiler',
-      },
-    };
-    return _t(context, labels[key] ?? {'en': key});
+    final l = AppLocalizations.of(context)!;
+    switch (key) {
+      case 'health':
+        return l.lifeBlockHealth;
+      case 'career':
+        return l.lifeBlockCareer;
+      case 'family':
+        return l.lifeBlockFamily;
+      case 'finance':
+        return l.lifeBlockFinance;
+      case 'education':
+        return l.lifeBlockEducation;
+      case 'hobbies':
+        return l.lifeBlockHobbies;
+      default:
+        return key;
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {

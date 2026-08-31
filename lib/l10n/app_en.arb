@@ -1768,38 +1768,495 @@
   "launcherDayGoals": "Goals",
   "launcherPlannedHoursDescription": "Plan: {hours} h",
   "@launcherPlannedHoursDescription": {
-  "placeholders": {
-    "hours": {}
-  }
-},
-"profileGdprSection": "Privacy & GDPR",
-"profileGdprExportTitle": "Export my data",
-"profileGdprExportSubtitle": "Creates a JSON export of all app data linked to your account.",
-"profileGdprNotSignedInToast": "You are not signed in. Data export is not possible.",
-"profileGdprDialogTitle": "GDPR data export created",
-"profileGdprDialogFileName": "File name: {fileName}",
-"@profileGdprDialogFileName": {
-  "placeholders": {
-    "fileName": {
-      "type": "String"
+    "placeholders": {
+      "hours": {}
     }
-  }
-},
-"profileGdprDialogBody": "The export was created as JSON and copied to your clipboard.\n\nYou can now paste the content into a file ending with .json.",
-"profileGdprDialogPreviewLabel": "Preview:",
-"profileGdprCopyButton": "Copy",
-"profileGdprDoneButton": "Done",
-"profileGdprCopiedAgainToast": "Data export was copied to the clipboard again.",
-"profileGdprCreatedToast": "GDPR data export was created and copied.",
-"profileGdprFailedToast": "Data export failed: {error}",
-"@profileGdprFailedToast": {
-  "placeholders": {
-    "error": {
-      "type": "String"
+  },
+  "profileGdprSection": "Privacy & GDPR",
+  "profileGdprExportTitle": "Export my data",
+  "profileGdprExportSubtitle": "Creates a JSON export of all app data linked to your account.",
+  "profileGdprNotSignedInToast": "You are not signed in. Data export is not possible.",
+  "profileGdprDialogTitle": "GDPR data export created",
+  "profileGdprDialogFileName": "File name: {fileName}",
+  "@profileGdprDialogFileName": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
     }
-  }
-},
-"profileGdprExportNoteAccount": "This export contains the authenticated user account, the public.users profile row, all user-scoped app tables, and reference tables required to understand exported answers.",
-"profileGdprExportNoteRls": "The export is limited by Supabase Row Level Security. Tables that do not exist or are not readable are returned with an _export_warning entry.",
-"profileGdprExportNoteEncrypted": "Encrypted payload fields are exported as stored. Decryption depends on the app encryption implementation and the active user session."
+  },
+  "profileGdprDialogBody": "The export was created as JSON and copied to your clipboard.\n\nYou can now paste the content into a file ending with .json.",
+  "profileGdprDialogPreviewLabel": "Preview:",
+  "profileGdprCopyButton": "Copy",
+  "profileGdprDoneButton": "Done",
+  "profileGdprCopiedAgainToast": "Data export was copied to the clipboard again.",
+  "profileGdprCreatedToast": "GDPR data export was created and copied.",
+  "profileGdprFailedToast": "Data export failed: {error}",
+  "@profileGdprFailedToast": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "profileGdprExportNoteAccount": "This export contains the authenticated user account, the public.users profile row, all user-scoped app tables, and reference tables required to understand exported answers.",
+  "profileGdprExportNoteRls": "The export is limited by Supabase Row Level Security. Tables that do not exist or are not readable are returned with an _export_warning entry.",
+  "profileGdprExportNoteEncrypted": "Encrypted payload fields are exported as stored. Decryption depends on the app encryption implementation and the active user session.",
+  "profile": "Profile",
+  "settings": "Settings",
+  "profileFallbackName": "User",
+  "profileNoEmail": "No email",
+  "personalData": "Personal data",
+  "name": "Name",
+  "enterName": "Enter name",
+  "age": "Age",
+  "enterAge": "Enter age",
+  "notSpecified": "Not specified",
+  "lifeSpheres": "Life spheres",
+  "mySpheres": "My spheres",
+  "edit": "Edit",
+  "habits": "Habits",
+  "myHabits": "My habits",
+  "noHabitsYet": "No habits yet",
+  "addHabitHint": "Habit creation remains in the current habit editor.",
+  "daysCount": "{n} days",
+  "@daysCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "focus": "Focus",
+  "targetHoursTitle": "Daily target hours",
+  "targetHoursSubtitle": "Used to calculate progress",
+  "targetHoursField": "Hours per day",
+  "hoursShort": "h",
+  "notifications": "Notifications",
+  "allowNotifications": "Allow notifications",
+  "notificationsSubtitle": "Works while the tab is open",
+  "eveningCheckIn": "Evening check-in",
+  "eveningCheckInBody": "Log your mood and close the day calmly.",
+  "everyDayAt": "Every day at {time}",
+  "@everyDayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsUnsupported": "Notifications are not supported here.",
+  "notificationsEnabled": "Notifications enabled.",
+  "notificationsDenied": "Notification permission was not granted.",
+  "notificationsMasterSubtitleOn": "Enabled",
+  "notificationsMasterSubtitleOff": "Disabled",
+  "notificationsSystemDisabledHint": "Disabled in iOS system settings",
+  "openSystemSettings": "Open iOS Settings",
+  "notificationsGoalsTitle": "Goal reminders",
+  "notificationsGoalsSubtitle": "{minutes} min before start",
+  "@notificationsGoalsSubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsReflectionTitle": "Evening reflection",
+  "notificationsHabitsTitle": "Habit reminders",
+  "notificationsMinutesPickerTitle": "How many minutes before",
+  "app": "App",
+  "language": "Language",
+  "system": "System",
+  "googleCalendarSubtitle": "Export goals to calendar",
+  "googleCalendarMovedHint": "Google Calendar is now in profile settings.",
+  "exportData": "Export data",
+  "exportDataSubtitle": "JSON export of your account",
+  "exportCopied": "Export copied to clipboard.",
+  "exportFailed": "Could not export data",
+  "notSignedIn": "User is not signed in.",
+  "legalDocuments": "Legal documents",
+  "openLinkFailed": "Could not open the link.",
+  "signOut": "Sign out",
+  "signOutConfirm": "Are you sure you want to sign out?",
+  "deleteAccount": "Delete account",
+  "deleteAccountSubtitle": "All data will be permanently deleted",
+  "deleteAccountConfirm": "This cannot be undone. All account data will be permanently deleted.",
+  "cancel": "Cancel",
+  "desiredBalance": "Life wheel",
+  "desiredBalanceHint": "Set up your life wheel for the selected areas. Total cannot exceed 100%.",
+  "lifeWheelTapHint": "Tap a segment or an area below to set an exact percentage.",
+  "outOfHundredPercent": "of 100%",
+  "percent": "Percentage",
+  "lifeWheelPercentLimit": "You can enter 0 to {maxAllowed}%. The total balance cannot exceed 100%.",
+  "@lifeWheelPercentLimit": {
+    "placeholders": {
+      "maxAllowed": {
+        "type": "int"
+      }
+    }
+  },
+  "save": "Save",
+  "saving": "Saving…",
+  "newHabit": "New habit",
+  "editHabit": "Edit habit",
+  "habitName": "Habit name",
+  "negativeHabit": "Negative habit",
+  "deleteHabit": "Delete habit?",
+  "deleteHabitQuestion": "Habit \"{title}\" will be deleted.",
+  "@deleteHabitQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Delete",
+  "spaces": "Spaces",
+  "space": "Space",
+  "mySpaces": "My spaces",
+  "spacesHint": "Create shared spaces for home, family, trips, and projects.",
+  "noSpacesYet": "No spaces yet",
+  "noSpacesHint": "Create your first space and invite other users.",
+  "createSpace": "Create space",
+  "editSpace": "Edit space",
+  "deleteSpace": "Delete space",
+  "leaveSpace": "Leave space",
+  "deleteSpaceConfirm": "This space and its shared data will be deleted. This cannot be undone.",
+  "leaveSpaceConfirm": "You will no longer see tasks and data from this space.",
+  "spaceName": "Space name",
+  "spaceNameRequired": "Enter a space name",
+  "spaceDescription": "Description",
+  "spaceIcon": "Icon",
+  "spaceColor": "HEX color",
+  "spaceValidity": "Validity",
+  "noDeadline": "No deadline",
+  "spaceNoDeadline": "No expiration date",
+  "setDeadline": "Set date",
+  "changeDeadline": "Change date",
+  "spaceValidUntil": "Valid until {date}",
+  "@spaceValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spaceValidityHint": "After this date, the space stays in the database but disappears from screens and task selection.",
+  "spaceTapToManage": "Tap to manage members",
+  "spaceManageSubtitle": "Members and invites",
+  "members": "Members",
+  "noMembersYet": "No members yet",
+  "inviteMember": "Invite",
+  "inviteMemberHint": "The invite will be sent for “{spaceName}”.",
+  "@inviteMemberHint": {
+    "placeholders": {
+      "spaceName": {
+        "type": "String"
+      }
+    }
+  },
+  "email": "Email",
+  "sendInvite": "Send",
+  "enterValidEmail": "Enter a valid email",
+  "incomingInvites": "Incoming invites",
+  "spaceInviteSubtitle": "You were invited to a shared space",
+  "acceptInvite": "Accept",
+  "declineInvite": "Decline",
+  "spaceInviteAccepted": "Invite accepted.",
+  "spaceInviteSent": "Invite sent.",
+  "you": "You",
+  "spaceRoleOwner": "Owner",
+  "spaceRoleAdmin": "Admin",
+  "spaceRoleMember": "Member",
+  "spaceRoleViewer": "Viewer",
+  "spacesLoadFailed": "Could not load spaces",
+  "spaceMembersLoadFailed": "Could not load members",
+  "spaceSaveFailed": "Could not save space",
+  "spaceActionFailed": "Could not complete the action",
+  "spaceInviteSendFailed": "Could not send invite",
+  "spaceInviteAcceptFailed": "Could not accept invite",
+  "spaceInviteDeclineFailed": "Could not decline invite",
+  "noData": "No data",
+  "dayGoalsHeaderTitle": "Daily tasks",
+  "dayGoalsAllHiddenHint": "All visible tasks are hidden. Turn off “Hide completed”.",
+  "dayGoalsEmptyHint": "No tasks for this day yet. Add the first task with the button below.",
+  "dayGoalsStatTotal": "Total",
+  "dayGoalsStatDone": "Done",
+  "dayGoalsStatLeft": "Left",
+  "dayGoalsHoursLeftLabel": "Hours left: {hours}",
+  "@dayGoalsHoursLeftLabel": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "dayGoalsFilterAll": "All",
+  "dayGoalsFilterPersonal": "Personal",
+  "dayGoalsFilterAllSpheres": "All areas",
+  "dayGoalsLaneLeftBadge": "Left {count}",
+  "@dayGoalsLaneLeftBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneDoneBadge": "Done {count}",
+  "@dayGoalsLaneDoneBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneInProgress": "⚡ In progress",
+  "dayGoalsLaneInProgressEmpty": "Active tasks for this block will appear here",
+  "dayGoalsLaneDoneTitle": "✅ Done",
+  "dayGoalsLaneDoneEmpty": "Completed tasks will appear here after a focus block",
+  "dayGoalsSpaceMetaLabel": "👥 Space",
+  "dayGoalsCompletedLabel": "Completed",
+  "dayGoalsNotifSoftAskTitle": "Never miss a goal",
+  "dayGoalsNotifSoftAskBody": "Ladna will remind you 15 minutes before a goal starts — like an alarm, but for your tasks.",
+  "dayGoalsNotifSoftAskEnable": "Enable reminders",
+  "dayGoalsNotifSoftAskDismiss": "Not now",
+  "dayGoalsPeriodMorning": "Morning",
+  "dayGoalsPeriodDay": "Day",
+  "dayGoalsPeriodEvening": "Evening",
+  "dayGoalsSphereLifePersonal": "Personal",
+  "dayGoalsSphereTravel": "Travel",
+  "dayGoalsSphereHome": "Home",
+  "dayGoalsMinutesShort": "{minutes} min",
+  "@dayGoalsMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "registerErrNameMin2": "Name must be at least 2 characters.",
+  "launcherPlanHours": "Plan: {hours} h",
+  "@launcherPlanHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "launcherGoalsAndTasks": "Goals & tasks",
+  "launcherPersonal": "Personal",
+  "launcherReportsTab": "Reports",
+  "launcherBudget": "Budget",
+  "launcherQuickActions": "Quick actions",
+  "launcherBulkAdd": "Bulk add",
+  "launcherBulkAddSubtitle": "Expenses + Tasks + Mood",
+  "launcherAiWeeklyPlan": "AI weekly plan",
+  "launcherAiWeeklyPlanSubtitle": "Goals and progress analysis",
+  "launcherAiInsights": "AI insights",
+  "launcherNavAndActions": "Navigation and actions",
+  "navMenu": "Menu",
+  "navPersonal": "Personal",
+  "lifeBlocksSetupTitle": "What should we track?",
+  "lifeBlocksSetupSubtitle": "Choose life areas. Ladna will build your home screen, goals and reports around them.",
+  "lifeBlocksSetupContinue": "Continue",
+  "lifeBlocksSetupHint": "Choose at least 1 area",
+  "goalsScreenGoalsAndTasks": "Goals & Tasks",
+  "goalsScreenTasks": "Tasks",
+  "goalsScreenDashboard": "Dashboard",
+  "goalsScreenWeek": "Week",
+  "goalsScreenMonth": "Month",
+  "goalsScreenCalendar": "Calendar",
+  "goalsScreenWeekView": "Week view",
+  "goalsScreenMonthView": "Month days",
+  "goalsScreenNoTasks": "No tasks",
+  "goalsScreenCompleted": "completed",
+  "goalsScreenWeekSummary": "Week summary",
+  "goalsScreenThisWeek": "This week",
+  "goalsScreenTodayShort": "today",
+  "goalsScreenAll": "All",
+  "goalsScreenPersonalTasks": "Personal",
+  "goalsScreenUpToOneMonth": "Up to 1 mo",
+  "goalsScreenUpToSixMonths": "Up to 6 mo",
+  "goalsScreenYearPlus": "Year+",
+  "goalsScreenBySpheres": "By spheres",
+  "goalsScreenHide": "",
+  "goalsScreenProgress": "Progress",
+  "goalsScreenAdd": "Add",
+  "goalsScreenNoGoalsYet": "No goals yet",
+  "goalsScreenNoGoalsYetSub": "Add your first goal with the button below.",
+  "goalsScreenNewGoal": "New goal",
+  "goalsScreenEditGoal": "Edit goal",
+  "goalsScreenTitle": "Title",
+  "goalsScreenDescription": "Description",
+  "goalsScreenSphere": "Sphere",
+  "goalsScreenHorizon": "Horizon",
+  "goalsScreenDeleteGoal": "Delete goal",
+  "goalsScreenDeleteGoalQuestion": "This goal will be deleted. Related daily tasks will stay, but without a big-goal link.",
+  "goalsScreenCompletedTasks": "{done} tasks completed out of {total}",
+  "@goalsScreenCompletedTasks": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "goalsScreenGoalsCount": "{n} goals",
+  "@goalsScreenGoalsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "moodScore1": "Very low",
+  "moodScore2": "Low",
+  "moodScore3": "Neutral",
+  "moodScore4": "Good",
+  "moodScore5": "Great",
+  "moodScaleHint": "Mood scale: 1 means very low, 3 neutral, 5 great.",
+  "moodHowAreYouTitle": "How are you today?",
+  "moodWhatInfluencedLabel": "What affected your mood?",
+  "moodRecentEntriesTitle": "Recent entries",
+  "moodNoEntriesHint": "No entries yet. Save today’s mood.",
+  "moodTodayLabel": "Today",
+  "moodSelectedDayLabel": "Selected day",
+  "reportsScreenReports": "Reports",
+  "reportsScreenDayShort": "Day",
+  "reportsScreenWeekShort": "Week",
+  "reportsScreenMonthShort": "Month",
+  "reportsScreenSummary": "Summary",
+  "reportsScreenProgress": "Progress",
+  "reportsScreenMood": "Mood",
+  "reportsScreenTasksDone": "Tasks done",
+  "reportsScreenFocusHours": "Focus hours",
+  "reportsScreenOutOf": "of",
+  "reportsScreenPeriodAverage": "Period average",
+  "reportsScreenMoodAverage": "Average mood",
+  "reportsScreenOutOfFiveAverage": "out of 5 average",
+  "reportsScreenOutOfFive": "out of 5",
+  "reportsScreenHowMoodScoreWorks": "How mood is calculated",
+  "reportsScreenMoodScoreExplanation": "The user chooses one of 5 moods. Each icon has a score: 1 very low, 2 low, 3 neutral, 4 good, 5 great. Reports show the average for the selected period.",
+  "reportsScreenMoodVeryLow": "Very low",
+  "reportsScreenMoodLow": "Low",
+  "reportsScreenMoodNeutral": "Neutral",
+  "reportsScreenMoodGood": "Good",
+  "reportsScreenMoodGreat": "Great",
+  "reportsScreenPeriodEfficiency": "Period efficiency",
+  "reportsScreenPlan": "Plan",
+  "reportsScreenFact": "Actual",
+  "reportsScreenTimeBySphere": "Time by spheres",
+  "reportsScreenTopProductiveDays": "Top 3 productive days",
+  "reportsScreenAiObservation": "AI observation",
+  "reportsScreenPeriodStatistics": "Period statistics",
+  "reportsScreenExtendedAiObservationSchedule": "This is your statistics for the period. The extended AI observation will update on Sunday.",
+  "reportsScreenAiLoading": "Preparing your personal observation…",
+  "reportsScreenAiUnavailable": "AI observation is currently unavailable. Check the function connection or try again later.",
+  "reportsScreenInsight": "Insight",
+  "reportsScreenPattern": "Pattern",
+  "reportsScreenPeriodTasks": "Period tasks",
+  "reportsScreenDone": "done",
+  "reportsScreenPeriodProgress": "Period progress",
+  "reportsScreenTempoBelowNorm": "Pace below target",
+  "reportsScreenTempoGood": "Pace is on track",
+  "reportsScreenDetails": "Details",
+  "reportsScreenAvgTimePerTask": "Avg. time / task",
+  "reportsScreenDoneOnTime": "Done on time",
+  "reportsScreenMoved": "Moved",
+  "reportsScreenCompleted": "Completed",
+  "reportsScreenForThisPeriod": "for this period",
+  "reportsScreenBestStreak": "Best streak",
+  "reportsScreenDaysInARow": "days in a row",
+  "reportsScreenByHabits": "By habits",
+  "reportsScreenStreaksFourWeeks": "Streaks over 4 weeks",
+  "reportsScreenFourWeeksAgo": "4 weeks ago",
+  "reportsScreenMissed": "missed",
+  "reportsScreenToday": "today",
+  "reportsScreenBestDay": "Best day",
+  "reportsScreenWeekDynamics": "Week dynamics",
+  "reportsScreenByDays": "By days",
+  "reportsScreenOnTime": "On time",
+  "reportsScreenTasks": "Tasks",
+  "reportsScreenHours": "Hours",
+  "reportsScreenCurrentPeriodShort": "this",
+  "reportsScreenPreviousPeriodShort": "prev.",
+  "reportsScreenCorrelations": "Correlations",
+  "reportsScreenStreaks": "Streaks",
+  "reportsScreenWeakLink": "Weak link",
+  "reportsScreenNoDataYet": "Not enough data yet",
+  "reportsScreenPulse": "PULSE",
+  "reportsScreenMonthEfficiency": "Month efficiency",
+  "reportsScreenFactVsDesiredBalance": "Actual vs desired balance",
+  "reportsScreenBalancePlanFactHint": "Plan is the thin marker; actual is the filled bar.",
+  "reportsScreenBalanceEmptyHint": "Set your desired life balance in Profile — the actual vs plan comparison will appear here.",
+  "reportsScreenPlanLegend": "plan",
+  "reportsScreenFactLegend": "actual",
+  "reportsScreenOverageLegend": "overage",
+  "reportsScreenSleepSevenPlus": "Sleep 7+ hours",
+  "reportsScreenHabitCompletion": "Habit completion",
+  "reportsScreenWeekStart": "Mon–Tue",
+  "reportsScreenMoreStableThanWeekend": "More stable than week end",
+  "reportsScreenHighLoad": "High load",
+  "reportsScreenTaskImpact": "Task impact",
+  "reportsScreenDaysWithHabits": "Days with habits",
+  "reportsScreenMoodHigher": "Mood is higher",
+  "reportsScreenOpenTasks": "Open tasks",
+  "reportsScreenMoodImpact": "Mood impact",
+  "reportsScreenExpensesAboveNorm": "Expenses above norm",
+  "reportsScreenNextDayMood": "Next-day mood",
+  "reportsScreenComparisonTitleDay": "This day vs previous day",
+  "reportsScreenComparisonTitleWeek": "This week vs last week",
+  "reportsScreenComparisonTitleMonth": "This month vs last month",
+  "reportsScreenBestDaySubtitle": "{tasks} tasks · {hours} h focus",
+  "@reportsScreenBestDaySubtitle": {
+    "placeholders": {
+      "tasks": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsScreenMonthEfficiencySubtitle": "{completed} tasks {outOf} {total} · {daysLeft} days left",
+  "@reportsScreenMonthEfficiencySubtitle": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "outOf": {
+        "type": "String"
+      },
+      "total": {
+        "type": "int"
+      },
+      "daysLeft": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenWeakLinkRecommendation": "{label} — {pct}% for the period. Attach it to your easiest habit.",
+  "@reportsScreenWeakLinkRecommendation": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenSummaryInsight": "You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.",
+  "reportsScreenProgressInsight": "One sphere is postponed more often than others. Try reserving a separate morning block for it.",
+  "reportsScreenHabitsInsight": "On days when habits are completed, productivity is usually higher. Start with the easiest habit.",
+  "reportsScreenMoodInsight": "Mood is higher on days with completed habits. Keep a small morning ritual.",
+  "budgetCategoryNameLabel": "Name",
+  "navGoals": "Goals",
+  "navMood": "Mood",
+  "navProfile": "Profile",
+  "navReports": "Reports",
+  "navExpenses": "Expenses",
+  "goalsDeleteConfirmBodyShort": "This will be permanently deleted."
 }

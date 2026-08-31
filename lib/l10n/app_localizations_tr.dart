@@ -3770,4 +3770,1031 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileGdprExportNoteEncrypted =>
       'Şifrelenmiş payload alanları saklandıkları şekilde dışa aktarılır. Şifre çözme, uygulamanın şifreleme uygulamasına ve aktif kullanıcı oturumuna bağlıdır.';
+
+  @override
+  String get profile => 'Profil';
+
+  @override
+  String get settings => 'Ayarlar';
+
+  @override
+  String get profileFallbackName => 'Kullanıcı';
+
+  @override
+  String get profileNoEmail => 'E-posta yok';
+
+  @override
+  String get personalData => 'Kişisel bilgiler';
+
+  @override
+  String get name => 'Ad';
+
+  @override
+  String get enterName => 'Ad gir';
+
+  @override
+  String get age => 'Yaş';
+
+  @override
+  String get enterAge => 'Yaş gir';
+
+  @override
+  String get notSpecified => 'Belirtilmedi';
+
+  @override
+  String get lifeSpheres => 'Yaşam alanları';
+
+  @override
+  String get mySpheres => 'Alanlarım';
+
+  @override
+  String get edit => 'Düzenle';
+
+  @override
+  String get habits => 'Alışkanlıklar';
+
+  @override
+  String get myHabits => 'Alışkanlıklarım';
+
+  @override
+  String get noHabitsYet => 'Henüz alışkanlık yok';
+
+  @override
+  String get addHabitHint =>
+      'Habit creation remains in the current habit editor.';
+
+  @override
+  String daysCount(int n) {
+    return '$n gün';
+  }
+
+  @override
+  String get focus => 'Odak';
+
+  @override
+  String get targetHoursTitle => 'Günlük hedef saat';
+
+  @override
+  String get targetHoursSubtitle => 'İlerleme hesabında kullanılır';
+
+  @override
+  String get targetHoursField => 'Günde saat';
+
+  @override
+  String get hoursShort => 'sa';
+
+  @override
+  String get notifications => 'Bildirimler';
+
+  @override
+  String get allowNotifications => 'Bildirimlere izin ver';
+
+  @override
+  String get notificationsSubtitle => 'Sekme açıkken çalışır';
+
+  @override
+  String get eveningCheckIn => 'Akşam kontrolü';
+
+  @override
+  String get eveningCheckInBody => 'Log your mood and close the day calmly.';
+
+  @override
+  String everyDayAt(String time) {
+    return 'Her gün $time';
+  }
+
+  @override
+  String get notificationsUnsupported =>
+      'Notifications are not supported here.';
+
+  @override
+  String get notificationsEnabled => 'Notifications enabled.';
+
+  @override
+  String get notificationsDenied => 'Notification permission was not granted.';
+
+  @override
+  String get notificationsMasterSubtitleOn => 'Etkin';
+
+  @override
+  String get notificationsMasterSubtitleOff => 'Kapalı';
+
+  @override
+  String get notificationsSystemDisabledHint => 'iOS sistem ayarlarında kapalı';
+
+  @override
+  String get openSystemSettings => 'iOS Ayarlarını Aç';
+
+  @override
+  String get notificationsGoalsTitle => 'Hedef hatırlatmaları';
+
+  @override
+  String notificationsGoalsSubtitle(int minutes) {
+    return 'Başlamadan $minutes dk önce';
+  }
+
+  @override
+  String get notificationsReflectionTitle => 'Akşam yansıması';
+
+  @override
+  String get notificationsHabitsTitle => 'Alışkanlık hatırlatmaları';
+
+  @override
+  String get notificationsMinutesPickerTitle => 'Kaç dakika önce';
+
+  @override
+  String get app => 'Uygulama';
+
+  @override
+  String get language => 'Dil';
+
+  @override
+  String get system => 'Sistem';
+
+  @override
+  String get googleCalendarSubtitle => 'Hedefleri takvime aktar';
+
+  @override
+  String get googleCalendarMovedHint =>
+      'Google Calendar is now in profile settings.';
+
+  @override
+  String get exportData => 'Verileri dışa aktar';
+
+  @override
+  String get exportDataSubtitle => 'Hesabın JSON çıktısı';
+
+  @override
+  String get exportCopied => 'Export copied to clipboard.';
+
+  @override
+  String get exportFailed => 'Could not export data';
+
+  @override
+  String get notSignedIn => 'User is not signed in.';
+
+  @override
+  String get legalDocuments => 'Yasal belgeler';
+
+  @override
+  String get openLinkFailed => 'Could not open the link.';
+
+  @override
+  String get signOut => 'Çıkış yap';
+
+  @override
+  String get signOutConfirm => 'Are you sure you want to sign out?';
+
+  @override
+  String get deleteAccount => 'Hesabı sil';
+
+  @override
+  String get deleteAccountSubtitle => 'All data will be permanently deleted';
+
+  @override
+  String get deleteAccountConfirm =>
+      'This cannot be undone. All account data will be permanently deleted.';
+
+  @override
+  String get cancel => 'İptal';
+
+  @override
+  String get desiredBalance => 'Yaşam çarkı';
+
+  @override
+  String get desiredBalanceHint =>
+      'Seçili alanlara göre yaşam çarkını ayarla. Toplam %100’ü geçemez.';
+
+  @override
+  String get lifeWheelTapHint =>
+      'Kesin yüzdeyi belirlemek için bir segmente veya aşağıdaki alana dokun.';
+
+  @override
+  String get outOfHundredPercent => '%100 üzerinden';
+
+  @override
+  String get percent => 'Yüzde';
+
+  @override
+  String lifeWheelPercentLimit(int maxAllowed) {
+    return '0 ile $maxAllowed% arasında değer girebilirsin. Toplam denge %100’ü geçemez.';
+  }
+
+  @override
+  String get save => 'Kaydet';
+
+  @override
+  String get saving => 'Kaydediliyor…';
+
+  @override
+  String get newHabit => 'Yeni alışkanlık';
+
+  @override
+  String get editHabit => 'Alışkanlığı düzenle';
+
+  @override
+  String get habitName => 'Alışkanlık adı';
+
+  @override
+  String get negativeHabit => 'Negatif alışkanlık';
+
+  @override
+  String get deleteHabit => 'Alışkanlık silinsin mi?';
+
+  @override
+  String deleteHabitQuestion(String title) {
+    return '\"$title\" alışkanlığı silinecek.';
+  }
+
+  @override
+  String get delete => 'Sil';
+
+  @override
+  String get spaces => 'Alanlar';
+
+  @override
+  String get space => 'Alan';
+
+  @override
+  String get mySpaces => 'Alanlarım';
+
+  @override
+  String get spacesHint =>
+      'Ev, aile, seyahat ve projeler için ortak alanlar oluştur.';
+
+  @override
+  String get noSpacesYet => 'Henüz alan yok';
+
+  @override
+  String get noSpacesHint =>
+      'İlk alanını oluştur ve diğer kullanıcıları davet et.';
+
+  @override
+  String get createSpace => 'Alan oluştur';
+
+  @override
+  String get editSpace => 'Alanı düzenle';
+
+  @override
+  String get deleteSpace => 'Alanı sil';
+
+  @override
+  String get leaveSpace => 'Alandan ayrıl';
+
+  @override
+  String get deleteSpaceConfirm =>
+      'Bu alan ve paylaşılan verileri silinecek. Bu işlem geri alınamaz.';
+
+  @override
+  String get leaveSpaceConfirm =>
+      'Bu alandaki görevleri ve verileri artık görmeyeceksin.';
+
+  @override
+  String get spaceName => 'Alan adı';
+
+  @override
+  String get spaceNameRequired => 'Bir alan adı gir';
+
+  @override
+  String get spaceDescription => 'Açıklama';
+
+  @override
+  String get spaceIcon => 'Simge';
+
+  @override
+  String get spaceColor => 'HEX renk';
+
+  @override
+  String get spaceValidity => 'Geçerlilik';
+
+  @override
+  String get noDeadline => 'Süresiz';
+
+  @override
+  String get spaceNoDeadline => 'Süresiz alan';
+
+  @override
+  String get setDeadline => 'Tarih belirle';
+
+  @override
+  String get changeDeadline => 'Tarihi değiştir';
+
+  @override
+  String spaceValidUntil(String date) {
+    return '$date tarihine kadar geçerli';
+  }
+
+  @override
+  String get spaceValidityHint =>
+      'Bu tarihten sonra alan veritabanında kalır, ancak ekranlardan ve görev seçiminden kaybolur.';
+
+  @override
+  String get spaceTapToManage => 'Üyeleri yönetmek için dokun';
+
+  @override
+  String get spaceManageSubtitle => 'Üyeler ve davetler';
+
+  @override
+  String get members => 'Üyeler';
+
+  @override
+  String get noMembersYet => 'Henüz üye yok';
+
+  @override
+  String get inviteMember => 'Davet et';
+
+  @override
+  String inviteMemberHint(String spaceName) {
+    return 'Davet “$spaceName” alanı için gönderilecek.';
+  }
+
+  @override
+  String get email => 'E-posta';
+
+  @override
+  String get sendInvite => 'Gönder';
+
+  @override
+  String get enterValidEmail => 'Geçerli bir e-posta gir';
+
+  @override
+  String get incomingInvites => 'Gelen davetler';
+
+  @override
+  String get spaceInviteSubtitle => 'Ortak bir alana davet edildin';
+
+  @override
+  String get acceptInvite => 'Kabul et';
+
+  @override
+  String get declineInvite => 'Reddet';
+
+  @override
+  String get spaceInviteAccepted => 'Davet kabul edildi.';
+
+  @override
+  String get spaceInviteSent => 'Davet gönderildi.';
+
+  @override
+  String get you => 'Sen';
+
+  @override
+  String get spaceRoleOwner => 'Sahip';
+
+  @override
+  String get spaceRoleAdmin => 'Yönetici';
+
+  @override
+  String get spaceRoleMember => 'Üye';
+
+  @override
+  String get spaceRoleViewer => 'Sadece görüntüleme';
+
+  @override
+  String get spacesLoadFailed => 'Could not load spaces';
+
+  @override
+  String get spaceMembersLoadFailed => 'Could not load members';
+
+  @override
+  String get spaceSaveFailed => 'Could not save space';
+
+  @override
+  String get spaceActionFailed => 'Could not complete the action';
+
+  @override
+  String get spaceInviteSendFailed => 'Could not send invite';
+
+  @override
+  String get spaceInviteAcceptFailed => 'Could not accept invite';
+
+  @override
+  String get spaceInviteDeclineFailed => 'Could not decline invite';
+
+  @override
+  String get noData => 'Veri yok';
+
+  @override
+  String get dayGoalsHeaderTitle => 'Günlük görevler';
+
+  @override
+  String get dayGoalsAllHiddenHint =>
+      'Görünen görevler gizli. “Tamamlananları gizle” seçeneğini kapat.';
+
+  @override
+  String get dayGoalsEmptyHint =>
+      'Bugün için henüz görev yok. Aşağıdaki düğmeyle ilk görevi ekle.';
+
+  @override
+  String get dayGoalsStatTotal => 'Toplam';
+
+  @override
+  String get dayGoalsStatDone => 'Bitti';
+
+  @override
+  String get dayGoalsStatLeft => 'Kalan';
+
+  @override
+  String dayGoalsHoursLeftLabel(String hours) {
+    return 'Kalan saat: $hours';
+  }
+
+  @override
+  String get dayGoalsFilterAll => 'Tümü';
+
+  @override
+  String get dayGoalsFilterPersonal => 'Kişisel';
+
+  @override
+  String get dayGoalsFilterAllSpheres => 'Tüm alanlar';
+
+  @override
+  String dayGoalsLaneLeftBadge(int count) {
+    return 'Kalan $count';
+  }
+
+  @override
+  String dayGoalsLaneDoneBadge(int count) {
+    return 'Bitti $count';
+  }
+
+  @override
+  String get dayGoalsLaneInProgress => '⚡ Devam ediyor';
+
+  @override
+  String get dayGoalsLaneInProgressEmpty =>
+      'Bu bloğun aktif görevleri burada görünecek';
+
+  @override
+  String get dayGoalsLaneDoneTitle => '✅ Bitti';
+
+  @override
+  String get dayGoalsLaneDoneEmpty =>
+      'Odak bloğundan sonra tamamlanan görevler burada görünecek';
+
+  @override
+  String get dayGoalsSpaceMetaLabel => '👥 Alan';
+
+  @override
+  String get dayGoalsCompletedLabel => 'Tamamlandı';
+
+  @override
+  String get dayGoalsNotifSoftAskTitle => 'Hiçbir hedefi kaçırma';
+
+  @override
+  String get dayGoalsNotifSoftAskBody =>
+      'Ladna, bir hedef başlamadan 15 dakika önce sana hatırlatacak — bir alarm gibi ama görevlerin için.';
+
+  @override
+  String get dayGoalsNotifSoftAskEnable => 'Hatırlatıcıları etkinleştir';
+
+  @override
+  String get dayGoalsNotifSoftAskDismiss => 'Şimdi değil';
+
+  @override
+  String get dayGoalsPeriodMorning => 'Sabah';
+
+  @override
+  String get dayGoalsPeriodDay => 'Gün';
+
+  @override
+  String get dayGoalsPeriodEvening => 'Akşam';
+
+  @override
+  String get dayGoalsSphereLifePersonal => 'Kişisel';
+
+  @override
+  String get dayGoalsSphereTravel => 'Seyahat';
+
+  @override
+  String get dayGoalsSphereHome => 'Ev';
+
+  @override
+  String dayGoalsMinutesShort(int minutes) {
+    return '$minutes dk';
+  }
+
+  @override
+  String get registerErrNameMin2 => 'Ad en az 2 karakter olmalı.';
+
+  @override
+  String launcherPlanHours(String hours) {
+    return 'Plan: $hours sa';
+  }
+
+  @override
+  String get launcherGoalsAndTasks => 'Hedefler ve görevler';
+
+  @override
+  String get launcherPersonal => 'Kişisel';
+
+  @override
+  String get launcherReportsTab => 'Raporlar';
+
+  @override
+  String get launcherBudget => 'Bütçe';
+
+  @override
+  String get launcherQuickActions => 'Hızlı işlemler';
+
+  @override
+  String get launcherBulkAdd => 'Toplu ekleme';
+
+  @override
+  String get launcherBulkAddSubtitle => 'Gider + görev + ruh hali';
+
+  @override
+  String get launcherAiWeeklyPlan => 'AI haftalık plan';
+
+  @override
+  String get launcherAiWeeklyPlanSubtitle => 'Hedef ve ilerleme analizi';
+
+  @override
+  String get launcherAiInsights => 'AI içgörüleri';
+
+  @override
+  String get launcherNavAndActions => 'Gezinme ve işlemler';
+
+  @override
+  String get navMenu => 'Menü';
+
+  @override
+  String get navPersonal => 'Kişisel';
+
+  @override
+  String get lifeBlocksSetupTitle => 'Neyi takip edelim?';
+
+  @override
+  String get lifeBlocksSetupSubtitle =>
+      'Yaşam alanlarını seç. Ladna ana ekranı, hedefleri ve raporları buna göre düzenler.';
+
+  @override
+  String get lifeBlocksSetupContinue => 'Devam et';
+
+  @override
+  String get lifeBlocksSetupHint => 'En az 1 alan seç';
+
+  @override
+  String get goalsScreenGoalsAndTasks => 'Hedefler ve görevler';
+
+  @override
+  String get goalsScreenTasks => 'Görevler';
+
+  @override
+  String get goalsScreenDashboard => 'Panel';
+
+  @override
+  String get goalsScreenWeek => 'Hafta';
+
+  @override
+  String get goalsScreenMonth => 'Ay';
+
+  @override
+  String get goalsScreenCalendar => 'Takvim';
+
+  @override
+  String get goalsScreenWeekView => 'Hafta görünümü';
+
+  @override
+  String get goalsScreenMonthView => 'Ay günleri';
+
+  @override
+  String get goalsScreenNoTasks => 'Görev yok';
+
+  @override
+  String get goalsScreenCompleted => 'tamamlandı';
+
+  @override
+  String get goalsScreenWeekSummary => 'Hafta özeti';
+
+  @override
+  String get goalsScreenThisWeek => 'Bu hafta';
+
+  @override
+  String get goalsScreenTodayShort => 'bugün';
+
+  @override
+  String get goalsScreenAll => 'Tümü';
+
+  @override
+  String get goalsScreenPersonalTasks => 'Kişisel';
+
+  @override
+  String get goalsScreenUpToOneMonth => '1 aya kadar';
+
+  @override
+  String get goalsScreenUpToSixMonths => '6 aya kadar';
+
+  @override
+  String get goalsScreenYearPlus => '1 yıl+';
+
+  @override
+  String get goalsScreenBySpheres => 'Alanlara göre';
+
+  @override
+  String get goalsScreenHide => '';
+
+  @override
+  String get goalsScreenProgress => 'İlerleme';
+
+  @override
+  String get goalsScreenAdd => 'Ekle';
+
+  @override
+  String get goalsScreenNoGoalsYet => 'Henüz hedef yok';
+
+  @override
+  String get goalsScreenNoGoalsYetSub =>
+      'Aşağıdaki düğmeyle ilk hedefini ekle.';
+
+  @override
+  String get goalsScreenNewGoal => 'Yeni hedef';
+
+  @override
+  String get goalsScreenEditGoal => 'Hedefi düzenle';
+
+  @override
+  String get goalsScreenTitle => 'Başlık';
+
+  @override
+  String get goalsScreenDescription => 'Açıklama';
+
+  @override
+  String get goalsScreenSphere => 'Alan';
+
+  @override
+  String get goalsScreenHorizon => 'Ufuk';
+
+  @override
+  String get goalsScreenDeleteGoal => 'Hedefi sil';
+
+  @override
+  String get goalsScreenDeleteGoalQuestion =>
+      'Bu hedef silinecek. İlgili günlük görevler kalır, ancak büyük hedef bağlantısı olmadan.';
+
+  @override
+  String goalsScreenCompletedTasks(int done, int total) {
+    return '$total görevden $done tamamlandı';
+  }
+
+  @override
+  String goalsScreenGoalsCount(int n) {
+    return '$n hedef';
+  }
+
+  @override
+  String get moodScore1 => 'Çok düşük';
+
+  @override
+  String get moodScore2 => 'Düşük';
+
+  @override
+  String get moodScore3 => 'Nötr';
+
+  @override
+  String get moodScore4 => 'İyi';
+
+  @override
+  String get moodScore5 => 'Harika';
+
+  @override
+  String get moodScaleHint => 'Ruh hali ölçeği: 1 çok düşük, 3 nötr, 5 harika.';
+
+  @override
+  String get moodHowAreYouTitle => 'Bugün nasılsın?';
+
+  @override
+  String get moodWhatInfluencedLabel => 'Ruh halini ne etkiledi?';
+
+  @override
+  String get moodRecentEntriesTitle => 'Son kayıtlar';
+
+  @override
+  String get moodNoEntriesHint => 'Henüz kayıt yok.';
+
+  @override
+  String get moodTodayLabel => 'Bugün';
+
+  @override
+  String get moodSelectedDayLabel => 'Seçili gün';
+
+  @override
+  String get reportsScreenReports => 'Raporlar';
+
+  @override
+  String get reportsScreenDayShort => 'Gün';
+
+  @override
+  String get reportsScreenWeekShort => 'Hafta';
+
+  @override
+  String get reportsScreenMonthShort => 'Ay';
+
+  @override
+  String get reportsScreenSummary => 'Özet';
+
+  @override
+  String get reportsScreenProgress => 'İlerleme';
+
+  @override
+  String get reportsScreenMood => 'Ruh hali';
+
+  @override
+  String get reportsScreenTasksDone => 'Tasks done';
+
+  @override
+  String get reportsScreenFocusHours => 'Focus hours';
+
+  @override
+  String get reportsScreenOutOf => '/';
+
+  @override
+  String get reportsScreenPeriodAverage => 'Period average';
+
+  @override
+  String get reportsScreenMoodAverage => 'Ortalama ruh hali';
+
+  @override
+  String get reportsScreenOutOfFiveAverage => 'out of 5 average';
+
+  @override
+  String get reportsScreenOutOfFive => 'out of 5';
+
+  @override
+  String get reportsScreenHowMoodScoreWorks => 'Ruh hali nasıl hesaplanır';
+
+  @override
+  String get reportsScreenMoodScoreExplanation =>
+      'Kullanıcı 5 ruh halinden birini seçer. Her ikonun puanı vardır: 1 çok düşük, 2 düşük, 3 nötr, 4 iyi, 5 harika. Raporlar seçilen dönem ortalamasını gösterir.';
+
+  @override
+  String get reportsScreenMoodVeryLow => 'Çok düşük';
+
+  @override
+  String get reportsScreenMoodLow => 'Düşük';
+
+  @override
+  String get reportsScreenMoodNeutral => 'Nötr';
+
+  @override
+  String get reportsScreenMoodGood => 'İyi';
+
+  @override
+  String get reportsScreenMoodGreat => 'Harika';
+
+  @override
+  String get reportsScreenPeriodEfficiency => 'Period efficiency';
+
+  @override
+  String get reportsScreenPlan => 'Plan';
+
+  @override
+  String get reportsScreenFact => 'Actual';
+
+  @override
+  String get reportsScreenTimeBySphere => 'Time by spheres';
+
+  @override
+  String get reportsScreenTopProductiveDays => 'Top 3 productive days';
+
+  @override
+  String get reportsScreenAiObservation => 'AI observation';
+
+  @override
+  String get reportsScreenPeriodStatistics => 'Dönem istatistikleri';
+
+  @override
+  String get reportsScreenExtendedAiObservationSchedule =>
+      'Bu, dönem istatistiklerin. Genişletilmiş AI gözlemi pazar günü güncellenecek.';
+
+  @override
+  String get reportsScreenAiLoading => 'Kişisel gözlem hazırlanıyor…';
+
+  @override
+  String get reportsScreenAiUnavailable =>
+      'AI gözlemi şu anda kullanılamıyor. Fonksiyon bağlantısını kontrol et veya daha sonra tekrar dene.';
+
+  @override
+  String get reportsScreenInsight => 'Insight';
+
+  @override
+  String get reportsScreenPattern => 'Pattern';
+
+  @override
+  String get reportsScreenPeriodTasks => 'Period tasks';
+
+  @override
+  String get reportsScreenDone => 'done';
+
+  @override
+  String get reportsScreenPeriodProgress => 'Period progress';
+
+  @override
+  String get reportsScreenTempoBelowNorm => 'Pace below target';
+
+  @override
+  String get reportsScreenTempoGood => 'Pace is on track';
+
+  @override
+  String get reportsScreenDetails => 'Details';
+
+  @override
+  String get reportsScreenAvgTimePerTask => 'Avg. time / task';
+
+  @override
+  String get reportsScreenDoneOnTime => 'Done on time';
+
+  @override
+  String get reportsScreenMoved => 'Moved';
+
+  @override
+  String get reportsScreenCompleted => 'Completed';
+
+  @override
+  String get reportsScreenForThisPeriod => 'for this period';
+
+  @override
+  String get reportsScreenBestStreak => 'Best streak';
+
+  @override
+  String get reportsScreenDaysInARow => 'days in a row';
+
+  @override
+  String get reportsScreenByHabits => 'By habits';
+
+  @override
+  String get reportsScreenStreaksFourWeeks => 'Streaks over 4 weeks';
+
+  @override
+  String get reportsScreenFourWeeksAgo => '4 weeks ago';
+
+  @override
+  String get reportsScreenMissed => 'missed';
+
+  @override
+  String get reportsScreenToday => 'today';
+
+  @override
+  String get reportsScreenBestDay => 'Best day';
+
+  @override
+  String get reportsScreenWeekDynamics => 'Week dynamics';
+
+  @override
+  String get reportsScreenByDays => 'By days';
+
+  @override
+  String get reportsScreenOnTime => 'Zamanında';
+
+  @override
+  String get reportsScreenTasks => 'Görevler';
+
+  @override
+  String get reportsScreenHours => 'Saat';
+
+  @override
+  String get reportsScreenCurrentPeriodShort => 'bu';
+
+  @override
+  String get reportsScreenPreviousPeriodShort => 'önceki';
+
+  @override
+  String get reportsScreenCorrelations => 'Korelasyonlar';
+
+  @override
+  String get reportsScreenStreaks => 'Seriler';
+
+  @override
+  String get reportsScreenWeakLink => 'Zayıf halka';
+
+  @override
+  String get reportsScreenNoDataYet => 'Not enough data yet';
+
+  @override
+  String get reportsScreenPulse => 'NABIZ';
+
+  @override
+  String get reportsScreenMonthEfficiency => 'Ay verimliliği';
+
+  @override
+  String get reportsScreenFactVsDesiredBalance => 'Gerçek vs istenen denge';
+
+  @override
+  String get reportsScreenBalancePlanFactHint =>
+      'Plan ince işaret, gerçek dolu çubuktur.';
+
+  @override
+  String get reportsScreenBalanceEmptyHint =>
+      'Profilde istediğin yaşam dengesini belirle — gerçek ve plan karşılaştırması burada görünecek.';
+
+  @override
+  String get reportsScreenPlanLegend => 'plan';
+
+  @override
+  String get reportsScreenFactLegend => 'gerçek';
+
+  @override
+  String get reportsScreenOverageLegend => 'fazla';
+
+  @override
+  String get reportsScreenSleepSevenPlus => '7+ saat uyku';
+
+  @override
+  String get reportsScreenHabitCompletion => 'Alışkanlık tamamlama';
+
+  @override
+  String get reportsScreenWeekStart => 'Pzt–Sal';
+
+  @override
+  String get reportsScreenMoreStableThanWeekend => 'Hafta sonundan daha stabil';
+
+  @override
+  String get reportsScreenHighLoad => 'Yüksek yoğunluk';
+
+  @override
+  String get reportsScreenTaskImpact => 'Görev etkisi';
+
+  @override
+  String get reportsScreenDaysWithHabits => 'Alışkanlıklı günler';
+
+  @override
+  String get reportsScreenMoodHigher => 'Ruh hali daha yüksek';
+
+  @override
+  String get reportsScreenOpenTasks => 'Açık görevler';
+
+  @override
+  String get reportsScreenMoodImpact => 'Ruh hali etkisi';
+
+  @override
+  String get reportsScreenExpensesAboveNorm => 'Norm üstü harcamalar';
+
+  @override
+  String get reportsScreenNextDayMood => 'Ertesi gün ruh hali';
+
+  @override
+  String get reportsScreenComparisonTitleDay => 'Bu gün vs önceki gün';
+
+  @override
+  String get reportsScreenComparisonTitleWeek => 'Bu hafta vs geçen hafta';
+
+  @override
+  String get reportsScreenComparisonTitleMonth => 'Bu ay vs geçen ay';
+
+  @override
+  String reportsScreenBestDaySubtitle(int tasks, String hours) {
+    return '$tasks görev · $hours s odak';
+  }
+
+  @override
+  String reportsScreenMonthEfficiencySubtitle(
+    int completed,
+    String outOf,
+    int total,
+    int daysLeft,
+  ) {
+    return '$completed görev $outOf $total · $daysLeft gün kaldı';
+  }
+
+  @override
+  String reportsScreenWeakLinkRecommendation(String label, int pct) {
+    return '$label — dönem için %$pct. Bunu en kolay alışkanlığına bağla.';
+  }
+
+  @override
+  String get reportsScreenSummaryInsight =>
+      'You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.';
+
+  @override
+  String get reportsScreenProgressInsight =>
+      'One sphere is postponed more often than others. Try reserving a separate morning block for it.';
+
+  @override
+  String get reportsScreenHabitsInsight =>
+      'On days when habits are completed, productivity is usually higher. Start with the easiest habit.';
+
+  @override
+  String get reportsScreenMoodInsight =>
+      'Mood is higher on days with completed habits. Keep a small morning ritual.';
+
+  @override
+  String get budgetCategoryNameLabel => 'Kategori adı';
+
+  @override
+  String get navGoals => 'Hedefler';
+
+  @override
+  String get navMood => 'Ruh hali';
+
+  @override
+  String get navProfile => 'Profil';
+
+  @override
+  String get navReports => 'Raporlar';
+
+  @override
+  String get navExpenses => 'Giderler';
+
+  @override
+  String get goalsDeleteConfirmBodyShort => 'Bu işlem geri alınamaz.';
 }

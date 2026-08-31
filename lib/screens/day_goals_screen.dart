@@ -615,7 +615,7 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
                           sliver: SliverList(
                             delegate: SliverChildListDelegate([
                               NestPageHeader(
-                                title: _dgPick(context, ru: 'Задачи на день', en: 'Daily tasks', de: 'Tagesaufgaben', fr: 'Tâches du jour', es: 'Tareas del día', tr: 'Günlük görevler'),
+                                title: AppLocalizations.of(context)!.dayGoalsHeaderTitle,
                                 subtitle: _formatHeaderDate(context, vm.date),
                                 onBack: () => Navigator.maybePop(context),
                               ),
@@ -668,8 +668,8 @@ class _DayGoalsViewState extends State<_DayGoalsView> {
                               if (visibleGoals.isEmpty)
                                 _EmptyDayCard(
                                   message: totalGoals > 0 && _hideCompleted
-                                      ? _dgPick(context, ru: 'Все видимые задачи скрыты. Отключи фильтр «Скрыть выполненные».', en: 'All visible tasks are hidden. Turn off “Hide completed”.', de: 'Alle sichtbaren Aufgaben sind ausgeblendet. Deaktiviere „Erledigte ausblenden”.', fr: 'Toutes les tâches visibles sont masquées. Désactive “Masquer les terminées”.', es: 'Todas las tareas visibles están ocultas. Desactiva “Ocultar completadas”.', tr: 'Görünen görevler gizli. “Tamamlananları gizle” seçeneğini kapat.')
-                                      : _dgPick(context, ru: 'На этот день пока нет задач. Добавь первую задачу через кнопку ниже.', en: 'No tasks for this day yet. Add the first task with the button below.', de: 'Für diesen Tag gibt es noch keine Aufgaben. Füge unten die erste Aufgabe hinzu.', fr: 'Aucune tâche pour cette journée. Ajoute la première avec le bouton ci-dessous.', es: 'Todavía no hay tareas para este día. Añade la primera con el botón de abajo.', tr: 'Bugün için henüz görev yok. Aşağıdaki düğmeyle ilk görevi ekle.'),
+                                      ? AppLocalizations.of(context)!.dayGoalsAllHiddenHint
+                                      : AppLocalizations.of(context)!.dayGoalsEmptyHint,
                                 )
                               else
                                 ..._buildSections(grouped),
@@ -849,32 +849,6 @@ class _LadnaColors {
 }
 
 
-String _dgPick(
-  BuildContext context, {
-  required String ru,
-  required String en,
-  String? de,
-  String? fr,
-  String? es,
-  String? tr,
-}) {
-  final lang = Localizations.localeOf(context).languageCode.toLowerCase();
-  switch (lang) {
-    case 'de':
-      return de ?? en;
-    case 'fr':
-      return fr ?? en;
-    case 'es':
-      return es ?? en;
-    case 'tr':
-      return tr ?? en;
-    case 'ru':
-      return ru;
-    default:
-      return en;
-  }
-}
-
 List<BoxShadow> _ladnaShadow(BuildContext context) => [
       BoxShadow(
         color: _LadnaColors.purple(context).withOpacity(0.10),
@@ -955,7 +929,7 @@ class _HeroSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _dgPick(context, ru: 'Сводка дня', en: 'Day summary', de: 'Tagesübersicht', fr: 'Résumé du jour', es: 'Resumen del día', tr: 'Gün özeti'),
+            AppLocalizations.of(context)!.dayGoalsSummaryTitle,
             style: TextStyle(
               color: _LadnaColors.muted(context),
               fontSize: 13,
@@ -964,7 +938,7 @@ class _HeroSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _dgPick(context, ru: 'Спокойный фокус на главном без перегруза.', en: 'Calm focus on what matters without overload.', de: 'Ruhiger Fokus auf das Wichtige ohne Überlastung.', fr: 'Un focus calme sur l’essentiel, sans surcharge.', es: 'Enfoque tranquilo en lo importante sin sobrecarga.', tr: 'Aşırı yük olmadan önemli olana sakin odaklanma.'),
+            AppLocalizations.of(context)!.dayGoalsSummarySubtitle,
             style: TextStyle(
               color: _LadnaColors.text(context),
               fontSize: 20,
@@ -979,7 +953,7 @@ class _HeroSummaryCard extends StatelessWidget {
               Expanded(
                 child: _StatTile(
                   value: '$totalGoals',
-                  label: _dgPick(context, ru: 'Всего', en: 'Total', de: 'Gesamt', fr: 'Total', es: 'Total', tr: 'Toplam'),
+                  label: AppLocalizations.of(context)!.dayGoalsStatTotal,
                   color: _LadnaColors.purpleSoft(context),
                 ),
               ),
@@ -987,7 +961,7 @@ class _HeroSummaryCard extends StatelessWidget {
               Expanded(
                 child: _StatTile(
                   value: '$completedGoals',
-                  label: _dgPick(context, ru: 'Готово', en: 'Done', de: 'Erledigt', fr: 'Terminé', es: 'Hecho', tr: 'Bitti'),
+                  label: AppLocalizations.of(context)!.dayGoalsStatDone,
                   color: _LadnaColors.mint(context),
                 ),
               ),
@@ -995,7 +969,7 @@ class _HeroSummaryCard extends StatelessWidget {
               Expanded(
                 child: _StatTile(
                   value: '$remainingGoals',
-                  label: _dgPick(context, ru: 'Осталось', en: 'Left', de: 'Offen', fr: 'Restant', es: 'Pendiente', tr: 'Kalan'),
+                  label: AppLocalizations.of(context)!.dayGoalsStatLeft,
                   color: _LadnaColors.peach(context),
                 ),
               ),
@@ -1014,7 +988,7 @@ class _HeroSummaryCard extends StatelessWidget {
                 Text('⏱', style: TextStyle(fontSize: 18)),
                 const SizedBox(width: 10),
                 Text(
-                  _dgPick(context, ru: 'Осталось часов: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', en: 'Hours left: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', de: 'Stunden offen: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', fr: 'Heures restantes : ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', es: 'Horas restantes: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}', tr: 'Kalan saat: ${remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)}'),
+                  AppLocalizations.of(context)!.dayGoalsHoursLeftLabel(remainingHours.toStringAsFixed(remainingHours % 1 == 0 ? 0 : 1)),
                   style: TextStyle(
                     color: _LadnaColors.text(context),
                     fontSize: 13,
@@ -1102,12 +1076,12 @@ class _SpaceFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = <Widget>[
       _SpaceChip(
-        label: _dgPick(context, ru: 'Все', en: 'All', de: 'Alle', fr: 'Tous', es: 'Todo', tr: 'Tümü'),
+        label: AppLocalizations.of(context)!.dayGoalsFilterAll,
         selected: selectedSpaceId == null && !personalOnly,
         onTap: onAll,
       ),
       _SpaceChip(
-        label: _dgPick(context, ru: 'Личные', en: 'Personal', de: 'Persönlich', fr: 'Personnel', es: 'Personal', tr: 'Kişisel'),
+        label: AppLocalizations.of(context)!.dayGoalsFilterPersonal,
         selected: personalOnly,
         onTap: onPersonal,
       ),
@@ -1232,7 +1206,7 @@ class _BlockChips extends StatelessWidget {
                     : null,
               ),
               child: Text(
-                block == 'all' ? _dgPick(context, ru: 'Все сферы', en: 'All areas', de: 'Alle Bereiche', fr: 'Tous les domaines', es: 'Todas las áreas', tr: 'Tüm alanlar') : _localizedLifeBlock(context, block),
+                block == 'all' ? AppLocalizations.of(context)!.dayGoalsFilterAllSpheres : _localizedLifeBlock(context, block),
                 style: TextStyle(
                   color: active ? Colors.white : (_LadnaColors._dark(context) ? const Color(0xFFF4F0FF) : _LadnaColors.muted(context)),
                   fontSize: 12,
@@ -1267,7 +1241,7 @@ class _HideCompletedToolbar extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _dgPick(context, ru: 'Скрыть выполненные', en: 'Hide completed', de: 'Erledigte ausblenden', fr: 'Masquer les terminées', es: 'Ocultar completadas', tr: 'Tamamlananları gizle'),
+              AppLocalizations.of(context)!.dayGoalsHideCompleted,
               style: TextStyle(
                 color: _LadnaColors.text(context),
                 fontSize: 13,
@@ -1362,9 +1336,9 @@ class _DaySectionCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _Cap(text: _dgPick(context, ru: 'Ост. ${openGoals.length}', en: 'Left ${openGoals.length}', de: 'Offen ${openGoals.length}', fr: 'Rest. ${openGoals.length}', es: 'Pend. ${openGoals.length}', tr: 'Kalan ${openGoals.length}'), color: _LadnaColors._dark(context) ? const Color(0xFF3B2E1C) : const Color(0xFFF7F1E5), textColor: _LadnaColors._dark(context) ? const Color(0xFFFFD87A) : const Color(0xFF8D6A1B)),
+                    _Cap(text: AppLocalizations.of(context)!.dayGoalsLaneLeftBadge(openGoals.length), color: _LadnaColors._dark(context) ? const Color(0xFF3B2E1C) : const Color(0xFFF7F1E5), textColor: _LadnaColors._dark(context) ? const Color(0xFFFFD87A) : const Color(0xFF8D6A1B)),
                     const SizedBox(width: 8),
-                    _Cap(text: _dgPick(context, ru: 'Гот. ${doneGoals.length}', en: 'Done ${doneGoals.length}', de: 'Fertig ${doneGoals.length}', fr: 'Fait ${doneGoals.length}', es: 'Hecho ${doneGoals.length}', tr: 'Bitti ${doneGoals.length}'), color: _LadnaColors.mint(context), textColor: _LadnaColors.mintText(context)),
+                    _Cap(text: AppLocalizations.of(context)!.dayGoalsLaneDoneBadge(doneGoals.length), color: _LadnaColors.mint(context), textColor: _LadnaColors.mintText(context)),
                   ],
                 ),
               ),
@@ -1377,11 +1351,11 @@ class _DaySectionCard extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final openLane = _TaskLane(
-                    title: _dgPick(context, ru: '⚡ В работе', en: '⚡ In progress', de: '⚡ In Arbeit', fr: '⚡ En cours', es: '⚡ En progreso', tr: '⚡ Devam ediyor'),
+                    title: AppLocalizations.of(context)!.dayGoalsLaneInProgress,
                     count: openGoals.length,
                     goals: openGoals,
                     doneLane: false,
-                    emptyText: _dgPick(context, ru: 'Здесь появятся активные задачи этого блока', en: 'Active tasks for this block will appear here', de: 'Aktive Aufgaben dieses Blocks erscheinen hier', fr: 'Les tâches actives de ce bloc apparaîtront ici', es: 'Aquí aparecerán las tareas activas de este bloque', tr: 'Bu bloğun aktif görevleri burada görünecek'),
+                    emptyText: AppLocalizations.of(context)!.dayGoalsLaneInProgressEmpty,
                     onToggleGoal: onToggleGoal,
                     onEdit: onEdit,
                     onDelete: onDelete,
@@ -1390,11 +1364,11 @@ class _DaySectionCard extends StatelessWidget {
                   );
 
                   final doneLane = _TaskLane(
-                    title: _dgPick(context, ru: '✅ Готово', en: '✅ Done', de: '✅ Erledigt', fr: '✅ Terminé', es: '✅ Hecho', tr: '✅ Bitti'),
+                    title: AppLocalizations.of(context)!.dayGoalsLaneDoneTitle,
                     count: doneGoals.length,
                     goals: doneGoals,
                     doneLane: true,
-                    emptyText: _dgPick(context, ru: 'Здесь будут завершённые задачи после фокуса-блока', en: 'Completed tasks will appear here after a focus block', de: 'Erledigte Aufgaben erscheinen hier nach dem Fokusblock', fr: 'Les tâches terminées apparaîtront ici après le bloc de focus', es: 'Las tareas completadas aparecerán aquí después del bloque de enfoque', tr: 'Odak bloğundan sonra tamamlanan görevler burada görünecek'),
+                    emptyText: AppLocalizations.of(context)!.dayGoalsLaneDoneEmpty,
                     onToggleGoal: onToggleGoal,
                     onEdit: onEdit,
                     onDelete: onDelete,
@@ -1691,7 +1665,7 @@ class _TaskCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   if (goal.spaceId != null)
-                    _MetaPill(text: spaceLabels[goal.spaceId!] ?? _dgPick(context, ru: '👥 Пространство', en: '👥 Space', de: '👥 Bereich', fr: '👥 Espace', es: '👥 Espacio', tr: '👥 Alan')),
+                    _MetaPill(text: spaceLabels[goal.spaceId!] ?? AppLocalizations.of(context)!.dayGoalsSpaceMetaLabel),
                   _MetaPill(text: '🕥 ${_formatGoalTime(goal.startTime)}'),
                   _MetaPill(text: '⏱ ${_formatHours(context, goal.hours)}'),
                   if (goal.description.trim().isNotEmpty)
@@ -1707,7 +1681,7 @@ class _TaskCard extends StatelessWidget {
                   _SpherePill(lifeBlock: goal.lifeBlock, done: done),
                   if (done)
                     Text(
-                      _dgPick(context, ru: 'Выполнено', en: 'Completed', de: 'Erledigt', fr: 'Terminé', es: 'Completado', tr: 'Tamamlandı'),
+                      AppLocalizations.of(context)!.dayGoalsCompletedLabel,
                       style: TextStyle(
                         color: Color(0xFF34A475),
                         fontSize: 11,
@@ -1923,15 +1897,7 @@ class _NotificationSoftAskSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            _dgPick(
-              context,
-              ru: 'Не пропусти ни одной цели',
-              en: 'Never miss a goal',
-              de: 'Verpasse kein Ziel',
-              fr: 'Ne rate aucun objectif',
-              es: 'No te pierdas ninguna meta',
-              tr: 'Hiçbir hedefi kaçırma',
-            ),
+            AppLocalizations.of(context)!.dayGoalsNotifSoftAskTitle,
             style: TextStyle(
               color: _LadnaColors.text(context),
               fontSize: 20,
@@ -1941,15 +1907,7 @@ class _NotificationSoftAskSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _dgPick(
-              context,
-              ru: 'Ladna напомнит о цели за 15 минут до начала — прямо как будильник, только для дел.',
-              en: 'Ladna will remind you 15 minutes before a goal starts — like an alarm, but for your tasks.',
-              de: 'Ladna erinnert dich 15 Minuten vor Beginn eines Ziels — wie ein Wecker, nur für Aufgaben.',
-              fr: 'Ladna te rappellera 15 minutes avant le début d\'un objectif — comme une alarme, mais pour tes tâches.',
-              es: 'Ladna te avisará 15 minutos antes de que empiece una meta — como una alarma, pero para tus tareas.',
-              tr: 'Ladna, bir hedef başlamadan 15 dakika önce sana hatırlatacak — bir alarm gibi ama görevlerin için.',
-            ),
+            AppLocalizations.of(context)!.dayGoalsNotifSoftAskBody,
             style: TextStyle(
               color: _LadnaColors.muted(context),
               fontSize: 14,
@@ -1971,15 +1929,7 @@ class _NotificationSoftAskSheet extends StatelessWidget {
               ),
               onPressed: () => Navigator.of(context).pop(true),
               child: Text(
-                _dgPick(
-                  context,
-                  ru: 'Включить напоминания',
-                  en: 'Enable reminders',
-                  de: 'Erinnerungen aktivieren',
-                  fr: 'Activer les rappels',
-                  es: 'Activar recordatorios',
-                  tr: 'Hatırlatıcıları etkinleştir',
-                ),
+                AppLocalizations.of(context)!.dayGoalsNotifSoftAskEnable,
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
               ),
             ),
@@ -1990,15 +1940,7 @@ class _NotificationSoftAskSheet extends StatelessWidget {
             child: TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(
-                _dgPick(
-                  context,
-                  ru: 'Не сейчас',
-                  en: 'Not now',
-                  de: 'Nicht jetzt',
-                  fr: 'Pas maintenant',
-                  es: 'Ahora no',
-                  tr: 'Şimdi değil',
-                ),
+                AppLocalizations.of(context)!.dayGoalsNotifSoftAskDismiss,
                 style: TextStyle(
                   color: _LadnaColors.muted(context),
                   fontSize: 14,
@@ -2233,21 +2175,21 @@ _SectionMeta _sectionMeta(BuildContext context, _DaySection section) {
   switch (section) {
     case _DaySection.morning:
       return _SectionMeta(
-        title: _dgPick(context, ru: 'Утро', en: 'Morning', de: 'Morgen', fr: 'Matin', es: 'Mañana', tr: 'Sabah'),
+        title: AppLocalizations.of(context)!.dayGoalsPeriodMorning,
         emoji: '☀️',
         iconBg: _LadnaColors.peach(context),
         iconBorder: _LadnaColors.gold(context).withOpacity(0.30),
       );
     case _DaySection.day:
       return _SectionMeta(
-        title: _dgPick(context, ru: 'День', en: 'Day', de: 'Tag', fr: 'Journée', es: 'Día', tr: 'Gün'),
+        title: AppLocalizations.of(context)!.dayGoalsPeriodDay,
         emoji: '🌤️',
         iconBg: _LadnaColors.purpleSoft(context),
         iconBorder: _LadnaColors.stroke(context),
       );
     case _DaySection.evening:
       return _SectionMeta(
-        title: _dgPick(context, ru: 'Вечер', en: 'Evening', de: 'Abend', fr: 'Soir', es: 'Noche', tr: 'Akşam'),
+        title: AppLocalizations.of(context)!.dayGoalsPeriodEvening,
         emoji: '🌙',
         iconBg: _LadnaColors.bg1(context).withOpacity(0.75),
         iconBorder: _LadnaColors.strokeSoft(context),
@@ -2361,11 +2303,11 @@ String _localizedLifeBlock(BuildContext context, String rawKey) {
     case 'general':
       return l.lifeBlockGeneral;
     case 'personal':
-      return _dgPick(context, ru: 'Личное', en: 'Personal', de: 'Persönlich', fr: 'Personnel', es: 'Personal', tr: 'Kişisel');
+      return AppLocalizations.of(context)!.dayGoalsSphereLifePersonal;
     case 'travel':
-      return _dgPick(context, ru: 'Путешествия', en: 'Travel', de: 'Reisen', fr: 'Voyages', es: 'Viajes', tr: 'Seyahat');
+      return AppLocalizations.of(context)!.dayGoalsSphereTravel;
     case 'home':
-      return _dgPick(context, ru: 'Дом', en: 'Home', de: 'Zuhause', fr: 'Maison', es: 'Hogar', tr: 'Ev');
+      return AppLocalizations.of(context)!.dayGoalsSphereHome;
     default:
       return rawKey.isEmpty ? l.lifeBlockGeneral : rawKey;
   }
@@ -2380,10 +2322,10 @@ String _formatGoalTime(DateTime dateTime) {
 String _formatHours(BuildContext context, double hours) {
   final minutes = (hours * 60).round();
   if (minutes < 60) {
-    return _dgPick(context, ru: '$minutes мин', en: '$minutes min', de: '$minutes Min.', fr: '$minutes min', es: '$minutes min', tr: '$minutes dk');
+    return AppLocalizations.of(context)!.dayGoalsMinutesShort(minutes);
   }
   final value = hours.toStringAsFixed(hours % 1 == 0 ? 0 : 1);
-  return _dgPick(context, ru: '$value ч', en: '${value}h', de: '$value Std.', fr: '$value h', es: '$value h', tr: '$value sa');
+  return AppLocalizations.of(context)!.dayGoalsHoursShort(value);
 }
 
 String _formatHeaderDate(BuildContext context, DateTime date) {

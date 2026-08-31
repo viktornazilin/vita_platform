@@ -6849,6 +6849,1931 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Encrypted payload fields are exported as stored. Decryption depends on the app encryption implementation and the active user session.'**
   String get profileGdprExportNoteEncrypted;
+
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @profileFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get profileFallbackName;
+
+  /// No description provided for @profileNoEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'No email'**
+  String get profileNoEmail;
+
+  /// No description provided for @personalData.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal data'**
+  String get personalData;
+
+  /// No description provided for @name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
+  /// No description provided for @enterName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter name'**
+  String get enterName;
+
+  /// No description provided for @age.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get age;
+
+  /// No description provided for @enterAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter age'**
+  String get enterAge;
+
+  /// No description provided for @notSpecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not specified'**
+  String get notSpecified;
+
+  /// No description provided for @lifeSpheres.
+  ///
+  /// In en, this message translates to:
+  /// **'Life spheres'**
+  String get lifeSpheres;
+
+  /// No description provided for @mySpheres.
+  ///
+  /// In en, this message translates to:
+  /// **'My spheres'**
+  String get mySpheres;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @habits.
+  ///
+  /// In en, this message translates to:
+  /// **'Habits'**
+  String get habits;
+
+  /// No description provided for @myHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'My habits'**
+  String get myHabits;
+
+  /// No description provided for @noHabitsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No habits yet'**
+  String get noHabitsYet;
+
+  /// No description provided for @addHabitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit creation remains in the current habit editor.'**
+  String get addHabitHint;
+
+  /// No description provided for @daysCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} days'**
+  String daysCount(int n);
+
+  /// No description provided for @focus.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus'**
+  String get focus;
+
+  /// No description provided for @targetHoursTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily target hours'**
+  String get targetHoursTitle;
+
+  /// No description provided for @targetHoursSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to calculate progress'**
+  String get targetHoursSubtitle;
+
+  /// No description provided for @targetHoursField.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours per day'**
+  String get targetHoursField;
+
+  /// No description provided for @hoursShort.
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get hoursShort;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @allowNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications'**
+  String get allowNotifications;
+
+  /// No description provided for @notificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Works while the tab is open'**
+  String get notificationsSubtitle;
+
+  /// No description provided for @eveningCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening check-in'**
+  String get eveningCheckIn;
+
+  /// No description provided for @eveningCheckInBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Log your mood and close the day calmly.'**
+  String get eveningCheckInBody;
+
+  /// No description provided for @everyDayAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day at {time}'**
+  String everyDayAt(String time);
+
+  /// No description provided for @notificationsUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are not supported here.'**
+  String get notificationsUnsupported;
+
+  /// No description provided for @notificationsEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications enabled.'**
+  String get notificationsEnabled;
+
+  /// No description provided for @notificationsDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission was not granted.'**
+  String get notificationsDenied;
+
+  /// No description provided for @notificationsMasterSubtitleOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get notificationsMasterSubtitleOn;
+
+  /// No description provided for @notificationsMasterSubtitleOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get notificationsMasterSubtitleOff;
+
+  /// No description provided for @notificationsSystemDisabledHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled in iOS system settings'**
+  String get notificationsSystemDisabledHint;
+
+  /// No description provided for @openSystemSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open iOS Settings'**
+  String get openSystemSettings;
+
+  /// No description provided for @notificationsGoalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal reminders'**
+  String get notificationsGoalsTitle;
+
+  /// No description provided for @notificationsGoalsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min before start'**
+  String notificationsGoalsSubtitle(int minutes);
+
+  /// No description provided for @notificationsReflectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening reflection'**
+  String get notificationsReflectionTitle;
+
+  /// No description provided for @notificationsHabitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit reminders'**
+  String get notificationsHabitsTitle;
+
+  /// No description provided for @notificationsMinutesPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How many minutes before'**
+  String get notificationsMinutesPickerTitle;
+
+  /// No description provided for @app.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get app;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get system;
+
+  /// No description provided for @googleCalendarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export goals to calendar'**
+  String get googleCalendarSubtitle;
+
+  /// No description provided for @googleCalendarMovedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Calendar is now in profile settings.'**
+  String get googleCalendarMovedHint;
+
+  /// No description provided for @exportData.
+  ///
+  /// In en, this message translates to:
+  /// **'Export data'**
+  String get exportData;
+
+  /// No description provided for @exportDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON export of your account'**
+  String get exportDataSubtitle;
+
+  /// No description provided for @exportCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Export copied to clipboard.'**
+  String get exportCopied;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export data'**
+  String get exportFailed;
+
+  /// No description provided for @notSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'User is not signed in.'**
+  String get notSignedIn;
+
+  /// No description provided for @legalDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal documents'**
+  String get legalDocuments;
+
+  /// No description provided for @openLinkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the link.'**
+  String get openLinkFailed;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOut;
+
+  /// No description provided for @signOutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get signOutConfirm;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All data will be permanently deleted'**
+  String get deleteAccountSubtitle;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone. All account data will be permanently deleted.'**
+  String get deleteAccountConfirm;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @desiredBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Life wheel'**
+  String get desiredBalance;
+
+  /// No description provided for @desiredBalanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your life wheel for the selected areas. Total cannot exceed 100%.'**
+  String get desiredBalanceHint;
+
+  /// No description provided for @lifeWheelTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a segment or an area below to set an exact percentage.'**
+  String get lifeWheelTapHint;
+
+  /// No description provided for @outOfHundredPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'of 100%'**
+  String get outOfHundredPercent;
+
+  /// No description provided for @percent.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentage'**
+  String get percent;
+
+  /// No description provided for @lifeWheelPercentLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can enter 0 to {maxAllowed}%. The total balance cannot exceed 100%.'**
+  String lifeWheelPercentLimit(int maxAllowed);
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
+  /// No description provided for @newHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'New habit'**
+  String get newHabit;
+
+  /// No description provided for @editHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit habit'**
+  String get editHabit;
+
+  /// No description provided for @habitName.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit name'**
+  String get habitName;
+
+  /// No description provided for @negativeHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative habit'**
+  String get negativeHabit;
+
+  /// No description provided for @deleteHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete habit?'**
+  String get deleteHabit;
+
+  /// No description provided for @deleteHabitQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit \"{title}\" will be deleted.'**
+  String deleteHabitQuestion(String title);
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @spaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Spaces'**
+  String get spaces;
+
+  /// No description provided for @space.
+  ///
+  /// In en, this message translates to:
+  /// **'Space'**
+  String get space;
+
+  /// No description provided for @mySpaces.
+  ///
+  /// In en, this message translates to:
+  /// **'My spaces'**
+  String get mySpaces;
+
+  /// No description provided for @spacesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create shared spaces for home, family, trips, and projects.'**
+  String get spacesHint;
+
+  /// No description provided for @noSpacesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No spaces yet'**
+  String get noSpacesYet;
+
+  /// No description provided for @noSpacesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first space and invite other users.'**
+  String get noSpacesHint;
+
+  /// No description provided for @createSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Create space'**
+  String get createSpace;
+
+  /// No description provided for @editSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit space'**
+  String get editSpace;
+
+  /// No description provided for @deleteSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete space'**
+  String get deleteSpace;
+
+  /// No description provided for @leaveSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave space'**
+  String get leaveSpace;
+
+  /// No description provided for @deleteSpaceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This space and its shared data will be deleted. This cannot be undone.'**
+  String get deleteSpaceConfirm;
+
+  /// No description provided for @leaveSpaceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'You will no longer see tasks and data from this space.'**
+  String get leaveSpaceConfirm;
+
+  /// No description provided for @spaceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Space name'**
+  String get spaceName;
+
+  /// No description provided for @spaceNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a space name'**
+  String get spaceNameRequired;
+
+  /// No description provided for @spaceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get spaceDescription;
+
+  /// No description provided for @spaceIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get spaceIcon;
+
+  /// No description provided for @spaceColor.
+  ///
+  /// In en, this message translates to:
+  /// **'HEX color'**
+  String get spaceColor;
+
+  /// No description provided for @spaceValidity.
+  ///
+  /// In en, this message translates to:
+  /// **'Validity'**
+  String get spaceValidity;
+
+  /// No description provided for @noDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'No deadline'**
+  String get noDeadline;
+
+  /// No description provided for @spaceNoDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'No expiration date'**
+  String get spaceNoDeadline;
+
+  /// No description provided for @setDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Set date'**
+  String get setDeadline;
+
+  /// No description provided for @changeDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Change date'**
+  String get changeDeadline;
+
+  /// No description provided for @spaceValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {date}'**
+  String spaceValidUntil(String date);
+
+  /// No description provided for @spaceValidityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'After this date, the space stays in the database but disappears from screens and task selection.'**
+  String get spaceValidityHint;
+
+  /// No description provided for @spaceTapToManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to manage members'**
+  String get spaceTapToManage;
+
+  /// No description provided for @spaceManageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members and invites'**
+  String get spaceManageSubtitle;
+
+  /// No description provided for @members.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get members;
+
+  /// No description provided for @noMembersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No members yet'**
+  String get noMembersYet;
+
+  /// No description provided for @inviteMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get inviteMember;
+
+  /// No description provided for @inviteMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The invite will be sent for “{spaceName}”.'**
+  String inviteMemberHint(String spaceName);
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @sendInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get sendInvite;
+
+  /// No description provided for @enterValidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get enterValidEmail;
+
+  /// No description provided for @incomingInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming invites'**
+  String get incomingInvites;
+
+  /// No description provided for @spaceInviteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You were invited to a shared space'**
+  String get spaceInviteSubtitle;
+
+  /// No description provided for @acceptInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get acceptInvite;
+
+  /// No description provided for @declineInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get declineInvite;
+
+  /// No description provided for @spaceInviteAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite accepted.'**
+  String get spaceInviteAccepted;
+
+  /// No description provided for @spaceInviteSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite sent.'**
+  String get spaceInviteSent;
+
+  /// No description provided for @you.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get you;
+
+  /// No description provided for @spaceRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get spaceRoleOwner;
+
+  /// No description provided for @spaceRoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get spaceRoleAdmin;
+
+  /// No description provided for @spaceRoleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get spaceRoleMember;
+
+  /// No description provided for @spaceRoleViewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewer'**
+  String get spaceRoleViewer;
+
+  /// No description provided for @spacesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load spaces'**
+  String get spacesLoadFailed;
+
+  /// No description provided for @spaceMembersLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load members'**
+  String get spaceMembersLoadFailed;
+
+  /// No description provided for @spaceSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save space'**
+  String get spaceSaveFailed;
+
+  /// No description provided for @spaceActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete the action'**
+  String get spaceActionFailed;
+
+  /// No description provided for @spaceInviteSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send invite'**
+  String get spaceInviteSendFailed;
+
+  /// No description provided for @spaceInviteAcceptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not accept invite'**
+  String get spaceInviteAcceptFailed;
+
+  /// No description provided for @spaceInviteDeclineFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not decline invite'**
+  String get spaceInviteDeclineFailed;
+
+  /// No description provided for @noData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get noData;
+
+  /// No description provided for @dayGoalsHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily tasks'**
+  String get dayGoalsHeaderTitle;
+
+  /// No description provided for @dayGoalsAllHiddenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'All visible tasks are hidden. Turn off “Hide completed”.'**
+  String get dayGoalsAllHiddenHint;
+
+  /// No description provided for @dayGoalsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks for this day yet. Add the first task with the button below.'**
+  String get dayGoalsEmptyHint;
+
+  /// No description provided for @dayGoalsStatTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get dayGoalsStatTotal;
+
+  /// No description provided for @dayGoalsStatDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dayGoalsStatDone;
+
+  /// No description provided for @dayGoalsStatLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get dayGoalsStatLeft;
+
+  /// No description provided for @dayGoalsHoursLeftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours left: {hours}'**
+  String dayGoalsHoursLeftLabel(String hours);
+
+  /// No description provided for @dayGoalsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get dayGoalsFilterAll;
+
+  /// No description provided for @dayGoalsFilterPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get dayGoalsFilterPersonal;
+
+  /// No description provided for @dayGoalsFilterAllSpheres.
+  ///
+  /// In en, this message translates to:
+  /// **'All areas'**
+  String get dayGoalsFilterAllSpheres;
+
+  /// No description provided for @dayGoalsLaneLeftBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Left {count}'**
+  String dayGoalsLaneLeftBadge(int count);
+
+  /// No description provided for @dayGoalsLaneDoneBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Done {count}'**
+  String dayGoalsLaneDoneBadge(int count);
+
+  /// No description provided for @dayGoalsLaneInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'⚡ In progress'**
+  String get dayGoalsLaneInProgress;
+
+  /// No description provided for @dayGoalsLaneInProgressEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Active tasks for this block will appear here'**
+  String get dayGoalsLaneInProgressEmpty;
+
+  /// No description provided for @dayGoalsLaneDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Done'**
+  String get dayGoalsLaneDoneTitle;
+
+  /// No description provided for @dayGoalsLaneDoneEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks will appear here after a focus block'**
+  String get dayGoalsLaneDoneEmpty;
+
+  /// No description provided for @dayGoalsSpaceMetaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'👥 Space'**
+  String get dayGoalsSpaceMetaLabel;
+
+  /// No description provided for @dayGoalsCompletedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get dayGoalsCompletedLabel;
+
+  /// No description provided for @dayGoalsNotifSoftAskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Never miss a goal'**
+  String get dayGoalsNotifSoftAskTitle;
+
+  /// No description provided for @dayGoalsNotifSoftAskBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ladna will remind you 15 minutes before a goal starts — like an alarm, but for your tasks.'**
+  String get dayGoalsNotifSoftAskBody;
+
+  /// No description provided for @dayGoalsNotifSoftAskEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable reminders'**
+  String get dayGoalsNotifSoftAskEnable;
+
+  /// No description provided for @dayGoalsNotifSoftAskDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get dayGoalsNotifSoftAskDismiss;
+
+  /// No description provided for @dayGoalsPeriodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get dayGoalsPeriodMorning;
+
+  /// No description provided for @dayGoalsPeriodDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get dayGoalsPeriodDay;
+
+  /// No description provided for @dayGoalsPeriodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get dayGoalsPeriodEvening;
+
+  /// No description provided for @dayGoalsSphereLifePersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get dayGoalsSphereLifePersonal;
+
+  /// No description provided for @dayGoalsSphereTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get dayGoalsSphereTravel;
+
+  /// No description provided for @dayGoalsSphereHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get dayGoalsSphereHome;
+
+  /// No description provided for @dayGoalsMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String dayGoalsMinutesShort(int minutes);
+
+  /// No description provided for @registerErrNameMin2.
+  ///
+  /// In en, this message translates to:
+  /// **'Name must be at least 2 characters.'**
+  String get registerErrNameMin2;
+
+  /// No description provided for @launcherPlanHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan: {hours} h'**
+  String launcherPlanHours(String hours);
+
+  /// No description provided for @launcherGoalsAndTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals & tasks'**
+  String get launcherGoalsAndTasks;
+
+  /// No description provided for @launcherPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get launcherPersonal;
+
+  /// No description provided for @launcherReportsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get launcherReportsTab;
+
+  /// No description provided for @launcherBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get launcherBudget;
+
+  /// No description provided for @launcherQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get launcherQuickActions;
+
+  /// No description provided for @launcherBulkAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk add'**
+  String get launcherBulkAdd;
+
+  /// No description provided for @launcherBulkAddSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses + Tasks + Mood'**
+  String get launcherBulkAddSubtitle;
+
+  /// No description provided for @launcherAiWeeklyPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'AI weekly plan'**
+  String get launcherAiWeeklyPlan;
+
+  /// No description provided for @launcherAiWeeklyPlanSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals and progress analysis'**
+  String get launcherAiWeeklyPlanSubtitle;
+
+  /// No description provided for @launcherAiInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'AI insights'**
+  String get launcherAiInsights;
+
+  /// No description provided for @launcherNavAndActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation and actions'**
+  String get launcherNavAndActions;
+
+  /// No description provided for @navMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get navMenu;
+
+  /// No description provided for @navPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get navPersonal;
+
+  /// No description provided for @lifeBlocksSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What should we track?'**
+  String get lifeBlocksSetupTitle;
+
+  /// No description provided for @lifeBlocksSetupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose life areas. Ladna will build your home screen, goals and reports around them.'**
+  String get lifeBlocksSetupSubtitle;
+
+  /// No description provided for @lifeBlocksSetupContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get lifeBlocksSetupContinue;
+
+  /// No description provided for @lifeBlocksSetupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least 1 area'**
+  String get lifeBlocksSetupHint;
+
+  /// No description provided for @goalsScreenGoalsAndTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals & Tasks'**
+  String get goalsScreenGoalsAndTasks;
+
+  /// No description provided for @goalsScreenTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get goalsScreenTasks;
+
+  /// No description provided for @goalsScreenDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get goalsScreenDashboard;
+
+  /// No description provided for @goalsScreenWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get goalsScreenWeek;
+
+  /// No description provided for @goalsScreenMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get goalsScreenMonth;
+
+  /// No description provided for @goalsScreenCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get goalsScreenCalendar;
+
+  /// No description provided for @goalsScreenWeekView.
+  ///
+  /// In en, this message translates to:
+  /// **'Week view'**
+  String get goalsScreenWeekView;
+
+  /// No description provided for @goalsScreenMonthView.
+  ///
+  /// In en, this message translates to:
+  /// **'Month days'**
+  String get goalsScreenMonthView;
+
+  /// No description provided for @goalsScreenNoTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks'**
+  String get goalsScreenNoTasks;
+
+  /// No description provided for @goalsScreenCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'completed'**
+  String get goalsScreenCompleted;
+
+  /// No description provided for @goalsScreenWeekSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Week summary'**
+  String get goalsScreenWeekSummary;
+
+  /// No description provided for @goalsScreenThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get goalsScreenThisWeek;
+
+  /// No description provided for @goalsScreenTodayShort.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get goalsScreenTodayShort;
+
+  /// No description provided for @goalsScreenAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get goalsScreenAll;
+
+  /// No description provided for @goalsScreenPersonalTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get goalsScreenPersonalTasks;
+
+  /// No description provided for @goalsScreenUpToOneMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 1 mo'**
+  String get goalsScreenUpToOneMonth;
+
+  /// No description provided for @goalsScreenUpToSixMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 6 mo'**
+  String get goalsScreenUpToSixMonths;
+
+  /// No description provided for @goalsScreenYearPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'Year+'**
+  String get goalsScreenYearPlus;
+
+  /// No description provided for @goalsScreenBySpheres.
+  ///
+  /// In en, this message translates to:
+  /// **'By spheres'**
+  String get goalsScreenBySpheres;
+
+  /// No description provided for @goalsScreenHide.
+  ///
+  /// In en, this message translates to:
+  /// **''**
+  String get goalsScreenHide;
+
+  /// No description provided for @goalsScreenProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get goalsScreenProgress;
+
+  /// No description provided for @goalsScreenAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get goalsScreenAdd;
+
+  /// No description provided for @goalsScreenNoGoalsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No goals yet'**
+  String get goalsScreenNoGoalsYet;
+
+  /// No description provided for @goalsScreenNoGoalsYetSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first goal with the button below.'**
+  String get goalsScreenNoGoalsYetSub;
+
+  /// No description provided for @goalsScreenNewGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'New goal'**
+  String get goalsScreenNewGoal;
+
+  /// No description provided for @goalsScreenEditGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit goal'**
+  String get goalsScreenEditGoal;
+
+  /// No description provided for @goalsScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get goalsScreenTitle;
+
+  /// No description provided for @goalsScreenDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get goalsScreenDescription;
+
+  /// No description provided for @goalsScreenSphere.
+  ///
+  /// In en, this message translates to:
+  /// **'Sphere'**
+  String get goalsScreenSphere;
+
+  /// No description provided for @goalsScreenHorizon.
+  ///
+  /// In en, this message translates to:
+  /// **'Horizon'**
+  String get goalsScreenHorizon;
+
+  /// No description provided for @goalsScreenDeleteGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete goal'**
+  String get goalsScreenDeleteGoal;
+
+  /// No description provided for @goalsScreenDeleteGoalQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'This goal will be deleted. Related daily tasks will stay, but without a big-goal link.'**
+  String get goalsScreenDeleteGoalQuestion;
+
+  /// No description provided for @goalsScreenCompletedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} tasks completed out of {total}'**
+  String goalsScreenCompletedTasks(int done, int total);
+
+  /// No description provided for @goalsScreenGoalsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} goals'**
+  String goalsScreenGoalsCount(int n);
+
+  /// No description provided for @moodScore1.
+  ///
+  /// In en, this message translates to:
+  /// **'Very low'**
+  String get moodScore1;
+
+  /// No description provided for @moodScore2.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get moodScore2;
+
+  /// No description provided for @moodScore3.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral'**
+  String get moodScore3;
+
+  /// No description provided for @moodScore4.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get moodScore4;
+
+  /// No description provided for @moodScore5.
+  ///
+  /// In en, this message translates to:
+  /// **'Great'**
+  String get moodScore5;
+
+  /// No description provided for @moodScaleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood scale: 1 means very low, 3 neutral, 5 great.'**
+  String get moodScaleHint;
+
+  /// No description provided for @moodHowAreYouTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How are you today?'**
+  String get moodHowAreYouTitle;
+
+  /// No description provided for @moodWhatInfluencedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What affected your mood?'**
+  String get moodWhatInfluencedLabel;
+
+  /// No description provided for @moodRecentEntriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent entries'**
+  String get moodRecentEntriesTitle;
+
+  /// No description provided for @moodNoEntriesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries yet. Save today’s mood.'**
+  String get moodNoEntriesHint;
+
+  /// No description provided for @moodTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get moodTodayLabel;
+
+  /// No description provided for @moodSelectedDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected day'**
+  String get moodSelectedDayLabel;
+
+  /// No description provided for @reportsScreenReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reportsScreenReports;
+
+  /// No description provided for @reportsScreenDayShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get reportsScreenDayShort;
+
+  /// No description provided for @reportsScreenWeekShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get reportsScreenWeekShort;
+
+  /// No description provided for @reportsScreenMonthShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get reportsScreenMonthShort;
+
+  /// No description provided for @reportsScreenSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get reportsScreenSummary;
+
+  /// No description provided for @reportsScreenProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get reportsScreenProgress;
+
+  /// No description provided for @reportsScreenMood.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood'**
+  String get reportsScreenMood;
+
+  /// No description provided for @reportsScreenTasksDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks done'**
+  String get reportsScreenTasksDone;
+
+  /// No description provided for @reportsScreenFocusHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus hours'**
+  String get reportsScreenFocusHours;
+
+  /// No description provided for @reportsScreenOutOf.
+  ///
+  /// In en, this message translates to:
+  /// **'of'**
+  String get reportsScreenOutOf;
+
+  /// No description provided for @reportsScreenPeriodAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Period average'**
+  String get reportsScreenPeriodAverage;
+
+  /// No description provided for @reportsScreenMoodAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Average mood'**
+  String get reportsScreenMoodAverage;
+
+  /// No description provided for @reportsScreenOutOfFiveAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'out of 5 average'**
+  String get reportsScreenOutOfFiveAverage;
+
+  /// No description provided for @reportsScreenOutOfFive.
+  ///
+  /// In en, this message translates to:
+  /// **'out of 5'**
+  String get reportsScreenOutOfFive;
+
+  /// No description provided for @reportsScreenHowMoodScoreWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'How mood is calculated'**
+  String get reportsScreenHowMoodScoreWorks;
+
+  /// No description provided for @reportsScreenMoodScoreExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'The user chooses one of 5 moods. Each icon has a score: 1 very low, 2 low, 3 neutral, 4 good, 5 great. Reports show the average for the selected period.'**
+  String get reportsScreenMoodScoreExplanation;
+
+  /// No description provided for @reportsScreenMoodVeryLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Very low'**
+  String get reportsScreenMoodVeryLow;
+
+  /// No description provided for @reportsScreenMoodLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get reportsScreenMoodLow;
+
+  /// No description provided for @reportsScreenMoodNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral'**
+  String get reportsScreenMoodNeutral;
+
+  /// No description provided for @reportsScreenMoodGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get reportsScreenMoodGood;
+
+  /// No description provided for @reportsScreenMoodGreat.
+  ///
+  /// In en, this message translates to:
+  /// **'Great'**
+  String get reportsScreenMoodGreat;
+
+  /// No description provided for @reportsScreenPeriodEfficiency.
+  ///
+  /// In en, this message translates to:
+  /// **'Period efficiency'**
+  String get reportsScreenPeriodEfficiency;
+
+  /// No description provided for @reportsScreenPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get reportsScreenPlan;
+
+  /// No description provided for @reportsScreenFact.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get reportsScreenFact;
+
+  /// No description provided for @reportsScreenTimeBySphere.
+  ///
+  /// In en, this message translates to:
+  /// **'Time by spheres'**
+  String get reportsScreenTimeBySphere;
+
+  /// No description provided for @reportsScreenTopProductiveDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Top 3 productive days'**
+  String get reportsScreenTopProductiveDays;
+
+  /// No description provided for @reportsScreenAiObservation.
+  ///
+  /// In en, this message translates to:
+  /// **'AI observation'**
+  String get reportsScreenAiObservation;
+
+  /// No description provided for @reportsScreenPeriodStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Period statistics'**
+  String get reportsScreenPeriodStatistics;
+
+  /// No description provided for @reportsScreenExtendedAiObservationSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your statistics for the period. The extended AI observation will update on Sunday.'**
+  String get reportsScreenExtendedAiObservationSchedule;
+
+  /// No description provided for @reportsScreenAiLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing your personal observation…'**
+  String get reportsScreenAiLoading;
+
+  /// No description provided for @reportsScreenAiUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'AI observation is currently unavailable. Check the function connection or try again later.'**
+  String get reportsScreenAiUnavailable;
+
+  /// No description provided for @reportsScreenInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight'**
+  String get reportsScreenInsight;
+
+  /// No description provided for @reportsScreenPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Pattern'**
+  String get reportsScreenPattern;
+
+  /// No description provided for @reportsScreenPeriodTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Period tasks'**
+  String get reportsScreenPeriodTasks;
+
+  /// No description provided for @reportsScreenDone.
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get reportsScreenDone;
+
+  /// No description provided for @reportsScreenPeriodProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Period progress'**
+  String get reportsScreenPeriodProgress;
+
+  /// No description provided for @reportsScreenTempoBelowNorm.
+  ///
+  /// In en, this message translates to:
+  /// **'Pace below target'**
+  String get reportsScreenTempoBelowNorm;
+
+  /// No description provided for @reportsScreenTempoGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Pace is on track'**
+  String get reportsScreenTempoGood;
+
+  /// No description provided for @reportsScreenDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get reportsScreenDetails;
+
+  /// No description provided for @reportsScreenAvgTimePerTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. time / task'**
+  String get reportsScreenAvgTimePerTask;
+
+  /// No description provided for @reportsScreenDoneOnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Done on time'**
+  String get reportsScreenDoneOnTime;
+
+  /// No description provided for @reportsScreenMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved'**
+  String get reportsScreenMoved;
+
+  /// No description provided for @reportsScreenCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get reportsScreenCompleted;
+
+  /// No description provided for @reportsScreenForThisPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'for this period'**
+  String get reportsScreenForThisPeriod;
+
+  /// No description provided for @reportsScreenBestStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Best streak'**
+  String get reportsScreenBestStreak;
+
+  /// No description provided for @reportsScreenDaysInARow.
+  ///
+  /// In en, this message translates to:
+  /// **'days in a row'**
+  String get reportsScreenDaysInARow;
+
+  /// No description provided for @reportsScreenByHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'By habits'**
+  String get reportsScreenByHabits;
+
+  /// No description provided for @reportsScreenStreaksFourWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'Streaks over 4 weeks'**
+  String get reportsScreenStreaksFourWeeks;
+
+  /// No description provided for @reportsScreenFourWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'4 weeks ago'**
+  String get reportsScreenFourWeeksAgo;
+
+  /// No description provided for @reportsScreenMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'missed'**
+  String get reportsScreenMissed;
+
+  /// No description provided for @reportsScreenToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get reportsScreenToday;
+
+  /// No description provided for @reportsScreenBestDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Best day'**
+  String get reportsScreenBestDay;
+
+  /// No description provided for @reportsScreenWeekDynamics.
+  ///
+  /// In en, this message translates to:
+  /// **'Week dynamics'**
+  String get reportsScreenWeekDynamics;
+
+  /// No description provided for @reportsScreenByDays.
+  ///
+  /// In en, this message translates to:
+  /// **'By days'**
+  String get reportsScreenByDays;
+
+  /// No description provided for @reportsScreenOnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'On time'**
+  String get reportsScreenOnTime;
+
+  /// No description provided for @reportsScreenTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get reportsScreenTasks;
+
+  /// No description provided for @reportsScreenHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get reportsScreenHours;
+
+  /// No description provided for @reportsScreenCurrentPeriodShort.
+  ///
+  /// In en, this message translates to:
+  /// **'this'**
+  String get reportsScreenCurrentPeriodShort;
+
+  /// No description provided for @reportsScreenPreviousPeriodShort.
+  ///
+  /// In en, this message translates to:
+  /// **'prev.'**
+  String get reportsScreenPreviousPeriodShort;
+
+  /// No description provided for @reportsScreenCorrelations.
+  ///
+  /// In en, this message translates to:
+  /// **'Correlations'**
+  String get reportsScreenCorrelations;
+
+  /// No description provided for @reportsScreenStreaks.
+  ///
+  /// In en, this message translates to:
+  /// **'Streaks'**
+  String get reportsScreenStreaks;
+
+  /// No description provided for @reportsScreenWeakLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Weak link'**
+  String get reportsScreenWeakLink;
+
+  /// No description provided for @reportsScreenNoDataYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough data yet'**
+  String get reportsScreenNoDataYet;
+
+  /// No description provided for @reportsScreenPulse.
+  ///
+  /// In en, this message translates to:
+  /// **'PULSE'**
+  String get reportsScreenPulse;
+
+  /// No description provided for @reportsScreenMonthEfficiency.
+  ///
+  /// In en, this message translates to:
+  /// **'Month efficiency'**
+  String get reportsScreenMonthEfficiency;
+
+  /// No description provided for @reportsScreenFactVsDesiredBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual vs desired balance'**
+  String get reportsScreenFactVsDesiredBalance;
+
+  /// No description provided for @reportsScreenBalancePlanFactHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan is the thin marker; actual is the filled bar.'**
+  String get reportsScreenBalancePlanFactHint;
+
+  /// No description provided for @reportsScreenBalanceEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Set your desired life balance in Profile — the actual vs plan comparison will appear here.'**
+  String get reportsScreenBalanceEmptyHint;
+
+  /// No description provided for @reportsScreenPlanLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'plan'**
+  String get reportsScreenPlanLegend;
+
+  /// No description provided for @reportsScreenFactLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'actual'**
+  String get reportsScreenFactLegend;
+
+  /// No description provided for @reportsScreenOverageLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'overage'**
+  String get reportsScreenOverageLegend;
+
+  /// No description provided for @reportsScreenSleepSevenPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep 7+ hours'**
+  String get reportsScreenSleepSevenPlus;
+
+  /// No description provided for @reportsScreenHabitCompletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit completion'**
+  String get reportsScreenHabitCompletion;
+
+  /// No description provided for @reportsScreenWeekStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon–Tue'**
+  String get reportsScreenWeekStart;
+
+  /// No description provided for @reportsScreenMoreStableThanWeekend.
+  ///
+  /// In en, this message translates to:
+  /// **'More stable than week end'**
+  String get reportsScreenMoreStableThanWeekend;
+
+  /// No description provided for @reportsScreenHighLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'High load'**
+  String get reportsScreenHighLoad;
+
+  /// No description provided for @reportsScreenTaskImpact.
+  ///
+  /// In en, this message translates to:
+  /// **'Task impact'**
+  String get reportsScreenTaskImpact;
+
+  /// No description provided for @reportsScreenDaysWithHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'Days with habits'**
+  String get reportsScreenDaysWithHabits;
+
+  /// No description provided for @reportsScreenMoodHigher.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood is higher'**
+  String get reportsScreenMoodHigher;
+
+  /// No description provided for @reportsScreenOpenTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Open tasks'**
+  String get reportsScreenOpenTasks;
+
+  /// No description provided for @reportsScreenMoodImpact.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood impact'**
+  String get reportsScreenMoodImpact;
+
+  /// No description provided for @reportsScreenExpensesAboveNorm.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses above norm'**
+  String get reportsScreenExpensesAboveNorm;
+
+  /// No description provided for @reportsScreenNextDayMood.
+  ///
+  /// In en, this message translates to:
+  /// **'Next-day mood'**
+  String get reportsScreenNextDayMood;
+
+  /// No description provided for @reportsScreenComparisonTitleDay.
+  ///
+  /// In en, this message translates to:
+  /// **'This day vs previous day'**
+  String get reportsScreenComparisonTitleDay;
+
+  /// No description provided for @reportsScreenComparisonTitleWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week vs last week'**
+  String get reportsScreenComparisonTitleWeek;
+
+  /// No description provided for @reportsScreenComparisonTitleMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month vs last month'**
+  String get reportsScreenComparisonTitleMonth;
+
+  /// No description provided for @reportsScreenBestDaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{tasks} tasks · {hours} h focus'**
+  String reportsScreenBestDaySubtitle(int tasks, String hours);
+
+  /// No description provided for @reportsScreenMonthEfficiencySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} tasks {outOf} {total} · {daysLeft} days left'**
+  String reportsScreenMonthEfficiencySubtitle(
+    int completed,
+    String outOf,
+    int total,
+    int daysLeft,
+  );
+
+  /// No description provided for @reportsScreenWeakLinkRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} — {pct}% for the period. Attach it to your easiest habit.'**
+  String reportsScreenWeakLinkRecommendation(String label, int pct);
+
+  /// No description provided for @reportsScreenSummaryInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.'**
+  String get reportsScreenSummaryInsight;
+
+  /// No description provided for @reportsScreenProgressInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'One sphere is postponed more often than others. Try reserving a separate morning block for it.'**
+  String get reportsScreenProgressInsight;
+
+  /// No description provided for @reportsScreenHabitsInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'On days when habits are completed, productivity is usually higher. Start with the easiest habit.'**
+  String get reportsScreenHabitsInsight;
+
+  /// No description provided for @reportsScreenMoodInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood is higher on days with completed habits. Keep a small morning ritual.'**
+  String get reportsScreenMoodInsight;
+
+  /// No description provided for @budgetCategoryNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get budgetCategoryNameLabel;
+
+  /// No description provided for @navGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get navGoals;
+
+  /// No description provided for @navMood.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood'**
+  String get navMood;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
+
+  /// No description provided for @navReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get navReports;
+
+  /// No description provided for @navExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get navExpenses;
+
+  /// No description provided for @goalsDeleteConfirmBodyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'This will be permanently deleted.'**
+  String get goalsDeleteConfirmBodyShort;
 }
 
 class _AppLocalizationsDelegate

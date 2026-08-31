@@ -1775,38 +1775,488 @@
   "launcherDayGoals": "Objetivos",
   "launcherPlannedHoursDescription": "Plan: {hours} h",
   "@launcherPlannedHoursDescription": {
-  "placeholders": {
-    "hours": {}
-  }
-},
-"profileGdprSection": "Privacidad y GDPR",
-"profileGdprExportTitle": "Exportar mis datos",
-"profileGdprExportSubtitle": "Crea una exportación JSON de todos los datos de la app vinculados a tu cuenta.",
-"profileGdprNotSignedInToast": "No has iniciado sesión. No es posible exportar los datos.",
-"profileGdprDialogTitle": "Exportación de datos GDPR creada",
-"profileGdprDialogFileName": "Nombre del archivo: {fileName}",
-"@profileGdprDialogFileName": {
-  "placeholders": {
-    "fileName": {
-      "type": "String"
+    "placeholders": {
+      "hours": {}
     }
-  }
-},
-"profileGdprDialogBody": "La exportación se creó como JSON y se copió al portapapeles.\n\nAhora puedes pegar el contenido en un archivo con la extensión .json.",
-"profileGdprDialogPreviewLabel": "Vista previa:",
-"profileGdprCopyButton": "Copiar",
-"profileGdprDoneButton": "Listo",
-"profileGdprCopiedAgainToast": "La exportación de datos se copió de nuevo al portapapeles.",
-"profileGdprCreatedToast": "La exportación de datos GDPR se creó y se copió.",
-"profileGdprFailedToast": "Error al exportar los datos: {error}",
-"@profileGdprFailedToast": {
-  "placeholders": {
-    "error": {
-      "type": "String"
+  },
+  "profileGdprSection": "Privacidad y GDPR",
+  "profileGdprExportTitle": "Exportar mis datos",
+  "profileGdprExportSubtitle": "Crea una exportación JSON de todos los datos de la app vinculados a tu cuenta.",
+  "profileGdprNotSignedInToast": "No has iniciado sesión. No es posible exportar los datos.",
+  "profileGdprDialogTitle": "Exportación de datos GDPR creada",
+  "profileGdprDialogFileName": "Nombre del archivo: {fileName}",
+  "@profileGdprDialogFileName": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
     }
-  }
-},
-"profileGdprExportNoteAccount": "Esta exportación contiene la cuenta de usuario autenticada, el registro de perfil de public.users, todas las tablas de la app vinculadas al usuario y las tablas de referencia necesarias para entender las respuestas exportadas.",
-"profileGdprExportNoteRls": "La exportación está limitada por Supabase Row Level Security. Las tablas que no existen o que no se pueden leer se devuelven con una entrada _export_warning.",
-"profileGdprExportNoteEncrypted": "Los campos encrypted_payload se exportan tal como están almacenados. El descifrado depende de la implementación de cifrado de la app y de la sesión activa del usuario."
+  },
+  "profileGdprDialogBody": "La exportación se creó como JSON y se copió al portapapeles.\n\nAhora puedes pegar el contenido en un archivo con la extensión .json.",
+  "profileGdprDialogPreviewLabel": "Vista previa:",
+  "profileGdprCopyButton": "Copiar",
+  "profileGdprDoneButton": "Listo",
+  "profileGdprCopiedAgainToast": "La exportación de datos se copió de nuevo al portapapeles.",
+  "profileGdprCreatedToast": "La exportación de datos GDPR se creó y se copió.",
+  "profileGdprFailedToast": "Error al exportar los datos: {error}",
+  "@profileGdprFailedToast": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "profileGdprExportNoteAccount": "Esta exportación contiene la cuenta de usuario autenticada, el registro de perfil de public.users, todas las tablas de la app vinculadas al usuario y las tablas de referencia necesarias para entender las respuestas exportadas.",
+  "profileGdprExportNoteRls": "La exportación está limitada por Supabase Row Level Security. Las tablas que no existen o que no se pueden leer se devuelven con una entrada _export_warning.",
+  "profileGdprExportNoteEncrypted": "Los campos encrypted_payload se exportan tal como están almacenados. El descifrado depende de la implementación de cifrado de la app y de la sesión activa del usuario.",
+  "profile": "Perfil",
+  "settings": "Ajustes",
+  "profileFallbackName": "Usuario",
+  "profileNoEmail": "Sin email",
+  "personalData": "Datos personales",
+  "name": "Nombre",
+  "enterName": "Introduce el nombre",
+  "age": "Edad",
+  "enterAge": "Introduce la edad",
+  "notSpecified": "No indicado",
+  "lifeSpheres": "Áreas de vida",
+  "mySpheres": "Mis áreas",
+  "edit": "Editar",
+  "habits": "Hábitos",
+  "myHabits": "Mis hábitos",
+  "noHabitsYet": "Aún no hay hábitos",
+  "addHabitHint": "Habit creation remains in the current habit editor.",
+  "daysCount": "{n} días",
+  "@daysCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "focus": "Foco",
+  "targetHoursTitle": "Horas objetivo al día",
+  "targetHoursSubtitle": "Se usa para calcular el progreso",
+  "targetHoursField": "Horas por día",
+  "hoursShort": "h",
+  "notifications": "Notificaciones",
+  "allowNotifications": "Permitir notificaciones",
+  "notificationsSubtitle": "Funciona mientras la pestaña está abierta",
+  "eveningCheckIn": "Check-in nocturno",
+  "eveningCheckInBody": "Log your mood and close the day calmly.",
+  "everyDayAt": "Cada día a las {time}",
+  "@everyDayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsUnsupported": "Notifications are not supported here.",
+  "notificationsEnabled": "Notifications enabled.",
+  "notificationsDenied": "Notification permission was not granted.",
+  "notificationsMasterSubtitleOn": "Activadas",
+  "notificationsMasterSubtitleOff": "Desactivadas",
+  "notificationsSystemDisabledHint": "Desactivadas en los ajustes del sistema iOS",
+  "openSystemSettings": "Abrir ajustes de iOS",
+  "notificationsGoalsTitle": "Recordatorios de metas",
+  "notificationsGoalsSubtitle": "{minutes} min antes",
+  "@notificationsGoalsSubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsReflectionTitle": "Reflexión nocturna",
+  "notificationsHabitsTitle": "Recordatorios de hábitos",
+  "notificationsMinutesPickerTitle": "Cuántos minutos antes",
+  "app": "Aplicación",
+  "language": "Idioma",
+  "system": "Sistema",
+  "googleCalendarSubtitle": "Exportar objetivos al calendario",
+  "googleCalendarMovedHint": "Google Calendar is now in profile settings.",
+  "exportData": "Exportar datos",
+  "exportDataSubtitle": "Exportación JSON de la cuenta",
+  "exportCopied": "Export copied to clipboard.",
+  "exportFailed": "Could not export data",
+  "notSignedIn": "User is not signed in.",
+  "legalDocuments": "Documentos legales",
+  "openLinkFailed": "Could not open the link.",
+  "signOut": "Cerrar sesión",
+  "signOutConfirm": "Are you sure you want to sign out?",
+  "deleteAccount": "Eliminar cuenta",
+  "deleteAccountSubtitle": "All data will be permanently deleted",
+  "deleteAccountConfirm": "This cannot be undone. All account data will be permanently deleted.",
+  "cancel": "Cancelar",
+  "desiredBalance": "Rueda de vida",
+  "desiredBalanceHint": "Configura tu rueda de vida por áreas seleccionadas. El total no puede superar el 100 %.",
+  "lifeWheelTapHint": "Toca un segmento o un área abajo para definir un porcentaje exacto.",
+  "outOfHundredPercent": "de 100 %",
+  "percent": "Porcentaje",
+  "lifeWheelPercentLimit": "Puedes indicar de 0 a {maxAllowed} %. El total no puede superar el 100 %.",
+  "@lifeWheelPercentLimit": {
+    "placeholders": {
+      "maxAllowed": {
+        "type": "int"
+      }
+    }
+  },
+  "save": "Guardar",
+  "saving": "Guardando…",
+  "newHabit": "Nuevo hábito",
+  "editHabit": "Editar hábito",
+  "habitName": "Nombre del hábito",
+  "negativeHabit": "Hábito negativo",
+  "deleteHabit": "¿Eliminar hábito?",
+  "deleteHabitQuestion": "El hábito \"{title}\" se eliminará.",
+  "@deleteHabitQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Eliminar",
+  "spaces": "Espacios",
+  "space": "Espacio",
+  "mySpaces": "Mis espacios",
+  "spacesHint": "Crea espacios compartidos para casa, familia, viajes y proyectos.",
+  "noSpacesYet": "Aún no hay espacios",
+  "noSpacesHint": "Crea tu primer espacio e invita a otros usuarios.",
+  "createSpace": "Crear espacio",
+  "editSpace": "Editar espacio",
+  "deleteSpace": "Eliminar espacio",
+  "leaveSpace": "Salir del espacio",
+  "deleteSpaceConfirm": "Este espacio y sus datos compartidos se eliminarán. Esta acción no se puede deshacer.",
+  "leaveSpaceConfirm": "Ya no verás tareas ni datos de este espacio.",
+  "spaceName": "Nombre del espacio",
+  "spaceNameRequired": "Introduce un nombre",
+  "spaceDescription": "Descripción",
+  "spaceIcon": "Icono",
+  "spaceColor": "Color HEX",
+  "spaceValidity": "Validez",
+  "noDeadline": "Sin fecha límite",
+  "spaceNoDeadline": "Espacio sin vencimiento",
+  "setDeadline": "Fijar fecha",
+  "changeDeadline": "Cambiar fecha",
+  "spaceValidUntil": "Válido hasta {date}",
+  "@spaceValidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spaceValidityHint": "Después de esta fecha, el espacio queda en la base, pero desaparece de las pantallas y de la selección de tareas.",
+  "spaceTapToManage": "Toca para gestionar miembros",
+  "spaceManageSubtitle": "Miembros e invitaciones",
+  "members": "Miembros",
+  "noMembersYet": "Aún no hay miembros",
+  "inviteMember": "Invitar",
+  "inviteMemberHint": "La invitación se enviará para “{spaceName}”.",
+  "@inviteMemberHint": {
+    "placeholders": {
+      "spaceName": {
+        "type": "String"
+      }
+    }
+  },
+  "email": "Email",
+  "sendInvite": "Enviar",
+  "enterValidEmail": "Introduce un email válido",
+  "incomingInvites": "Invitaciones recibidas",
+  "spaceInviteSubtitle": "Te invitaron a un espacio compartido",
+  "acceptInvite": "Aceptar",
+  "declineInvite": "Rechazar",
+  "spaceInviteAccepted": "Invitación aceptada.",
+  "spaceInviteSent": "Invitación enviada.",
+  "you": "Tú",
+  "spaceRoleOwner": "Propietario",
+  "spaceRoleAdmin": "Admin",
+  "spaceRoleMember": "Miembro",
+  "spaceRoleViewer": "Solo lectura",
+  "spacesLoadFailed": "Could not load spaces",
+  "spaceMembersLoadFailed": "Could not load members",
+  "spaceSaveFailed": "Could not save space",
+  "spaceActionFailed": "Could not complete the action",
+  "spaceInviteSendFailed": "Could not send invite",
+  "spaceInviteAcceptFailed": "Could not accept invite",
+  "spaceInviteDeclineFailed": "Could not decline invite",
+  "noData": "Sin datos",
+  "dayGoalsHeaderTitle": "Tareas del día",
+  "dayGoalsAllHiddenHint": "Todas las tareas visibles están ocultas. Desactiva “Ocultar completadas”.",
+  "dayGoalsEmptyHint": "Todavía no hay tareas para este día. Añade la primera con el botón de abajo.",
+  "dayGoalsStatTotal": "Total",
+  "dayGoalsStatDone": "Hecho",
+  "dayGoalsStatLeft": "Pendiente",
+  "dayGoalsHoursLeftLabel": "Horas restantes: {hours}",
+  "@dayGoalsHoursLeftLabel": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "dayGoalsFilterAll": "Todo",
+  "dayGoalsFilterPersonal": "Personal",
+  "dayGoalsFilterAllSpheres": "Todas las áreas",
+  "dayGoalsLaneLeftBadge": "Pend. {count}",
+  "@dayGoalsLaneLeftBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneDoneBadge": "Hecho {count}",
+  "@dayGoalsLaneDoneBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayGoalsLaneInProgress": "⚡ En progreso",
+  "dayGoalsLaneInProgressEmpty": "Aquí aparecerán las tareas activas de este bloque",
+  "dayGoalsLaneDoneTitle": "✅ Hecho",
+  "dayGoalsLaneDoneEmpty": "Las tareas completadas aparecerán aquí después del bloque de enfoque",
+  "dayGoalsSpaceMetaLabel": "👥 Espacio",
+  "dayGoalsCompletedLabel": "Completado",
+  "dayGoalsNotifSoftAskTitle": "No te pierdas ninguna meta",
+  "dayGoalsNotifSoftAskBody": "Ladna te avisará 15 minutos antes de que empiece una meta — como una alarma, pero para tus tareas.",
+  "dayGoalsNotifSoftAskEnable": "Activar recordatorios",
+  "dayGoalsNotifSoftAskDismiss": "Ahora no",
+  "dayGoalsPeriodMorning": "Mañana",
+  "dayGoalsPeriodDay": "Día",
+  "dayGoalsPeriodEvening": "Noche",
+  "dayGoalsSphereLifePersonal": "Personal",
+  "dayGoalsSphereTravel": "Viajes",
+  "dayGoalsSphereHome": "Hogar",
+  "dayGoalsMinutesShort": "{minutes} min",
+  "@dayGoalsMinutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "registerErrNameMin2": "El nombre debe tener al menos 2 caracteres.",
+  "launcherPlanHours": "Plan: {hours} h",
+  "@launcherPlanHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "launcherGoalsAndTasks": "Metas y tareas",
+  "launcherPersonal": "Personal",
+  "launcherReportsTab": "Informes",
+  "launcherBudget": "Presupuesto",
+  "launcherQuickActions": "Acciones rápidas",
+  "launcherBulkAdd": "Añadir en bloque",
+  "launcherBulkAddSubtitle": "Gastos + tareas + ánimo",
+  "launcherAiWeeklyPlan": "Plan semanal IA",
+  "launcherAiWeeklyPlanSubtitle": "Análisis de metas y progreso",
+  "launcherAiInsights": "Insights IA",
+  "launcherNavAndActions": "Navegación y acciones",
+  "navMenu": "Menú",
+  "navPersonal": "Personal",
+  "lifeBlocksSetupTitle": "¿Qué quieres seguir?",
+  "lifeBlocksSetupSubtitle": "Elige áreas de vida. Ladna adaptará el inicio, los objetivos y los informes.",
+  "lifeBlocksSetupContinue": "Continuar",
+  "lifeBlocksSetupHint": "Elige al menos 1 área",
+  "goalsScreenGoalsAndTasks": "Metas y tareas",
+  "goalsScreenTasks": "Tareas",
+  "goalsScreenDashboard": "Panel",
+  "goalsScreenWeek": "Semana",
+  "goalsScreenMonth": "Mes",
+  "goalsScreenCalendar": "Calendario",
+  "goalsScreenWeekView": "Vista semanal",
+  "goalsScreenMonthView": "Días del mes",
+  "goalsScreenNoTasks": "Sin tareas",
+  "goalsScreenCompleted": "completado",
+  "goalsScreenWeekSummary": "Resumen semanal",
+  "goalsScreenThisWeek": "Esta semana",
+  "goalsScreenTodayShort": "hoy",
+  "goalsScreenAll": "Todo",
+  "goalsScreenPersonalTasks": "Personal",
+  "goalsScreenUpToOneMonth": "Hasta 1 mes",
+  "goalsScreenUpToSixMonths": "Hasta 6 meses",
+  "goalsScreenYearPlus": "Año+",
+  "goalsScreenBySpheres": "Por áreas",
+  "goalsScreenHide": "",
+  "goalsScreenProgress": "Progreso",
+  "goalsScreenAdd": "Añadir",
+  "goalsScreenNoGoalsYet": "Sin metas todavía",
+  "goalsScreenNoGoalsYetSub": "Añade tu primera meta con el botón inferior.",
+  "goalsScreenNewGoal": "Nueva meta",
+  "goalsScreenEditGoal": "Editar meta",
+  "goalsScreenTitle": "Título",
+  "goalsScreenDescription": "Descripción",
+  "goalsScreenSphere": "Área",
+  "goalsScreenHorizon": "Horizonte",
+  "goalsScreenDeleteGoal": "Eliminar meta",
+  "goalsScreenDeleteGoalQuestion": "Esta meta se eliminará. Las tareas diarias relacionadas quedarán sin vínculo con una meta grande.",
+  "goalsScreenCompletedTasks": "{done} tareas completadas de {total}",
+  "@goalsScreenCompletedTasks": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "goalsScreenGoalsCount": "{n} metas",
+  "@goalsScreenGoalsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "moodScore1": "Muy bajo",
+  "moodScore2": "Bajo",
+  "moodScore3": "Neutral",
+  "moodScore4": "Bien",
+  "moodScore5": "Muy bien",
+  "moodScaleHint": "Escala de ánimo: 1 muy bajo, 3 neutral, 5 muy bien.",
+  "moodHowAreYouTitle": "¿Cómo estás hoy?",
+  "moodWhatInfluencedLabel": "¿Qué influyó en tu ánimo?",
+  "moodRecentEntriesTitle": "Entradas recientes",
+  "moodNoEntriesHint": "Todavía no hay entradas.",
+  "moodTodayLabel": "Hoy",
+  "moodSelectedDayLabel": "Día seleccionado",
+  "reportsScreenReports": "Informes",
+  "reportsScreenDayShort": "Día",
+  "reportsScreenWeekShort": "Sem.",
+  "reportsScreenMonthShort": "Mes",
+  "reportsScreenSummary": "Resumen",
+  "reportsScreenProgress": "Progreso",
+  "reportsScreenMood": "Ánimo",
+  "reportsScreenTasksDone": "Tasks done",
+  "reportsScreenFocusHours": "Focus hours",
+  "reportsScreenOutOf": "de",
+  "reportsScreenPeriodAverage": "Period average",
+  "reportsScreenMoodAverage": "Ánimo medio",
+  "reportsScreenOutOfFiveAverage": "out of 5 average",
+  "reportsScreenOutOfFive": "out of 5",
+  "reportsScreenHowMoodScoreWorks": "Cómo se calcula el ánimo",
+  "reportsScreenMoodScoreExplanation": "El usuario elige uno de 5 ánimos. Cada icono tiene una puntuación: 1 muy bajo, 2 bajo, 3 neutral, 4 bien, 5 muy bien. Los informes muestran la media del periodo elegido.",
+  "reportsScreenMoodVeryLow": "Muy bajo",
+  "reportsScreenMoodLow": "Bajo",
+  "reportsScreenMoodNeutral": "Neutral",
+  "reportsScreenMoodGood": "Bien",
+  "reportsScreenMoodGreat": "Muy bien",
+  "reportsScreenPeriodEfficiency": "Period efficiency",
+  "reportsScreenPlan": "Plan",
+  "reportsScreenFact": "Actual",
+  "reportsScreenTimeBySphere": "Time by spheres",
+  "reportsScreenTopProductiveDays": "Top 3 productive days",
+  "reportsScreenAiObservation": "AI observation",
+  "reportsScreenPeriodStatistics": "Estadísticas del periodo",
+  "reportsScreenExtendedAiObservationSchedule": "Estas son tus estadísticas del periodo. La observación de IA ampliada se actualizará el domingo.",
+  "reportsScreenAiLoading": "Preparando una observación personalizada…",
+  "reportsScreenAiUnavailable": "La observación de IA no está disponible ahora. Revisa la función o inténtalo más tarde.",
+  "reportsScreenInsight": "Insight",
+  "reportsScreenPattern": "Pattern",
+  "reportsScreenPeriodTasks": "Period tasks",
+  "reportsScreenDone": "done",
+  "reportsScreenPeriodProgress": "Period progress",
+  "reportsScreenTempoBelowNorm": "Pace below target",
+  "reportsScreenTempoGood": "Pace is on track",
+  "reportsScreenDetails": "Details",
+  "reportsScreenAvgTimePerTask": "Avg. time / task",
+  "reportsScreenDoneOnTime": "Done on time",
+  "reportsScreenMoved": "Moved",
+  "reportsScreenCompleted": "Completed",
+  "reportsScreenForThisPeriod": "for this period",
+  "reportsScreenBestStreak": "Best streak",
+  "reportsScreenDaysInARow": "days in a row",
+  "reportsScreenByHabits": "By habits",
+  "reportsScreenStreaksFourWeeks": "Streaks over 4 weeks",
+  "reportsScreenFourWeeksAgo": "4 weeks ago",
+  "reportsScreenMissed": "missed",
+  "reportsScreenToday": "today",
+  "reportsScreenBestDay": "Best day",
+  "reportsScreenWeekDynamics": "Week dynamics",
+  "reportsScreenByDays": "By days",
+  "reportsScreenOnTime": "A tiempo",
+  "reportsScreenTasks": "Tareas",
+  "reportsScreenHours": "Horas",
+  "reportsScreenCurrentPeriodShort": "actual",
+  "reportsScreenPreviousPeriodShort": "ant.",
+  "reportsScreenCorrelations": "Correlaciones",
+  "reportsScreenStreaks": "Rachas",
+  "reportsScreenWeakLink": "Punto débil",
+  "reportsScreenNoDataYet": "Not enough data yet",
+  "reportsScreenPulse": "PULSO",
+  "reportsScreenMonthEfficiency": "Eficiencia del mes",
+  "reportsScreenFactVsDesiredBalance": "Real vs equilibrio deseado",
+  "reportsScreenBalancePlanFactHint": "El plan es la marca fina; lo real es la barra rellena.",
+  "reportsScreenBalanceEmptyHint": "Define tu equilibrio deseado en el perfil — aquí aparecerá la comparación entre real y plan.",
+  "reportsScreenPlanLegend": "plan",
+  "reportsScreenFactLegend": "real",
+  "reportsScreenOverageLegend": "exceso",
+  "reportsScreenSleepSevenPlus": "Sueño 7+ h",
+  "reportsScreenHabitCompletion": "Hábitos completados",
+  "reportsScreenWeekStart": "lun–mar",
+  "reportsScreenMoreStableThanWeekend": "Más estable que el fin de semana",
+  "reportsScreenHighLoad": "Alta carga",
+  "reportsScreenTaskImpact": "Impacto de tareas",
+  "reportsScreenDaysWithHabits": "Días con hábitos",
+  "reportsScreenMoodHigher": "Ánimo más alto",
+  "reportsScreenOpenTasks": "Tareas abiertas",
+  "reportsScreenMoodImpact": "Impacto en el ánimo",
+  "reportsScreenExpensesAboveNorm": "Gastos por encima de la norma",
+  "reportsScreenNextDayMood": "Ánimo del día siguiente",
+  "reportsScreenComparisonTitleDay": "Este día vs anterior",
+  "reportsScreenComparisonTitleWeek": "Esta semana vs anterior",
+  "reportsScreenComparisonTitleMonth": "Este mes vs anterior",
+  "reportsScreenBestDaySubtitle": "{tasks} tareas · {hours} h de foco",
+  "@reportsScreenBestDaySubtitle": {
+    "placeholders": {
+      "tasks": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsScreenMonthEfficiencySubtitle": "{completed} tareas {outOf} {total} · quedan {daysLeft} días",
+  "@reportsScreenMonthEfficiencySubtitle": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "outOf": {
+        "type": "String"
+      },
+      "total": {
+        "type": "int"
+      },
+      "daysLeft": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenWeakLinkRecommendation": "{label} — {pct}% en el periodo. Vincúlalo con tu hábito más fácil.",
+  "@reportsScreenWeakLinkRecommendation": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsScreenSummaryInsight": "You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.",
+  "reportsScreenProgressInsight": "One sphere is postponed more often than others. Try reserving a separate morning block for it.",
+  "reportsScreenHabitsInsight": "On days when habits are completed, productivity is usually higher. Start with the easiest habit.",
+  "reportsScreenMoodInsight": "Mood is higher on days with completed habits. Keep a small morning ritual."
 }
