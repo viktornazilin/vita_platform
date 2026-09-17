@@ -2258,5 +2258,10 @@
   "navProfile": "Profile",
   "navReports": "Reports",
   "navExpenses": "Expenses",
-  "goalsDeleteConfirmBodyShort": "This will be permanently deleted."
+  "goalsDeleteConfirmBodyShort": "This will be permanently deleted.",
+  "paywallTitle": "Ladna Premium",
+  "paywallSubtitle": "First 30 days free, then a subscription. Cancel anytime.",
+  "paywallOpenButton": "Start free trial",
+  "paywallRestoreButton": "Restore purchases",
+  "paywallLogoutButton": "Log out"
 }

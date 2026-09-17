@@ -4790,4 +4790,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalsDeleteConfirmBodyShort => 'This will be permanently deleted.';
+
+  @override
+  String get paywallTitle => 'Ladna Premium';
+
+  @override
+  String get paywallSubtitle =>
+      'First 30 days free, then a subscription. Cancel anytime.';
+
+  @override
+  String get paywallOpenButton => 'Start free trial';
+
+  @override
+  String get paywallRestoreButton => 'Restore purchases';
+
+  @override
+  String get paywallLogoutButton => 'Log out';
 }

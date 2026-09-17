@@ -134,6 +134,7 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                       const SizedBox(height: 10),
                       TextField(
                         controller: titleCtrl,
+                        textCapitalization: TextCapitalization.sentences,
                         textInputAction: TextInputAction.next,
                         decoration: _inputDecoration(t.title),
                       ),
@@ -147,12 +148,14 @@ class _ShoppingTrackerCardState extends State<ShoppingTrackerCard> {
                       const SizedBox(height: 10),
                       TextField(
                         controller: storeCtrl,
+                        textCapitalization: TextCapitalization.sentences,
                         textInputAction: TextInputAction.next,
                         decoration: _inputDecoration(t.store),
                       ),
                       const SizedBox(height: 10),
                       TextField(
                         controller: descCtrl,
+                        textCapitalization: TextCapitalization.sentences,
                         maxLines: 2,
                         decoration: _inputDecoration(t.note),
                       ),

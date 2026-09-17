@@ -702,6 +702,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: descCtrl,
+                      textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
                         labelText: l.healthMealDescriptionLabel,
                         prefixIcon: Icon(Icons.notes_rounded),
@@ -777,6 +778,7 @@ class _HealthTrackerCardState extends State<HealthTrackerCard> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: noteCtrl,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     labelText: l.healthCommentLabel,
                     prefixIcon: Icon(Icons.notes_rounded),

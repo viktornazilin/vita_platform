@@ -594,6 +594,7 @@ class _MoodTab extends StatelessWidget {
               const SizedBox(height: 10),
               TextField(
                 controller: noteController,
+                textCapitalization: TextCapitalization.sentences,
                 minLines: 2,
                 maxLines: 3,
                 maxLength: maxLen,

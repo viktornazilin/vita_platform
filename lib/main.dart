@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'secrets.dart';
 import 'app.dart';
@@ -65,6 +66,17 @@ Future<void> main() async {
     await PushNotificationsService.instance.init(
       onTokenReady: _handlePushTokenReady,
       onMessageOpened: _handlePushMessageOpened,
+    );
+
+    // RevenueCat — платная подписка. Не поддерживает web (нет ни StoreKit,
+    // ни Play Billing в браузере), поэтому только под kIsWeb-веткой, как и
+    // остальные нативные SDK выше. Логин под конкретного Supabase-пользователя
+    // (Purchases.logIn) происходит отдельно, в AccessGate.resolve() — не
+    // здесь, чтобы не завязывать порядок запуска на то, авторизован ли
+    // пользователь уже в момент старта приложения.
+    await Purchases.setLogLevel(LogLevel.info);
+    await Purchases.configure(
+      PurchasesConfiguration('appl_pUriEwxBRgoNhZhpQrqrYJhaARj'),
     );
   }
 
@@ -237,3 +249,4 @@ Future<void> resyncAllReminders() async {
     syncHabitsReminder(DateTime.now()),
   ]);
 }
+

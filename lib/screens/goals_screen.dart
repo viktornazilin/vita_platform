@@ -2058,6 +2058,7 @@ class _Input extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TextField(
         controller: controller,
+        textCapitalization: TextCapitalization.sentences,
         maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,

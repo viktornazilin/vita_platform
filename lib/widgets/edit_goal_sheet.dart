@@ -957,6 +957,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                     children: [
                       TextField(
                         controller: _titleCtrl,
+                        textCapitalization: TextCapitalization.sentences,
                         textInputAction: TextInputAction.next,
                         decoration: _nestInput(
                           label: t.editGoalFieldTitleLabel,
@@ -967,6 +968,7 @@ class _EditGoalSheetState extends State<EditGoalSheet> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _descCtrl,
+                        textCapitalization: TextCapitalization.sentences,
                         minLines: 2,
                         maxLines: 4,
                         textInputAction: TextInputAction.newline,
@@ -1329,6 +1331,8 @@ class _EditTimeTextField extends StatefulWidget {
 }
 
 class __EditTimeTextFieldState extends State<_EditTimeTextField> {
+  static const int _minuteStep = 10;
+
   bool _expanded = false;
   late FixedExtentScrollController _hourController;
   late FixedExtentScrollController _minuteController;
@@ -1338,7 +1342,8 @@ class __EditTimeTextFieldState extends State<_EditTimeTextField> {
     super.initState();
     final value = _currentValue();
     _hourController = FixedExtentScrollController(initialItem: value.hour);
-    _minuteController = FixedExtentScrollController(initialItem: value.minute);
+    _minuteController =
+        FixedExtentScrollController(initialItem: value.minute ~/ _minuteStep);
   }
 
   @override
@@ -1361,7 +1366,7 @@ class __EditTimeTextFieldState extends State<_EditTimeTextField> {
           hour <= 23 &&
           minute >= 0 &&
           minute <= 59) {
-        return TimeOfDay(hour: hour, minute: minute);
+        return TimeOfDay(hour: hour, minute: _roundMinute(minute));
       }
     }
 
@@ -1376,11 +1381,16 @@ class __EditTimeTextFieldState extends State<_EditTimeTextField> {
           hour <= 23 &&
           minute >= 0 &&
           minute <= 59) {
-        return TimeOfDay(hour: hour, minute: minute);
+        return TimeOfDay(hour: hour, minute: _roundMinute(minute));
       }
     }
 
     return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  int _roundMinute(int minute) {
+    final rounded = ((minute + _minuteStep / 2) ~/ _minuteStep) * _minuteStep;
+    return rounded >= 60 ? 60 - _minuteStep : rounded;
   }
 
   String _format(int hour, int minute) {
@@ -1405,7 +1415,7 @@ class __EditTimeTextFieldState extends State<_EditTimeTextField> {
       _hourController.jumpToItem(value.hour);
     }
     if (_minuteController.hasClients) {
-      _minuteController.jumpToItem(value.minute);
+      _minuteController.jumpToItem(value.minute ~/ _minuteStep);
     }
   }
 
@@ -1415,6 +1425,7 @@ class __EditTimeTextFieldState extends State<_EditTimeTextField> {
     required FixedExtentScrollController controller,
     required int itemCount,
     required ValueChanged<int> onSelectedItemChanged,
+    int step = 1,
   }) {
     final scheme = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1456,7 +1467,7 @@ class __EditTimeTextFieldState extends State<_EditTimeTextField> {
                 itemCount,
                 (i) => Center(
                   child: Text(
-                    i.toString().padLeft(2, '0'),
+                    (i * step).toString().padLeft(2, '0'),
                     style: textStyle,
                   ),
                 ),
@@ -1588,8 +1599,10 @@ class __EditTimeTextFieldState extends State<_EditTimeTextField> {
                     context: context,
                     title: 'Минуты',
                     controller: _minuteController,
-                    itemCount: 60,
-                    onSelectedItemChanged: (i) => _setTime(minute: i),
+                    itemCount: 60 ~/ _minuteStep,
+                    step: _minuteStep,
+                    onSelectedItemChanged: (i) =>
+                        _setTime(minute: i * _minuteStep),
                   ),
                 ],
               ),

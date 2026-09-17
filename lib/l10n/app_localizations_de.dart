@@ -4838,4 +4838,20 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get goalsDeleteConfirmBodyShort =>
       'Diese Aktion kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get paywallTitle => 'Ladna Premium';
+
+  @override
+  String get paywallSubtitle =>
+      'Die ersten 30 Tage kostenlos, danach ein Abo. Jederzeit kündbar.';
+
+  @override
+  String get paywallOpenButton => 'Kostenlose Testphase starten';
+
+  @override
+  String get paywallRestoreButton => 'Käufe wiederherstellen';
+
+  @override
+  String get paywallLogoutButton => 'Abmelden';
 }

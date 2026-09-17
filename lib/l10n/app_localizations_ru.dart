@@ -4801,4 +4801,20 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get goalsDeleteConfirmBodyShort =>
       'Будет удалено без возможности восстановления.';
+
+  @override
+  String get paywallTitle => 'Ladna Premium';
+
+  @override
+  String get paywallSubtitle =>
+      'Первые 30 дней бесплатно, затем подписка. Отменить можно в любой момент.';
+
+  @override
+  String get paywallOpenButton => 'Начать бесплатный период';
+
+  @override
+  String get paywallRestoreButton => 'Восстановить покупки';
+
+  @override
+  String get paywallLogoutButton => 'Выйти из аккаунта';
 }

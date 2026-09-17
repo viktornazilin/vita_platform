@@ -14,6 +14,8 @@ import 'screens/login_screen.dart';
 import 'screens/expenses_screen.dart';
 import 'screens/budget_setup_screen.dart';
 import 'screens/user_goals_screen.dart';
+import 'screens/paywall_screen.dart';
+import 'services/access_gate.dart';
 
 import 'controllers/theme_controller.dart';
 // ✅ locale controller (manual language switch)
@@ -177,7 +179,7 @@ class _BootSplash extends StatelessWidget {
   }
 }
 
-class _StartGate extends StatelessWidget {
+class _StartGate extends StatefulWidget {
   final bool isLoggedIn;
 
   const _StartGate({
@@ -185,11 +187,46 @@ class _StartGate extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (isLoggedIn) {
-      return const HomeScreen();
-    }
+  State<_StartGate> createState() => _StartGateState();
+}
 
-    return const LoginScreen();
+class _StartGateState extends State<_StartGate> {
+  Future<AccessDecision>? _decision;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isLoggedIn) {
+      _decision = AccessGate.resolve();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _StartGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Логин произошёл уже после первой отрисовки (например, пользователь
+    // только что ввёл пароль) — пересчитываем доступ заново.
+    if (widget.isLoggedIn && !oldWidget.isLoggedIn) {
+      setState(() => _decision = AccessGate.resolve());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isLoggedIn) return const LoginScreen();
+
+    return FutureBuilder<AccessDecision>(
+      future: _decision,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const _BootSplash();
+        }
+        // requiresPaywall — единственный случай, когда НЕ пускаем на Home:
+        // ни grandfathered, ни активной подписки/триала нет.
+        return snapshot.data == AccessDecision.requiresPaywall
+            ? const PaywallScreen()
+            : const HomeScreen();
+      },
+    );
   }
 }

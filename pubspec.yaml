@@ -2,7 +2,7 @@ name: nest_app
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.2.0+5
+version: 1.2.0+6
 
 environment:
   sdk: ^3.8.1
@@ -44,6 +44,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+  purchases_flutter: ^10.10.1
+  purchases_ui_flutter: ^10.10.1
 
 dev_dependencies:
   flutter_test:

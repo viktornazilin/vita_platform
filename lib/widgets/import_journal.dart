@@ -412,6 +412,7 @@ class _ReviewParsedGoalsSheetState extends State<_ReviewParsedGoalsSheet> {
           children: [
             TextField(
               controller: titleCtrl,
+              textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(labelText: l.importJournalNameLabel),
             ),
             const SizedBox(height: 12),

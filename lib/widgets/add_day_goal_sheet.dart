@@ -1592,6 +1592,7 @@ class _PrettyField extends StatelessWidget {
 
     return TextField(
       controller: controller,
+      textCapitalization: TextCapitalization.sentences,
       minLines: minLines,
       maxLines: maxLines,
       maxLength: maxLen,
@@ -1659,6 +1660,8 @@ class _TimeTextField extends StatefulWidget {
 }
 
 class __TimeTextFieldState extends State<_TimeTextField> {
+  static const int _minuteStep = 10;
+
   bool _expanded = false;
   late FixedExtentScrollController _hourController;
   late FixedExtentScrollController _minuteController;
@@ -1668,7 +1671,8 @@ class __TimeTextFieldState extends State<_TimeTextField> {
     super.initState();
     final value = _currentValue();
     _hourController = FixedExtentScrollController(initialItem: value.hour);
-    _minuteController = FixedExtentScrollController(initialItem: value.minute);
+    _minuteController =
+        FixedExtentScrollController(initialItem: value.minute ~/ _minuteStep);
   }
 
   @override
@@ -1691,7 +1695,7 @@ class __TimeTextFieldState extends State<_TimeTextField> {
           hour <= 23 &&
           minute >= 0 &&
           minute <= 59) {
-        return TimeOfDay(hour: hour, minute: minute);
+        return TimeOfDay(hour: hour, minute: _roundMinute(minute));
       }
     }
 
@@ -1706,11 +1710,16 @@ class __TimeTextFieldState extends State<_TimeTextField> {
           hour <= 23 &&
           minute >= 0 &&
           minute <= 59) {
-        return TimeOfDay(hour: hour, minute: minute);
+        return TimeOfDay(hour: hour, minute: _roundMinute(minute));
       }
     }
 
     return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  int _roundMinute(int minute) {
+    final rounded = ((minute + _minuteStep / 2) ~/ _minuteStep) * _minuteStep;
+    return rounded >= 60 ? 60 - _minuteStep : rounded;
   }
 
   String _format(int hour, int minute) {
@@ -1735,7 +1744,7 @@ class __TimeTextFieldState extends State<_TimeTextField> {
       _hourController.jumpToItem(value.hour);
     }
     if (_minuteController.hasClients) {
-      _minuteController.jumpToItem(value.minute);
+      _minuteController.jumpToItem(value.minute ~/ _minuteStep);
     }
   }
 
@@ -1745,6 +1754,7 @@ class __TimeTextFieldState extends State<_TimeTextField> {
     required FixedExtentScrollController controller,
     required int itemCount,
     required ValueChanged<int> onSelectedItemChanged,
+    int step = 1,
   }) {
     final scheme = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1786,7 +1796,7 @@ class __TimeTextFieldState extends State<_TimeTextField> {
                 itemCount,
                 (i) => Center(
                   child: Text(
-                    i.toString().padLeft(2, '0'),
+                    (i * step).toString().padLeft(2, '0'),
                     style: textStyle,
                   ),
                 ),
@@ -1918,8 +1928,10 @@ class __TimeTextFieldState extends State<_TimeTextField> {
                     context: context,
                     title: 'Минуты',
                     controller: _minuteController,
-                    itemCount: 60,
-                    onSelectedItemChanged: (i) => _setTime(minute: i),
+                    itemCount: 60 ~/ _minuteStep,
+                    step: _minuteStep,
+                    onSelectedItemChanged: (i) =>
+                        _setTime(minute: i * _minuteStep),
                   ),
                 ],
               ),

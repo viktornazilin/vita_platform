@@ -1272,6 +1272,7 @@ class _HabitsPreviewCard extends StatelessWidget {
                 const SizedBox(height: 14),
                 TextField(
                   controller: titleCtrl,
+                  textCapitalization: TextCapitalization.sentences,
                   maxLength: 60,
                   decoration: InputDecoration(labelText: t.habitName, counterText: ''),
                 ),
@@ -2048,12 +2049,14 @@ class _SpaceEditorSheetState extends State<_SpaceEditorSheet> {
               const SizedBox(height: 14),
               TextField(
                 controller: _nameCtrl,
+                textCapitalization: TextCapitalization.sentences,
                 maxLength: 40,
                 decoration: InputDecoration(labelText: t.spaceName, counterText: ''),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: _descriptionCtrl,
+                textCapitalization: TextCapitalization.sentences,
                 maxLength: 120,
                 minLines: 1,
                 maxLines: 3,

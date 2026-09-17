@@ -302,6 +302,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: titleCtrl,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
                       labelText: l.hobbyTrackerHobbyNameLabel,
                     ),
@@ -413,6 +414,7 @@ class _HobbyTrackerCardState extends State<HobbyTrackerCard> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: noteCtrl,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     labelText: l.hobbyTrackerNoteLabel,
                   ),

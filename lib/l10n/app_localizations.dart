@@ -8774,6 +8774,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This will be permanently deleted.'**
   String get goalsDeleteConfirmBodyShort;
+
+  /// No description provided for @paywallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ladna Premium'**
+  String get paywallTitle;
+
+  /// No description provided for @paywallSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First 30 days free, then a subscription. Cancel anytime.'**
+  String get paywallSubtitle;
+
+  /// No description provided for @paywallOpenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start free trial'**
+  String get paywallOpenButton;
+
+  /// No description provided for @paywallRestoreButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get paywallRestoreButton;
+
+  /// No description provided for @paywallLogoutButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get paywallLogoutButton;
 }
 
 class _AppLocalizationsDelegate

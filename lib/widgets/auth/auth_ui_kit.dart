@@ -244,10 +244,14 @@ class AuthTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AuthColors.of(context);
+    final isEmail = keyboardType == TextInputType.emailAddress;
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
       keyboardType: keyboardType,
+      textCapitalization: (obscureText || isEmail)
+          ? TextCapitalization.none
+          : TextCapitalization.words,
       autofillHints: autofillHints,
       textInputAction: textInputAction,
       validator: validator,

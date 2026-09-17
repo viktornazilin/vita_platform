@@ -364,6 +364,7 @@ class ProfileUi {
               const SizedBox(height: 12),
               TextField(
                 controller: ctrl,
+                textCapitalization: TextCapitalization.sentences,
                 maxLength: maxLen,
                 maxLines: maxLines,
                 decoration: InputDecoration(labelText: label, hintText: hint),
@@ -586,6 +587,7 @@ class ProfileUi {
               const SizedBox(height: 12),
               TextField(
                 controller: ctrl,
+                textCapitalization: TextCapitalization.sentences,
                 maxLines: 3,
                 decoration: InputDecoration(hintText: hint),
               ),

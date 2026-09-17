@@ -4820,4 +4820,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalsDeleteConfirmBodyShort => 'Esta acción no se puede deshacer.';
+
+  @override
+  String get paywallTitle => 'Ladna Premium';
+
+  @override
+  String get paywallSubtitle =>
+      'Los primeros 30 días gratis, luego suscripción. Cancela cuando quieras.';
+
+  @override
+  String get paywallOpenButton => 'Iniciar periodo gratuito';
+
+  @override
+  String get paywallRestoreButton => 'Restaurar compras';
+
+  @override
+  String get paywallLogoutButton => 'Cerrar sesión';
 }

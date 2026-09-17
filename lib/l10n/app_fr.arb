@@ -2258,5 +2258,10 @@
   "reportsScreenSummaryInsight": "You are more productive on Tuesday and Wednesday. Move the most important tasks to the start of the week.",
   "reportsScreenProgressInsight": "One sphere is postponed more often than others. Try reserving a separate morning block for it.",
   "reportsScreenHabitsInsight": "On days when habits are completed, productivity is usually higher. Start with the easiest habit.",
-  "reportsScreenMoodInsight": "Mood is higher on days with completed habits. Keep a small morning ritual."
+  "reportsScreenMoodInsight": "Mood is higher on days with completed habits. Keep a small morning ritual.",
+  "paywallTitle": "Ladna Premium",
+  "paywallSubtitle": "30 premiers jours gratuits, puis abonnement. Résiliable à tout moment.",
+  "paywallOpenButton": "Démarrer l’essai gratuit",
+  "paywallRestoreButton": "Restaurer les achats",
+  "paywallLogoutButton": "Se déconnecter"
 }

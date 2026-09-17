@@ -1233,8 +1233,8 @@ class _MiniGrid extends StatelessWidget {
       _MiniCard(
         icon: Icons.timer_rounded,
         label: _pick(context, const {'ru': 'Фокус-часы', 'en': 'Focus hours', 'de': 'Fokusstunden', 'fr': 'Heures focus', 'es': 'Horas foco', 'tr': 'Odak saatleri'}),
-        value: _fmt(hours),
-        subtitle: '${_pick(context, const {'ru': 'из', 'en': 'of', 'de': 'von', 'fr': 'sur', 'es': 'de', 'tr': '/'})} ${_fmt(targetHours)} ч',
+        value: '${targetHours > 0 ? (hours / targetHours * 100).round().clamp(0, 999) : 0}%',
+        subtitle: '${_fmt(hours)} ${_pick(context, const {'ru': 'из', 'en': 'of', 'de': 'von', 'fr': 'sur', 'es': 'de', 'tr': '/'})} ${_fmt(targetHours)} ч',
       ),
     ];
 

@@ -403,9 +403,13 @@ class _LadnaTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNumeric = keyboardType != null &&
+        keyboardType!.index == TextInputType.number.index;
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      textCapitalization:
+          isNumeric ? TextCapitalization.none : TextCapitalization.sentences,
       textInputAction: textInputAction,
       onChanged: onChanged,
       onSubmitted: onSubmitted,

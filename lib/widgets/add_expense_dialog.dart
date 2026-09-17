@@ -406,9 +406,13 @@ class _LadnaTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNumeric = keyboardType != null &&
+        keyboardType!.index == TextInputType.number.index;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textCapitalization:
+          isNumeric ? TextCapitalization.none : TextCapitalization.sentences,
       validator: validator,
       maxLines: maxLines,
       cursorColor: _LadnaColors.lime,
@@ -553,6 +557,7 @@ class _LadnaCategoryDialog extends StatelessWidget {
                 TextField(
                   controller: controller,
                   autofocus: true,
+                  textCapitalization: TextCapitalization.sentences,
                   cursorColor: _LadnaColors.lime,
                   style: TextStyle(
                     color: _LadnaColors.text,

@@ -4844,4 +4844,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalsDeleteConfirmBodyShort => 'Cette action est irréversible.';
+
+  @override
+  String get paywallTitle => 'Ladna Premium';
+
+  @override
+  String get paywallSubtitle =>
+      '30 premiers jours gratuits, puis abonnement. Résiliable à tout moment.';
+
+  @override
+  String get paywallOpenButton => 'Démarrer l’essai gratuit';
+
+  @override
+  String get paywallRestoreButton => 'Restaurer les achats';
+
+  @override
+  String get paywallLogoutButton => 'Se déconnecter';
 }

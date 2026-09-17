@@ -221,6 +221,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
                   TextField(
                     controller: titleCtrl,
+                    textCapitalization: TextCapitalization.sentences,
                     maxLength: 80,
                     decoration: InputDecoration(
                       labelText: l.goalsEditorTitleLabel,
@@ -231,6 +232,7 @@ class _GoalsByBlockCardState extends State<GoalsByBlockCard> {
 
                   TextField(
                     controller: descCtrl,
+                    textCapitalization: TextCapitalization.sentences,
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: l.goalsEditorDescLabel,

@@ -22,6 +22,14 @@ class ProfileModel extends ChangeNotifier {
   bool hasCompletedQuestionnaire = false;
   int? age;
 
+  // Старые пользователи (до введения платной подписки) — бесплатны навсегда.
+  // Фактическое решение "пускать/не пускать" принимает AccessGate при
+  // старте приложения независимо от этого поля (не полагается на
+  // ProfileModel, который может быть ещё не загружен на этом этапе) — тут
+  // оно просто для UI (например, скрыть блок управления подпиской в
+  // настройках для таких пользователей).
+  bool isGrandfathered = false;
+
   bool hasSeenIntro = false;
   String? archetype;
   String? preferredLanguage; // ru / en / de / ... / null => system
@@ -76,6 +84,7 @@ class ProfileModel extends ChangeNotifier {
       hasCompletedQuestionnaire =
           (row['has_completed_questionnaire'] as bool?) ?? false;
       age = row['age'] as int?;
+      isGrandfathered = (row['is_grandfathered'] as bool?) ?? false;
 
       hasSeenIntro = (row['has_seen_intro'] as bool?) ?? false;
       archetype = row['archetype'] as String?;

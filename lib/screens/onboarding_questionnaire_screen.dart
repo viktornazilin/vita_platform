@@ -1065,6 +1065,9 @@ class _NestTextField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      textCapitalization: keyboardType == TextInputType.text
+          ? TextCapitalization.sentences
+          : TextCapitalization.none,
       maxLines: maxLines,
       style: TextStyle(
         color: cs.onSurface,

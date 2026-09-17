@@ -253,6 +253,7 @@ class _HabitEditorSheetState extends State<_HabitEditorSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _titleCtrl,
+                textCapitalization: TextCapitalization.sentences,
                 maxLength: 60,
                 autofocus: true,
                 textInputAction: TextInputAction.done,

@@ -461,6 +461,7 @@ class _MassDailyEntrySheetState extends State<MassDailyEntrySheet> {
               const SizedBox(height: 10),
               TextField(
                 controller: _moodNote,
+                textCapitalization: TextCapitalization.sentences,
                 maxLines: 2,
                 decoration: InputDecoration(
                   labelText: l.massDailyNote,
@@ -1373,6 +1374,7 @@ class _MentalQuestionTile extends StatelessWidget {
             const SizedBox(height: 10),
             TextFormField(
               initialValue: vm.textVal ?? '',
+              textCapitalization: TextCapitalization.sentences,
               maxLines: 2,
               decoration: InputDecoration(
                 labelText: AppLocalizations.of(context)!.massDailyAnswer,
@@ -1561,6 +1563,7 @@ class _ExpenseRowViewState extends State<_ExpenseRowView> {
               return TextField(
                 controller: textCtrl,
                 focusNode: focusNode,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   labelText: AppLocalizations.of(context)!.massDailyNote,
                   isDense: true,
@@ -1779,6 +1782,7 @@ class _IncomeRowViewState extends State<_IncomeRowView> {
               return TextField(
                 controller: textCtrl,
                 focusNode: focusNode,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   labelText: AppLocalizations.of(context)!.massDailyNote,
                   isDense: true,
@@ -2452,6 +2456,7 @@ class _GoalRowViewState extends State<_GoalRowView> {
                 child: TextField(
                   controller: textCtrl,
                   focusNode: focusNode,
+                  textCapitalization: TextCapitalization.sentences,
                   textInputAction: TextInputAction.next,
                   style: tt.bodyMedium?.copyWith(
                     fontSize: 13.5,

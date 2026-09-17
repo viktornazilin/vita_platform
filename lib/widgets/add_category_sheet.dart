@@ -95,6 +95,7 @@ Future<String?> showAddCategorySheet(
                       TextField(
                         controller: ctrl,
                         autofocus: true,
+                        textCapitalization: TextCapitalization.sentences,
                         textInputAction: TextInputAction.done,
                         decoration: InputDecoration(
                           labelText: l.commonTitle,

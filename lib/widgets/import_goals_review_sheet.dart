@@ -370,6 +370,7 @@ class _DraftTile extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: titleCtrl,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     labelText: l.importGoalsReviewFieldTitle,
                     prefixIcon: const Icon(Icons.flag_outlined),
@@ -382,6 +383,7 @@ class _DraftTile extends StatelessWidget {
           const SizedBox(height: 10),
           TextField(
             controller: descCtrl,
+            textCapitalization: TextCapitalization.sentences,
             minLines: 2,
             maxLines: 4,
             decoration: InputDecoration(

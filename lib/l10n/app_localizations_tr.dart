@@ -4797,4 +4797,20 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get goalsDeleteConfirmBodyShort => 'Bu işlem geri alınamaz.';
+
+  @override
+  String get paywallTitle => 'Ladna Premium';
+
+  @override
+  String get paywallSubtitle =>
+      'İlk 30 gün ücretsiz, ardından abonelik. İstediğin zaman iptal edebilirsin.';
+
+  @override
+  String get paywallOpenButton => 'Ücretsiz denemeyi başlat';
+
+  @override
+  String get paywallRestoreButton => 'Satın alımları geri yükle';
+
+  @override
+  String get paywallLogoutButton => 'Oturumu kapat';
 }
