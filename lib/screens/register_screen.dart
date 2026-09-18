@@ -11,6 +11,7 @@ import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/register_model.dart';
 import '../services/user_service.dart';
+import '../services/access_gate.dart';
 import '../widgets/auth/auth_ui_kit.dart';
 
 
@@ -143,10 +144,21 @@ class _RegisterViewState extends State<_RegisterView> {
     }
 
     if (userService.hasCompletedQuestionnaire) {
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      // Раньше здесь был прямой переход на '/home', минуя проверку доступа —
+      // новый пользователь никогда не видел пейволл. Теперь решает
+      // AccessGate: grandfathered/подписка → Home, иначе → Paywall.
+      await _routeToHomeOrPaywall();
     } else {
       Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
     }
+  }
+
+  Future<void> _routeToHomeOrPaywall() async {
+    final decision = await AccessGate.resolve();
+    if (!mounted) return;
+
+    final route = decision == AccessDecision.requiresPaywall ? '/paywall' : '/home';
+    Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
   }
 
   String? _validateName(BuildContext context, String? value) {

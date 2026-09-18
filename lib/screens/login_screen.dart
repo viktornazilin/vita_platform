@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:nest_app/l10n/app_localizations.dart';
 
 import '../models/login_model.dart';
+import '../services/access_gate.dart';
 import '../widgets/auth/auth_ui_kit.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -60,9 +61,21 @@ class _LoginViewState extends State<_LoginView> {
       }
 
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+        _routeAfterSignIn();
       }
     });
+  }
+
+  /// Раньше здесь был прямой переход на '/home', минуя проверку доступа —
+  /// из-за этого пейволл никогда не показывался вообще, независимо от
+  /// is_grandfathered/статуса подписки. Теперь маршрут выбирается через
+  /// AccessGate.resolve(): grandfathered/подписка → Home, иначе → Paywall.
+  Future<void> _routeAfterSignIn() async {
+    final decision = await AccessGate.resolve();
+    if (!mounted) return;
+
+    final route = decision == AccessDecision.requiresPaywall ? '/paywall' : '/home';
+    Navigator.of(context).pushNamedAndRemoveUntil(route, (_) => false);
   }
 
   @override

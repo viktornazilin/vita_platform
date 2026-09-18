@@ -158,6 +158,8 @@ class _VitaAppState extends State<VitaApp> {
 
         '/login': (_) => const LoginScreen(),
 
+        '/paywall': (_) => const PaywallScreen(),
+
         '/expenses': (_) => const ExpensesScreen(),
         '/budget': (_) => const BudgetSetupScreen(),
       },
